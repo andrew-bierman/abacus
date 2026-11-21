@@ -58,7 +58,9 @@ func TestDoctorOKExitsZeroWithJSON(t *testing.T) {
 }
 
 func TestFailExitsOneWarnAndSkipDoNot(t *testing.T) {
-	mods := func(s core.CheckStatus) []core.Module { return []core.Module{ready("a", core.Check{Name: "c", Status: s})} }
+	mods := func(s core.CheckStatus) []core.Module {
+		return []core.Module{ready("a", core.Check{Name: "c", Status: s})}
+	}
 	for s, want := range map[core.CheckStatus]int{core.StatusFail: 1, core.StatusWarn: 0, core.StatusSkip: 0} {
 		if code, _, _ := run(t, mods(s), "doctor"); code != want {
 			t.Errorf("%s: exit %d, want %d", s, code, want)

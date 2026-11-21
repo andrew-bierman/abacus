@@ -81,3 +81,16 @@ func TestEveryReportCarriesSchemaVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestBrokenToolFailsDoctorAndIsListedInEveryReport(t *testing.T) {
+	ctx := context.Background()
+	broken := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Broken, Detail: "version could not run (exit 2)"}}
+	en := core.NewRegistry(broken).Detect(ctx)
+	d := core.DoctorReport(ctx, "t", en)
+	if d.ExitCode() != core.ExitFail || len(d.Modules) != 1 || d.Modules[0].Checks[0].Status != core.StatusFail {
+		t.Fatalf("broken must fail doctor: %+v", d)
+	}
+	if s := core.StatusReport(ctx, "t", en); len(s.Modules) != 1 || s.Modules[0].Status != nil {
+		t.Fatalf("broken must appear in status without a state read: %+v", s)
+	}
+}

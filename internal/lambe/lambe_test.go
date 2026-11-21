@@ -423,3 +423,39 @@ func TestLoopbackRejectsMalformedPortsBeforeAnyTokenUse(t *testing.T) {
 		t.Error("well-formed loopback address rejected")
 	}
 }
+
+func TestDetectLocatedButFailingBinaryIsBrokenNotAbsent(t *testing.T) {
+	cases := map[string]result{
+		"exit 2":       {exit: 2},
+		"runner error": {err: fmt.Errorf("timed out after 10s")},
+	}
+	for name, r := range cases {
+		f := &fakeRunner{resp: map[string]result{"version --json": r}}
+		d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+		if d.State != core.Broken || d.Detail == "" {
+			t.Errorf("%s: got %+v, want broken with a detail", name, d)
+		}
+	}
+	d := New(Options{Runner: &fakeRunner{}, Bin: "/nonexistent/lambe"}).Detect(context.Background())
+	if d.State != core.Absent {
+		t.Errorf("explicit missing Bin: got %+v, want absent", d)
+	}
+}
+
+func TestDoctorExitBackstopAddsFailWhenLambeFailedWithoutAFailCheck(t *testing.T) {
+	f := &fakeRunner{resp: map[string]result{
+		"version --json": {out: `{"version":"v0.10.0","api_version":1}`},
+		"doctor -json":   {out: `[{"name":"bd","status":"error","detail":"new status"}]`, exit: 1},
+	}}
+	m := newModule(f, Options{})
+	m.Detect(context.Background())
+	got := m.Doctor(context.Background())
+	if len(got) != 2 || got[0].Status != core.StatusWarn || got[1].Status != core.StatusFail {
+		t.Fatalf("want [warn, synthetic fail], got %+v", got)
+	}
+	// A real fail check is not duplicated by the backstop.
+	f.resp["doctor -json"] = result{out: `[{"name":"config","status":"fail","detail":"x"}]`, exit: 1}
+	if got := m.Doctor(context.Background()); len(got) != 1 {
+		t.Fatalf("backstop duplicated an existing fail: %+v", got)
+	}
+}

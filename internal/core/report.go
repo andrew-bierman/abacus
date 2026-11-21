@@ -33,8 +33,9 @@ const (
 	ExitUsage = 2
 )
 
-// ExitCode is 1 only when a check failed. Absent, incompatible, warn, skip and
-// unavailable state never fail the run.
+// ExitCode is the one exit-code rule: 1 only when a check failed, which includes a
+// broken tool (found but unable to run). Absent, incompatible, warn, skip and an
+// unreadable state never fail the run.
 func (r Report) ExitCode() int {
 	for _, m := range r.Modules {
 		for _, c := range m.Checks {
@@ -70,14 +71,18 @@ func VersionReport(version string, entries []Entry) Report {
 	return r
 }
 
-// DoctorReport runs health checks on every present module. An incompatible tool is a warn.
+// DoctorReport runs health checks on every present module. A broken tool is a failing
+// check; an incompatible tool is a warn.
 func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 	r := newReport(version)
 	for _, e := range present(entries) {
 		m := base(e)
-		if e.Detection.State == Incompatible {
+		switch e.Detection.State {
+		case Broken:
+			m.Checks = []Check{{Name: "installation", Status: StatusFail, Detail: e.Detection.Detail}}
+		case Incompatible:
 			m.Checks = []Check{{Name: "compatibility", Status: StatusWarn, Detail: e.Detection.Detail}}
-		} else {
+		default:
 			m.Checks = normalized(e.Module.Doctor(ctx))
 		}
 		r.Modules = append(r.Modules, m)
