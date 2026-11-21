@@ -57,3 +57,22 @@ func TestNarrowWidthRendersWithoutPanic(t *testing.T) {
 		t.Fatal("empty view")
 	}
 }
+
+func TestHandoffUsesTheSelectedRunNotTheFirst(t *testing.T) {
+	var calls [][]string
+	var s tea.Model = newLambeSection(lambe.NewDemo(), func(argv []string) tea.Cmd { calls = append(calls, argv); return nil })
+	runs := []lambe.Run{{Issue: "A-1", Machine: "mac-one"}, {Issue: "A-2", Machine: "mac-two"}}
+	s, _ = s.Update(lambeViewMsg{view: lambe.View{Snapshot: lambe.Snapshot{Runs: runs}}})
+	s, _ = s.Update(runeKey("j"))
+	s, _ = s.Update(runeKey("o"))
+	if len(calls) != 1 || strings.Join(calls[0], " ") != "rex -S mac-two" {
+		t.Fatalf("handoff calls = %v, want one call for mac-two", calls)
+	}
+	// k moves back up and the cursor clamps at the first run.
+	s, _ = s.Update(runeKey("k"))
+	s, _ = s.Update(runeKey("k"))
+	_, _ = s.Update(runeKey("o"))
+	if len(calls) != 2 || calls[1][2] != "mac-one" {
+		t.Fatalf("after k,k,o calls = %v, want second call for mac-one", calls)
+	}
+}
