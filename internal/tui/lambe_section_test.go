@@ -130,3 +130,22 @@ func TestFailedHandoffShowsANoticeAndSuccessShowsNone(t *testing.T) {
 		t.Fatalf("a successful handoff must not show a notice:\n%s", s.View())
 	}
 }
+
+func TestSelectionDistinguishesRunsSharingAnIssueBySession(t *testing.T) {
+	calls, h := recorder()
+	var s tea.Model = newLambeSection(lambe.NewDemo(), h)
+	msg := func(order ...string) lambeViewMsg {
+		runs := make([]lambe.Run, len(order))
+		for i, sess := range order {
+			runs[i] = lambe.Run{Issue: "A-1", Session: sess, Machine: "mac-" + sess}
+		}
+		return lambeViewMsg{view: lambe.View{Snapshot: lambe.Snapshot{Runs: runs}}}
+	}
+	s, _ = s.Update(msg("s1", "s2"))
+	s, _ = s.Update(runeKey("j"))    // select the second attempt, session s2
+	s, _ = s.Update(msg("s2", "s1")) // order flips
+	_, _ = s.Update(runeKey("o"))
+	if len(*calls) != 1 || (*calls)[0][2] != "mac-s2" {
+		t.Fatalf("handoff calls = %v, want mac-s2", *calls)
+	}
+}
