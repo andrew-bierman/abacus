@@ -49,7 +49,7 @@ func New(o Options) *Module {
 func (m *Module) ID() string   { return "beads-lease" }
 func (m *Module) Name() string { return "beads-lease" }
 
-// versionLine matches `<name> <version> — <tagline>`; beads-lease has no `version --json`
+// versionRE matches `<name> <version> — <tagline>`; beads-lease has no `version --json`
 // and no api_version yet (andrew-bierman/beads-lease#6).
 var versionRE = regexp.MustCompile(`^\S+\s+v?(\d+\.\d+\S*)`)
 
