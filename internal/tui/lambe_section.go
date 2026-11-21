@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -12,7 +13,14 @@ import (
 	"github.com/andrew-bierman/beaddeck/internal/lambe"
 )
 
-const pollEvery = 5 * time.Second
+const (
+	pollEvery    = 5 * time.Second
+	fetchTimeout = 8 * time.Second
+)
+
+func tick() tea.Cmd {
+	return tea.Tick(pollEvery, func(time.Time) tea.Msg { return lambeTickMsg{} })
+}
 
 type lambeViewMsg struct {
 	view   lambe.View
@@ -39,7 +47,7 @@ func newLambeSection(m *lambe.Module, handoff func([]string) tea.Cmd) *lambeSect
 
 func (s *lambeSection) fetch() tea.Cmd {
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
 		v, reason := s.m.Read(ctx)
 		return lambeViewMsg{view: v, reason: reason}
@@ -50,7 +58,7 @@ func (s *lambeSection) Init() tea.Cmd {
 	if s.m.IsDemo() {
 		return s.fetch()
 	}
-	return tea.Batch(s.fetch(), tea.Tick(pollEvery, func(time.Time) tea.Msg { return lambeTickMsg{} }))
+	return tea.Batch(s.fetch(), tick())
 }
 
 func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -61,7 +69,7 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.cursor = max(0, n-1)
 		}
 	case lambeTickMsg:
-		return s, tea.Batch(s.fetch(), tea.Tick(pollEvery, func(time.Time) tea.Msg { return lambeTickMsg{} }))
+		return s, tea.Batch(s.fetch(), tick())
 	case tea.WindowSizeMsg:
 		s.width = msg.Width
 	case tea.KeyMsg:
@@ -88,7 +96,7 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (s *lambeSection) clip(line string) string {
-	if s.width > 0 && len([]rune(line)) > s.width {
+	if s.width > 0 && utf8.RuneCountInString(line) > s.width {
 		return string([]rune(line)[:max(0, s.width-1)]) + "…"
 	}
 	return line

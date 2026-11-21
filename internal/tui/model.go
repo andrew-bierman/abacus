@@ -18,7 +18,6 @@ type Model struct {
 	names    []string
 	sections []tea.Model
 	sel      int
-	width    int
 }
 
 // New builds the shell from detection entries; only ready modules get a section.
@@ -85,9 +84,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.sections[m.sel], cmd = m.sections[m.sel].Update(msg)
 		return m, cmd
-	}
-	if w, ok := msg.(tea.WindowSizeMsg); ok {
-		m.width = w.Width
 	}
 	// Everything else (window size, async results, ticks) goes to every section;
 	// each ignores message types it does not own.

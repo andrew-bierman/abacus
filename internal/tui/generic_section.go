@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -25,7 +24,7 @@ type genericSection struct {
 
 func (s *genericSection) fetch() tea.Cmd {
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
 		return genericMsg{id: s.m.ID(), status: s.m.Status(ctx)}
 	}

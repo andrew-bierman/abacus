@@ -48,6 +48,12 @@ func Discover(o DiscoverOptions) (Descriptor, error) {
 		if json.Unmarshal(b, &d) != nil || d.SchemaVersion != 1 || d.Instance == "" || d.PID <= 0 {
 			continue
 		}
+		if o.Selector.Instance != "" && d.Instance != o.Selector.Instance {
+			continue
+		}
+		if o.Selector.ConfigPath != "" && d.ConfigPath != o.Selector.ConfigPath {
+			continue
+		}
 		if !loopback(d.Addr) || !o.PidAlive(d.PID) {
 			continue
 		}
@@ -60,21 +66,11 @@ func Discover(o DiscoverOptions) (Descriptor, error) {
 		}
 		live = append(live, d)
 	}
-	var match []Descriptor
-	for _, d := range live {
-		if o.Selector.Instance != "" && d.Instance != o.Selector.Instance {
-			continue
-		}
-		if o.Selector.ConfigPath != "" && d.ConfigPath != o.Selector.ConfigPath {
-			continue
-		}
-		match = append(match, d)
-	}
-	switch len(match) {
+	switch len(live) {
 	case 0:
 		return Descriptor{}, ErrNoDaemon
 	case 1:
-		return match[0], nil
+		return live[0], nil
 	}
 	return Descriptor{}, ErrAmbiguous
 }
