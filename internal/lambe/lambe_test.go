@@ -3,6 +3,7 @@ package lambe
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -457,5 +458,128 @@ func TestDoctorExitBackstopAddsFailWhenLambeFailedWithoutAFailCheck(t *testing.T
 	f.resp["doctor -json"] = result{out: `[{"name":"config","status":"fail","detail":"x"}]`, exit: 1}
 	if got := m.Doctor(context.Background()); len(got) != 1 {
 		t.Fatalf("backstop duplicated an existing fail: %+v", got)
+	}
+}
+
+func jsonStr(s string) string { b, _ := json.Marshal(s); return string(b) }
+
+func hostile() string { return "t\x1b]0;pwned\x07x" }
+
+func controlFree(t *testing.T, label, s string) {
+	t.Helper()
+	for _, r := range s {
+		if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
+			t.Errorf("%s contains control rune %U in %q", label, r, s)
+			return
+		}
+	}
+}
+
+func TestReadSanitizesEveryExternalStringAndStatusLines(t *testing.T) {
+	js := func(s string) string { b, _ := json.Marshal(s); return string(b) }
+	mux := http.NewServeMux()
+	body := `{"schema_version":1,"daemon":{"pid":1,"machine":` + js(hostile()) + `},"runs":[{"issue":` + js(hostile()) + `,"state":"running","phase":` + js(hostile()) + `,"machine":` + js(hostile()) + `}],"needs_human":[{"issue":"a","reason":` + js(hostile()) + `,"detail":` + js(hostile()) + `}]}`
+	qbody := `{"schema_version":1,"rows":[{"id":"q","title":` + js(hostile()) + `,"reason":` + js(hostile()) + `,"blockers":[{"id":"b","title":` + js(hostile()) + `}]}]}`
+	mux.HandleFunc("/api/v1/state", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(body)) })
+	mux.HandleFunc("/api/v1/queue", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(qbody)) })
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	dir := t.TempDir()
+	d := baseDesc("lambe-live", "")
+	d.Addr, d.BearerToken = strings.TrimPrefix(srv.URL, "http://"), secret
+	writeDescriptor(t, dir, "stateapi-live.json", d)
+	m := New(Options{StateDir: dir, PidAlive: func(int) bool { return true }, Identity: func(int) (string, error) { return "id-ok", nil }})
+
+	v, err := m.Read(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := v.Snapshot.Runs[0]
+	for label, s := range map[string]string{"issue": r.Issue, "phase": r.Phase, "machine": r.Machine,
+		"reason": v.Snapshot.NeedsHuman[0].Reason, "detail": v.Snapshot.NeedsHuman[0].Detail,
+		"queue title": v.Queue.Rows[0].Title, "queue reason": v.Queue.Rows[0].Reason, "blocker": v.Queue.Rows[0].Blockers[0].Title} {
+		controlFree(t, label, s)
+	}
+	for _, l := range m.Status(context.Background()).Lines {
+		controlFree(t, "status line", l)
+	}
+}
+
+func TestClientErrorTextIsSanitizedAndTokenFree(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"schema_version":1,"error":"boom","message":` + jsonStr(hostile()) + `}`))
+	}))
+	defer srv.Close()
+	d := baseDesc("x", "")
+	d.Addr, d.BearerToken = strings.TrimPrefix(srv.URL, "http://"), secret
+	c, _ := NewClient(d, time.Second)
+	_, err := c.Snapshot(context.Background())
+	if err == nil {
+		t.Fatal("want error")
+	}
+	controlFree(t, "client error", err.Error())
+	if strings.Contains(err.Error(), secret) {
+		t.Fatal("token leaked")
+	}
+}
+
+func TestDoctorChecksAreSanitized(t *testing.T) {
+	f := &fakeRunner{resp: map[string]result{
+		"version --json": {out: `{"version":"v0.10.0","api_version":1}`},
+		"doctor -json":   {out: `[{"name":` + jsonStr(hostile()) + `,"status":"ok","detail":` + jsonStr(hostile()) + `,"fix":` + jsonStr(hostile()) + `}]`},
+	}}
+	m := newModule(f, Options{})
+	m.Detect(context.Background())
+	c := m.Doctor(context.Background())[0]
+	controlFree(t, "name", c.Name)
+	controlFree(t, "detail", c.Detail)
+	controlFree(t, "fix", c.Fix)
+}
+
+func TestReadReturnsSentinelErrorsThatErrorsIsCanMatch(t *testing.T) {
+	m := New(Options{StateDir: t.TempDir(), PidAlive: func(int) bool { return false }})
+	if _, err := m.Read(context.Background()); !errors.Is(err, ErrNoDaemon) {
+		t.Fatalf("want ErrNoDaemon, got %v", err)
+	}
+	dir := t.TempDir()
+	writeDescriptor(t, dir, "stateapi-a.json", baseDesc("lambe-a", "/a.yaml"))
+	writeDescriptor(t, dir, "stateapi-b.json", baseDesc("lambe-b", "/b.yaml"))
+	m = New(Options{StateDir: dir, PidAlive: func(int) bool { return true }, Identity: func(int) (string, error) { return "id-ok", nil }})
+	if _, err := m.Read(context.Background()); !errors.Is(err, ErrAmbiguous) {
+		t.Fatalf("want ErrAmbiguous, got %v", err)
+	}
+}
+
+func TestDiscoverRejectsBadPidAndInstanceBeforeAnyProcessProbe(t *testing.T) {
+	dir := t.TempDir()
+	for i, mutate := range []func(*Descriptor){
+		func(d *Descriptor) { d.PID = 0 },
+		func(d *Descriptor) { d.PID = -1 },
+		func(d *Descriptor) { d.Instance = "" },
+	} {
+		d := baseDesc(fmt.Sprintf("lambe-%d", i), "")
+		mutate(&d)
+		writeDescriptor(t, dir, fmt.Sprintf("stateapi-%d.json", i), d)
+	}
+	probed := false
+	o := discoverOpts(dir, Selector{})
+	o.PidAlive = func(int) bool { probed = true; return true }
+	if _, err := Discover(o); err != ErrNoDaemon || probed {
+		t.Fatalf("err=%v probed=%v; bad descriptors must be skipped before PidAlive", err, probed)
+	}
+}
+
+func TestDiscoverAcceptsEmptyIdentityWhenPidIsAlive(t *testing.T) {
+	// Lambe's spec makes identity optional; a descriptor without one passes on pid liveness.
+	dir := t.TempDir()
+	d := baseDesc("lambe-noid", "")
+	d.Identity = ""
+	writeDescriptor(t, dir, "stateapi-noid.json", d)
+	o := discoverOpts(dir, Selector{})
+	o.Identity = func(int) (string, error) { t.Fatal("identity must not be consulted"); return "", nil }
+	got, err := Discover(o)
+	if err != nil || got.Instance != "lambe-noid" {
+		t.Fatalf("got %+v, %v", got, err)
 	}
 }

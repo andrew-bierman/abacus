@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestHandoffOnRunWithoutMachineShowsNoticeAndDoesNotCallRunner(t *testing.T)
 
 func TestUnavailableStateRendersNotACrash(t *testing.T) {
 	var s tea.Model = newLambeSection(lambe.NewDemo(), nil)
-	s, _ = s.Update(lambeViewMsg{reason: "no live daemon found"})
+	s, _ = s.Update(lambeViewMsg{err: errors.New("no live daemon found")})
 	if v := s.View(); !strings.Contains(v, "state unavailable: no live daemon found") {
 		t.Fatalf("view:\n%s", v)
 	}

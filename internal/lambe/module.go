@@ -82,7 +82,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	}
 	out, exit, err := m.o.Runner.Run(ctx, bin, "version", "--json")
 	if err != nil {
-		return core.Detection{State: core.Broken, Detail: "lambe version --json could not run: " + err.Error()}
+		return core.Detection{State: core.Broken, Detail: "lambe version --json could not run: " + core.Sanitize(err.Error())}
 	}
 	if exit != 0 {
 		return core.Detection{State: core.Broken, Detail: fmt.Sprintf("lambe version --json exited %d", exit)}
@@ -115,6 +115,7 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	}
 	failed := false
 	for i := range raw {
+		raw[i].Name, raw[i].Detail, raw[i].Fix = core.Sanitize(raw[i].Name), core.Sanitize(raw[i].Detail), core.Sanitize(raw[i].Fix)
 		raw[i].Status = raw[i].Status.Normalize()
 		failed = failed || raw[i].Status == core.StatusFail
 	}
@@ -125,34 +126,37 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	return raw
 }
 
-// Read fetches the live view, or returns the reason it is unavailable.
-func (m *Module) Read(ctx context.Context) (View, string) {
+// Read fetches the live view. A failure is an error: ErrNoDaemon and ErrAmbiguous are
+// sentinels callers can match with errors.Is. Decoded text is sanitized.
+func (m *Module) Read(ctx context.Context) (View, error) {
 	if m.o.Demo {
 		v, err := demoView()
 		if err != nil {
-			return View{}, "demo fixtures unreadable"
+			return View{}, fmt.Errorf("demo fixtures unreadable: %w", err)
 		}
-		return v, ""
+		sanitizeView(&v)
+		return v, nil
 	}
 	d, err := Discover(DiscoverOptions{StateDir: m.o.StateDir, Selector: m.o.Selector, Identity: m.o.Identity, PidAlive: m.o.PidAlive})
 	if err != nil {
-		return View{}, err.Error()
+		return View{}, err
 	}
 	c, err := NewClient(d, m.o.Timeout)
 	if err != nil {
-		return View{}, err.Error()
+		return View{}, err
 	}
 	v, err := c.View(ctx)
 	if err != nil {
-		return View{}, err.Error()
+		return View{}, err
 	}
-	return v, ""
+	sanitizeView(&v)
+	return v, nil
 }
 
 func (m *Module) Status(ctx context.Context) core.Status {
-	v, reason := m.Read(ctx)
-	if reason != "" {
-		return core.Status{Unavailable: reason}
+	v, err := m.Read(ctx)
+	if err != nil {
+		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
 	st := core.Status{Summary: fmt.Sprintf("%d runs, %d queued, %d need attention",
 		len(v.Snapshot.Runs), len(v.Queue.Rows), len(v.Snapshot.NeedsHuman))}

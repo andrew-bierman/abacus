@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 // Client reads Lambe's state API. It is read-only by construction: there is no refresh
@@ -59,7 +61,7 @@ func (c *Client) get(ctx context.Context, path string, out any) error {
 	if resp.StatusCode != http.StatusOK {
 		var e errorBody
 		if json.Unmarshal(body, &e) == nil && e.Error != "" {
-			return fmt.Errorf("state API GET %s: %d %s: %s", path, resp.StatusCode, e.Error, e.Message)
+			return fmt.Errorf("state API GET %s: %d %s: %s", path, resp.StatusCode, core.Sanitize(e.Error), core.Sanitize(e.Message))
 		}
 		return fmt.Errorf("state API GET %s: status %d", path, resp.StatusCode)
 	}

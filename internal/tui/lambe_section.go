@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
@@ -23,8 +24,8 @@ func tick() tea.Cmd {
 }
 
 type lambeViewMsg struct {
-	view   lambe.View
-	reason string
+	view lambe.View
+	err  error
 }
 type lambeTickMsg struct{}
 
@@ -34,7 +35,7 @@ type lambeSection struct {
 	m       *lambe.Module
 	handoff func(argv []string) tea.Cmd
 	view    lambe.View
-	reason  string
+	err     error
 	loaded  bool
 	cursor  int
 	notice  string
@@ -49,8 +50,8 @@ func (s *lambeSection) fetch() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
-		v, reason := s.m.Read(ctx)
-		return lambeViewMsg{view: v, reason: reason}
+		v, err := s.m.Read(ctx)
+		return lambeViewMsg{view: v, err: err}
 	}
 }
 
@@ -64,7 +65,7 @@ func (s *lambeSection) Init() tea.Cmd {
 func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case lambeViewMsg:
-		s.view, s.reason, s.loaded = msg.view, msg.reason, true
+		s.view, s.err, s.loaded = msg.view, msg.err, true
 		if n := len(s.view.Snapshot.Runs); s.cursor >= n {
 			s.cursor = max(0, n-1)
 		}
@@ -109,8 +110,8 @@ func (s *lambeSection) View() string {
 	switch {
 	case !s.loaded:
 		w("loading…")
-	case s.reason != "":
-		w("state unavailable: " + s.reason)
+	case s.err != nil:
+		w("state unavailable: " + core.Sanitize(s.err.Error()))
 	default:
 		w(bold.Render("Runs"))
 		for i, r := range s.view.Snapshot.Runs {
