@@ -16,3 +16,18 @@ composed only through their `--json` CLIs and versioned local APIs.
 - Use a private `GOCACHE` for builds.
 
 License: GPL-3.0-or-later, matching Lambe.
+
+## Usage
+
+```
+beaddeck version [--json]
+beaddeck doctor  [--json] [--lambe-config FILE]
+beaddeck status  [--json] [--lambe-config FILE]
+beaddeck tui     [--demo]
+```
+
+Exit codes: 0 healthy, 1 a check failed, 2 usage error. A tool that is not installed is
+reported by `version` and omitted from `doctor` and `status`. Overrides:
+`BEADDECK_LAMBE_BIN`, `BEADDECK_LAMBE_STATE_DIR`, `BEADDECK_LAMBE_CONFIG`.
+
+See `docs/tool-contract.md` for what a tool must expose to be composable.
