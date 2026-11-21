@@ -185,3 +185,39 @@ func TestAllowlistRejectsEveryWriteOrSyncCommand(t *testing.T) {
 		t.Fatalf("a rejected argv reached the runner: %v", f.calls)
 	}
 }
+
+func TestLeaseFieldsAreSanitizedAndOddCasesRenderSafely(t *testing.T) {
+	body := `{"schemaVersion":1,"ok":true,"leases":[
+	  {"resource":"resource:a\u001b]0;x\u0007","holder":"h\u001b[2J","state":"held"},
+	  {"resource":"resource:b","holder":"o\u001b[31m","state":"stale"},
+	  {"resource":"resource:c\u001b[1m","state":"mystery\u001b[0m"}]}`
+	m := newMod(&fake{resp: map[string]result{"--json list": {out: body}}}, Options{})
+	st := m.Status(context.Background())
+	if st.Summary != "1 held, 1 stale, 0 free" || len(st.Lines) != 3 {
+		t.Fatalf("status = %+v (an unknown state still gets a line but is not counted)", st)
+	}
+	for _, l := range append([]string{st.Summary}, st.Lines...) {
+		for _, r := range l {
+			if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
+				t.Fatalf("control rune %U in %q", r, l)
+			}
+		}
+	}
+	if !strings.Contains(st.Lines[0], "expires ?") {
+		t.Errorf("a held lease with no expiry must show '?': %q", st.Lines[0])
+	}
+}
+
+func TestListExitAndOutputEdgeCases(t *testing.T) {
+	cases := map[string]result{
+		"ok envelope but exit 1": {out: `{"schemaVersion":1,"ok":true}`, exit: 1},
+		"non-json with exit 1":   {out: "boom", exit: 1},
+		"runner error on list":   {err: errors.New("spawn failed")},
+	}
+	for name, r := range cases {
+		m := newMod(&fake{resp: map[string]result{"--json list": r}}, Options{})
+		if st := m.Status(context.Background()); st.Unavailable == "" || st.Summary != "" {
+			t.Errorf("%s: want unavailable with a reason, got %+v", name, st)
+		}
+	}
+}
