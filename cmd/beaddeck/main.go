@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/andrew-bierman/beaddeck/internal/cli"
-	"github.com/andrew-bierman/beaddeck/internal/lambe"
 	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/beaddeck/internal/lambe"
 	"github.com/andrew-bierman/beaddeck/internal/tui"
 )
 
