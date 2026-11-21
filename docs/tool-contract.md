@@ -27,6 +27,29 @@ A tool is composable when it provides the first five items. The sixth is optiona
    timeouts, never print the token) are in Lambe's state-API doc. Mutating routes are a
    separate, explicit owner decision.
 
+## What the umbrella reports
+
+Detection has four states, and one exit-code rule covers all of them:
+
+| State | Meaning | `doctor` shows | Exit |
+|---|---|---|---|
+| `absent` | the binary is not found | nothing (listed by `version` only) | 0 |
+| `broken` | found, but `version` errors, exits non-zero or times out | a failing `installation` check | 1 |
+| `incompatible` | runs, but the `api_version` is unsupported or the output is unreadable | a `compatibility` warning | 0 |
+| `ready` | usable | the tool's own checks | 1 only if one is `fail` |
+
+A tool whose own `doctor` exits non-zero without reporting a `fail` check also yields a failing
+check, so a red tool never reads green. Check statuses are a typed set (`ok`, `warn`, `fail`,
+`skip`); anything else a tool emits is shown as `warn`. A ready tool whose state cannot be read
+is shown with an `unavailable` reason and does not change the exit code. Every tool subprocess
+has a 10s deadline.
+
+All text that originates outside abacus (tracker titles, daemon messages, tool output) has
+control characters removed before any front-end sees it.
+
+The umbrella's own `--json` output carries `schema_version` (currently 1). Native clients should
+check it and treat a higher number as a breaking change.
+
 ## Reference: how the umbrella uses Lambe
 
 | Surface | Command or route | Used for |
@@ -43,6 +66,28 @@ Decoding is tested against the fixtures vendored in `internal/lambe/testdata/con
 - `lambe status` has no `--json` form: andrew-bierman/lambe#51.
 - No command prints the resolved state dir or descriptor location, so clients re-derive the
   default and cannot see an override: andrew-bierman/lambe#52.
+
+## Second reference: beads-lease (read-only, partial)
+
+beads-lease (leases on the Beads hub) meets part of the contract: a `--json list` read with a
+`schemaVersion`, and stable exit codes (0, 1, 2 contention, 64 invalid input, 130 interrupted).
+abacus uses exactly two commands, `version` and `--json list`, behind an allowlist that rejects
+every other argv (no acquire, release, heartbeat, run or sync). Leases show as held, stale or
+free.
+
+- Detection parses the plain `version` line, because there is no `version --json`: the
+  `api_version` stays unknown (andrew-bierman/beads-lease#6).
+- There is no `doctor`, so abacus lists a skipped check (andrew-bierman/beads-lease#7).
+- `list` needs the caller's `BEADS_ACTOR` environment variable (the claiming identity); abacus
+  never sets it, and shows the tool's message as the unavailable reason when it is missing.
+- Override the binary with `ABACUS_BEADSLEASE_BIN`. The tool reads the coordination hub named
+  in its own config, so run abacus with the environment you would use for beads-lease itself.
+
+## Not yet composable
+
+- board-beads is an npm library (a Vercel Board backend) with no CLI. Filed
+  andrew-bierman/board-beads#15 for a thin contract CLI, or documenting the Vercel Board `vb`
+  CLI as the surface to compose; Board compatibility is a priority for a later module.
 
 ## Clients
 
