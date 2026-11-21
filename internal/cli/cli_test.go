@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/andrew-bierman/abacus/internal/beadslease"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
@@ -179,5 +180,21 @@ func TestJSONOutputCarriesSchemaVersionForNativeClients(t *testing.T) {
 		if raw["schema_version"] != float64(1) {
 			t.Errorf("%s --json schema_version = %v, want 1", cmd, raw["schema_version"])
 		}
+	}
+}
+
+func TestStatusJSONListsBothModulesAndExitsZero(t *testing.T) {
+	bl := beadslease.New(beadslease.Options{
+		Runner: scripted{resp: map[string]string{
+			"version":     "beads-lease 0.1.0 — the fleet's keeper of leases\n",
+			"--json list": `{"schemaVersion":1,"ok":true,"leases":[{"resource":"resource:bench","holder":"a","state":"held"},{"resource":"resource:slot","state":"free"}]}`,
+		}},
+		LookPath: func(string) (string, error) { return "/fake/beads-lease", nil },
+	})
+	code, out, _ := run(t, []core.Module{ready("lambe"), bl}, "status", "--json")
+	d := parse(t, out)
+	if code != 0 || len(d.Modules) != 2 || d.Modules[1].ID != "beads-lease" ||
+		d.Modules[1].Status == nil || d.Modules[1].Status.Summary != "1 held, 0 stale, 1 free" {
+		t.Fatalf("code=%d out=%s", code, out)
 	}
 }

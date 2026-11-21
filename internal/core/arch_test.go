@@ -13,7 +13,7 @@ import (
 // import a UI library or a front-end package, so another GUI can reuse them unchanged.
 func TestLogicPackagesImportNoUI(t *testing.T) {
 	banned := []string{"charmbracelet", "internal/tui"}
-	for _, dir := range []string{".", "../lambe", "../cli"} {
+	for _, dir := range []string{".", "../lambe", "../beadslease", "../cli"} {
 		files, _ := filepath.Glob(filepath.Join(dir, "*.go"))
 		for _, f := range files {
 			if strings.HasSuffix(f, "_test.go") {
