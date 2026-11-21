@@ -7,9 +7,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/beaddeck/internal/core/modtest"
 	"github.com/andrew-bierman/beaddeck/internal/lambe"
-	"github.com/andrew-bierman/beaddeck/internal/module"
-	"github.com/andrew-bierman/beaddeck/internal/module/modtest"
 	"github.com/andrew-bierman/beaddeck/internal/tui"
 )
 
@@ -40,30 +40,34 @@ func drain(m tea.Model, cmd tea.Cmd) tea.Model {
 	return m
 }
 
-func entries(mods ...*modtest.Fake) []module.Entry {
-	var out []module.Entry
+func entries(mods ...*modtest.Fake) []core.Entry {
+	var out []core.Entry
 	for _, f := range mods {
-		out = append(out, module.Entry{Module: f, Detection: f.Det})
+		out = append(out, core.Entry{Module: f, Detection: f.Det})
 	}
 	return out
 }
 
 func TestOnlyDetectedModulesGetASection(t *testing.T) {
-	a := &modtest.Fake{IDStr: "a", Det: module.Detection{State: module.Ready}}
-	b := &modtest.Fake{IDStr: "b", Det: module.Detection{State: module.Absent}}
-	m := tui.New(entries(a, b))
+	a := &modtest.Fake{IDStr: "a", Det: core.Detection{State: core.Ready}}
+	b := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Absent}}
+	a.Stat = core.Status{Summary: "summary-a"}
+	var m tea.Model = tui.New(entries(a, b))
+	m = drain(m, m.Init())
 	v := m.View()
-	if !strings.Contains(v, "Fake a") || strings.Contains(v, "Fake b") || !strings.Contains(v, "section:a") {
+	if !strings.Contains(v, "Fake a") || strings.Contains(v, "Fake b") || !strings.Contains(v, "summary-a") {
 		t.Fatalf("view:\n%s", v)
 	}
 }
 
 func TestTabSwitchesSections(t *testing.T) {
-	a := &modtest.Fake{IDStr: "a", Det: module.Detection{State: module.Ready}}
-	b := &modtest.Fake{IDStr: "b", Det: module.Detection{State: module.Ready}}
+	a := &modtest.Fake{IDStr: "a", Det: core.Detection{State: core.Ready}}
+	b := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Ready}}
+	a.Stat, b.Stat = core.Status{Summary: "summary-a"}, core.Status{Summary: "summary-b"}
 	var m tea.Model = tui.New(entries(a, b))
+	m = drain(m, m.Init())
 	m, _ = m.Update(key("tab"))
-	if !strings.Contains(m.View(), "section:b") {
+	if !strings.Contains(m.View(), "summary-b") {
 		t.Fatalf("view:\n%s", m.View())
 	}
 }
@@ -87,7 +91,7 @@ func TestDemoRendersFixtureData(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("PATH", "")
 	demo := lambe.NewDemo()
-	en := []module.Entry{{Module: demo, Detection: demo.Detect(context.Background())}}
+	en := []core.Entry{{Module: demo, Detection: demo.Detect(context.Background())}}
 	var m tea.Model = tui.New(en)
 	m = drain(m, m.Init())
 	v := m.View()

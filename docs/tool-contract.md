@@ -46,6 +46,7 @@ Decoding is tested against the fixtures vendored in `internal/lambe/testdata/con
 
 ## Clients
 
-GUI clients, such as a later SwiftUI app, use the same contract over CLI and HTTP. No FFI
-layer is needed. Rust-to-Swift bindings (for example uniffi-rs) were considered and not
+GUI clients, such as a later SwiftUI app, are front-ends over the umbrella's core and use the
+same contract over CLI and HTTP (the umbrella's `--json` output is the stable surface for
+non-Go clients). No FFI layer is needed. Rust-to-Swift bindings (for example uniffi-rs) were considered and not
 adopted: the ecosystem is Go, and the contract already crosses languages.

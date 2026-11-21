@@ -1,12 +1,8 @@
-// Package module is the seam every Beads tool plugs into: detection, health checks,
-// a state summary, and a TUI section. The CLI and TUI never name a specific tool.
-package module
+// Package core holds all the real logic: the module seam every Beads tool implements,
+// detection, doctor and status aggregation, and exit-code rules. CLI, TUI and any GUI are thin front-ends over it.
+package core
 
-import (
-	"context"
-
-	tea "github.com/charmbracelet/bubbletea"
-)
+import "context"
 
 // State is whether a tool is usable by the umbrella.
 type State string
@@ -56,6 +52,4 @@ type Module interface {
 	Detect(ctx context.Context) Detection
 	Doctor(ctx context.Context) []Check
 	Status(ctx context.Context) Status
-	// Section is the TUI model shown when the module is selected.
-	Section() tea.Model
 }

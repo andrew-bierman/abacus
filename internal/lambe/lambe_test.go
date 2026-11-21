@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/andrew-bierman/beaddeck/internal/module"
+	"github.com/andrew-bierman/beaddeck/internal/core"
 )
 
 const fixtureDir = "testdata/contract/v1"
@@ -117,13 +117,13 @@ func TestDetectStates(t *testing.T) {
 		name string
 		run  *fakeRunner
 		look func(string) (string, error)
-		want module.State
+		want core.State
 		hint string
 	}{
-		{"ready", &fakeRunner{resp: map[string]result{"version --json": {out: `{"version":"v0.10.0","api_version":1}`}}}, found, module.Ready, ""},
-		{"api v2 is incompatible", &fakeRunner{resp: map[string]result{"version --json": {out: `{"version":"v9","api_version":2}`}}}, found, module.Incompatible, "api_version 2"},
-		{"missing binary is absent", &fakeRunner{}, func(string) (string, error) { return "", os.ErrNotExist }, module.Absent, "not found"},
-		{"garbled output names the command", &fakeRunner{resp: map[string]result{"version --json": {out: "lambe v0.1 plain text"}}}, found, module.Incompatible, "version --json"},
+		{"ready", &fakeRunner{resp: map[string]result{"version --json": {out: `{"version":"v0.10.0","api_version":1}`}}}, found, core.Ready, ""},
+		{"api v2 is incompatible", &fakeRunner{resp: map[string]result{"version --json": {out: `{"version":"v9","api_version":2}`}}}, found, core.Incompatible, "api_version 2"},
+		{"missing binary is absent", &fakeRunner{}, func(string) (string, error) { return "", os.ErrNotExist }, core.Absent, "not found"},
+		{"garbled output names the command", &fakeRunner{resp: map[string]result{"version --json": {out: "lambe v0.1 plain text"}}}, found, core.Incompatible, "version --json"},
 	}
 	for _, c := range cases {
 		m := New(Options{Runner: c.run, LookPath: c.look})
@@ -143,7 +143,7 @@ func TestDoctorMapsChecksAndFailExit(t *testing.T) {
 	m := newModule(f, Options{ConfigPath: "/tmp/l.yml"})
 	m.Detect(context.Background())
 	got := m.Doctor(context.Background())
-	if len(got) != 4 || got[0].Status != module.StatusFail || got[0].Fix != "run lambe init" || got[3].Status != module.StatusWarn {
+	if len(got) != 4 || got[0].Status != core.StatusFail || got[0].Fix != "run lambe init" || got[3].Status != core.StatusWarn {
 		t.Fatalf("doctor mapping wrong: %+v", got)
 	}
 }
@@ -156,7 +156,7 @@ func TestDoctorUnreadableReportFails(t *testing.T) {
 	m := newModule(f, Options{})
 	m.Detect(context.Background())
 	got := m.Doctor(context.Background())
-	if len(got) != 1 || got[0].Status != module.StatusFail {
+	if len(got) != 1 || got[0].Status != core.StatusFail {
 		t.Fatalf("got %+v", got)
 	}
 }

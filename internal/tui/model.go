@@ -2,16 +2,18 @@
 package tui
 
 import (
+	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/andrew-bierman/beaddeck/internal/brand"
-	"github.com/andrew-bierman/beaddeck/internal/module"
+	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/beaddeck/internal/lambe"
 )
 
-// Model hosts one section per ready module.
+// Model hosts one section per ready core.
 type Model struct {
 	names    []string
 	sections []tea.Model
@@ -20,17 +22,34 @@ type Model struct {
 }
 
 // New builds the shell from detection entries; only ready modules get a section.
-func New(entries []module.Entry) *Model {
+func New(entries []core.Entry) *Model { return NewWithHandoff(entries, execHandoff) }
+
+// NewWithHandoff injects how a command is handed the terminal (default: run it in place).
+func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd) *Model {
 	m := &Model{}
-	for _, e := range module.ReadyOnly(entries) {
+	for _, e := range core.ReadyOnly(entries) {
 		m.names = append(m.names, e.Module.Name())
-		m.sections = append(m.sections, e.Module.Section())
+		m.sections = append(m.sections, sectionFor(e.Module, handoff))
 	}
 	return m
 }
 
+// sectionFor picks the dedicated section for a known module, else the generic status view.
+func sectionFor(mod core.Module, handoff func([]string) tea.Cmd) tea.Model {
+	if lm, ok := mod.(*lambe.Module); ok {
+		return newLambeSection(lm, handoff)
+	}
+	return &genericSection{m: mod}
+}
+
+// execHandoff runs argv with the terminal, returning to the TUI when it exits. It is only
+// reached from an explicit keypress in a section.
+func execHandoff(argv []string) tea.Cmd {
+	return tea.ExecProcess(exec.Command(argv[0], argv[1:]...), func(error) tea.Msg { return nil })
+}
+
 // Run starts the program on the alternate screen.
-func Run(entries []module.Entry) error {
+func Run(entries []core.Entry) error {
 	_, err := tea.NewProgram(New(entries), tea.WithAltScreen()).Run()
 	return err
 }

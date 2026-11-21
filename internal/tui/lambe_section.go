@@ -1,4 +1,4 @@
-package lambe
+package tui
 
 import (
 	"context"
@@ -8,57 +8,60 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/andrew-bierman/beaddeck/internal/lambe"
 )
 
 const pollEvery = 5 * time.Second
 
-type viewMsg struct {
-	view   View
+type lambeViewMsg struct {
+	view   lambe.View
 	reason string
 }
-type tickMsg struct{}
+type lambeTickMsg struct{}
 
-// section is the Lambe TUI model: runs, queue and attention, read-only.
-type section struct {
-	m      *Module
-	view   View
-	reason string
-	loaded bool
-	cursor int
-	notice string
-	width  int
+// lambeSection renders Lambe's runs, queue and attention, read-only. All data and the
+// Rex command come from the lambe core module; this file only draws and routes keys.
+type lambeSection struct {
+	m       *lambe.Module
+	handoff func(argv []string) tea.Cmd
+	view    lambe.View
+	reason  string
+	loaded  bool
+	cursor  int
+	notice  string
+	width   int
 }
 
-// Section returns the TUI model for this module.
-func (m *Module) Section() tea.Model { return &section{m: m} }
+func newLambeSection(m *lambe.Module, handoff func([]string) tea.Cmd) *lambeSection {
+	return &lambeSection{m: m, handoff: handoff}
+}
 
-func (s *section) fetch() tea.Cmd {
+func (s *lambeSection) fetch() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		defer cancel()
-		v, reason := s.m.read(ctx)
-		return viewMsg{view: v, reason: reason}
+		v, reason := s.m.Read(ctx)
+		return lambeViewMsg{view: v, reason: reason}
 	}
 }
 
-func tick() tea.Cmd { return tea.Tick(pollEvery, func(time.Time) tea.Msg { return tickMsg{} }) }
-
-func (s *section) Init() tea.Cmd {
-	if s.m.o.Demo {
+func (s *lambeSection) Init() tea.Cmd {
+	if s.m.IsDemo() {
 		return s.fetch()
 	}
-	return tea.Batch(s.fetch(), tick())
+	return tea.Batch(s.fetch(), tea.Tick(pollEvery, func(time.Time) tea.Msg { return lambeTickMsg{} }))
 }
 
-func (s *section) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case viewMsg:
+	case lambeViewMsg:
 		s.view, s.reason, s.loaded = msg.view, msg.reason, true
 		if n := len(s.view.Snapshot.Runs); s.cursor >= n {
 			s.cursor = max(0, n-1)
 		}
-	case tickMsg:
-		return s, tea.Batch(s.fetch(), tick())
+	case lambeTickMsg:
+		return s, tea.Batch(s.fetch(), tea.Tick(pollEvery, func(time.Time) tea.Msg { return lambeTickMsg{} }))
 	case tea.WindowSizeMsg:
 		s.width = msg.Width
 	case tea.KeyMsg:
@@ -78,20 +81,20 @@ func (s *section) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.notice = "no machine recorded for this run"
 				return s, nil
 			}
-			return s, s.m.o.RexHandoff(machine)
+			return s, s.handoff(s.m.RexArgv(machine))
 		}
 	}
 	return s, nil
 }
 
-func (s *section) clip(line string) string {
+func (s *lambeSection) clip(line string) string {
 	if s.width > 0 && len([]rune(line)) > s.width {
 		return string([]rune(line)[:max(0, s.width-1)]) + "…"
 	}
 	return line
 }
 
-func (s *section) View() string {
+func (s *lambeSection) View() string {
 	bold := lipgloss.NewStyle().Bold(true)
 	var b strings.Builder
 	w := func(line string) { b.WriteString(s.clip(line) + "\n") }
@@ -107,7 +110,7 @@ func (s *section) View() string {
 			if i == s.cursor {
 				mark = "> "
 			}
-			w(mark + runLine(r))
+			w(mark + r.Line())
 		}
 		w(bold.Render("Queue"))
 		for _, q := range s.view.Queue.Rows {

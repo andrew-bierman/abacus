@@ -6,22 +6,22 @@ import (
 
 	"github.com/andrew-bierman/beaddeck/internal/cli"
 	"github.com/andrew-bierman/beaddeck/internal/lambe"
-	"github.com/andrew-bierman/beaddeck/internal/module"
+	"github.com/andrew-bierman/beaddeck/internal/core"
 	"github.com/andrew-bierman/beaddeck/internal/tui"
 )
 
 // version is overridden at release time with -ldflags.
 var version = "dev"
 
-func build(o cli.Options) *module.Registry {
+func build(o cli.Options) *core.Registry {
 	if o.Demo {
-		return module.NewRegistry(lambe.NewDemo())
+		return core.NewRegistry(lambe.NewDemo())
 	}
 	cfg := o.LambeConfig
 	if cfg == "" {
 		cfg = os.Getenv("BEADDECK_LAMBE_CONFIG")
 	}
-	return module.NewRegistry(lambe.New(lambe.Options{
+	return core.NewRegistry(lambe.New(lambe.Options{
 		Bin:        os.Getenv("BEADDECK_LAMBE_BIN"),
 		StateDir:   os.Getenv("BEADDECK_LAMBE_STATE_DIR"),
 		ConfigPath: cfg,
