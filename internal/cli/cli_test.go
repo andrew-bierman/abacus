@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -150,5 +151,18 @@ func TestTUICommandRunsShellWithReadyModulesOnly(t *testing.T) {
 		RunTUI: func(en []core.Entry) error { got = en; return nil }})
 	if code != 0 || len(got) != 1 || got[0].Module.ID() != "a" {
 		t.Fatalf("code=%d entries=%v", code, got)
+	}
+}
+
+func TestTUIFailureAndMissingRunnerExitOne(t *testing.T) {
+	build := func(cli.Options) *core.Registry { return core.NewRegistry(ready("a")) }
+	var o, e bytes.Buffer
+	code := cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build,
+		RunTUI: func([]core.Entry) error { return errors.New("no terminal") }})
+	if code != 1 || !strings.Contains(e.String(), "tui: no terminal") {
+		t.Fatalf("runner error: code=%d stderr=%q", code, e.String())
+	}
+	if code := cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build}); code != 1 {
+		t.Fatalf("nil runner: code=%d, want 1", code)
 	}
 }
