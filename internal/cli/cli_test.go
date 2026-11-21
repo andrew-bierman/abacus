@@ -198,3 +198,11 @@ func TestStatusJSONListsBothModulesAndExitsZero(t *testing.T) {
 		t.Fatalf("code=%d out=%s", code, out)
 	}
 }
+
+func TestVersionTextNeverPrintsControlCharactersFromATool(t *testing.T) {
+	hostile := &modtest.Fake{IDStr: "h", Det: core.Detection{State: core.Ready, Version: "1.0\x1b[2J"}}
+	_, out, _ := run(t, []core.Module{hostile}, "version")
+	if strings.ContainsRune(out, 0x1b) {
+		t.Fatalf("escape reached the terminal output: %q", out)
+	}
+}

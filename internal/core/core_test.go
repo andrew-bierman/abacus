@@ -94,3 +94,19 @@ func TestBrokenToolFailsDoctorAndIsListedInEveryReport(t *testing.T) {
 		t.Fatalf("broken must appear in status without a state read: %+v", s)
 	}
 }
+
+func TestRegistryDetectSanitizesToolSuppliedVersionAndDetail(t *testing.T) {
+	hostile := &modtest.Fake{IDStr: "h", Det: core.Detection{State: core.Ready,
+		Version: "1.0\x1b]0;pwned\x07", Detail: "d\x1b[2Jetail"}}
+	e := core.NewRegistry(hostile).Detect(context.Background())[0].Detection
+	for label, s := range map[string]string{"version": e.Version, "detail": e.Detail} {
+		for _, r := range s {
+			if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
+				t.Errorf("%s still contains control rune %U: %q", label, r, s)
+			}
+		}
+	}
+	if e.Version != "1.0]0;pwned" {
+		t.Fatalf("version = %q", e.Version)
+	}
+}

@@ -18,7 +18,10 @@ func NewRegistry(mods ...Module) *Registry { return &Registry{mods: mods} }
 func (r *Registry) Detect(ctx context.Context) []Entry {
 	out := make([]Entry, 0, len(r.mods))
 	for _, m := range r.mods {
-		out = append(out, Entry{Module: m, Detection: m.Detect(ctx)})
+		d := m.Detect(ctx)
+		// Version and Detail come from the tool; no front-end should ever see control characters.
+		d.Version, d.Detail = Sanitize(d.Version), Sanitize(d.Detail)
+		out = append(out, Entry{Module: m, Detection: d})
 	}
 	return out
 }
