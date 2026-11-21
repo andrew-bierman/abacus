@@ -10,8 +10,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/andrew-bierman/beaddeck/internal/brand"
-	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/abacus/internal/brand"
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 // Options are the cross-command flags that shape module construction.

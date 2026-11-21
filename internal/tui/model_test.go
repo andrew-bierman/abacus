@@ -7,10 +7,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/andrew-bierman/beaddeck/internal/core"
-	"github.com/andrew-bierman/beaddeck/internal/core/modtest"
-	"github.com/andrew-bierman/beaddeck/internal/lambe"
-	"github.com/andrew-bierman/beaddeck/internal/tui"
+	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/core/modtest"
+	"github.com/andrew-bierman/abacus/internal/lambe"
+	"github.com/andrew-bierman/abacus/internal/tui"
 )
 
 func key(s string) tea.KeyMsg {

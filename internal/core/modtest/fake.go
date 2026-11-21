@@ -4,7 +4,7 @@ package modtest
 import (
 	"context"
 
-	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 // Fake is a scriptable module that counts Detect calls.

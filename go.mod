@@ -1,4 +1,4 @@
-module github.com/andrew-bierman/beaddeck
+module github.com/andrew-bierman/abacus
 
 go 1.26.0
 

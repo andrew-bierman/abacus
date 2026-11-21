@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/andrew-bierman/beaddeck/internal/cli"
-	"github.com/andrew-bierman/beaddeck/internal/core"
-	"github.com/andrew-bierman/beaddeck/internal/core/modtest"
-	"github.com/andrew-bierman/beaddeck/internal/lambe"
+	"github.com/andrew-bierman/abacus/internal/cli"
+	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/core/modtest"
+	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
 func run(t *testing.T, mods []core.Module, args ...string) (code int, out, errOut string) {

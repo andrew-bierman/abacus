@@ -8,9 +8,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/andrew-bierman/beaddeck/internal/brand"
-	"github.com/andrew-bierman/beaddeck/internal/core"
-	"github.com/andrew-bierman/beaddeck/internal/lambe"
+	"github.com/andrew-bierman/abacus/internal/brand"
+	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
 // Model hosts one section per ready core.

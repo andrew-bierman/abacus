@@ -10,7 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/andrew-bierman/beaddeck/internal/lambe"
+	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
 const (

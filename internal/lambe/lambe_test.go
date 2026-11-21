@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 const fixtureDir = "testdata/contract/v1"

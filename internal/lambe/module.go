@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 // Runner executes a command. A non-zero exit is reported via the exit code, not err.

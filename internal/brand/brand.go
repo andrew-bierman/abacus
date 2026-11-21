@@ -2,4 +2,4 @@
 package brand
 
 // Name is a working name; the final name and brand are still undecided.
-const Name = "beaddeck"
+const Name = "abacus"

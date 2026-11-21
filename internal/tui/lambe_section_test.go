@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/andrew-bierman/beaddeck/internal/lambe"
+	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
 func runeKey(r string) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(r)} }

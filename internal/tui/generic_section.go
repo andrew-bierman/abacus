@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/andrew-bierman/beaddeck/internal/core"
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 type genericMsg struct {

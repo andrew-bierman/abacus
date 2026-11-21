@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/andrew-bierman/beaddeck/internal/core"
-	"github.com/andrew-bierman/beaddeck/internal/core/modtest"
+	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/core/modtest"
 )
 
 func TestRegistryReportsEachStateInOrderAndDetectsOnce(t *testing.T) {

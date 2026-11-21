@@ -1,13 +1,13 @@
-// Command beaddeck (working name) is the umbrella CLI/TUI for the Beads tool family.
+// Command abacus (working name) is the umbrella CLI/TUI for the Beads tool family.
 package main
 
 import (
 	"os"
 
-	"github.com/andrew-bierman/beaddeck/internal/cli"
-	"github.com/andrew-bierman/beaddeck/internal/core"
-	"github.com/andrew-bierman/beaddeck/internal/lambe"
-	"github.com/andrew-bierman/beaddeck/internal/tui"
+	"github.com/andrew-bierman/abacus/internal/cli"
+	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/lambe"
+	"github.com/andrew-bierman/abacus/internal/tui"
 )
 
 // version is overridden at release time with -ldflags.
@@ -19,11 +19,11 @@ func build(o cli.Options) *core.Registry {
 	}
 	cfg := o.LambeConfig
 	if cfg == "" {
-		cfg = os.Getenv("BEADDECK_LAMBE_CONFIG")
+		cfg = os.Getenv("ABACUS_LAMBE_CONFIG")
 	}
 	return core.NewRegistry(lambe.New(lambe.Options{
-		Bin:        os.Getenv("BEADDECK_LAMBE_BIN"),
-		StateDir:   os.Getenv("BEADDECK_LAMBE_STATE_DIR"),
+		Bin:        os.Getenv("ABACUS_LAMBE_BIN"),
+		StateDir:   os.Getenv("ABACUS_LAMBE_STATE_DIR"),
 		ConfigPath: cfg,
 		Selector:   lambe.Selector{ConfigPath: cfg},
 	}))

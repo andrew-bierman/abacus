@@ -34,7 +34,7 @@ A tool is composable when it provides the first five items. The sixth is optiona
 | Detection | `lambe version --json` (`api_version` 1) | absent, incompatible or ready |
 | Health | `lambe doctor -json [-config FILE]` | `doctor` aggregation, exit code |
 | State | `GET /api/v1/state`, `/api/v1/queue` via the descriptor | `status`, TUI section |
-| Selection | `--lambe-config FILE` or `BEADDECK_LAMBE_CONFIG` | `doctor -config`, descriptor `config_path` match |
+| Selection | `--lambe-config FILE` or `ABACUS_LAMBE_CONFIG` | `doctor -config`, descriptor `config_path` match |
 
 Decoding is tested against the fixtures vendored in `internal/lambe/testdata/contract/v1/`.
 
