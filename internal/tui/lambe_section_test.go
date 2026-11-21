@@ -141,9 +141,9 @@ func TestSelectionDistinguishesRunsSharingAnIssueBySession(t *testing.T) {
 		}
 		return lambeViewMsg{view: lambe.View{Snapshot: lambe.Snapshot{Runs: runs}}}
 	}
-	s, _ = s.Update(msg("s1", "s2"))
-	s, _ = s.Update(runeKey("j"))    // select the second attempt, session s2
-	s, _ = s.Update(msg("s2", "s1")) // order flips
+	s, _ = s.Update(msg("s1", "s2", "s3"))
+	s, _ = s.Update(runeKey("j"))          // select the second attempt, session s2
+	s, _ = s.Update(msg("s1", "s2", "s3")) // refresh: an issue-only key would snap back to s1
 	_, _ = s.Update(runeKey("o"))
 	if len(*calls) != 1 || (*calls)[0][2] != "mac-s2" {
 		t.Fatalf("handoff calls = %v, want mac-s2", *calls)
