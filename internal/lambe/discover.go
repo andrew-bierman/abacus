@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 )
 
 var (
@@ -78,5 +79,10 @@ func Discover(o DiscoverOptions) (Descriptor, error) {
 // loopback reports whether addr is host:port with the literal host 127.0.0.1.
 func loopback(addr string) bool {
 	host, port, err := net.SplitHostPort(addr)
-	return err == nil && host == "127.0.0.1" && port != ""
+	if err != nil || host != "127.0.0.1" {
+		return false
+	}
+	// A numeric port keeps userinfo or path tricks (127.0.0.1:80@evil) out of the base URL.
+	n, err := strconv.ParseUint(port, 10, 16)
+	return err == nil && n > 0
 }

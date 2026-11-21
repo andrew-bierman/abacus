@@ -396,3 +396,25 @@ func TestClientHasNoRefreshMethod(t *testing.T) {
 		History(context.Context) (History, error)
 	} = (*Client)(nil)
 }
+
+func TestLoopbackRejectsMalformedPortsBeforeAnyTokenUse(t *testing.T) {
+	bad := []string{"127.0.0.1:80@evil.example", "127.0.0.1:80/x", "127.0.0.1:", "127.0.0.1:0", "127.0.0.1:70000", "127.0.0.1:http"}
+	for _, addr := range bad {
+		if loopback(addr) {
+			t.Errorf("loopback(%q) = true, want false", addr)
+		}
+		d := baseDesc("x", "")
+		d.Addr = addr
+		if _, err := NewClient(d, 0); err == nil {
+			t.Errorf("NewClient accepted %q", addr)
+		}
+		dir := t.TempDir()
+		writeDescriptor(t, dir, "stateapi-x.json", d)
+		if _, err := Discover(discoverOpts(dir, Selector{})); err != ErrNoDaemon {
+			t.Errorf("Discover accepted %q: %v", addr, err)
+		}
+	}
+	if !loopback("127.0.0.1:53412") {
+		t.Error("well-formed loopback address rejected")
+	}
+}
