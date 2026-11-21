@@ -52,3 +52,32 @@ func TestReportsAndExitCodeRules(t *testing.T) {
 		t.Fatalf("status only for ready modules: %+v", s)
 	}
 }
+
+func TestDoctorReportNormalizesUndeclaredStatusToWarn(t *testing.T) {
+	ctx := context.Background()
+	odd := &modtest.Fake{IDStr: "o", Det: core.Detection{State: core.Ready},
+		Checks: []core.Check{{Name: "a", Status: "error"}, {Name: "b", Status: core.StatusOK}, {Name: "c", Status: ""}}}
+	r := core.DoctorReport(ctx, "t", core.NewRegistry(odd).Detect(ctx))
+	got := []core.CheckStatus{r.Modules[0].Checks[0].Status, r.Modules[0].Checks[1].Status, r.Modules[0].Checks[2].Status}
+	want := []core.CheckStatus{core.StatusWarn, core.StatusOK, core.StatusWarn}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("check %d status = %q, want %q", i, got[i], want[i])
+		}
+	}
+	if r.ExitCode() != core.ExitOK {
+		t.Fatal("a normalized warn must not fail the run")
+	}
+}
+
+func TestEveryReportCarriesSchemaVersion(t *testing.T) {
+	ctx := context.Background()
+	en := core.NewRegistry(&modtest.Fake{IDStr: "a", Det: core.Detection{State: core.Ready}}).Detect(ctx)
+	for name, r := range map[string]core.Report{
+		"version": core.VersionReport("t", en), "doctor": core.DoctorReport(ctx, "t", en), "status": core.StatusReport(ctx, "t", en),
+	} {
+		if r.SchemaVersion != core.SchemaVersion || core.SchemaVersion != 1 {
+			t.Errorf("%s report schema version = %d", name, r.SchemaVersion)
+		}
+	}
+}

@@ -58,8 +58,8 @@ func TestDoctorOKExitsZeroWithJSON(t *testing.T) {
 }
 
 func TestFailExitsOneWarnAndSkipDoNot(t *testing.T) {
-	mods := func(s string) []core.Module { return []core.Module{ready("a", core.Check{Name: "c", Status: s})} }
-	for s, want := range map[string]int{core.StatusFail: 1, core.StatusWarn: 0, core.StatusSkip: 0} {
+	mods := func(s core.CheckStatus) []core.Module { return []core.Module{ready("a", core.Check{Name: "c", Status: s})} }
+	for s, want := range map[core.CheckStatus]int{core.StatusFail: 1, core.StatusWarn: 0, core.StatusSkip: 0} {
 		if code, _, _ := run(t, mods(s), "doctor"); code != want {
 			t.Errorf("%s: exit %d, want %d", s, code, want)
 		}
@@ -164,5 +164,18 @@ func TestTUIFailureAndMissingRunnerExitOne(t *testing.T) {
 	}
 	if code := cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build}); code != 1 {
 		t.Fatalf("nil runner: code=%d, want 1", code)
+	}
+}
+
+func TestJSONOutputCarriesSchemaVersionForNativeClients(t *testing.T) {
+	for _, cmd := range []string{"version", "doctor", "status"} {
+		_, out, _ := run(t, []core.Module{ready("a")}, cmd, "--json")
+		var raw map[string]any
+		if err := json.Unmarshal([]byte(out), &raw); err != nil {
+			t.Fatalf("%s: %v", cmd, err)
+		}
+		if raw["schema_version"] != float64(1) {
+			t.Errorf("%s --json schema_version = %v, want 1", cmd, raw["schema_version"])
+		}
 	}
 }

@@ -11,10 +11,19 @@ type ModuleReport struct {
 	Status    *Status   `json:"status,omitempty"`
 }
 
+// SchemaVersion is the version of the report JSON that native clients decode. Bump it
+// only for a breaking change to Report, ModuleReport, Detection, Check or Status.
+const SchemaVersion = 1
+
 // Report is the typed result every front-end renders.
 type Report struct {
-	Version string         `json:"version"`
-	Modules []ModuleReport `json:"modules"`
+	SchemaVersion int            `json:"schema_version"`
+	Version       string         `json:"version"`
+	Modules       []ModuleReport `json:"modules"`
+}
+
+func newReport(version string) Report {
+	return Report{SchemaVersion: SchemaVersion, Version: version, Modules: []ModuleReport{}}
 }
 
 // Exit codes shared by every front-end.
@@ -54,7 +63,7 @@ func present(entries []Entry) []Entry {
 
 // VersionReport lists every module's detection, absent ones included.
 func VersionReport(version string, entries []Entry) Report {
-	r := Report{Version: version, Modules: []ModuleReport{}}
+	r := newReport(version)
 	for _, e := range entries {
 		r.Modules = append(r.Modules, base(e))
 	}
@@ -63,13 +72,13 @@ func VersionReport(version string, entries []Entry) Report {
 
 // DoctorReport runs health checks on every present module. An incompatible tool is a warn.
 func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
-	r := Report{Version: version, Modules: []ModuleReport{}}
+	r := newReport(version)
 	for _, e := range present(entries) {
 		m := base(e)
 		if e.Detection.State == Incompatible {
 			m.Checks = []Check{{Name: "compatibility", Status: StatusWarn, Detail: e.Detection.Detail}}
 		} else {
-			m.Checks = e.Module.Doctor(ctx)
+			m.Checks = normalized(e.Module.Doctor(ctx))
 		}
 		r.Modules = append(r.Modules, m)
 	}
@@ -78,7 +87,7 @@ func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 
 // StatusReport reads state from every ready module.
 func StatusReport(ctx context.Context, version string, entries []Entry) Report {
-	r := Report{Version: version, Modules: []ModuleReport{}}
+	r := newReport(version)
 	for _, e := range present(entries) {
 		m := base(e)
 		if e.Detection.State == Ready {
@@ -88,4 +97,12 @@ func StatusReport(ctx context.Context, version string, entries []Entry) Report {
 		r.Modules = append(r.Modules, m)
 	}
 	return r
+}
+
+// normalized guards every module's checks with the declared status set.
+func normalized(checks []Check) []Check {
+	for i := range checks {
+		checks[i].Status = checks[i].Status.Normalize()
+	}
+	return checks
 }
