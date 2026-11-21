@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -383,18 +384,22 @@ func TestClientTimeoutFailsFastAndWrongTokenErrorHasNoToken(t *testing.T) {
 	d.Addr, d.BearerToken = strings.TrimPrefix(srv.URL, "http://"), "wrong"
 	c, _ = NewClient(d, time.Second)
 	_, err = c.Snapshot(context.Background())
-	if err == nil || strings.Contains(err.Error(), "wrong") && strings.Contains(err.Error(), "Bearer") {
-		t.Fatalf("unexpected: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "401") || !strings.Contains(err.Error(), "unauthorized") {
+		t.Fatalf("want a surfaced 401 unauthorized error, got %v", err)
+	}
+	if strings.Contains(err.Error(), "wrong") {
+		t.Fatalf("token leaked into error: %v", err)
 	}
 }
 
-func TestClientHasNoRefreshMethod(t *testing.T) {
-	// Compile-time guard by construction: the API surface is Snapshot/Queue/History/View only.
-	var _ interface {
-		Snapshot(context.Context) (Snapshot, error)
-		Queue(context.Context) (Queue, error)
-		History(context.Context) (History, error)
-	} = (*Client)(nil)
+func TestClientExposesOnlyReadMethods(t *testing.T) {
+	allowed := map[string]bool{"Snapshot": true, "Queue": true, "History": true, "View": true}
+	typ := reflect.TypeOf(&Client{})
+	for i := 0; i < typ.NumMethod(); i++ {
+		if name := typ.Method(i).Name; !allowed[name] {
+			t.Errorf("Client gained method %s; the state client must stay read-only", name)
+		}
+	}
 }
 
 func TestLoopbackRejectsMalformedPortsBeforeAnyTokenUse(t *testing.T) {
