@@ -38,8 +38,11 @@ type lambeSection struct {
 	err     error
 	loaded  bool
 	cursor  int
-	notice  string
-	width   int
+	// selected is the identity of the chosen run, so a poll refresh that reorders or removes
+	// rows cannot move the selection (and the Rex handoff) onto a different run.
+	selected string
+	notice   string
+	width    int
 }
 
 func newLambeSection(m *lambe.Module, handoff func([]string) tea.Cmd) *lambeSection {
@@ -66,8 +69,10 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case lambeViewMsg:
 		s.view, s.err, s.loaded = msg.view, msg.err, true
-		if n := len(s.view.Snapshot.Runs); s.cursor >= n {
-			s.cursor = max(0, n-1)
+		s.reanchor()
+	case handoffDoneMsg:
+		if msg.err != nil {
+			s.notice = "rex: " + core.Sanitize(msg.err.Error())
 		}
 	case lambeTickMsg:
 		return s, tea.Batch(s.fetch(), tick())
@@ -79,8 +84,10 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "up", "k":
 			s.cursor = max(0, s.cursor-1)
+			s.remember()
 		case "down", "j":
 			s.cursor = min(max(0, len(runs)-1), s.cursor+1)
+			s.remember()
 		case "o":
 			if s.cursor >= len(runs) {
 				return s, nil
@@ -94,6 +101,29 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return s, nil
+}
+
+func runKey(r lambe.Run) string { return r.Issue + "\x00" + r.Session }
+
+// remember records the run under the cursor as the selection.
+func (s *lambeSection) remember() {
+	if runs := s.view.Snapshot.Runs; s.cursor < len(runs) {
+		s.selected = runKey(runs[s.cursor])
+	}
+}
+
+// reanchor puts the cursor back on the selected run after a refresh, falling back to the
+// clamped index when that run is gone.
+func (s *lambeSection) reanchor() {
+	runs := s.view.Snapshot.Runs
+	for i, r := range runs {
+		if s.selected != "" && runKey(r) == s.selected {
+			s.cursor = i
+			return
+		}
+	}
+	s.cursor = min(s.cursor, max(0, len(runs)-1))
+	s.remember()
 }
 
 func (s *lambeSection) clip(line string) string {

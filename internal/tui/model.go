@@ -44,8 +44,11 @@ func sectionFor(mod core.Module, handoff func([]string) tea.Cmd) tea.Model {
 // execHandoff runs argv with the terminal, returning to the TUI when it exits. It is only
 // reached from an explicit keypress in a section.
 func execHandoff(argv []string) tea.Cmd {
-	return tea.ExecProcess(exec.Command(argv[0], argv[1:]...), func(error) tea.Msg { return nil })
+	return tea.ExecProcess(exec.Command(argv[0], argv[1:]...), func(err error) tea.Msg { return handoffDoneMsg{err: err} })
 }
+
+// handoffDoneMsg reports how a terminal handoff ended; a non-nil err is shown to the user.
+type handoffDoneMsg struct{ err error }
 
 // Run starts the program on the alternate screen.
 func Run(entries []core.Entry) error {
