@@ -206,3 +206,15 @@ func TestVersionTextNeverPrintsControlCharactersFromATool(t *testing.T) {
 		t.Fatalf("escape reached the terminal output: %q", out)
 	}
 }
+
+func TestBrokenToolFailsDoctorThroughTheCLI(t *testing.T) {
+	broken := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Broken, Detail: "version exited 2"}}
+	code, out, _ := run(t, []core.Module{broken}, "doctor")
+	if code != 1 || !strings.Contains(out, "installation") || !strings.Contains(out, "version exited 2") {
+		t.Fatalf("code=%d out=%q", code, out)
+	}
+	code, out, _ = run(t, []core.Module{broken}, "status")
+	if code != 0 || !strings.Contains(out, "broken") {
+		t.Fatalf("status must list a broken tool and still exit 0: code=%d out=%q", code, out)
+	}
+}
