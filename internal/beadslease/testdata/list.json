@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "operation": "list",
+  "leases": [
+    {
+      "resource": "resource:cpu-quiet-window",
+      "holder": "glm-andrew-bierman",
+      "state": "held",
+      "status": "in_progress",
+      "expiresAt": "2026-11-21T20:15:00Z",
+      "task": "hub-12"
+    },
+    {
+      "resource": "resource:deploy-slot",
+      "holder": "old-agent",
+      "state": "stale",
+      "status": "in_progress",
+      "task": "hub-9"
+    },
+    {
+      "resource": "resource:bench",
+      "state": "free",
+      "status": "open",
+      "task": "hub-3"
+    }
+  ]
+}

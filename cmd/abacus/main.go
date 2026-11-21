@@ -4,6 +4,7 @@ package main
 import (
 	"os"
 
+	"github.com/andrew-bierman/abacus/internal/beadslease"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/lambe"
@@ -21,12 +22,15 @@ func build(o cli.Options) *core.Registry {
 	if cfg == "" {
 		cfg = os.Getenv("ABACUS_LAMBE_CONFIG")
 	}
-	return core.NewRegistry(lambe.New(lambe.Options{
-		Bin:        os.Getenv("ABACUS_LAMBE_BIN"),
-		StateDir:   os.Getenv("ABACUS_LAMBE_STATE_DIR"),
-		ConfigPath: cfg,
-		Selector:   lambe.Selector{ConfigPath: cfg},
-	}))
+	return core.NewRegistry(
+		lambe.New(lambe.Options{
+			Bin:        os.Getenv("ABACUS_LAMBE_BIN"),
+			StateDir:   os.Getenv("ABACUS_LAMBE_STATE_DIR"),
+			ConfigPath: cfg,
+			Selector:   lambe.Selector{ConfigPath: cfg},
+		}),
+		beadslease.New(beadslease.Options{Bin: os.Getenv("ABACUS_BEADSLEASE_BIN")}),
+	)
 }
 
 func main() {

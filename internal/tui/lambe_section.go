@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
@@ -23,8 +24,8 @@ func tick() tea.Cmd {
 }
 
 type lambeViewMsg struct {
-	view   lambe.View
-	reason string
+	view lambe.View
+	err  error
 }
 type lambeTickMsg struct{}
 
@@ -34,11 +35,14 @@ type lambeSection struct {
 	m       *lambe.Module
 	handoff func(argv []string) tea.Cmd
 	view    lambe.View
-	reason  string
+	err     error
 	loaded  bool
 	cursor  int
-	notice  string
-	width   int
+	// selected is the identity of the chosen run, so a poll refresh that reorders or removes
+	// rows cannot move the selection (and the Rex handoff) onto a different run.
+	selected string
+	notice   string
+	width    int
 }
 
 func newLambeSection(m *lambe.Module, handoff func([]string) tea.Cmd) *lambeSection {
@@ -49,8 +53,8 @@ func (s *lambeSection) fetch() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
-		v, reason := s.m.Read(ctx)
-		return lambeViewMsg{view: v, reason: reason}
+		v, err := s.m.Read(ctx)
+		return lambeViewMsg{view: v, err: err}
 	}
 }
 
@@ -64,9 +68,11 @@ func (s *lambeSection) Init() tea.Cmd {
 func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case lambeViewMsg:
-		s.view, s.reason, s.loaded = msg.view, msg.reason, true
-		if n := len(s.view.Snapshot.Runs); s.cursor >= n {
-			s.cursor = max(0, n-1)
+		s.view, s.err, s.loaded = msg.view, msg.err, true
+		s.reanchor()
+	case handoffDoneMsg:
+		if msg.err != nil {
+			s.notice = "rex: " + core.Sanitize(msg.err.Error())
 		}
 	case lambeTickMsg:
 		return s, tea.Batch(s.fetch(), tick())
@@ -78,8 +84,10 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "up", "k":
 			s.cursor = max(0, s.cursor-1)
+			s.remember()
 		case "down", "j":
 			s.cursor = min(max(0, len(runs)-1), s.cursor+1)
+			s.remember()
 		case "o":
 			if s.cursor >= len(runs) {
 				return s, nil
@@ -93,6 +101,29 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return s, nil
+}
+
+func runKey(r lambe.Run) string { return r.Issue + "\x00" + r.Session }
+
+// remember records the run under the cursor as the selection.
+func (s *lambeSection) remember() {
+	if runs := s.view.Snapshot.Runs; s.cursor < len(runs) {
+		s.selected = runKey(runs[s.cursor])
+	}
+}
+
+// reanchor puts the cursor back on the selected run after a refresh, falling back to the
+// clamped index when that run is gone.
+func (s *lambeSection) reanchor() {
+	runs := s.view.Snapshot.Runs
+	for i, r := range runs {
+		if s.selected != "" && runKey(r) == s.selected {
+			s.cursor = i
+			return
+		}
+	}
+	s.cursor = min(s.cursor, max(0, len(runs)-1))
+	s.remember()
 }
 
 func (s *lambeSection) clip(line string) string {
@@ -109,8 +140,8 @@ func (s *lambeSection) View() string {
 	switch {
 	case !s.loaded:
 		w("loading…")
-	case s.reason != "":
-		w("state unavailable: " + s.reason)
+	case s.err != nil:
+		w("state unavailable: " + core.Sanitize(s.err.Error()))
 	default:
 		w(bold.Render("Runs"))
 		for i, r := range s.view.Snapshot.Runs {

@@ -11,15 +11,30 @@ const (
 	Absent       State = "absent"
 	Incompatible State = "incompatible"
 	Ready        State = "ready"
+	// Broken means the tool was found but cannot run; doctor reports it as a failure.
+	Broken State = "broken"
 )
 
-// Check statuses mirror Lambe's doctor: only Fail changes the exit code.
+// CheckStatus is a doctor result status. Only StatusFail changes the exit code.
+type CheckStatus string
+
+// The four declared statuses, mirroring Lambe's doctor.
 const (
-	StatusOK   = "ok"
-	StatusWarn = "warn"
-	StatusFail = "fail"
-	StatusSkip = "skip"
+	StatusOK   CheckStatus = "ok"
+	StatusWarn CheckStatus = "warn"
+	StatusFail CheckStatus = "fail"
+	StatusSkip CheckStatus = "skip"
 )
+
+// Normalize maps any undeclared status (from a foreign tool) to StatusWarn, so no
+// front-end or native client ever sees a value outside the four declared ones.
+func (s CheckStatus) Normalize() CheckStatus {
+	switch s {
+	case StatusOK, StatusWarn, StatusFail, StatusSkip:
+		return s
+	}
+	return StatusWarn
+}
 
 // Detection is the outcome of probing for a tool.
 type Detection struct {
@@ -31,10 +46,10 @@ type Detection struct {
 
 // Check is one doctor result.
 type Check struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Detail string `json:"detail"`
-	Fix    string `json:"fix,omitempty"`
+	Name   string      `json:"name"`
+	Status CheckStatus `json:"status"`
+	Detail string      `json:"detail"`
+	Fix    string      `json:"fix,omitempty"`
 }
 
 // Status is a module's state summary. Unavailable carries the reason a ready tool

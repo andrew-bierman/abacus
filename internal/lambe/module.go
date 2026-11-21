@@ -1,11 +1,10 @@
-// Package lambe is the umbrella's first core. It composes Lambe only through
+// Package lambe is the umbrella's first module. It composes Lambe only through
 // `lambe version --json`, `lambe doctor -json` and the read-only state API.
 package lambe
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,31 +14,12 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// Runner executes a command. A non-zero exit is reported via the exit code, not err.
-type Runner interface {
-	Run(ctx context.Context, name string, args ...string) (out []byte, exit int, err error)
-}
-
-type execRunner struct{}
-
-func (execRunner) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
-	out, err := exec.CommandContext(ctx, name, args...).Output()
-	var ee *exec.ExitError
-	if errors.As(err, &ee) {
-		return out, ee.ExitCode(), nil
-	}
-	if err != nil {
-		return nil, -1, err
-	}
-	return out, 0, nil
-}
-
-// Options configure the core. Every field has a production default, and every process
+// Options configure the module. Every field has a production default, and every process
 // boundary is injectable so tests never reach a real Lambe, daemon, Rex or terminal.
 type Options struct {
 	Bin        string // explicit lambe binary; empty means look it up on PATH
 	LookPath   func(string) (string, error)
-	Runner     Runner
+	Runner     core.Runner
 	StateDir   string // empty means Lambe's documented default
 	Selector   Selector
 	ConfigPath string // passed to `lambe doctor -config`
@@ -70,7 +50,7 @@ func New(o Options) *Module {
 		o.LookPath = exec.LookPath
 	}
 	if o.Runner == nil {
-		o.Runner = execRunner{}
+		o.Runner = core.ExecRunner{}
 	}
 	if o.StateDir == "" {
 		o.StateDir = DefaultStateDir()
@@ -97,10 +77,15 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 			return core.Detection{State: core.Absent, Detail: "lambe not found on PATH"}
 		}
 		bin = p
+	} else if _, err := os.Stat(bin); err != nil {
+		return core.Detection{State: core.Absent, Detail: "lambe not found at " + bin}
 	}
 	out, exit, err := m.o.Runner.Run(ctx, bin, "version", "--json")
-	if err != nil || exit != 0 {
-		return core.Detection{State: core.Absent, Detail: "lambe version --json could not run"}
+	if err != nil {
+		return core.Detection{State: core.Broken, Detail: "lambe version --json could not run: " + core.Sanitize(err.Error())}
+	}
+	if exit != 0 {
+		return core.Detection{State: core.Broken, Detail: fmt.Sprintf("lambe version --json exited %d", exit)}
 	}
 	var v versionInfo
 	if json.Unmarshal(out, &v) != nil || v.Version == "" {
@@ -123,49 +108,55 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 		args = append(args, "-config", m.o.ConfigPath)
 	}
 	// Lambe exits 1 when a check fails but still prints the report; both are normal here.
-	out, _, err := m.o.Runner.Run(ctx, m.bin, args...)
+	out, exit, err := m.o.Runner.Run(ctx, m.bin, args...)
 	var raw []core.Check
 	if err != nil || json.Unmarshal(out, &raw) != nil {
 		return []core.Check{{Name: "lambe doctor", Status: core.StatusFail, Detail: "lambe doctor -json produced no readable report"}}
 	}
+	failed := false
 	for i := range raw {
-		switch raw[i].Status {
-		case core.StatusOK, core.StatusWarn, core.StatusFail, core.StatusSkip:
-		default:
-			raw[i].Status = core.StatusWarn
-		}
+		raw[i].Name, raw[i].Detail, raw[i].Fix = core.Sanitize(raw[i].Name), core.Sanitize(raw[i].Detail), core.Sanitize(raw[i].Fix)
+		raw[i].Status = raw[i].Status.Normalize()
+		failed = failed || raw[i].Status == core.StatusFail
+	}
+	// Backstop: a non-zero exit with no failing check must not read as healthy.
+	if exit != 0 && !failed {
+		raw = append(raw, core.Check{Name: "lambe doctor", Status: core.StatusFail, Detail: fmt.Sprintf("exited %d without reporting a failed check", exit)})
 	}
 	return raw
 }
 
-// Read fetches the live view, or returns the reason it is unavailable.
-func (m *Module) Read(ctx context.Context) (View, string) {
+// Read fetches the live view. A failure is an error: ErrNoDaemon and ErrAmbiguous are
+// sentinels callers can match with errors.Is. Decoded text is sanitized.
+func (m *Module) Read(ctx context.Context) (View, error) {
 	if m.o.Demo {
 		v, err := demoView()
 		if err != nil {
-			return View{}, "demo fixtures unreadable"
+			return View{}, fmt.Errorf("demo fixtures unreadable: %w", err)
 		}
-		return v, ""
+		sanitizeView(&v)
+		return v, nil
 	}
 	d, err := Discover(DiscoverOptions{StateDir: m.o.StateDir, Selector: m.o.Selector, Identity: m.o.Identity, PidAlive: m.o.PidAlive})
 	if err != nil {
-		return View{}, err.Error()
+		return View{}, err
 	}
 	c, err := NewClient(d, m.o.Timeout)
 	if err != nil {
-		return View{}, err.Error()
+		return View{}, err
 	}
 	v, err := c.View(ctx)
 	if err != nil {
-		return View{}, err.Error()
+		return View{}, err
 	}
-	return v, ""
+	sanitizeView(&v)
+	return v, nil
 }
 
 func (m *Module) Status(ctx context.Context) core.Status {
-	v, reason := m.Read(ctx)
-	if reason != "" {
-		return core.Status{Unavailable: reason}
+	v, err := m.Read(ctx)
+	if err != nil {
+		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
 	st := core.Status{Summary: fmt.Sprintf("%d runs, %d queued, %d need attention",
 		len(v.Snapshot.Runs), len(v.Queue.Rows), len(v.Snapshot.NeedsHuman))}

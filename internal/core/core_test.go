@@ -52,3 +52,61 @@ func TestReportsAndExitCodeRules(t *testing.T) {
 		t.Fatalf("status only for ready modules: %+v", s)
 	}
 }
+
+func TestDoctorReportNormalizesUndeclaredStatusToWarn(t *testing.T) {
+	ctx := context.Background()
+	odd := &modtest.Fake{IDStr: "o", Det: core.Detection{State: core.Ready},
+		Checks: []core.Check{{Name: "a", Status: "error"}, {Name: "b", Status: core.StatusOK}, {Name: "c", Status: ""}}}
+	r := core.DoctorReport(ctx, "t", core.NewRegistry(odd).Detect(ctx))
+	got := []core.CheckStatus{r.Modules[0].Checks[0].Status, r.Modules[0].Checks[1].Status, r.Modules[0].Checks[2].Status}
+	want := []core.CheckStatus{core.StatusWarn, core.StatusOK, core.StatusWarn}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("check %d status = %q, want %q", i, got[i], want[i])
+		}
+	}
+	if r.ExitCode() != core.ExitOK {
+		t.Fatal("a normalized warn must not fail the run")
+	}
+}
+
+func TestEveryReportCarriesSchemaVersion(t *testing.T) {
+	ctx := context.Background()
+	en := core.NewRegistry(&modtest.Fake{IDStr: "a", Det: core.Detection{State: core.Ready}}).Detect(ctx)
+	for name, r := range map[string]core.Report{
+		"version": core.VersionReport("t", en), "doctor": core.DoctorReport(ctx, "t", en), "status": core.StatusReport(ctx, "t", en),
+	} {
+		if r.SchemaVersion != core.SchemaVersion || core.SchemaVersion != 1 {
+			t.Errorf("%s report schema version = %d", name, r.SchemaVersion)
+		}
+	}
+}
+
+func TestBrokenToolFailsDoctorAndIsListedInEveryReport(t *testing.T) {
+	ctx := context.Background()
+	broken := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Broken, Detail: "version could not run (exit 2)"}}
+	en := core.NewRegistry(broken).Detect(ctx)
+	d := core.DoctorReport(ctx, "t", en)
+	if d.ExitCode() != core.ExitFail || len(d.Modules) != 1 || d.Modules[0].Checks[0].Status != core.StatusFail {
+		t.Fatalf("broken must fail doctor: %+v", d)
+	}
+	if s := core.StatusReport(ctx, "t", en); len(s.Modules) != 1 || s.Modules[0].Status != nil {
+		t.Fatalf("broken must appear in status without a state read: %+v", s)
+	}
+}
+
+func TestRegistryDetectSanitizesToolSuppliedVersionAndDetail(t *testing.T) {
+	hostile := &modtest.Fake{IDStr: "h", Det: core.Detection{State: core.Ready,
+		Version: "1.0\x1b]0;pwned\x07", Detail: "d\x1b[2Jetail"}}
+	e := core.NewRegistry(hostile).Detect(context.Background())[0].Detection
+	for label, s := range map[string]string{"version": e.Version, "detail": e.Detail} {
+		for _, r := range s {
+			if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
+				t.Errorf("%s still contains control rune %U: %q", label, r, s)
+			}
+		}
+	}
+	if e.Version != "1.0]0;pwned" {
+		t.Fatalf("version = %q", e.Version)
+	}
+}
