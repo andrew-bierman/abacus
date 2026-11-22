@@ -41,7 +41,8 @@ Detection has four states, and one exit-code rule covers all of them:
 A tool whose own `doctor` exits non-zero without reporting a `fail` check also yields a failing
 check, so a red tool never reads green. Check statuses are a typed set (`ok`, `warn`, `fail`,
 `skip`); anything else a tool emits is shown as `warn`. A ready tool whose state cannot be read
-is shown with an `unavailable` reason and does not change the exit code. Every tool subprocess
+is shown with an `unavailable` reason and does not change the exit code (a labelled degraded
+read, below, is not unavailable). Every tool subprocess
 has a 10s deadline.
 
 All text that originates outside abacus (tracker titles, daemon messages, tool output) has
@@ -57,27 +58,48 @@ check it and treat a higher number as a breaking change.
 | Detection | `lambe version --json` (`api_version` 1) | absent, incompatible or ready |
 | Health | `lambe doctor -json [-config FILE]` | `doctor` aggregation, exit code |
 | State | `GET /api/v1/state`, `/api/v1/queue` via the descriptor | `status`, TUI section |
+| State dir | `lambe state-dir -json` | where descriptors live when `ABACUS_LAMBE_STATE_DIR` is unset; the answer is cached, and the documented default is the fallback if the command is unavailable or fails |
+| Degraded state | `lambe status -json [-config FILE]` | only when no live daemon is found: a tracker-only subset, labelled `tracker subset` |
 | Selection | `--lambe-config FILE` or `ABACUS_LAMBE_CONFIG` | `doctor -config`, descriptor `config_path` match |
+
+The module can run only these argvs (`version --json`, `state-dir -json`, `doctor -json` and
+`status -json`, the last two with an optional `-config FILE`); anything else is refused before
+it reaches a process.
+
+### Tracker subset (degraded read)
+
+With the state API off or no daemon running (`ErrNoDaemon`), `status` runs `lambe status -json`
+and shows what the tracker alone knows, labelled `tracker subset` (a `source` field in
+`status --json`, a `source:` line in text, and a labelled Runs header in the TUI). It is never
+presented as a live daemon: runs are the tracker's in-progress claims (no phase, no event
+times), there is no queue, no gate rejections and no daemon identity, and the `daemon` block
+(pid 0) is never used for process checks. Several live daemons (`ErrAmbiguous`) are never
+degraded, and a failed or unreadable tracker read leaves the plain `state unavailable` reason.
+The process-identity and loopback guards for the live API are unchanged.
 
 Decoding is tested against the fixtures vendored in `internal/lambe/testdata/contract/v1/`.
 
-## Known gaps in the reference (filed upstream)
+## Known gaps in the reference
 
-- `lambe status` has no `--json` form: andrew-bierman/lambe#51.
-- No command prints the resolved state dir or descriptor location, so clients re-derive the
-  default and cannot see an override: andrew-bierman/lambe#52.
+None open. `lambe status -json` (andrew-bierman/lambe#51) and `lambe state-dir`
+(andrew-bierman/lambe#52) shipped in Lambe PR #57 and are used as described above.
 
 ## Second reference: beads-lease (read-only, partial)
 
-beads-lease (leases on the Beads hub) meets part of the contract: a `--json list` read with a
-`schemaVersion`, and stable exit codes (0, 1, 2 contention, 64 invalid input, 130 interrupted).
-abacus uses exactly two commands, `version` and `--json list`, behind an allowlist that rejects
-every other argv (no acquire, release, heartbeat, run or sync). Leases show as held, stale or
-free.
+beads-lease (leases on the Beads hub) meets most of the contract: `version --json` with an
+`api_version`, `doctor [--json]`, a `--json list` read with a `schemaVersion`, and stable exit
+codes (0, 1, 2 contention, 64 invalid input, 130 interrupted). abacus runs exactly four argvs
+behind an allowlist that rejects every other one (no acquire, release, heartbeat, run, sync or
+plain `doctor`): `version`, `version --json`, `doctor --json` and `--json list`. Leases show as
+held, stale or free.
 
-- Detection parses the plain `version` line, because there is no `version --json`: the
-  `api_version` stays unknown (andrew-bierman/beads-lease#6).
-- There is no `doctor`, so abacus lists a skipped check (andrew-bierman/beads-lease#7).
+- Detection runs `version --json` and reads `api_version` (1 is supported; any other value is
+  `incompatible`). Missing or unparsable JSON means an older binary: abacus falls back to the
+  plain `version` line, leaves `api_version` unknown and still treats the tool as `ready`.
+- Health is the tool's own `doctor --json` (checks `actor`, `config`, `coord`, `hub`, where
+  `hub` is a read-only `coord list --json`). Unknown statuses show as `warn`, an empty report
+  is a `warn`, and a non-zero exit with no failing check adds a failing check. Older binaries
+  keep a skipped `doctor` check asking for an upgrade.
 - `list` needs the caller's `BEADS_ACTOR` environment variable (the claiming identity); abacus
   never sets it, and shows the tool's message as the unavailable reason when it is missing.
 - Override the binary with `ABACUS_BEADSLEASE_BIN`. The tool reads the coordination hub named

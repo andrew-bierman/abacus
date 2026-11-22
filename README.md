@@ -12,7 +12,7 @@ composed only through their `--json` CLIs and versioned local APIs.
 
 `internal/core` holds all the real logic: the module seam, detection, doctor and status
 aggregation, the typed report JSON (`schema_version`), sanitizing and the exit-code rules.
-`internal/lambe` (CLI plus read-only state API) and `internal/beadslease` (read-only leases) are
+`internal/lambe` (CLI, read-only state API and a labelled tracker-only fallback) and `internal/beadslease` (read-only leases and doctor) are
 core adapters. `internal/cli` and `internal/tui` are thin front-ends that only parse
 input and render core's typed reports; a Linux or Swift GUI would be another front-end over
 the same core or the same `--json` output. A test enforces that core, adapters and the CLI
@@ -43,5 +43,7 @@ Exit codes: 0 healthy, 1 a check failed or a tool is broken, 2 usage error. A to
 installed is reported by `version` and omitted from `doctor` and `status`. Overrides:
 `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`, `ABACUS_BEADSLEASE_BIN`.
 beads-lease reads need your `BEADS_ACTOR` set, as they do for beads-lease itself.
+Without a live Lambe daemon, `status` falls back to a read-only tracker subset, labelled
+`tracker subset`; without `ABACUS_LAMBE_STATE_DIR`, the state dir comes from `lambe state-dir`.
 
 See `docs/tool-contract.md` for what a tool must expose to be composable.
