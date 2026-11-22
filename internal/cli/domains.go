@@ -9,6 +9,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -24,6 +25,9 @@ func jsonOut(w io.Writer, v any) {
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(m)
 }
+
+// cliTimeout bounds a whole command, so a stuck provider cannot hang it.
+const cliTimeout = 30 * time.Second
 
 func head(w io.Writer, h core.Header) {
 	line := h.Title + "  " + strings.ReplaceAll(string(h.State), "-", " ")
@@ -151,8 +155,13 @@ func runDomain(cmd string, rest []string, d Deps) int {
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
 	}
-	ctx := context.Background()
-	dom := core.ReadDomains(ctx, d.Build(o).Detect(ctx))
+	if fs.NArg() > 0 {
+		fmt.Fprintf(d.Err, "%s: unexpected argument %q\n", cmd, fs.Arg(0))
+		return core.ExitUsage
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	defer cancel()
+	dom := core.ReadDomain(ctx, d.Build(o).Detect(ctx), core.DomainID(cmd))
 	var v any
 	switch cmd {
 	case "tasks":
@@ -219,6 +228,14 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
 	}
+	if fs.NArg() > 0 {
+		fmt.Fprintf(d.Err, "tasks %s: unexpected argument %q (quote values that contain spaces)\n", verb, fs.Arg(0))
+		return core.ExitUsage
+	}
+	if asJSON && !yes && !dry {
+		fmt.Fprintf(d.Err, "tasks %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
 	ch.Title, ch.Description, ch.Status, ch.Reason, ch.Type = title, desc, status, reason, typ
 	if prio != "" {
 		n, err := strconv.Atoi(prio)
@@ -228,9 +245,10 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		}
 		ch.Priority = &n
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	defer cancel()
 	entries := d.Build(o).Detect(ctx)
-	w := taskWriter(entries)
+	w := core.ResolveProviders(entries).Writer
 	if w == nil {
 		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnect[core.DomainTasks])
 		return core.ExitFail
@@ -240,20 +258,21 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "tasks %s: %v\n", verb, err)
 		return core.ExitUsage
 	}
-	if !asJSON || dry {
+	if dry && asJSON {
+		jsonOut(d.Out, struct {
+			DryRun bool     `json:"dry_run"`
+			Lines  []string `json:"change"`
+			Argv   []string `json:"argv"`
+		}{true, plan.Lines, plan.Argv})
+		return core.ExitOK
+	}
+	if !asJSON {
 		for _, l := range plan.Lines {
 			fmt.Fprintln(d.Out, l)
 		}
 		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(plan.Argv))
 	}
 	if dry {
-		if asJSON {
-			jsonOut(d.Out, struct {
-				DryRun bool     `json:"dry_run"`
-				Lines  []string `json:"change"`
-				Argv   []string `json:"argv"`
-			}{true, plan.Lines, plan.Argv})
-		}
 		return core.ExitOK
 	}
 	if !yes {
@@ -270,7 +289,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	}
 	res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s failed: %s\n", verb, core.Sanitize(err.Error()))
+		fmt.Fprintf(d.Err, "tasks %s: %s\n", verb, core.DescribeWriteError(err))
 		return core.ExitFail
 	}
 	if asJSON {
@@ -282,16 +301,6 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Out, "done: %s %s\n", res.ID, res.Title)
 	}
 	return core.ExitOK
-}
-
-// taskWriter finds the first ready module that can write tasks.
-func taskWriter(entries []core.Entry) core.TaskWriter {
-	for _, e := range core.ReadyOnly(entries) {
-		if w, ok := e.Module.(core.TaskWriter); ok {
-			return w
-		}
-	}
-	return nil
 }
 
 func confirmed(in io.Reader) bool {

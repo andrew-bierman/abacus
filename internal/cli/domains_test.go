@@ -33,9 +33,18 @@ func (m *taskMod) RunTask(_ context.Context, argv []string) (core.TaskResult, er
 }
 func (m *taskMod) TrackerDir() string { return "" }
 
-type memAudit struct{ n int }
+type memAudit struct {
+	n   int
+	err error
+}
 
-func (a *memAudit) Record(core.AuditEntry) error { a.n++; return nil }
+func (a *memAudit) Record(core.AuditEntry) error {
+	if a.err != nil {
+		return a.err
+	}
+	a.n++
+	return nil
+}
 
 func newTaskMod() *taskMod {
 	return &taskMod{Fake: &modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1"}}}
@@ -43,8 +52,12 @@ func newTaskMod() *taskMod {
 
 func runIn(t *testing.T, stdin string, mods []core.Module, args ...string) (int, string, string, *memAudit) {
 	t.Helper()
+	return runAudit(t, stdin, mods, &memAudit{}, args...)
+}
+
+func runAudit(t *testing.T, stdin string, mods []core.Module, au *memAudit, args ...string) (int, string, string, *memAudit) {
+	t.Helper()
 	var o, e bytes.Buffer
-	au := &memAudit{}
 	code := cli.Run(args, cli.Deps{Out: &o, Err: &e, In: strings.NewReader(stdin), Audit: au, Version: "t",
 		Build: func(cli.Options) *core.Registry { return core.NewRegistry(mods...) }})
 	return code, o.String(), e.String(), au
@@ -122,7 +135,7 @@ func TestWriteWithoutYesAsksAndOnlyYesProceeds(t *testing.T) {
 func TestYesSkipsThePromptAndAudits(t *testing.T) {
 	m := newTaskMod()
 	code, out, _, au := runIn(t, "", []core.Module{m}, "tasks", "close", "t-1", "--reason", "done", "--yes")
-	if code != 0 || len(m.ran) != 1 || au.n != 0 && au.n != 2 || !strings.Contains(out, "t-9") {
+	if code != 0 || len(m.ran) != 1 || au.n != 2 || !strings.Contains(out, "t-9") {
 		t.Fatalf("code=%d ran=%v out=%s", code, m.ran, out)
 	}
 }
@@ -180,5 +193,180 @@ func TestTasksShowsInsightsOrHowToInstall(t *testing.T) {
 	_, out, _, _ = runIn(t, "", []core.Module{newTaskMod()}, "tasks")
 	if !strings.Contains(out, "brew install dicklesworthstone/tap/bv") {
 		t.Errorf("no install hint:\n%s", out)
+	}
+}
+
+// ---- --json contract: one JSON document on stdout, nothing else ----
+
+func oneJSON(t *testing.T, out string) map[string]any {
+	t.Helper()
+	dec := json.NewDecoder(strings.NewReader(out))
+	var v map[string]any
+	if err := dec.Decode(&v); err != nil {
+		t.Fatalf("stdout is not JSON: %v\n%q", err, out)
+	}
+	if dec.More() {
+		t.Fatalf("stdout carries more than one document: %q", out)
+	}
+	if v["schema_version"] != float64(1) {
+		t.Fatalf("no schema_version: %v", v)
+	}
+	return v
+}
+
+func TestJSONDryRunPrintsOnlyTheDocument(t *testing.T) {
+	m := newTaskMod()
+	code, out, _, au := runIn(t, "", []core.Module{m}, "tasks", "create", "--title", "hello", "--dry-run", "--json")
+	v := oneJSON(t, out)
+	if code != 0 || len(m.ran) != 0 || au.n != 0 || v["dry_run"] != true || v["argv"] == nil || v["change"] == nil {
+		t.Fatalf("code=%d v=%v", code, v)
+	}
+}
+
+func TestJSONConfirmedPrintsOnlyTheResult(t *testing.T) {
+	m := newTaskMod()
+	code, out, _, _ := runIn(t, "", []core.Module{m}, "tasks", "close", "t-1", "--yes", "--json")
+	v := oneJSON(t, out)
+	if code != 0 || v["applied"] != true || v["result"] == nil || len(m.ran) != 1 {
+		t.Fatalf("code=%d v=%v", code, v)
+	}
+}
+
+func TestJSONWithoutYesOrDryRunIsAUsageErrorWithEmptyStdout(t *testing.T) {
+	m := newTaskMod()
+	code, out, errOut, _ := runIn(t, "y\n", []core.Module{m}, "tasks", "create", "--title", "hello", "--json")
+	if code != 2 || out != "" || len(m.ran) != 0 || !strings.Contains(errOut, "--yes") {
+		t.Fatalf("code=%d out=%q err=%q ran=%v", code, out, errOut, m.ran)
+	}
+}
+
+func TestJSONFailureLeavesStdoutEmpty(t *testing.T) {
+	m := newTaskMod()
+	m.fail = errors.New("bd: boom")
+	code, out, errOut, _ := runIn(t, "", []core.Module{m}, "tasks", "close", "t-1", "--yes", "--json")
+	if code != 1 || out != "" || !strings.Contains(errOut, "boom") {
+		t.Fatalf("code=%d out=%q err=%q", code, out, errOut)
+	}
+	code, out, _, _ = runIn(t, "", nil, "tasks", "create", "--title", "x", "--yes", "--json")
+	if code != 1 || out != "" {
+		t.Fatalf("not connected under --json: code=%d out=%q", code, out)
+	}
+}
+
+func TestUnknownOutcomeIsNeverReportedAsNotApplied(t *testing.T) {
+	m := newTaskMod()
+	m.fail = core.UnknownOutcome("bd timed out; refresh before retrying")
+	code, out, errOut, au := runIn(t, "", []core.Module{m}, "tasks", "close", "t-1", "--yes")
+	if code != 1 || !strings.Contains(errOut, "result unknown: bd timed out; refresh before retrying") || strings.Contains(errOut+out, "not applied") {
+		t.Fatalf("code=%d out=%q err=%q", code, out, errOut)
+	}
+	if au.n != 2 {
+		t.Fatalf("audit %d", au.n)
+	}
+}
+
+func TestAuditFailureBlocksTheWriteAndExitsOne(t *testing.T) {
+	m := newTaskMod()
+	code, _, errOut, _ := runAudit(t, "", []core.Module{m}, &memAudit{err: errors.New("disk full")}, "tasks", "close", "t-1", "--yes")
+	if code != 1 || len(m.ran) != 0 || !strings.Contains(errOut, "disk full") {
+		t.Fatalf("code=%d ran=%v err=%q", code, m.ran, errOut)
+	}
+}
+
+// ---- stray positionals ----
+
+func TestStrayPositionalsAreUsageErrors(t *testing.T) {
+	for _, args := range [][]string{
+		{"tasks", "create", "--yes", "--title", "Fix", "the", "bug"},
+		{"tasks", "--json", "create"},
+		{"tasks", "extra"},
+		{"tasks", "close", "t-1", "extra", "--yes"},
+		{"leases", "extra"},
+		{"queues", "--json", "extra"},
+		{"board", "x"},
+	} {
+		m := newTaskMod()
+		code, out, _, _ := runIn(t, "", []core.Module{m}, args...)
+		if code != 2 || len(m.ran) != 0 || out != "" && strings.Contains(out, "done") {
+			t.Errorf("%v: code=%d ran=%v", args, code, m.ran)
+		}
+	}
+}
+
+func TestUpdateRejectsABlankTitle(t *testing.T) {
+	m := newTaskMod()
+	code, _, _, _ := runIn(t, "", []core.Module{m}, "tasks", "update", "t-1", "--title", " ", "--yes")
+	if code != 2 || len(m.ran) != 0 {
+		t.Fatalf("code=%d", code)
+	}
+}
+
+// ---- one domain, one provider ----
+
+type countMod struct {
+	*modtest.Fake
+	tasks, leases, queues, board, insights int
+}
+
+func (m *countMod) Tasks(context.Context) (core.TasksReport, error) {
+	m.tasks++
+	return core.TasksReport{Header: core.Header{Source: core.SourceLive}}, nil
+}
+func (m *countMod) Leases(context.Context) (core.LeasesReport, error) {
+	m.leases++
+	return core.LeasesReport{Header: core.Header{Source: core.SourceLive}}, nil
+}
+func (m *countMod) Queues(context.Context) (core.QueuesReport, error) {
+	m.queues++
+	return core.QueuesReport{Header: core.Header{Source: core.SourceLive}}, nil
+}
+func (m *countMod) Board(context.Context) (core.BoardReport, error) {
+	m.board++
+	return core.BoardReport{Header: core.Header{Source: core.SourceLive}}, nil
+}
+func (m *countMod) Insights(context.Context) (core.InsightsReport, error) {
+	m.insights++
+	return core.InsightsReport{Header: core.Header{Source: core.SourceGraph}}, nil
+}
+
+// Status reads every provider the way the real modules do, so a status run that also asks the
+// module for its Status reads twice.
+func (m *countMod) Status(ctx context.Context) core.Status {
+	m.tasks++
+	m.leases++
+	m.queues++
+	m.board++
+	m.insights++
+	return core.Status{Summary: "own"}
+}
+
+func newCount() *countMod {
+	return &countMod{Fake: &modtest.Fake{IDStr: "c", Det: core.Detection{State: core.Ready}}}
+}
+
+func TestSingleDomainCommandsReadOnlyThatProvider(t *testing.T) {
+	want := map[string][5]int{"leases": {0, 1, 0, 0, 0}, "queues": {0, 0, 1, 0, 0}, "tasks": {1, 0, 0, 0, 1}, "board": {0, 0, 0, 1, 1}}
+	for cmd, w := range want {
+		m := newCount()
+		runIn(t, "", []core.Module{m}, cmd)
+		if got := [5]int{m.tasks, m.leases, m.queues, m.board, m.insights}; got != w {
+			t.Errorf("%s read %v, want %v", cmd, got, w)
+		}
+	}
+}
+
+func TestStatusReadsEachProviderOnce(t *testing.T) {
+	m := newCount()
+	_, out, _, _ := runIn(t, "", []core.Module{m}, "status", "--json")
+	if [5]int{m.tasks, m.leases, m.queues, m.board, m.insights} != [5]int{1, 1, 1, 1, 1} {
+		t.Fatalf("status read a provider more than once: %+v", m)
+	}
+	var d struct {
+		Modules []struct {
+			Status *core.Status `json:"status"`
+		} `json:"modules"`
+	}
+	if err := json.Unmarshal([]byte(out), &d); err != nil || d.Modules[0].Status == nil {
+		t.Fatalf("%v %s", err, out)
 	}
 }

@@ -59,7 +59,16 @@ func Run(args []string, d Deps) int {
 	if err := fs.Parse(rest); err != nil {
 		return core.ExitUsage
 	}
+	if fs.NArg() > 0 {
+		fmt.Fprintf(d.Err, "%s: unexpected argument %q\n", cmd, fs.Arg(0))
+		return core.ExitUsage
+	}
 	ctx := context.Background()
+	if cmd != "tui" { // the TUI is interactive and has no overall deadline
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, cliTimeout)
+		defer cancel()
+	}
 	entries := d.Build(o).Detect(ctx)
 	if cmd == "tui" {
 		if d.RunTUI == nil {
@@ -78,9 +87,7 @@ func Run(args []string, d Deps) int {
 	case "doctor":
 		r = core.DoctorReport(ctx, d.Version, entries)
 	case "status":
-		r = core.StatusReport(ctx, d.Version, entries)
-		dom := core.ReadDomains(ctx, entries)
-		r.Domains = &dom
+		r = core.FleetStatusReport(ctx, d.Version, entries)
 	}
 	if *asJSON {
 		enc := json.NewEncoder(d.Out)
