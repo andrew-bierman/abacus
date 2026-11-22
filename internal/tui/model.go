@@ -38,7 +38,7 @@ func sectionFor(mod core.Module, handoff func([]string) tea.Cmd) tea.Model {
 	if lm, ok := mod.(*lambe.Module); ok {
 		return newLambeSection(lm, handoff)
 	}
-	return &genericSection{m: mod}
+	return newGenericSection(mod)
 }
 
 // execHandoff runs argv with the terminal, returning to the TUI when it exits. It is only
