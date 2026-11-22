@@ -46,4 +46,41 @@ beads-lease reads need your `BEADS_ACTOR` set, as they do for beads-lease itself
 Without a live Lambe daemon, `status` falls back to a read-only tracker subset, labelled
 `tracker subset`; without `ABACUS_LAMBE_STATE_DIR`, the state dir comes from `lambe state-dir`.
 
+### TUI
+
+`abacus tui` has one tab per detected tool plus a Doctor tab. Below 100 columns the list fills
+the screen and Enter drills into a run; at 100 and wider the run detail sits beside the list.
+This is the 80-column render with colors off (`NO_COLOR`), from the golden test: Lambe demo
+data plus a fixture beads-lease tab and a fixture broken tool:
+
+```
+abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Runs 3
+▸ T-1     running  gating
+  T-2     deferred  deferred
+  T-3     running  running  (stalled)
+
+Queue 2
+  Q-1  ready  ready task
+  Q-2  (blocked)  blocked task
+
+Needs attention 1
+  T-2  gate_failed  gh:pr rejected: merge conflict
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
+```
+
+| Key | Action |
+| --- | --- |
+| `tab` / `shift+tab`, `left` / `right`, `1`-`9` | switch tab (dimmed tabs are skipped) |
+| `j` / `k`, `up` / `down` | move |
+| `enter` / `esc` | open / close run detail (narrow layout) |
+| `/` | filter runs (`enter` keeps, `esc` clears) |
+| `o` | open the selected run's machine in Rex |
+| `r` | re-run doctor (Doctor tab) |
+| `?` | toggle the full key help |
+| `q`, `ctrl+c` | quit |
+
+Layout, theming and `NO_COLOR` are described in `docs/tui.md`.
+
 See `docs/tool-contract.md` for what a tool must expose to be composable.
