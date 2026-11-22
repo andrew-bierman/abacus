@@ -198,7 +198,7 @@ func TestAllowlistRejectsEveryWriteOrSyncCommand(t *testing.T) {
 	for _, argv := range [][]string{
 		{"acquire", "x"}, {"release", "x"}, {"heartbeat", "x"}, {"run", "x", "--", "true"},
 		{"status"}, {"--json", "status"}, {"sync"}, {"list"}, {},
-		{"doctor"}, {"--json", "doctor"}, {"--json", "version"}, {"doctor", "--json", "--fix"}, {"doctor", "--json", "x"},
+		{"doctor"}, {"acquire"}, {"release"}, {"heartbeat"}, {"run"}, {"--json"}, {"--json", "doctor"}, {"--json", "version"}, {"doctor", "--json", "--fix"}, {"doctor", "--json", "x"},
 		{"version", "--json", "x"}, {"version", "x"}, {"list", "--json"}, {"--json", "list", "x"}, {"completion"},
 	} {
 		if _, _, err := r.Run(context.Background(), "/fake/beads-lease", argv...); err == nil {
