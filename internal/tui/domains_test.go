@@ -182,6 +182,9 @@ func runeOrKey(k string) tea.KeyMsg {
 	if k == "tab" {
 		return tea.KeyMsg{Type: tea.KeyTab}
 	}
+	if k == "esc" {
+		return tea.KeyMsg{Type: tea.KeyEsc}
+	}
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)}
 }
 
@@ -192,7 +195,9 @@ func TestCancelAtConfirmWritesNothing(t *testing.T) {
 		if !strings.Contains(m.View(), "close task ac-12") {
 			t.Fatalf("no confirm screen:\n%s", m.View())
 		}
-		m = press(m, k)
+		var cmd tea.Cmd
+		m, cmd = m.Update(runeOrKey(k))
+		m = run(t, m, cmd) // a returned command must not write either
 		if len(*r.prov.ran) != 0 || r.audit.n != 0 || !strings.Contains(m.View(), "cancelled") {
 			t.Fatalf("%s: ran=%v audit=%d\n%s", k, *r.prov.ran, r.audit.n, m.View())
 		}

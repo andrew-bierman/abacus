@@ -96,9 +96,7 @@ abacus does not rebuild an issue browser, kanban or dependency graph. Those exis
 - The Tasks and Board domains therefore show a compact summary (counts by state, ready, blocked, in progress, recent changes), and the Tasks write path (create, update, close with a confirm step) stays as the scriptable CLI path. b9s is the rich interactive path.
 - The Tasks provider interface is a plain typed read (`Tasks(ctx) (TasksReport, error)`), so a graph-insights provider can later plug into Tasks or Board without core changes.
 
-### Ecosystem providers not integrated (license rider: owner's call)
-
-- beads_viewer (`bv`): its license carries a rider that revokes rights for Anthropic, its affiliates and anyone acting on their behalf, and defines use to include executing and testing.
+- **bv** (beads_viewer, Jeffrey Emanuel, https://github.com/Dicklesworthstone/beads_viewer): graph insights for Tasks and Board (next pick, blockers, critical path, cycles) with Source `graph analysis`. Owner decision (2026-11-21): integrate; the owner takes responsibility for the license question. abacus runs the `bv` binary as a subprocess only and imports, vendors or copies none of its code. Only `--robot-triage`, `--robot-plan`, `--robot-insights` and `--robot-graph`, always with an explicit `--format json` (so `BV_OUTPUT_FORMAT=toon` in the environment cannot change the output), optionally `--label X` and `--recipe X`, matched element by element; bare `bv` (a blocking TUI) is never run. stdout is data only, a non-zero exit marks that section unavailable (the provider degraded). Detection is `LookPath` alone. Verified against real `bv v0.27.0` output on an isolated temp project (see `internal/bv/testdata/README.md`).
 
 ## Write-safety model
 
@@ -137,12 +135,13 @@ internal/cli/                   # tasks|leases|queues|board commands, tasks crea
 - U2. Core domain layer and registry, `domains` in `status --json`, read commands.
 - U3. Domain-first TUI, goldens, docs, README.
 - U4. Tasks write path (core gate, `bd` allowlist, CLI, TUI), mutation checks.
+- U5. bv graph-insights provider (subprocess, allowlist, real-output fixtures).
 
 ## Verification Contract
 
 - `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test ./...` under an isolated `HOME`, `XDG_STATE_HOME` and `XDG_CONFIG_HOME`.
 - Domain-language test: no nav, header or footer text contains `Lambe`, `beads-lease` or `board-beads`.
-- Compiling mutations of the write allowlist and the confirm gate each fail a test.
+- Compiling mutations of the write allowlist, the confirm gate and the bv allowlist each fail a test (15 mutants, all killed).
 - Goldens updated and reviewed; the README sample is the 80-column Tasks or Queues golden.
 
 ## Open Questions

@@ -61,6 +61,9 @@ func TestWriteAllowlistIsPerVerbAndExact(t *testing.T) {
 		{"update", "tt-1", "--json", "--status=closed"}, // closing is close's job
 		{"update", "tt-1", "--json", "--claim"},
 		{"close", "tt-1", "--json", "--force"},
+		{"close", "tt-1", "--json", "--force=true"},
+		{"update", "tt-1", "--json", "--claim=1"},
+		{"update", "tt-1", "--json", "--title=x", "--force=true"},
 		{"close", "tt-1", "tt-2", "--json"}, // one id at a time
 		{"close", "--json"},
 		{"delete", "tt-1", "--json"},
