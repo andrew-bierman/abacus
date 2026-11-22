@@ -4,7 +4,6 @@ package tui
 
 import (
 	"context"
-	"errors"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -119,9 +118,7 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 		}
 	case core.DomainLeases:
 		if p.Leases != nil {
-			g := newGenericSection("leases", func(ctx context.Context) core.Status { return leasesStatus(p.Leases, ctx) })
-			g.title = "Leases"
-			return g
+			return newLeasesSection(func(ctx context.Context) leasesRead { return readLeases(ctx, p.Leases) })
 		}
 	case core.DomainQueues:
 		if lm, ok := p.Queues.(*lambe.Module); ok {
@@ -137,19 +134,6 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 		fv = cfg.fullView
 	}
 	return newNotConnectedSection(h, fv)
-}
-
-// leasesStatus reads the Leases domain and shapes the typed report as rows for the section.
-func leasesStatus(p core.LeaseProvider, ctx context.Context) core.Status {
-	r, err := p.Leases(ctx)
-	var nc *core.NotConnectedError
-	if errors.As(err, &nc) {
-		return core.Status{Unavailable: core.Sanitize(nc.Reason), HowToConnect: core.Sanitize(nc.HowToConnect)}
-	}
-	if err != nil {
-		return core.Status{Unavailable: core.Sanitize(err.Error())}
-	}
-	return r.Status()
 }
 
 // defaultFullView probes for the full-view tool and, only if it answers, hands it the

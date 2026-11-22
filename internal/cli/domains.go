@@ -93,7 +93,7 @@ func renderLeases(w io.Writer, r core.LeasesReport) {
 func renderQueues(w io.Writer, r core.QueuesReport) {
 	head(w, r.Header)
 	for _, x := range r.Runs {
-		s := fmt.Sprintf("    run %s  %s  %s", x.Issue, orQ(x.State), orQ(x.Phase))
+		s := fmt.Sprintf("    run %s  %s  %s", x.Issue, orQ(string(x.State)), orQ(x.Phase))
 		if x.Stalled {
 			s += "  (stalled)"
 		}

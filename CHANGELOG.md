@@ -22,6 +22,13 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- Leases tab renders the typed `LeasesReport` (each lease's own state, tone and detail) instead of
+  re-shaping it into text lines first. Output and JSON are unchanged.
+- Run states are a typed `core.RunState` (pending, running, deferred, settled, failed, canceled; an
+  unknown state from a newer supervisor passes through and is shown quietly). The severity
+  mapping lives once in core instead of a string switch in the TUI. The JSON `state` stays a plain
+  string, so `schema_version` 1 is unchanged. The TUI no longer colors `active`, `error`,
+  `blocked`, `waiting`, `retrying` or `paused`, which the supervisor's state API does not report.
 - **Breaking, JSON:** the Board report (`abacus board --json` and `status --json` `domains.board`)
   no longer has `columns` or `insights`. `columns` was never populated (no Board provider existed)
   and `insights` was a copy of the Tasks insights; neither ever held Board data, so no consumer

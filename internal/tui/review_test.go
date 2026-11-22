@@ -161,24 +161,20 @@ func TestRunProbesTheBackgroundBeforeBubbleTeOwnsTheTerminal(t *testing.T) {
 	}
 }
 
-func TestTypedLeaseRowsDriveBadgesNotTextParsing(t *testing.T) {
-	s := genericFor(fake("g", core.Ready))
+func TestTypedLeasesDriveBadgesNotTextParsing(t *testing.T) {
+	r := leasesReport(
+		core.Lease{Resource: "r:1", State: core.LeaseStale, Holder: "bob"},
+		core.Lease{Resource: "r:2", State: core.LeaseHeld, Holder: "alice", ExpiresAt: "5m"},
+		core.Lease{Resource: "r:3", State: "from-a-newer-provider"})
+	s := leasesWith(&r)
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
-	// Line text deliberately disagrees with the rows: the rows decide.
-	m, _ = m.Update(genericMsg{id: "g", status: core.Status{Summary: "s",
-		Lines: []string{"zzz  free", "yyy  held by x"},
-		Rows: []core.Row{
-			{Resource: "r:1", State: "stale", Tone: core.ToneWarn, Detail: "(last holder bob)"},
-			{Resource: "r:2", State: "held", Tone: core.ToneInfo, Detail: "by alice"}}}})
+	m, _ = m.Update(leasesMsg{read: r})
 	v := m.View()
-	for _, want := range []string{"(stale) r:1 (last holder bob)", "(held) r:2 by alice"} {
+	for _, want := range []string{"(stale) r:1 (last holder bob)", "(held) r:2 by alice (expires 5m)", "(from-a-newer-provider) r:3"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("missing %q:\n%s", want, v)
 		}
-	}
-	if strings.Contains(v, "zzz") {
-		t.Errorf("text lines must not be re-parsed when rows exist:\n%s", v)
 	}
 	th := NewTheme(rendererFor(termenv.TrueColor, true))
 	for tone, kind := range map[core.Tone]Kind{core.ToneOK: KindOK, core.ToneWarn: KindWarn, core.ToneFail: KindFail, core.ToneInfo: KindAccent, core.ToneMuted: KindMuted} {
@@ -293,14 +289,13 @@ func TestNoticeRowFitsTheHeight(t *testing.T) {
 	}
 }
 
-func TestScrollKeysMoveAndClampGenericAndDoctorAtSmallHeight(t *testing.T) {
-	var lines []string
-	var rows []core.Row
+func TestScrollKeysMoveAndClampLeasesAndDoctorAtSmallHeight(t *testing.T) {
+	var ls []core.Lease
 	for i := 0; i < 30; i++ {
-		lines = append(lines, fmt.Sprintf("L%02d  free", i))
-		rows = append(rows, core.Row{Resource: fmt.Sprintf("L%02d", i), State: "free", Tone: core.ToneOK})
+		ls = append(ls, core.Lease{Resource: fmt.Sprintf("L%02d", i), State: core.LeaseFree})
 	}
-	g := genericFor(fake("g", core.Ready))
+	lr := leasesReport(ls...)
+	g := leasesWith(&lr)
 	g.SetTheme(asciiTheme())
 	d := newDoctorSection(nil)
 	d.SetTheme(asciiTheme())
@@ -311,9 +306,9 @@ func TestScrollKeysMoveAndClampGenericAndDoctorAtSmallHeight(t *testing.T) {
 	for name, tc := range map[string]struct {
 		s    tea.Model
 		last string
-	}{"generic": {g, "L29"}, "doctor": {d, "L29"}} {
+	}{"leases": {g, "L29"}, "doctor": {d, "L29"}} {
 		var m tea.Model = tc.s
-		m, _ = m.Update(genericMsg{id: "g", status: core.Status{Summary: "sum", Lines: lines, Rows: rows}})
+		m, _ = m.Update(leasesMsg{read: lr})
 		m, _ = m.Update(doctorMsg{report: core.Report{Modules: []core.ModuleReport{{Name: "mod", Detection: core.Detection{State: core.Ready}, Checks: checks}}}})
 		m = sized(m, 60, 6)
 		first := m.View()
@@ -353,13 +348,17 @@ func TestScrollKeysMoveAndClampGenericAndDoctorAtSmallHeight(t *testing.T) {
 	}
 }
 
-func TestHostileFieldsInGenericAndDoctorSections(t *testing.T) {
+func TestHostileFieldsInLeasesAndDoctorSections(t *testing.T) {
 	bad := "x\x1b[2J\u202etxt\u200b\u200d\ufeff\x07y"
-	g := genericFor(fake("g", core.Ready))
+	hostile := leasesRead{report: core.LeasesReport{Header: core.Header{Source: bad},
+		Leases: []core.Lease{
+			{Resource: bad, State: core.LeaseHeld, Holder: bad, ExpiresAt: bad},
+			{Resource: bad, State: core.LeaseStale, Holder: bad},
+			{Resource: bad, State: core.LeaseState(bad)}}}}
+	g := leasesWith(&hostile)
 	g.SetTheme(asciiTheme())
 	var m tea.Model = g
-	m, _ = m.Update(genericMsg{id: "g", status: core.Status{Summary: bad, Source: bad, Lines: []string{bad},
-		Rows: []core.Row{{Resource: bad, State: bad, Tone: core.ToneInfo, Detail: bad}}}})
+	m, _ = m.Update(leasesMsg{read: hostile})
 	m = sized(m, 40, 20)
 	check := func(name, v string) {
 		for _, r := range v {
@@ -373,9 +372,11 @@ func TestHostileFieldsInGenericAndDoctorSections(t *testing.T) {
 			}
 		}
 	}
-	check("generic", m.View())
-	m, _ = m.Update(genericMsg{id: "g", status: core.Status{Unavailable: bad}})
-	check("generic unavailable", m.View())
+	check("leases", m.View())
+	m, _ = m.Update(leasesMsg{read: leasesRead{unavailable: bad}})
+	check("leases unavailable", m.View())
+	m, _ = m.Update(leasesMsg{read: leasesRead{unavailable: bad, howToConnect: bad}})
+	check("leases not connected", m.View())
 
 	d := newDoctorSection(nil)
 	d.SetTheme(asciiTheme())

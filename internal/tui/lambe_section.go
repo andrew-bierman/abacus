@@ -197,18 +197,8 @@ func (s *lambeSection) reanchor() {
 	}
 }
 
-// stateKind maps a run state to a color role; unknown states stay quiet.
-func stateKind(state string) Kind {
-	switch strings.ToLower(state) {
-	case "running", "active":
-		return KindOK
-	case "failed", "error", "blocked":
-		return KindFail
-	case "waiting", "retrying", "paused", "deferred":
-		return KindWarn
-	}
-	return KindMuted
-}
+// stateKind is the color role of a run state; the severity itself is decided once, in core.
+func stateKind(state string) Kind { return toneKind(core.RunState(strings.ToLower(state)).Tone()) }
 
 func (s *lambeSection) countLabel(label string, n int) string {
 	return s.th.Header.Render(label) + " " + s.th.Text(KindMuted, fmt.Sprint(n))

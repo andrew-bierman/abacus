@@ -333,3 +333,23 @@ func TestAFailedInsightsReadOnARealTrackerIsPlainAndKeepsTheReasonOut(t *testing
 		t.Fatalf("%+v", in)
 	}
 }
+
+func TestRunStateTone(t *testing.T) {
+	for st, want := range map[core.RunState]core.Tone{
+		core.RunRunning: core.ToneOK, core.RunFailed: core.ToneFail, core.RunDeferred: core.ToneWarn,
+		core.RunPending: core.ToneMuted, core.RunSettled: core.ToneMuted, core.RunCanceled: core.ToneMuted,
+		"from-a-newer-supervisor": core.ToneMuted, "": core.ToneMuted,
+	} {
+		if got := st.Tone(); got != want {
+			t.Errorf("%q tone = %q, want %q", st, got, want)
+		}
+	}
+	if !core.RunFailed.Known() || core.RunState("nope").Known() {
+		t.Error("Known is wrong")
+	}
+	// The wire form is unchanged: a plain string, and an unknown state round-trips.
+	b, _ := json.Marshal(core.QueueRun{Issue: "T-1", State: "from-a-newer-supervisor"})
+	if !strings.Contains(string(b), `"state":"from-a-newer-supervisor"`) {
+		t.Errorf("json = %s", b)
+	}
+}

@@ -183,12 +183,49 @@ type LeasesReport struct {
 	Leases []Lease `json:"leases"`
 }
 
+// RunState is a supervised run's lifecycle state. The known values are the names the supervisor
+// reports; a newer supervisor may report one this build has not heard of, which passes through
+// unchanged (JSON stays a plain string) and is shown quietly.
+type RunState string
+
+const (
+	RunPending  RunState = "pending"
+	RunRunning  RunState = "running"
+	RunDeferred RunState = "deferred"
+	RunSettled  RunState = "settled"
+	RunFailed   RunState = "failed"
+	RunCanceled RunState = "canceled"
+)
+
+// Known reports whether the state is one this build recognizes.
+func (s RunState) Known() bool {
+	switch s {
+	case RunPending, RunRunning, RunDeferred, RunSettled, RunFailed, RunCanceled:
+		return true
+	}
+	return false
+}
+
+// Tone is the state's severity for every front-end: running is healthy, deferred is waiting on
+// something, failed needs a look, and the rest (including an unknown state) stays quiet.
+func (s RunState) Tone() Tone {
+	switch s {
+	case RunRunning:
+		return ToneOK
+	case RunFailed:
+		return ToneFail
+	case RunDeferred:
+		return ToneWarn
+	}
+	return ToneMuted
+}
+
 type QueueRun struct {
-	Issue   string `json:"issue"`
-	State   string `json:"state,omitempty"`
-	Phase   string `json:"phase,omitempty"`
-	Machine string `json:"machine,omitempty"`
-	Stalled bool   `json:"stalled,omitempty"`
+	Issue   string   `json:"issue"`
+	State   RunState `json:"state,omitempty"`
+	Phase   string   `json:"phase,omitempty"`
+	Machine string   `json:"machine,omitempty"`
+	Stalled bool     `json:"stalled,omitempty"`
 }
 
 type QueueItem struct {
@@ -422,7 +459,7 @@ func (r QueueRun) Line() string {
 		}
 		return s
 	}
-	s := fmt.Sprintf("%s  %s  %s", r.Issue, orQ(r.State), orQ(r.Phase))
+	s := fmt.Sprintf("%s  %s  %s", r.Issue, orQ(string(r.State)), orQ(r.Phase))
 	if r.Stalled {
 		s += "  (stalled)"
 	}
