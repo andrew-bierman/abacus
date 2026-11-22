@@ -38,3 +38,15 @@ func Sanitize(s string) string {
 	}
 	return b.String()
 }
+
+// SanitizeText is Sanitize for stored message text: line breaks are kept (CRLF and CR become
+// LF) so the data keeps its shape, tabs become spaces, and every other control and invisible
+// rune is dropped. Renderers flatten or wrap per line.
+func SanitizeText(s string) string {
+	s = strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", "\n"), "\r", "\n")
+	lines := strings.Split(s, "\n")
+	for i, l := range lines {
+		lines[i] = Sanitize(l)
+	}
+	return strings.Join(lines, "\n")
+}

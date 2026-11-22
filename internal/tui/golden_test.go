@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -132,6 +133,36 @@ func tasksFake() taskProv {
 	return taskProv{named{f, "bd"}, new([][]string), &fresh, &readErr}
 }
 
+// boardProv is a fixture Board provider: nothing here runs a CLI or touches a board.
+type boardProv struct {
+	named
+	err error
+}
+
+func fixtureBoard() core.BoardReport {
+	return core.BoardReport{Header: core.Header{Source: core.SourceLive},
+		Channels: []core.BoardChannel{{Path: "dev/web", Threads: 3}, {Path: "work", Threads: 3}, {Path: "dev", Threads: 1}, {Path: "ops"}},
+		Threads: []core.BoardThread{
+			{Root: core.BoardMessage{ID: "15", Channel: "dev/web", Author: "ada", At: "2026-11-22T20:12:05Z", Text: "checkout times out for carts over 40 items, started after the 14:02 deploy"}, Replies: 2,
+				Last: &core.BoardMessage{ID: "17", Channel: "dev/web", Author: "ada/claude", At: "2026-11-22T20:14:40Z", Text: "rolled back to d4e5f6; watching the error rate"}},
+			{Root: core.BoardMessage{ID: "2", Channel: "dev", Author: "ada", At: "2026-11-22T19:01:00Z", Text: "deploys are green again"}}},
+		Tasks: []core.BoardTask{
+			{ID: "16", Channel: "work", Text: "fix CVE-123 in acme/web", State: "claimed", Claimant: "codex via ada", Until: "2026-11-22T21:09:29Z"},
+			{ID: "6", Channel: "work", Text: "review the fix", State: "ready"}}}
+}
+
+func (b boardProv) Board(context.Context) (core.BoardReport, error) {
+	if b.err != nil {
+		return core.BoardReport{}, b.err
+	}
+	return fixtureBoard(), nil
+}
+
+func boardFake() boardProv {
+	f := &modtest.Fake{IDStr: "board", Det: core.Detection{State: core.Ready, Version: "0.54.0"}}
+	return boardProv{named: named{f, "Vercel Board"}}
+}
+
 func brokenFake() named {
 	f := &modtest.Fake{IDStr: "ghost", Det: core.Detection{State: core.Broken, Detail: "ghost version --json exited 2"}}
 	return named{f, "ghost"}
@@ -147,8 +178,9 @@ func noFullView(string) tea.Cmd { return nil }
 func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 	t.Helper()
 	demo := lambe.NewDemo()
-	lease, tasks, ghost := leaseFake(), tasksFake(), brokenFake()
+	lease, tasks, ghost, brd := leaseFake(), tasksFake(), brokenFake(), boardFake()
 	en := []core.Entry{
+		{Module: brd, Detection: brd.Det},
 		{Module: demo, Detection: demo.Detect(context.Background())},
 		{Module: lease, Detection: lease.Det},
 		{Module: tasks, Detection: tasks.Det},
@@ -163,6 +195,7 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 		v = view(v)
 	}
 	m, _ = m.Update(lambeViewMsg{view: v})
+	m, _ = m.Update(boardMsg{report: fixtureBoard()})
 	m, _ = m.Update(genericMsg{id: "leases", status: leasesStatus(lease, context.Background())})
 	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
 	m, _ = m.Update(insightsMsg{report: fixtureInsights()})
@@ -194,6 +227,24 @@ func scenarios() []scenario {
 		}},
 		{name: "leases", build: std, keys: []string{"3"}, tab: "Leases"},
 		{name: "board", build: std, tab: "Board"},
+		{name: "board-detail", build: std, keys: []string{"down"}, tab: "Board"},
+		{name: "board-task", build: std, keys: []string{"down", "down"}, tab: "Board"},
+		{name: "board-absent", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+			return New(nil, WithTheme(th), WithFullView(noFullView))
+		}},
+		{name: "board-degraded", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+			b := boardFake()
+			var m tea.Model = New([]core.Entry{{Module: b, Detection: b.Det}}, WithTheme(th), WithAudit(&memAudit{}))
+			m, _ = m.Update(boardMsg{err: errors.New("could not reach the board")})
+			return m
+		}},
+		{name: "board-setup", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+			b := boardFake()
+			b.err = &core.NotConnectedError{Reason: core.BoardNotSetUpReason, HowToConnect: core.BoardNotSetUp}
+			var m tea.Model = New([]core.Entry{{Module: b, Detection: b.Det}}, WithTheme(th), WithAudit(&memAudit{}))
+			m, _ = m.Update(boardMsg{err: b.err})
+			return m
+		}},
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks"},

@@ -291,7 +291,7 @@ func TestFailedWriteIsShownAndNothingIsClaimedDone(t *testing.T) {
 
 // ---- full-view handoff ----
 
-func TestFullViewHandoffOnlyOnOAndOnlyForTasksAndBoard(t *testing.T) {
+func TestFullViewHandoffOnlyOnOAndOnlyForTasks(t *testing.T) {
 	r := newTasksRig(t)
 	if len(*r.full) != 0 {
 		t.Fatal("nothing may launch at startup")
@@ -300,10 +300,10 @@ func TestFullViewHandoffOnlyOnOAndOnlyForTasksAndBoard(t *testing.T) {
 	if len(*r.full) != 1 {
 		t.Fatalf("o on Tasks calls the handoff once, got %v", *r.full)
 	}
-	m = press(m, "1") // Board is not connected but also offers the handoff
+	m = press(m, "1") // Board is not connected here and has no b9s handoff: only Tasks has one
 	_ = press(m, "o")
-	if len(*r.full) != 2 {
-		t.Fatalf("o on Board calls the handoff, got %v", *r.full)
+	if len(*r.full) != 1 {
+		t.Fatalf("o on Board must not call the b9s handoff, got %v", *r.full)
 	}
 	m = press(sized(New(nil, WithTheme(asciiTheme()), WithFullView(func(string) tea.Cmd { t.Fatal("no handoff on Leases"); return nil })), 100, 30), "3")
 	press(m, "o")
@@ -468,7 +468,7 @@ func outsideAllowlist(view string) []string {
 }
 
 func TestDomainBodiesNameNoToolOutsideFixMessages(t *testing.T) {
-	banned := []string{"Lambe", "lambe", "beads-lease", "board-beads", "b9s", "Rex", "bv", "bd"}
+	banned := []string{"Lambe", "lambe", "beads-lease", "board-beads", "b9s", "Rex", "bv", "bd", "Vercel", "vb", "@vercel/", "board CLI", "npm"}
 	build := map[string]func() tea.Model{
 		"data": func() tea.Model { return load(t, asciiTheme(), nil) },
 		"none": func() tea.Model { return New(nil, WithTheme(asciiTheme()), WithFullView(noFullView)) },

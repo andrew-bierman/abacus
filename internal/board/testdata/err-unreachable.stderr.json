@@ -1,0 +1,1 @@
+{"status":"error","reason":"network_error","message":"Couldn't reach the board.","data":{"error":{"code":"unreachable","message":"the board didn't answer: fetch failed","status":502}}}

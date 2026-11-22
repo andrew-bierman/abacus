@@ -6,6 +6,39 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Added
+
+- The Board domain: channels, recent threads and messages (author, time, text) and open tasks
+  with their state and claimant, read from the Vercel Board CLI (`@vercel/board`, `board` or
+  `vb`) as a subprocess behind an argv allowlist and a scrubbed environment. Not found, not set
+  up (no board selected, not signed in) and connected are three distinct states, each with the
+  exact next step. A `vb` that is not Vercel Board is rejected by its own `--help`.
+- `abacus config set board_url URL` and `ABACUS_BOARD_URL` (passed as `--url`), `ABACUS_BOARD_BIN`.
+- `abacus board post CHANNEL TEXT` and `abacus board reply ID TEXT` through the plan, confirm,
+  single-use and audit gate; the message is re-read by id afterwards.
+- Board tab: list with a detail pane, refresh polling only while visible, `o` opens the CLI's
+  local web inspector.
+
+### Changed
+
+- **Breaking, JSON:** the Board report (`abacus board --json` and `status --json` `domains.board`)
+  no longer has `columns` or `insights`. `columns` was never populated (no Board provider existed)
+  and `insights` was a copy of the Tasks insights; neither ever held Board data, so no consumer
+  can have depended on its content, but a consumer that read the keys will not find them. New
+  keys `channels`, `threads`, `tasks` and `truncated` are additive, and `schema_version` stays 1.
+  The Board domain no longer runs graph insights (bv); they stay on Tasks.
+- A board URL (`board_url`, `ABACUS_BOARD_URL`, or the shell's `BOARD_URL`) must be https, or
+  http for a local board (localhost, 127.0.0.0/8, ::1), with no query, fragment or credentials.
+  `BOARD_URL` is validated and passed as `--url`, never inherited by the CLI.
+- The identity probe (`--help`) runs with no tokens; Vercel Board 0.54.0 or newer is required.
+- A Board write whose outcome is unclear (timeout, cancel, network error, unreadable answer) is
+  reported as "result unknown", and its idempotency key is derived from (board, op, destination,
+  text, 10-minute window), so retrying after an unknown outcome posts at most once. The same
+  text to the same place within ten minutes is treated as that retry.
+- The write confirm shows the board (and where the URL came from) and, for a reply, the message
+  it answers; for a post, whether the channel is new. The `[y/N]` prompt goes to stderr.
+- `o` on the Board no longer hands off to b9s (b9s stays on Tasks).
+
 ## [0.2.0] - 2026-11-22
 
 Works out of the box: a self-contained archive and guided first-run setup.

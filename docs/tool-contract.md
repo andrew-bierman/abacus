@@ -110,11 +110,37 @@ held, stale or free.
 - Override the binary with `ABACUS_BEADSLEASE_BIN`. The tool reads the coordination hub named
   in its own config, so run abacus with the environment you would use for beads-lease itself.
 
-## Not yet composable
+## Vercel Board (`board` / `vb`)
 
-- board-beads is an npm library (a Vercel Board backend) with no CLI. Filed
-  andrew-bierman/board-beads#15 for a thin contract CLI, or documenting the Vercel Board `vb`
-  CLI as the surface to compose; Board compatibility is a priority for a later module.
+Verified against `@vercel/board` 0.54.0 (Apache-2.0) with its own `--help`, and its real `--json`
+output (`internal/board/testdata`). Provides the Board domain (read) and Board post/reply (write).
+
+- Identity (run with an environment that has no tokens, no team and no board setting): `board --help` must start with `board X.Y.Z: your Vercel team's message board` and
+  contain `usage: board <command>` and the version must be 0.54.0 or newer; anything else (the unrelated npm package `vb` included) is
+  reported as not Vercel Board and never run again. Lookup: `ABACUS_BOARD_BIN`, else `board`, else `vb`.
+- Read argvs, element by element, optionally followed by `--url URL`: `channels list --json
+  --limit N`, `read CHANNEL --json --limit N`, `read ID --json`, `tasks --json --limit N`
+  (N 1-100). One Board read is at most 1 + 3 + 1 calls. Never `serve`, `tail`, `wait`, `inspect`
+  (except the explicit-keypress handoff), `whoami` or any other write verb.
+- Write argvs: `post CHANNEL --json [--url URL] --idempotency-key abacus-HEX16 -- TEXT` and
+  `reply ID --json [...] -- TEXT`; the text follows `--` so it can never be an option.
+- Failures are one JSON document on stderr: `{status, reason, message, next:[{command,argv,when}]}`.
+  `reason` `missing_scope` is "no board selected" and `login_required` is "not signed in" (both
+  state not-connected with the next step); `network_error`/`timeout` is a failed read (degraded).
+- Truncation: more than 50 channels, threads shown for only the 3 most recently active channels,
+  and a full page of 20 tasks are named in `truncated`; this does not make the domain degraded.
+  A stdout answer over 4 MiB is cut off and the part is reported in `reason`.
+- Unknown outcome (writes): a timeout, cancel, runner error, `network_error`/`timeout` reason,
+  unreadable stdout or an exit with no failure document is "result unknown"; permission_denied,
+  login_required, missing_scope, channel_not_found and validation errors are "not applied".
+  Only `missing_scope` and `network_error` were captured from the real 0.54.0 CLI.
+- Environment passed on (BOARD_URL is never inherited; credentials only reach an https or
+  loopback target): `HOME`, `PATH`, `TMPDIR`, `USER`, `LANG`, `LC_*`, `TERM`, `NO_COLOR`,
+  the XDG dirs, `BOARD_URL`, `BOARD_NAME`, `BOARD_TOKEN`, `VERCEL_AUTH_TOKEN`, `VERCEL_ORG_ID`,
+  `VERCEL_AUTOMATION_BYPASS_SECRET`, proxy variables, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`.
+  Token values are redacted from every printed text.
+
+board-beads is only the beads-backed backend a board can use; it stays a library (board-beads#15).
 
 ## Clients
 

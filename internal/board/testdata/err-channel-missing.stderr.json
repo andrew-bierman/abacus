@@ -1,0 +1,1 @@
+{"status":"error","reason":"channel_not_found","message":"Couldn't find channel nope.","next":[{"command":"vb channels","argv":["vb","channels"],"when":"See its channels"}]}

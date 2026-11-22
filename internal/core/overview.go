@@ -104,7 +104,7 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 	for i := range lines {
 		l := lines[i]
 		o.Domains = append(o.Domains, l)
-		if l.Domain == DomainBoard || l.State == Connected {
+		if l.State == Connected {
 			continue
 		}
 		item := l.Title + ": " + l.Line
@@ -132,9 +132,6 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 	return o
 }
 
-// BoardDoctorLine is the Board's one-liner in Doctor: the one place the upstream detail lives.
-const BoardDoctorLine = "not connected yet: waiting on an upstream board contract (board-beads issue 15); press o on the Board tab to open b9s"
-
 func domainLine(h Header, connected func() string) DomainLine {
 	l := DomainLine{Domain: h.Domain, Title: h.Title, State: h.State}
 	switch h.State {
@@ -143,10 +140,6 @@ func domainLine(h Header, connected func() string) DomainLine {
 	case NeedsSetup:
 		l.Line, l.Guide = h.Setup.CLILine(), h.Setup
 	case NotConnected, Degraded:
-		if h.Domain == DomainBoard {
-			l.Line = BoardDoctorLine // the upstream detail the Board tab itself no longer shows
-			break
-		}
 		// One line: the reason. The tab itself carries how to fix it.
 		l.Line = strings.TrimSpace(h.Reason)
 		if l.Line == "" {

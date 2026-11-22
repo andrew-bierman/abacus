@@ -123,13 +123,34 @@ func orQ(s string) string {
 
 func renderBoard(w io.Writer, r core.BoardReport) {
 	head(w, r.Header)
-	for _, c := range r.Columns {
-		fmt.Fprintf(w, "    %s (%d)\n", c.Name, len(c.Cards))
-		for _, k := range c.Cards {
-			fmt.Fprintf(w, "      %s  %s\n", k.ID, k.Title)
+	if r.Truncated != "" {
+		fmt.Fprintf(w, "  note: %s\n", r.Truncated)
+	}
+	for _, c := range r.Channels {
+		if c.Threads > 0 { // a board that gives no counts shows none, not (0)
+			fmt.Fprintf(w, "    channel %s  (%d threads)\n", c.Path, c.Threads)
+		} else {
+			fmt.Fprintf(w, "    channel %s\n", c.Path)
 		}
 	}
-	renderInsights(w, r.Insights)
+	for _, t := range r.Threads {
+		fmt.Fprintf(w, "    thread #%s  %s  %s  %s  (%d replies)\n", t.Root.ID, t.Root.Channel, t.Root.Author, oneLine(t.Root.Text), t.Replies)
+		if t.Last != nil {
+			fmt.Fprintf(w, "      latest #%s  %s  %s\n", t.Last.ID, t.Last.Author, oneLine(t.Last.Text))
+		}
+	}
+	for _, t := range r.Tasks {
+		s := fmt.Sprintf("    task #%s  %s", t.ID, t.State)
+		if t.Claimant != "" {
+			s += "  held by " + t.Claimant
+		}
+		fmt.Fprintf(w, "%s  %s\n", s, oneLine(t.Text))
+	}
+}
+
+func oneLine(s string) string {
+	l, _, _ := strings.Cut(strings.TrimSpace(s), "\n")
+	return l
 }
 
 func renderDomains(w io.Writer, d core.DomainsReport) {
@@ -143,6 +164,9 @@ func renderDomains(w io.Writer, d core.DomainsReport) {
 func runDomain(cmd string, rest []string, d Deps) int {
 	if cmd == "tasks" && len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
 		return runTaskWrite(rest[0], rest[1:], d)
+	}
+	if cmd == "board" && len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
+		return runBoardWrite(rest[0], rest[1:], d)
 	}
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
@@ -255,27 +279,49 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "tasks %s: %v\n", verb, err)
 		return core.ExitUsage
 	}
-	if dry && asJSON {
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Apply this change? [y/N] ",
+		apply: func(au core.Audit) (any, string, error) {
+			res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
+			return res, fmt.Sprintf("done: %s %s", res.ID, res.Title), err
+		}})
+}
+
+// writeFlow is everything one confirmed write needs; runWrite is the one flow shared by the
+// Tasks and Board writes: print the plan, honor --dry-run, ask (on stderr, so stdout stays the
+// result) unless --yes, audit, apply, print the result.
+type writeFlow struct {
+	label      string
+	lines, ctx []string // the plan, and read-only context for the confirm step
+	argv       []string
+	yes, dry   bool
+	asJSON     bool
+	prompt     string
+	apply      func(au core.Audit) (result any, done string, err error)
+}
+
+func runWrite(d Deps, f writeFlow) int {
+	if f.dry && f.asJSON {
 		jsonOut(d.Out, struct {
-			DryRun bool     `json:"dry_run"`
-			Lines  []string `json:"change"`
-			Argv   []string `json:"argv"`
-		}{true, plan.Lines, plan.Argv})
+			DryRun  bool     `json:"dry_run"`
+			Lines   []string `json:"change"`
+			Context []string `json:"context,omitempty"`
+			Argv    []string `json:"argv"`
+		}{true, f.lines, f.ctx, f.argv})
 		return core.ExitOK
 	}
-	if !asJSON {
-		for _, l := range plan.Lines {
+	if !f.asJSON {
+		for _, l := range append(append([]string{}, f.lines...), f.ctx...) {
 			fmt.Fprintln(d.Out, l)
 		}
-		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(plan.Argv))
+		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(f.argv))
 	}
-	if dry {
+	if f.dry {
 		return core.ExitOK
 	}
-	if !yes {
-		fmt.Fprint(d.Out, "Apply this change? [y/N] ")
+	if !f.yes {
+		fmt.Fprint(d.Err, f.prompt)
 		if !confirmed(d.In) {
-			fmt.Fprintln(d.Out)
+			fmt.Fprintln(d.Err)
 			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
 			return core.ExitFail
 		}
@@ -284,18 +330,18 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if au == nil {
 		au = core.DefaultAudit()
 	}
-	res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
+	res, done, err := f.apply(au)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s: %s\n", verb, core.DescribeWriteError(err))
+		fmt.Fprintf(d.Err, "%s: %s\n", f.label, core.DescribeWriteError(err))
 		return core.ExitFail
 	}
-	if asJSON {
+	if f.asJSON {
 		jsonOut(d.Out, struct {
-			Applied bool            `json:"applied"`
-			Result  core.TaskResult `json:"result"`
+			Applied bool `json:"applied"`
+			Result  any  `json:"result"`
 		}{true, res})
 	} else {
-		fmt.Fprintf(d.Out, "done: %s %s\n", res.ID, res.Title)
+		fmt.Fprintln(d.Out, done)
 	}
 	return core.ExitOK
 }
@@ -310,4 +356,71 @@ func confirmed(in io.Reader) bool {
 		return true
 	}
 	return false
+}
+
+// runBoardWrite handles `board post CHANNEL TEXT` and `board reply ID TEXT`, through the same
+// plan, confirm, single-use and audit gate as the Tasks writes.
+func runBoardWrite(verb string, rest []string, d Deps) int {
+	op := core.BoardOp(verb)
+	if op != core.BoardPost && op != core.BoardReply {
+		fmt.Fprintf(d.Err, "unknown board command %q (post CHANNEL TEXT, reply ID TEXT)\n", verb)
+		return core.ExitUsage
+	}
+	if len(rest) == 0 || strings.HasPrefix(rest[0], "-") {
+		what := "a channel"
+		if op == core.BoardReply {
+			what = "a message id"
+		}
+		fmt.Fprintf(d.Err, "board %s needs %s first\n", verb, what)
+		return core.ExitUsage
+	}
+	target, rest := rest[0], rest[1:]
+	text := ""
+	if len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
+		text, rest = rest[0], rest[1:]
+	}
+	fs := flag.NewFlagSet("board "+verb, flag.ContinueOnError)
+	fs.SetOutput(d.Err)
+	var o Options
+	var yes, dry, asJSON bool
+	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
+	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
+	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	fs.StringVar(&text, "text", text, "the message text (use it when the text starts with -)")
+	if fs.Parse(rest) != nil {
+		return core.ExitUsage
+	}
+	if fs.NArg() > 0 {
+		fmt.Fprintf(d.Err, "board %s: unexpected argument %q (quote the text as one argument)\n", verb, fs.Arg(0))
+		return core.ExitUsage
+	}
+	if asJSON && !yes && !dry {
+		fmt.Fprintf(d.Err, "board %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
+	ch := core.BoardChange{Op: op, Text: text}
+	if op == core.BoardPost {
+		ch.Channel = target
+	} else {
+		ch.ID = target
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	defer cancel()
+	w := core.ResolveProviders(d.Build(o).Detect(ctx)).BoardWriter
+	if w == nil {
+		fmt.Fprintf(d.Err, "board: not connected. %s\n", core.HowToConnect[core.DomainBoard])
+		return core.ExitFail
+	}
+	plan, err := core.PlanBoardChange(w, ch)
+	if err != nil {
+		fmt.Fprintf(d.Err, "board %s: %v\n", verb, err)
+		return core.ExitUsage
+	}
+	dctx, dcancel := context.WithTimeout(ctx, 2*core.DefaultExecTimeout)
+	defer dcancel()
+	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Post this to the board? [y/N] ",
+		apply: func(au core.Audit) (any, string, error) {
+			res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
+			return res, "done: posted #" + res.ID, err
+		}})
 }

@@ -148,3 +148,13 @@ internal/cli/                   # tasks|leases|queues|board commands, tasks crea
 ## Open Questions
 
 - Deferred to the owner: `board-beads#15` (Board contract), `lambe#59` (any Queues mutation route), whether Leases writes should exist for a human at all (beads-lease#9, #10).
+
+## Update 2026-11-22: Board is composed from the Vercel Board CLI (board-beads#15 decided)
+
+Owner decision: abacus composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`);
+board-beads stays a library and nothing new is needed from it. The Board domain is a message board
+for agents (channels, recent threads, tasks with claims), not a kanban. Provider: `internal/board`
+(see `docs/tool-contract.md`). Board writes are post and reply only, through the same plan, confirm,
+single-use and audit gate as Tasks (`core.BoardApplier`); the TUI Board tab is read only and
+composing from it (a form plus confirm screen like Tasks) is the open follow-up. Task claim and
+complete, edit, delete, react and attachments are deliberately not offered.

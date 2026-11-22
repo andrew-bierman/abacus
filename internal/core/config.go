@@ -20,12 +20,13 @@ type Config struct {
 	Actor       string `json:"actor,omitempty"`
 	TrackerDir  string `json:"tracker_dir,omitempty"`
 	LambeConfig string `json:"lambe_config,omitempty"`
+	BoardURL    string `json:"board_url,omitempty"`
 }
 
 var actorRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._@-]{0,63}$`)
 
 // ConfigKeys are the settable keys, in display order.
-var ConfigKeys = []string{"actor", "tracker_dir", "lambe_config"}
+var ConfigKeys = []string{"actor", "tracker_dir", "lambe_config", "board_url"}
 
 // Set validates and sets one key; on error the config is unchanged.
 func (c *Config) Set(key, val string) error {
@@ -52,6 +53,13 @@ func (c *Config) Set(key, val string) error {
 		} else {
 			c.LambeConfig = filepath.Clean(val)
 		}
+	case "board_url":
+		if val != "" {
+			if err := ValidateBoardURL(val); err != nil {
+				return err
+			}
+		}
+		c.BoardURL = val
 	default:
 		return fmt.Errorf("unknown setting %q (known: %s)", key, strings.Join(ConfigKeys, ", "))
 	}
@@ -67,6 +75,8 @@ func (c Config) Get(key string) (string, error) {
 		return c.TrackerDir, nil
 	case "lambe_config":
 		return c.LambeConfig, nil
+	case "board_url":
+		return c.BoardURL, nil
 	}
 	return "", fmt.Errorf("unknown setting %q", key)
 }

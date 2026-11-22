@@ -75,6 +75,26 @@ func TestReadErrorIsDegradedAndSanitized(t *testing.T) {
 	}
 }
 
+type boardErrMod struct {
+	*modtest.Fake
+	err error
+}
+
+func (m boardErrMod) Board(context.Context) (core.BoardReport, error) {
+	return core.BoardReport{}, m.err
+}
+
+func TestBoardReadFailureNeverSaysTheCliIsMissing(t *testing.T) {
+	m := boardErrMod{&modtest.Fake{IDStr: "b"}, errors.New("could not reach the board")}
+	h := core.ReadDomains(context.Background(), []core.Entry{entry(m, core.Ready, "")}).Board.Header
+	if h.State != core.Degraded || strings.Contains(h.HowToConnect, "npm i") || strings.Contains(h.HowToConnect, "not found") || !strings.Contains(h.HowToConnect, "board_url") {
+		t.Fatalf("a failed read of a present CLI is not an install problem: %+v", h)
+	}
+	if abs := core.ReadDomains(context.Background(), nil).Board.Header; !strings.Contains(abs.HowToConnect, "npm i -g @vercel/board") {
+		t.Fatalf("not found still says how to install: %+v", abs)
+	}
+}
+
 func TestDomainJSONShape(t *testing.T) {
 	b, _ := json.Marshal(core.ReadDomains(context.Background(), nil))
 	for _, want := range []string{`"board":`, `"tasks":`, `"leases":`, `"queues":`, `"state":"not-connected"`, `"how_to_connect":`} {
@@ -101,7 +121,7 @@ func (m insMod) Insights(context.Context) (core.InsightsReport, error) { return 
 
 func TestInsightsNotConnectedNamesHowToInstallAndDoesNotHideTheDomain(t *testing.T) {
 	d := core.ReadDomains(context.Background(), nil)
-	for _, in := range []*core.InsightsReport{d.Tasks.Insights, d.Board.Insights} {
+	for _, in := range []*core.InsightsReport{d.Tasks.Insights} {
 		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "brew install") {
 			t.Fatalf("%+v", in)
 		}
@@ -154,7 +174,7 @@ func (m *countMod) Insights(context.Context) (core.InsightsReport, error) {
 func TestReadDomainReadsOnlyThatDomainsProvider(t *testing.T) {
 	cases := map[core.DomainID][5]int{ // tasks, leases, queues, board, insights
 		core.DomainTasks:  {1, 0, 0, 0, 1},
-		core.DomainBoard:  {0, 0, 0, 1, 1},
+		core.DomainBoard:  {0, 0, 0, 1, 0}, // Board is not a graph: bv is not run for it
 		core.DomainLeases: {0, 1, 0, 0, 0},
 		core.DomainQueues: {0, 0, 1, 0, 0},
 	}
