@@ -6,6 +6,25 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Added
+
+- The Board domain: channels, recent threads and messages (author, time, text) and open tasks
+  with their state and claimant, read from the Vercel Board CLI (`@vercel/board`, `board` or
+  `vb`) as a subprocess behind an argv allowlist and a scrubbed environment. Not found, not set
+  up (no board selected, not signed in) and connected are three distinct states, each with the
+  exact next step. A `vb` that is not Vercel Board is rejected by its own `--help`.
+- `abacus config set board_url URL` and `ABACUS_BOARD_URL` (passed as `--url`), `ABACUS_BOARD_BIN`.
+- `abacus board post CHANNEL TEXT` and `abacus board reply ID TEXT` through the plan, confirm,
+  single-use and audit gate; the message is re-read by id afterwards.
+- Board tab: list with a detail pane, refresh polling only while visible, `o` opens the CLI's
+  local web inspector.
+
+### Changed
+
+- `BoardReport` carries `channels`, `threads` and `tasks` instead of the never-filled
+  `columns` (additive within `schema_version` 1); the Board no longer runs graph insights.
+- `o` on the Board no longer hands off to b9s (b9s stays on Tasks).
+
 ## [0.2.0] - 2026-11-22
 
 Works out of the box: a self-contained archive and guided first-run setup.

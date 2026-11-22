@@ -2,8 +2,9 @@
 
 The TUI renders core's typed domain reports and holds no logic of its own. It is the fleet
 cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. abacus deliberately has
-no issue browser, kanban or dependency graph; Tasks and Board show a compact summary and hand off
-to a full view (`o`) for the rich board, tree and graph. Providers (the tools behind each domain)
+no issue browser, kanban or dependency graph; Tasks shows a compact summary and hands off to a
+full view (`o`) for the rich tree and graph. The Board is a message board for agents: channels,
+recent threads and open tasks, with the selected thread or task shown in full below the list. Providers (the tools behind each domain)
 are named only in Doctor and in "how to connect" or error messages, never in navigation.
 
 A domain with no usable provider is still a tab: it says "not connected", why, and how to connect.
@@ -22,11 +23,11 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | --- | --- |
 | `tab`, `right` / `shift+tab`, `left` | next / previous domain |
 | `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
-| `j` `k`, `down` `up` | move the cursor (scroll elsewhere) |
+| `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
-| `o` | Tasks and Board: open the full view in the tracker directory (probes for it first; an error notice with an install hint if it is missing). Queues: hand the selected run's machine to a session |
+| `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice with an install hint if it is missing). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
-| `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again |
+| `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues, narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
 | `/` | Queues: filter runs by issue, state, phase, machine or workflow |
 | `?` | full help overlay; `?` or `esc` closes it |
@@ -112,5 +113,5 @@ Goldens are rendered through a fixed color profile; they have not been inspected
 terminal emulator.
 
 A domain-language test asserts that no header, rule or footer line on any tab, at any width,
-contains a provider name (Lambe, beads-lease, board-beads, b9s, Rex), connected or not. Tasks
+contains a provider name (Lambe, beads-lease, board-beads, b9s, Rex, the Board CLI), connected or not. Tasks
 tests assert the confirm gate: no key path writes before `y`.

@@ -36,7 +36,7 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 
 | Domain | What you see | What you can change today |
 | --- | --- | --- |
-| Board | the board and epic lanes | nothing yet: not connected until a Board contract exists |
+| Board | channels, recent threads and messages, open tasks (a message board for agents, not a kanban) | post a thread or reply from the command line (`abacus board post\|reply`, with a confirm step) |
 | Tasks | counts by state, ready work, recent changes, graph insights (next pick, blockers, critical path, cycles) | create, update, close (with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
@@ -140,11 +140,22 @@ or error messages that help you fix one.
   and a tracker-only fallback exist).
 - **bv**: graph insights for Tasks and Board, run as a subprocess in `--robot-*` JSON mode only.
   Not found? Tasks says so and how to get it.
-- **b9s**: works with b9s for the full board, tree and graph view: press `o` on Tasks or Board to
-  open it in the tracker directory (probes for it first; shows an install hint if it is missing).
-- **Board**: no provider yet: the Board contract is an open decision upstream (board-beads
-  issue 15). The tab only says it is not connected and points to `o` for b9s; the upstream detail
-  lives here and in Doctor.
+- **b9s**: works with b9s for the full tree and graph view: press `o` on Tasks to open it in the
+  tracker directory (probes for it first; shows an install hint if it is missing).
+- **Board**: composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`, same CLI),
+  run as a subprocess only: bounded `channels list`, `read` and `tasks` reads with `--json`,
+  `--limit` and a deadline, behind an argv allowlist and a scrubbed environment (only `HOME`,
+  `PATH`, the XDG dirs, `BOARD_*`, `VERCEL_AUTH_TOKEN`, `VERCEL_ORG_ID`, proxy and CA variables
+  are passed on). It never runs `serve`, `tail` or `wait`. Install it with
+  `npm i -g @vercel/board`, never `npx vb` or `npm i vb`: **`vb` on npm is an unrelated
+  package**, so a binary is trusted only after its own `--help` identifies Vercel Board
+  (`ABACUS_BOARD_BIN` overrides the lookup, which prefers `board` over `vb`). Without a board
+  setting it uses the CLI's own default (a linked Vercel project, `BOARD_URL`, or your team's
+  board after `vercel login`); point it elsewhere with `abacus config set board_url URL` or
+  `ABACUS_BOARD_URL` (passed as `--url`), for example a local board from `vb serve`. On the
+  Board tab `o` opens the CLI's local web inspector (`board inspect`) on an explicit keypress;
+  Ctrl-C returns. board-beads is only the beads-backed backend a board can use; abacus needs
+  nothing new from it (board-beads#15 is decided: compose the Vercel CLI).
 
 ## Credits & ecosystem
 
@@ -152,8 +163,12 @@ or error messages that help you fix one.
 - [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (`bv`) by Jeffrey Emanuel
   supplies the graph analysis; abacus only runs the `bv` binary and imports none of its code. See
   its [license](https://github.com/Dicklesworthstone/beads_viewer/blob/main/LICENSE).
+- [Vercel Board](https://github.com/vercel/board) (`@vercel/board`, Apache-2.0, by Vercel) is the
+  message board the Board domain reads and posts to; abacus only runs its `board`/`vb` CLI as a
+  subprocess and imports, vendors and copies none of its code. Fixtures in
+  `internal/board/testdata` are its `--json` output about invented messages.
 - [b9s](https://github.com/vanderheijden86/b9s) (MIT, by another author) is the full interactive
-  board and tree view abacus hands off to.
+  tree and graph view abacus hands off to from Tasks.
 - [k9s](https://k9scli.io) inspired the keyboard-first, terminal-native feel.
 
 ## Development rules
@@ -202,18 +217,21 @@ retrying", never "not applied", and the audit log records phase `unknown`.
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
 `ABACUS_BV_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
-`ABACUS_BEADSLEASE_BIN`. Leases need an actor name: `BEADS_ACTOR` in the environment, or
+`ABACUS_BEADSLEASE_BIN`, `ABACUS_BOARD_BIN`, `ABACUS_BOARD_URL` (also `abacus config set board_url`).
+Leases need an actor name: `BEADS_ACTOR` in the environment, or
 `abacus config set actor NAME` (the environment wins).
 
 ### Writes
 
-Only Tasks can be changed. Every change is planned first (validated, with the exact command), then
+Tasks can be changed, and the Board can be posted to from the command line
+(`abacus board post CHANNEL "TEXT"`, `abacus board reply ID "TEXT"`; `--text` for text that starts
+with `-`; no edit, delete, react, attach or task claim/complete). Every change is planned first (validated, with the exact command), then
 needs an explicit yes: `y` on the TUI confirm screen, or the `[y/N]` prompt (`--yes` skips it,
 `--dry-run` prints the change and the command and runs nothing). A change can be applied once, every
 attempt is appended to an audit log (`$XDG_STATE_HOME/abacus/audit.jsonl`), and if the log cannot be
-written nothing runs. Writes are limited by an allowlist (create, update, close; no delete).
+written nothing runs. Writes are limited by an allowlist (create, update, close; no delete; for the Board only post and reply). A board post carries an idempotency key, is re-read by id afterwards, and a timeout is "result unknown", never "not applied". The TUI Board tab is read only: composing from it is not built yet.
 The first-run setup steps (workspace, actor name, Queues config) go through the same confirm,
-single-use and audit gate. Leases, Queues and Board writes are blocked upstream: see `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
+single-use and audit gate. Leases and Queues writes are blocked upstream: see `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
 
 ### TUI
 
