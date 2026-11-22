@@ -60,7 +60,7 @@ func (s *lambeSection) Bindings() []key.Binding {
 	stacked := isStacked(s.width())
 	enter, back := keyEnter, keyBack
 	enter.SetEnabled(stacked && !s.drilled)
-	back.SetEnabled(stacked && s.drilled)
+	back.SetEnabled(s.drilled || s.filter != "")
 	return append(moveBindings(), enter, back, keyFilter, keyOpen)
 }
 
@@ -124,11 +124,15 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.cursor = min(max(0, len(runs)-1), s.cursor+1)
 			s.remember()
 		case key.Matches(msg, keyEnter):
-			s.drilled = len(runs) > 0
+			s.drilled = isStacked(s.width()) && len(runs) > 0
 		case key.Matches(msg, keyBack):
-			s.drilled = false
-			s.filter = ""
-			s.reanchor()
+			// Esc peels one layer: the detail pane first, then the filter.
+			if s.drilled {
+				s.drilled = false
+			} else if s.filter != "" {
+				s.filter = ""
+				s.reanchor()
+			}
 		case key.Matches(msg, keyFilter):
 			s.typing, s.drilled = true, false
 		case key.Matches(msg, keyOpen):
@@ -183,7 +187,11 @@ func (s *lambeSection) reanchor() {
 		}
 	}
 	s.cursor = min(s.cursor, max(0, len(runs)-1))
-	s.remember()
+	// Only cursor movement changes the selection: a filter that hides it, or a refresh that
+	// drops it, must not silently move it, so clearing the filter restores the same run.
+	if s.selected == "" {
+		s.remember()
+	}
 }
 
 // stateKind maps a run state to a color role; unknown states stay quiet.
@@ -203,7 +211,21 @@ func (s *lambeSection) countLabel(label string, n int) string {
 	return s.th.Header.Render(label) + " " + s.th.Text(KindMuted, fmt.Sprint(n))
 }
 
-// listLines is the list pane and the line the cursor is on.
+// attentionLines is the Needs attention block. It is pinned below the scrolling list so a
+// long run list can never push it out of reach.
+func (s *lambeSection) attentionLines() []string {
+	n := s.view.Snapshot.NeedsHuman
+	if len(n) == 0 {
+		return nil
+	}
+	out := []string{s.countLabel("Needs attention", len(n))}
+	for _, h := range n {
+		out = append(out, fmt.Sprintf("  %s  %s  %s", san(h.Issue), s.th.Text(KindFail, san(h.Reason)), san(h.Detail)))
+	}
+	return out
+}
+
+// listLines is the scrolling part of the list pane and the line the cursor is on.
 func (s *lambeSection) listLines(lw int) ([]string, int) {
 	th := s.th
 	runs := s.runs()
@@ -256,12 +278,6 @@ func (s *lambeSection) listLines(lw int) ([]string, int) {
 			out = append(out, fmt.Sprintf("  %s  %s  %s", san(q.ID), state, san(q.Title)))
 		}
 	}
-	if n := s.view.Snapshot.NeedsHuman; len(n) > 0 {
-		out = append(out, "", s.countLabel("Needs attention", len(n)))
-		for _, h := range n {
-			out = append(out, fmt.Sprintf("  %s  %s  %s", san(h.Issue), th.Text(KindFail, san(h.Reason)), san(h.Detail)))
-		}
-	}
 	return out, cursorLine + s.cursor
 }
 
@@ -304,14 +320,40 @@ func (s *lambeSection) View() string {
 			h = max(1, h-1)
 		}
 		lw, _ := paneWidths(w)
-		list, cursorLine := s.listLines(lw)
-		if !(isStacked(w) && s.drilled) {
-			list, s.top = window(list, cursorLine, h, s.top)
-		}
+		scrolling, cursorLine := s.listLines(lw)
+		list := s.compose(scrolling, cursorLine, h)
 		body = panes(s.th, w, h, list, s.detailLines(), s.drilled)
 	}
 	if s.notice != "" {
 		body = append(body, trunc(s.th.Text(KindWarn, s.notice), w))
 	}
 	return strings.Join(body, "\n") + "\n"
+}
+
+// compose stacks the scrolling list over the pinned attention block inside h rows (h <= 0:
+// unconstrained), marking clipped content with "+N more".
+func (s *lambeSection) compose(scrolling []string, cursorLine, h int) []string {
+	pinned := s.attentionLines()
+	if h <= 0 {
+		if len(pinned) > 0 {
+			return append(append(scrolling, ""), pinned...)
+		}
+		return scrolling
+	}
+	a := min(len(pinned), max(1, h/3), max(h-1, 0))
+	if a < len(pinned) && a >= 2 {
+		pinned = append(pinned[:a-1], s.th.Text(KindMuted, fmt.Sprintf("  +%d more", len(pinned)-a+1)))
+	} else {
+		pinned = pinned[:a]
+	}
+	vis, top, hidden := windowMore(scrolling, cursorLine, h-a, s.top)
+	s.top = top
+	out := append([]string{}, vis...)
+	if hidden > 0 && h-a >= 2 {
+		out = append(out, s.th.moreMarker(hidden))
+	}
+	if a > 0 && len(out)+a < h {
+		out = append(out, "")
+	}
+	return append(out, pinned...)
 }

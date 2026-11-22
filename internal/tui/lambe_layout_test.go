@@ -101,7 +101,11 @@ func TestLeaseStatesGetBadges(t *testing.T) {
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
 	m, _ = m.Update(genericMsg{id: "beads-lease", status: core.Status{Summary: "1 held, 1 stale, 1 free", Lines: []string{
-		"ac-1  held by alice (expires 5m)", "ac-2  stale (last holder bob)", "ac-3  free"}}})
+		"ac-1  held by alice (expires 5m)", "ac-2  stale (last holder bob)", "ac-3  free"},
+		Rows: []core.Row{
+			{Resource: "ac-1", State: "held", Tone: core.ToneInfo, Detail: "by alice (expires 5m)"},
+			{Resource: "ac-2", State: "stale", Tone: core.ToneWarn, Detail: "(last holder bob)"},
+			{Resource: "ac-3", State: "free", Tone: core.ToneOK}}}})
 	v := m.View()
 	for _, want := range []string{"1 held, 1 stale, 1 free", "(held) ac-1", "(stale) ac-2", "(free) ac-3"} {
 		if !strings.Contains(v, want) {

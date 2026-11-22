@@ -96,10 +96,21 @@ func execHandoff(argv []string) tea.Cmd {
 // handoffDoneMsg reports how a terminal handoff ended; a non-nil err is shown to the user.
 type handoffDoneMsg struct{ err error }
 
-// Run starts the program on the alternate screen.
+// Seams for tests: Run must probe the terminal background before Bubble Tea takes the input.
+var (
+	probeBackground = lipgloss.HasDarkBackground
+	startProgram    = func(m tea.Model, opts ...tea.ProgramOption) error {
+		_, err := tea.NewProgram(m, opts...).Run()
+		return err
+	}
+)
+
+// Run starts the program on the alternate screen. Adaptive colors query the terminal for its
+// background the first time they render; doing that once here, before Bubble Tea owns stdin,
+// keeps the reply from being read as keystrokes.
 func Run(entries []core.Entry) error {
-	_, err := tea.NewProgram(New(entries), tea.WithAltScreen()).Run()
-	return err
+	probeBackground()
+	return startProgram(New(entries), tea.WithAltScreen())
 }
 
 // step is the next selectable tab from index from in direction dir (wrapping), or from itself.
@@ -127,6 +138,10 @@ func (m *Model) Init() tea.Cmd {
 		if t.sec != nil {
 			cmds = append(cmds, t.sec.Init())
 		}
+	}
+	// A shell whose only selectable tab is Doctor opens on it, so load it now.
+	if a, ok := m.active().(activator); ok {
+		cmds = append(cmds, a.activate())
 	}
 	return tea.Batch(cmds...)
 }
@@ -312,9 +327,9 @@ func (m *Model) View() string {
 	} else {
 		body = strings.Split(strings.TrimRight(m.active().View(), "\n"), "\n")
 	}
-	_, bh := m.bodySize()
-	if bh > 0 && len(body) > bh {
-		body = body[:bh]
+	if m.h > 0 { // known height: clip to what is left, even when that is nothing
+		_, bh := m.bodySize()
+		body = body[:min(len(body), bh)]
 	}
 	m.help.Width = w
 	foot := m.help.ShortHelpView(m.ShortHelp())

@@ -5,9 +5,9 @@ Runs 3
   T-2     deferred  deferred
   T-3     running  running  (stalled)
 
-Queue 2
-  Q-1  ready  ready task
-  Q-2  (blocked)  blocked task
+  ↕ +3 more
+Needs attention 1
+  T-2  gate_failed  gh:pr rejected: mer…
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  [Lambe]  1/4
@@ -47,9 +47,9 @@ Runs 3
   T-2     deferred  deferred
   T-3     running  running  (stalled)
 
-Queue 2
-  Q-1  ready  ready task
-  Q-2  (blocked)  blocked task
+  ↕ +3 more
+Needs attention 1
+  T-2  gate_failed  gh:pr rejected: merge conflict
 ? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
 === 80x30 ===
 abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
@@ -89,9 +89,9 @@ Runs 3                                           │ T-1 (running)
   T-2     deferred  deferred                     │ phase      gating
   T-3     running  running  (stalled)            │ workflow   general
                                                  │ session    ses-t1
-Queue 2                                          │ attempt    2
-  Q-1  ready  ready task                         │ machine    operators-mac
-  Q-2  (blocked)  blocked task                   │ actor      lambe@operators-mac
+  ↕ +3 more                                      │ attempt    2
+Needs attention 1                                │ machine    operators-mac
+  T-2  gate_failed  gh:pr rejected: merge confl… │ actor      lambe@operators-mac
 ? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open in Rex
 === 120x30 ===
 abacus   [Lambe]  beads-lease  ghost (broken)  Doctor

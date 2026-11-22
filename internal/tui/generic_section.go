@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -30,13 +29,11 @@ type genericSection struct {
 	status core.Status
 	loaded bool
 	tick   func() tea.Cmd // injectable so tests never sleep
-	th     Theme
-	geom
-	scroll scroller
+	linesSection
 }
 
 func newGenericSection(m core.Module) *genericSection {
-	return &genericSection{m: m, th: DefaultTheme(), tick: func() tea.Cmd {
+	return &genericSection{m: m, linesSection: linesSection{th: DefaultTheme()}, tick: func() tea.Cmd {
 		return tea.Tick(genericPollEvery, func(time.Time) tea.Msg { return genericTickMsg{id: m.ID()} })
 	}}
 }
@@ -68,20 +65,10 @@ func (s *genericSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		s.resize(m)
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(m, keyUp):
-			s.scroll.move(-1, len(s.lines()), s.h)
-		case key.Matches(m, keyDown):
-			s.scroll.move(1, len(s.lines()), s.h)
-		}
+		s.scrollKey(m, len(s.lines()))
 	}
 	return s, nil
 }
-
-// leaseKinds colors the lease state word beads-lease prints after the resource. This is
-// presentation only: core.Status carries the line as text today, so the word is recognised
-// here but never interpreted.
-var leaseKinds = map[string]Kind{"held": KindAccent, "stale": KindWarn, "free": KindOK}
 
 func (s *genericSection) lines() []string {
 	th := s.th
@@ -97,31 +84,16 @@ func (s *genericSection) lines() []string {
 		head += " " + th.Badge(KindWarn, san(s.status.Source))
 	}
 	out := []string{head}
+	if len(s.status.Rows) > 0 {
+		for _, r := range s.status.Rows {
+			out = append(out, "  "+th.Badge(toneKind(r.Tone), san(r.State))+" "+san(r.Resource)+" "+th.Text(KindMuted, san(r.Detail)))
+		}
+		return out
+	}
 	for _, l := range s.status.Lines {
-		out = append(out, s.line(san(l)))
+		out = append(out, "  "+san(l))
 	}
 	return out
 }
 
-// line badges a "<resource>  <state> ..." row when the state word is a known lease state.
-func (s *genericSection) line(l string) string {
-	res, rest, ok := strings.Cut(l, "  ")
-	if !ok {
-		return "  " + l
-	}
-	word, tail, _ := strings.Cut(rest, " ")
-	kind, known := leaseKinds[word]
-	if !known {
-		return "  " + l
-	}
-	return "  " + s.th.Badge(kind, word) + " " + res + " " + s.th.Text(KindMuted, tail)
-}
-
-func (s *genericSection) View() string {
-	all := s.lines()
-	out := make([]string, 0, len(all))
-	for _, l := range s.scroll.view(all, s.h) {
-		out = append(out, trunc(l, s.width()))
-	}
-	return strings.Join(out, "\n") + "\n"
-}
+func (s *genericSection) View() string { return s.render(s.lines()) }

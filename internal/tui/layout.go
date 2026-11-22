@@ -92,19 +92,36 @@ func panes(th Theme, w, h int, list, detail []string, drilled bool) []string {
 	return out
 }
 
-// scroller is a plain line list with a scroll offset, for sections without a cursor.
+// windowMore is window plus room for a "+N more" marker: when lines do not fit it shows h-1
+// lines around the cursor and reports how many lines are hidden (the caller draws the marker).
+func windowMore(lines []string, cursor, h, top int) (vis []string, newTop, hidden int) {
+	if h <= 0 || len(lines) <= h {
+		return lines, 0, 0
+	}
+	vis, newTop = window(lines, cursor, max(h-1, 1), top)
+	return vis, newTop, len(lines) - len(vis)
+}
+
+// scroller is a scroll offset for sections without a cursor.
 type scroller struct{ off int }
+
+// rows is how many content lines fit in h, leaving one row for the "+N more" marker when the
+// content is clipped.
+func rows(total, h int) int {
+	if h <= 0 || total <= h {
+		return total
+	}
+	return max(h-1, 1)
+}
 
 // move scrolls by delta and clamps against the content and visible height.
 func (s *scroller) move(delta, total, h int) {
-	s.off = max(0, min(s.off+delta, total-max(h, 1)))
+	s.off = max(0, min(s.off+delta, total-rows(total, h)))
 }
 
-// view returns the lines visible at the current offset (h <= 0: all).
-func (s *scroller) view(lines []string, h int) []string {
-	if h <= 0 || len(lines) <= h {
-		return lines
-	}
-	s.off = max(0, min(s.off, len(lines)-h))
-	return lines[s.off : s.off+h]
+// view returns the visible lines and how many are hidden (h <= 0: all).
+func (s *scroller) view(lines []string, h int) ([]string, int) {
+	n := rows(len(lines), h)
+	s.off = max(0, min(s.off, len(lines)-n))
+	return lines[s.off : s.off+n], len(lines) - n
 }

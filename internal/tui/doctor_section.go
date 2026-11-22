@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,7 +10,10 @@ import (
 )
 
 // doctorMsg carries core's typed doctor report; the section only draws it.
-type doctorMsg struct{ report core.Report }
+type doctorMsg struct {
+	report core.Report
+	seq    int // which fetch produced it; only the latest is applied
+}
 
 // doctorSection is the last tab: core.DoctorReport for every detected module. It loads on
 // first selection and on `r`, never on a timer, because doctor shells out to each tool.
@@ -20,33 +22,34 @@ type doctorSection struct {
 	report  core.Report
 	loaded  bool
 	asked   bool
-	th      Theme
-	geom
-	scroll scroller
+	pending bool // a fetch is in flight: r is ignored until its report arrives
+	seq     int
+	linesSection
 }
 
 func newDoctorSection(entries []core.Entry) *doctorSection {
-	return &doctorSection{entries: entries, th: DefaultTheme()}
+	return &doctorSection{entries: entries, linesSection: linesSection{th: DefaultTheme()}}
 }
 
-func (s *doctorSection) SetTheme(t Theme) { s.th = t }
-func (s *doctorSection) Capturing() bool  { return false }
 func (s *doctorSection) Bindings() []key.Binding {
 	return append(moveBindings(), keyReload)
 }
 
 func (s *doctorSection) fetch() tea.Cmd {
+	s.seq++
+	s.pending = true
+	seq, entries := s.seq, s.entries
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
-		return doctorMsg{report: core.DoctorReport(ctx, "", s.entries)}
+		return doctorMsg{report: core.DoctorReport(ctx, "", entries), seq: seq}
 	}
 }
 
 func (s *doctorSection) Init() tea.Cmd { return nil }
 
 func (s *doctorSection) activate() tea.Cmd {
-	if s.asked {
+	if s.asked || s.loaded {
 		return nil
 	}
 	s.asked = true
@@ -56,16 +59,16 @@ func (s *doctorSection) activate() tea.Cmd {
 func (s *doctorSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case doctorMsg:
-		s.report, s.loaded = m.report, true
+		if m.seq == s.seq { // a report from an older fetch must not overwrite a newer one
+			s.report, s.loaded, s.pending = m.report, true, false
+		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(m, keyUp):
-			s.scroll.move(-1, len(s.lines()), s.h)
-		case key.Matches(m, keyDown):
-			s.scroll.move(1, len(s.lines()), s.h)
-		case key.Matches(m, keyReload):
+		if s.scrollKey(m, len(s.lines())) {
+			return s, nil
+		}
+		if key.Matches(m, keyReload) && !s.pending {
 			return s, s.fetch()
 		}
 	}
@@ -101,10 +104,13 @@ func (s *doctorSection) lines() []string {
 	if !s.loaded {
 		return []string{th.Text(KindMuted, "running doctor…")}
 	}
-	if len(s.report.Modules) == 0 {
-		return []string{th.Text(KindMuted, "no tools to check")}
-	}
 	var out []string
+	if s.pending {
+		out = append(out, th.Text(KindMuted, "running doctor…"), "")
+	}
+	if len(s.report.Modules) == 0 {
+		return append(out, th.Text(KindMuted, "no tools to check"))
+	}
 	for i, m := range s.report.Modules {
 		if i > 0 {
 			out = append(out, "")
@@ -125,10 +131,4 @@ func (s *doctorSection) lines() []string {
 	return out
 }
 
-func (s *doctorSection) View() string {
-	out := []string{}
-	for _, l := range s.scroll.view(s.lines(), s.h) {
-		out = append(out, trunc(l, s.width()))
-	}
-	return strings.Join(out, "\n") + "\n"
-}
+func (s *doctorSection) View() string { return s.render(s.lines()) }

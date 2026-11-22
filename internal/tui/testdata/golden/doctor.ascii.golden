@@ -7,7 +7,7 @@ beads-lease (ready) 1.0.0
   (ok) hub reachable  fixture
   (warn) lease schema  newer minor vers…
       fix: upgrade beads-lease
-
+  ↕ +3 more
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  [Doctor]  4/4
@@ -49,7 +49,7 @@ beads-lease (ready) 1.0.0
   (ok) hub reachable  fixture
   (warn) lease schema  newer minor version
       fix: upgrade beads-lease
-
+  ↕ +3 more
 ? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 80x30 ===
 abacus   Lambe  beads-lease  ghost (broken)  [Doctor]
@@ -91,7 +91,7 @@ beads-lease (ready) 1.0.0
   (ok) hub reachable  fixture
   (warn) lease schema  newer minor version
       fix: upgrade beads-lease
-
+  ↕ +3 more
 ? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 120x30 ===
 abacus   Lambe  beads-lease  ghost (broken)  [Doctor]

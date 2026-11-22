@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -52,4 +53,60 @@ func orDash(s string) string {
 		return "-"
 	}
 	return san(s)
+}
+
+// moreMarker is the "+N more" row shown whenever content is clipped.
+func (t Theme) moreMarker(hidden int) string {
+	return t.Text(KindMuted, "  ↕ +"+strconv.Itoa(hidden)+" more")
+}
+
+// linesSection is the shared body of the scrollable, cursor-less sections (generic, doctor).
+type linesSection struct {
+	th Theme
+	geom
+	scroll scroller
+}
+
+func (l *linesSection) SetTheme(t Theme) { l.th = t }
+func (l *linesSection) Capturing() bool  { return false }
+
+// scrollKey scrolls on up/down over total lines and reports whether k was a scroll key.
+func (l *linesSection) scrollKey(k tea.KeyMsg, total int) bool {
+	switch {
+	case key.Matches(k, keyUp):
+		l.scroll.move(-1, total, l.h)
+	case key.Matches(k, keyDown):
+		l.scroll.move(1, total, l.h)
+	default:
+		return false
+	}
+	return true
+}
+
+// render draws lines at the scroll offset, truncated to the width, with a +N more marker.
+func (l *linesSection) render(lines []string) string {
+	vis, hidden := l.scroll.view(lines, l.h)
+	out := make([]string, 0, len(vis)+1)
+	for _, ln := range vis {
+		out = append(out, trunc(ln, l.width()))
+	}
+	if hidden > 0 && l.h >= 2 {
+		out = append(out, l.th.moreMarker(hidden))
+	}
+	return strings.Join(out, "\n") + "\n"
+}
+
+// toneKind maps core's typed row tone to a color role.
+func toneKind(t core.Tone) Kind {
+	switch t {
+	case core.ToneOK:
+		return KindOK
+	case core.ToneWarn:
+		return KindWarn
+	case core.ToneFail:
+		return KindFail
+	case core.ToneInfo:
+		return KindAccent
+	}
+	return KindMuted
 }
