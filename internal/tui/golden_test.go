@@ -196,7 +196,7 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 	}
 	m, _ = m.Update(lambeViewMsg{view: v})
 	m, _ = m.Update(boardMsg{report: fixtureBoard()})
-	m, _ = m.Update(genericMsg{id: "leases", status: leasesStatus(lease, context.Background())})
+	m, _ = m.Update(leasesMsg{read: readLeases(context.Background(), lease)})
 	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
 	m, _ = m.Update(insightsMsg{report: fixtureInsights()})
 	m, _ = m.Update(doctorMsg{report: core.DoctorReport(context.Background(), "", en)})

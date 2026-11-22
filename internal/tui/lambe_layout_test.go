@@ -96,18 +96,16 @@ func TestHostileFieldsAreSanitizedInEveryPane(t *testing.T) {
 }
 
 func TestLeaseStatesGetBadges(t *testing.T) {
-	g := fake("beads-lease", core.Ready)
-	s := genericFor(g)
+	r := leasesReport(
+		core.Lease{Resource: "ac-1", State: core.LeaseHeld, Holder: "alice", ExpiresAt: "5m"},
+		core.Lease{Resource: "ac-2", State: core.LeaseStale, Holder: "bob"},
+		core.Lease{Resource: "ac-3", State: core.LeaseFree})
+	s := leasesWith(&r)
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
-	m, _ = m.Update(genericMsg{id: "beads-lease", status: core.Status{Summary: "1 held, 1 stale, 1 free", Lines: []string{
-		"ac-1  held by alice (expires 5m)", "ac-2  stale (last holder bob)", "ac-3  free"},
-		Rows: []core.Row{
-			{Resource: "ac-1", State: "held", Tone: core.ToneInfo, Detail: "by alice (expires 5m)"},
-			{Resource: "ac-2", State: "stale", Tone: core.ToneWarn, Detail: "(last holder bob)"},
-			{Resource: "ac-3", State: "free", Tone: core.ToneOK}}}})
+	m, _ = m.Update(leasesMsg{read: r})
 	v := m.View()
-	for _, want := range []string{"1 held, 1 stale, 1 free", "(held) ac-1", "(stale) ac-2", "(free) ac-3"} {
+	for _, want := range []string{"1 held, 1 stale, 1 free", "(held) ac-1 by alice (expires 5m)", "(stale) ac-2 (last holder bob)", "(free) ac-3"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("missing %q:\n%s", want, v)
 		}
@@ -115,10 +113,11 @@ func TestLeaseStatesGetBadges(t *testing.T) {
 }
 
 func TestTrackerSubsetAndSourceLabelsAreBadges(t *testing.T) {
-	s := genericFor(fake("g", core.Ready))
+	r := leasesRead{report: core.LeasesReport{Header: core.Header{Source: "tracker subset"}}}
+	s := leasesWith(&r)
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
-	m, _ = m.Update(genericMsg{id: "g", status: core.Status{Summary: "s", Source: "tracker subset"}})
+	m, _ = m.Update(leasesMsg{read: r})
 	if !strings.Contains(m.View(), "(tracker subset)") {
 		t.Fatalf("source label missing:\n%s", m.View())
 	}
