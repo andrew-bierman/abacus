@@ -58,8 +58,9 @@ func TestConfigBoardURLRoundTripsAndValidates(t *testing.T) {
 }
 
 type fakeBoardWriter struct {
-	ran  [][]string
-	fail error
+	ran    [][]string
+	fail   error
+	target string
 }
 
 func (f *fakeBoardWriter) BuildBoardArgv(ch core.BoardChange, key string) ([]string, error) {
@@ -69,7 +70,12 @@ func (f *fakeBoardWriter) RunBoard(_ context.Context, argv []string, ch core.Boa
 	f.ran = append(f.ran, argv)
 	return core.BoardResult{ID: "7", Text: ch.Text}, f.fail
 }
-func (f *fakeBoardWriter) Target() string       { return "http://127.0.0.1:4100/api/board" }
+func (f *fakeBoardWriter) Target() string {
+	if f.target != "" {
+		return f.target
+	}
+	return "http://127.0.0.1:4100/api/board"
+}
 func (f *fakeBoardWriter) TargetSource() string { return "board_url (config)" }
 func (f *fakeBoardWriter) Describe(context.Context, core.BoardChange) []string {
 	return []string{"channel dev: new"}
@@ -235,6 +241,10 @@ func TestIdempotencyKeyIsDerivedSoARetryOfAnUnknownOutcomeReusesIt(t *testing.T)
 	}
 	if key(core.BoardChange{Op: core.BoardReply, ID: "8", Text: "hello"}) == key(core.BoardChange{Op: core.BoardReply, ID: "7", Text: "hello"}) {
 		t.Error("a different reply target must get a different key")
+	}
+	other := &fakeBoardWriter{target: "https://example.com/api/board"}
+	if p, _ := core.PlanBoardChange(other, post); p.Argv[3] == k {
+		t.Error("the same text to another board must get another key")
 	}
 	now = now.Add(time.Hour)
 	if key(post) == k {
