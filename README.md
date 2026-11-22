@@ -83,9 +83,20 @@ abacus doctor  [--json] [--lambe-config FILE]
 abacus version [--json]
 ```
 
-Exit codes: 0 healthy, 1 a check failed, a provider is broken or a write was not applied, 2 usage
-error. `status --json` and `doctor --json` keep `schema_version` 1; `status --json` gains an
-additive `domains` section. Every read command's JSON carries `schema_version`.
+Exit codes: `doctor` exits 1 when a check failed or a provider is broken; a write exits 1 when it
+was not applied or its result is unknown; any command exits 2 on a usage error (including a stray
+positional argument). The domain reads (`board`, `tasks`, `leases`, `queues`) and `status` exit 0
+whatever the connection state: the outcome is in each domain's `state` (`connected`,
+`not-connected`, `degraded`) and `reason`. `status --json` and `doctor --json` keep
+`schema_version` 1; `status --json` gains an additive `domains` section. Every read command's JSON
+carries `schema_version`. A not-connected or degraded domain keeps the same shape (`leases: []`,
+zeroed `counts`). JSON key naming is mixed by origin (`issue` in Queues rows, `id` in Tasks) and is
+not renamed within `schema_version` 1.
+
+`abacus tasks <verb> --json` prints exactly one JSON document on stdout and nothing else, and needs
+`--yes` or `--dry-run` (it cannot prompt); on failure stdout is empty and the error is on stderr. A
+write whose result cannot be known (a timeout or cancel) says "result unknown ... refresh before
+retrying", never "not applied", and the audit log records phase `unknown`.
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
 `ABACUS_BV_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
