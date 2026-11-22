@@ -77,3 +77,42 @@ func TestRealBdWritePathAgainstAnIsolatedTemporaryTracker(t *testing.T) {
 		t.Fatalf("audit lines = %d, want 8 (attempt+result per write)", au.n)
 	}
 }
+
+// The real `bd init` through the write gate, in an isolated temp dir and HOME. Skips without bd.
+func TestRealBdInitCreatesTheManagedWorkspaceInAnIsolatedDir(t *testing.T) {
+	if _, err := exec.LookPath("bd"); err != nil {
+		t.Skip("bd is not installed")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_STATE_HOME", home+"/s")
+	t.Setenv("XDG_CONFIG_HOME", home+"/c")
+	t.Setenv("BEADS_ACTOR", "abacus-test")
+	t.Setenv("BEADS_DIR", "")
+	t.Chdir(t.TempDir()) // a cwd with no tracker
+	ws := home + "/d/abacus/workspace"
+	ref := core.NewTrackerRef("")
+	var saved string
+	m := New(Options{InitDir: ws, Ref: ref, OnInit: func(d string) error { saved = d; return nil }})
+	ctx := context.Background()
+	if d := m.Detect(ctx); d.State != core.Ready {
+		t.Fatalf("detect %+v", d)
+	}
+	if _, err := m.Tasks(ctx); err == nil {
+		t.Fatal("no tracker yet: Tasks must ask for setup")
+	}
+	plan, err := core.PlanTaskChange(m, core.TaskChange{Op: core.TaskInit, Dir: ws})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := core.NewApplier(m, &memAudit{}).Apply(ctx, plan.Confirm()); err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	if saved != ws || ref.Dir() != ws {
+		t.Fatalf("saved=%q ref=%q", saved, ref.Dir())
+	}
+	r, err := m.Tasks(ctx)
+	if err != nil || r.Counts.Total != 0 {
+		t.Fatalf("a fresh workspace reads as empty: %+v %v", r, err)
+	}
+}

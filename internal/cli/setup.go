@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -54,7 +55,7 @@ func runSetup(rest []string, d Deps) int {
 	var results []setupResult
 	failed := false
 	// Applying needs an explicit yes: --yes, or a y at the prompt (which needs input and text mode).
-	canAsk := !asJSON && d.In != nil
+	canAsk := !asJSON && d.In != nil && interactive(d.In)
 	if !dry && (yes || canAsk) {
 		in := bufio.NewReader(orEmpty(d.In))
 		for _, st := range steps {
@@ -108,6 +109,23 @@ func runSetup(rest []string, d Deps) int {
 		return core.ExitFail
 	}
 	return core.ExitOK
+}
+
+// interactive reports whether r can answer a prompt: a real terminal, not a pipe, a file or
+// /dev/null (a plain io.Reader, as tests pass, is taken at its word).
+func interactive(r io.Reader) bool {
+	f, ok := r.(*os.File)
+	if !ok {
+		return true
+	}
+	fi, err := f.Stat()
+	if err != nil || fi.Mode()&os.ModeCharDevice == 0 {
+		return false
+	}
+	if dn, err := os.Stat(os.DevNull); err == nil && os.SameFile(fi, dn) {
+		return false
+	}
+	return true
 }
 
 func orEmpty(r io.Reader) io.Reader {
