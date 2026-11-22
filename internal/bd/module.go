@@ -74,7 +74,10 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
 	m.bin = bin
-	out, exit, err := m.read(ctx, readVersion)
+	// version needs no tracker, so it never takes -C: a bad tracker dir must not read as a broken install.
+	cctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
+	defer cancel()
+	out, exit, err := m.o.Runner.Run(cctx, m.bin, readVersion...)
 	if err != nil {
 		return core.Detection{State: core.Broken, Detail: "bd version could not run: " + core.Sanitize(err.Error())}
 	}
