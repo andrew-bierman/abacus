@@ -43,7 +43,7 @@ func TestOverviewLeadsWithReadyAndListsWhereEachToolCameFrom(t *testing.T) {
 }
 
 func TestOverviewNeedsAttentionWhenTasksHasNoTracker(t *testing.T) {
-	g := core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Key: "i", Message: "No tracker here", Action: "create your fleet workspace (bd init)"}
+	g := core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)"}
 	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, err: &core.NeedsSetupError{Guide: g}}
 	o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready}}})
 	if o.Ready || !strings.HasPrefix(o.Headline, "Needs attention") || len(o.Attention) == 0 || !strings.Contains(o.Attention[0], "No tracker here") {

@@ -99,8 +99,7 @@ func (m *Module) Guide(context.Context) *core.Guide {
 	if m.o.InitDir == "" || m.TrackerDir() != "" || core.HasTracker("") {
 		return nil
 	}
-	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Key: "i",
-		Message: "No tracker here", Action: "create your fleet workspace (bd init)",
+	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)",
 		Detail: "It will be created in " + m.o.InitDir + " and abacus will use it from then on."}
 }
 

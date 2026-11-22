@@ -150,7 +150,7 @@ const doctorTimeout = 30 * time.Second
 // tuiLine is a domain's one-liner in front-end words: the setup key, not the CLI command.
 func tuiLine(l core.DomainLine) string {
 	if l.Guide != nil {
-		return l.Guide.Message + " — press " + l.Guide.Key + " on the " + l.Title + " tab"
+		return l.Guide.Message + " — press " + stepKey(l.Guide.Step) + " on the " + l.Title + " tab"
 	}
 	return l.Line
 }

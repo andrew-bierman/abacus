@@ -295,43 +295,26 @@ func (f *fileAudit) Record(e AuditEntry) error {
 	return err
 }
 
-// Applier is the one door to a Tasks write: it enforces the confirm step, the single-use
-// rule and the audit, then hands the argv to the provider.
+// Applier is the one door to a Tasks write: it enforces the confirm step, then hands the
+// plan to the shared gate (single use, audit) and the argv to the provider.
 type Applier struct {
-	w       TaskWriter
-	audit   Audit
-	mu      sync.Mutex
-	applied map[uint64]bool
+	w TaskWriter
+	g *gate
 }
 
-func NewApplier(w TaskWriter, a Audit) *Applier {
-	return &Applier{w: w, audit: a, applied: map[uint64]bool{}}
-}
+func NewApplier(w TaskWriter, a Audit) *Applier { return &Applier{w: w, g: newGate(a)} }
 
 func (a *Applier) Apply(ctx context.Context, p WritePlan) (TaskResult, error) {
 	if !p.confirmed {
 		return TaskResult{}, ErrNotConfirmed
 	}
-	a.mu.Lock()
-	if a.applied[p.id] {
-		a.mu.Unlock()
-		return TaskResult{}, ErrAlreadyApplied
-	}
-	a.applied[p.id] = true
-	a.mu.Unlock()
-	e := AuditEntry{Time: time.Now().UTC(), Domain: string(DomainTasks), Verb: string(p.Change.Op), Phase: "attempt", Argv: p.Argv, Tracker: a.w.TrackerDir()}
-	if err := a.audit.Record(e); err != nil {
-		return TaskResult{}, err
-	}
-	res, err := a.w.RunTask(ctx, p.Argv)
-	e.Time, e.Phase = time.Now().UTC(), "ok"
-	if err != nil {
-		e.Phase, e.Error = "error", Sanitize(err.Error())
-		if errors.Is(err, ErrOutcomeUnknown) {
-			e.Phase = "unknown"
-		}
-	}
-	_ = a.audit.Record(e) // the attempt line already exists; a failed result line must not mask the outcome
+	e := AuditEntry{Domain: string(DomainTasks), Verb: string(p.Change.Op), Argv: p.Argv, Tracker: a.w.TrackerDir()}
+	var res TaskResult
+	err := a.g.do(p.id, e, func() error {
+		var err error
+		res, err = a.w.RunTask(ctx, p.Argv)
+		return err
+	})
 	return res, err
 }
 

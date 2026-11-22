@@ -29,7 +29,7 @@ func (f *freshBd) Guide(context.Context) *core.Guide {
 	if f.made {
 		return nil
 	}
-	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Key: "i", Message: "No tracker here", Action: "create your fleet workspace (bd init)", Detail: "It will be created in /data/abacus/workspace."}
+	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)", Detail: "It will be created in /data/abacus/workspace."}
 }
 func (f *freshBd) Tasks(context.Context) (core.TasksReport, error) {
 	if g := f.Guide(context.Background()); g != nil {

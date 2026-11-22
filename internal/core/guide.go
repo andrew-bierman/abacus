@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"errors"
+
+	"github.com/andrew-bierman/abacus/internal/brand"
 )
 
 // StepID names a first-run setup step. Each is an explicit, confirmed action.
@@ -19,24 +21,20 @@ const (
 const NeedsSetup Connection = "needs-setup"
 
 // Guide is the one plain-language state a domain shows when it needs setup: what is missing
-// (Message), what the step does (Action), the key that starts it in the TUI, and where it will
-// happen (Detail). No tool jargon beyond the command that will run, which the confirm screen
-// shows in full anyway.
+// (Message), what the step does (Action) and where it will happen (Detail). It is data only: a
+// front-end decides how to offer it (the TUI maps the step to a key). No tool jargon beyond the
+// command that will run, which the confirm screen shows in full anyway.
 type Guide struct {
 	Domain  DomainID `json:"domain"`
 	Step    StepID   `json:"step"`
-	Key     string   `json:"key"`
 	Message string   `json:"message"`
 	Action  string   `json:"action"`
 	Detail  string   `json:"detail,omitempty"`
 }
 
-// Line is the single guided sentence for the TUI: "<message> — press <key> to <action>".
-func (g Guide) Line() string { return g.Message + " — press " + g.Key + " to " + g.Action }
-
 // CLILine is the same sentence for the command line, where the step is `abacus setup`.
 func (g Guide) CLILine() string {
-	return g.Message + " — run `abacus setup` to " + g.Action
+	return g.Message + " — run `" + brand.Name + " setup` to " + g.Action
 }
 
 // Guider is implemented by a provider that can say its domain needs setup. Guide is cheap

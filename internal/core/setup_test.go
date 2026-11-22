@@ -23,15 +23,16 @@ func (failAudit) Record(core.AuditEntry) error { return errors.New("disk full") 
 // fakeBd is a Tasks module that can create the workspace: it counts what actually ran.
 type fakeBd struct {
 	*modtest.Fake
-	initDir string
-	ran     [][]string
+	initDir    string
+	trackerDir string
+	ran        [][]string
 }
 
 func (f *fakeBd) Domain() core.DomainID { return core.DomainTasks }
 func (f *fakeBd) Guide(context.Context) *core.Guide {
-	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Key: "i", Message: "No tracker here", Action: "create your fleet workspace (bd init)"}
+	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)"}
 }
-func (f *fakeBd) TrackerDir() string { return "" }
+func (f *fakeBd) TrackerDir() string { return f.trackerDir }
 func (f *fakeBd) InitDir() string    { return f.initDir }
 func (f *fakeBd) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 	return []string{"bd", "init", "--prefix=x"}, nil
@@ -50,7 +51,7 @@ type fakeLambe struct {
 func (f *fakeLambe) Domain() core.DomainID { return core.DomainQueues }
 func (f *fakeLambe) Guide(context.Context) *core.Guide {
 	if f.needs {
-		return &core.Guide{Domain: core.DomainQueues, Step: core.StepQueues, Key: "s", Message: "Queues need a supervisor config", Action: "set up"}
+		return &core.Guide{Domain: core.DomainQueues, Step: core.StepQueues, Message: "Queues need a supervisor config", Action: "set up"}
 	}
 	return nil
 }
@@ -73,7 +74,7 @@ type fakeLeases struct {
 func (f *fakeLeases) Domain() core.DomainID { return core.DomainLeases }
 func (f *fakeLeases) Guide(context.Context) *core.Guide {
 	if f.needs {
-		return &core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Key: "s", Message: "Leases need an actor name", Action: "choose one"}
+		return &core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Message: "Leases need an actor name", Action: "choose one"}
 	}
 	return nil
 }
@@ -82,10 +83,21 @@ func ready(m core.Module) core.Entry {
 	return core.Entry{Module: m, Detection: core.Detection{State: core.Ready}}
 }
 
+func mkOwnTracker(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(dir, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".beads", "metadata.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
 type setupEnv struct {
 	s      *core.Setup
 	bd     *fakeBd
 	lambe  *fakeLambe
+	leases *fakeLeases
 	audit  *recAudit
 	cfg    core.ConfigStore
 	ws, lc string
@@ -93,6 +105,7 @@ type setupEnv struct {
 
 func newSetupEnv(t *testing.T) setupEnv {
 	t.Helper()
+	t.Chdir(t.TempDir()) // a cwd with no tracker above it
 	root := t.TempDir()
 	e := setupEnv{
 		bd:    &fakeBd{Fake: &modtest.Fake{IDStr: "bd"}, initDir: filepath.Join(root, "ws")},
@@ -103,6 +116,7 @@ func newSetupEnv(t *testing.T) setupEnv {
 		lc:    filepath.Join(root, "c", "lambe.yaml"),
 	}
 	leases := &fakeLeases{Fake: &modtest.Fake{IDStr: "beads-lease"}, needs: true}
+	e.leases = leases
 	e.s = core.NewSetup([]core.Entry{ready(e.bd), ready(e.lambe), ready(leases)}, core.SetupOptions{
 		Config: e.cfg, Workspace: e.ws, LambeConfig: e.lc, Audit: e.audit, Suggest: func() string { return "me-mac" }})
 	return e
@@ -220,5 +234,133 @@ func TestNoToolMeansTheStepIsUnavailableNotNeeded(t *testing.T) {
 		if st.State != "unavailable" {
 			t.Errorf("%+v", st)
 		}
+	}
+}
+
+func TestWorkspaceAndQueuesStepsAreSingleUseAndAFailedAuditBlocksThem(t *testing.T) {
+	e := newSetupEnv(t)
+	mkOwnTracker(t, e.ws) // so the Queues step can be planned too
+	e.bd.initDir = filepath.Join(t.TempDir(), "ws2")
+	for _, step := range []core.StepID{core.StepWorkspace, core.StepQueues} {
+		p, err := e.s.Plan(step)
+		if err != nil {
+			t.Fatalf("%s: %v", step, err)
+		}
+		if _, err := e.s.Apply(context.Background(), p.Confirm()); err != nil {
+			t.Fatalf("%s: %v", step, err)
+		}
+		if _, err := e.s.Apply(context.Background(), p.Confirm()); !errors.Is(err, core.ErrAlreadyApplied) {
+			t.Errorf("%s must be single use: %v", step, err)
+		}
+	}
+	// A failed audit attempt blocks each of them before anything runs.
+	e2 := newSetupEnv(t)
+	mkOwnTracker(t, e2.ws)
+	s := core.NewSetup([]core.Entry{ready(e2.bd), ready(e2.lambe), ready(e2.leases)}, core.SetupOptions{Config: e2.cfg, Workspace: e2.ws, LambeConfig: e2.lc, Audit: failAudit{}})
+	e2.bd.initDir = filepath.Join(t.TempDir(), "ws3")
+	for _, step := range []core.StepID{core.StepWorkspace, core.StepQueues} {
+		p, err := s.Plan(step)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.Apply(context.Background(), p.Confirm()); err == nil {
+			t.Errorf("%s ran without an audit record", step)
+		}
+	}
+	if len(e2.bd.ran) != 0 || e2.lambe.ran != nil {
+		t.Fatalf("nothing may run when the audit fails: bd=%v lambe=%v", e2.bd.ran, e2.lambe.ran)
+	}
+}
+
+func TestApplyFailsClosedWhenTheWorldChangedSincePlanning(t *testing.T) {
+	e := newSetupEnv(t)
+	p, _ := e.s.Plan(core.StepWorkspace)
+	mkOwnTracker(t, e.ws) // someone made the tracker meanwhile
+	if _, err := e.s.Apply(context.Background(), p.Confirm()); err == nil || !strings.Contains(err.Error(), "changed since you opened it") || len(e.bd.ran) != 0 {
+		t.Fatalf("workspace: %v ran=%v", err, e.bd.ran)
+	}
+	a, _ := e.s.Plan(core.StepActor)
+	e.leases.needs = false // an actor was set meanwhile
+	if _, err := e.s.Apply(context.Background(), a.Confirm()); err == nil || !strings.Contains(err.Error(), "changed since you opened it") {
+		t.Fatalf("actor: %v", err)
+	}
+	if c, _ := e.cfg.Load(); c.Actor != "" {
+		t.Fatal("the actor was overwritten")
+	}
+}
+
+func TestQueuesAdoptsAnExistingStarterConfigAndRefusesALinkOrNonFile(t *testing.T) {
+	e := newSetupEnv(t)
+	mkOwnTracker(t, e.ws)
+	if err := os.MkdirAll(filepath.Dir(e.lc), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(e.lc, []byte("harness: pi\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p, err := e.s.Plan(core.StepQueues)
+	if err != nil || !strings.Contains(strings.Join(p.Lines, "\n"), "existing") {
+		t.Fatalf("an existing abacus config is adopted (resume after a crash): %v %v", p.Lines, err)
+	}
+	if _, err := e.s.Apply(context.Background(), p.Confirm()); err != nil {
+		t.Fatal(err)
+	}
+	if e.lambe.ran != nil {
+		t.Fatalf("adopting must not run lambe init: %v", e.lambe.ran)
+	}
+	if c, _ := e.cfg.Load(); c.LambeConfig != e.lc {
+		t.Fatalf("%+v", c)
+	}
+	// A symlink in that place is refused.
+	os.Remove(e.lc)
+	if err := os.Symlink("/etc/hosts", e.lc); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.s.Plan(core.StepQueues); err == nil || !strings.Contains(err.Error(), "symlink") {
+		t.Fatalf("%v", err)
+	}
+	os.Remove(e.lc)
+	if err := os.MkdirAll(e.lc, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.s.Plan(core.StepQueues); err == nil || !strings.Contains(err.Error(), "not a regular file") {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestQueuesInitRunsAgainstTheResolvedTrackerNotOnlyTheWorkspace(t *testing.T) {
+	e := newSetupEnv(t)
+	mine := t.TempDir()
+	mkOwnTracker(t, mine)
+	e.bd.trackerDir, e.bd.initDir = mine, "" // the user already has a tracker
+	p, err := e.s.Plan(core.StepQueues)
+	if err != nil || !strings.Contains(strings.Join(p.Lines, "\n"), mine) {
+		t.Fatalf("a user with a tracker must not be blocked, and the plan names where files go: %v %v", p.Lines, err)
+	}
+	if _, err := e.s.Apply(context.Background(), p.Confirm()); err != nil || e.lambe.ran[0] != mine {
+		t.Fatalf("%v %v", err, e.lambe.ran)
+	}
+}
+
+func TestQueuesBlockedMessagePointsAtAKeyThatExists(t *testing.T) {
+	e := newSetupEnv(t) // no tracker anywhere, the workspace is offered
+	_, err := e.s.Plan(core.StepQueues)
+	if err == nil || !strings.Contains(err.Error(), "press i") || !strings.Contains(err.Error(), "setup") {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestACorruptConfigIsReportedInTheStepResult(t *testing.T) {
+	e := newSetupEnv(t)
+	if err := os.MkdirAll(filepath.Dir(e.cfg.Path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(e.cfg.Path, []byte("{bad"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p, _ := e.s.Plan(core.StepActor)
+	msg, err := e.s.Apply(context.Background(), p.Confirm())
+	if err != nil || !strings.Contains(msg, "config.json.corrupt") {
+		t.Fatalf("%q %v", msg, err)
 	}
 }

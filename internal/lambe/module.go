@@ -37,8 +37,6 @@ type Options struct {
 	InitRunner func(dir string) core.Runner
 }
 
-// InitRunner and the config accessors support the one write this module has: `lambe init`.
-//
 // config is the Lambe config the module reads, and whether it is the abacus-owned one that a
 // confirmed setup step wrote.
 func (m *Module) config() (path string, owned bool) {
@@ -57,7 +55,7 @@ func (m *Module) selector() Selector {
 func (m *Module) SetConfigPath(path string) {
 	m.mu.Lock()
 	m.o.ConfigPath, m.o.Selector.ConfigPath, m.ownedCfg = path, path, true
-	m.guideAt = time.Time{}
+	m.guideKnown = false
 	m.mu.Unlock()
 }
 
@@ -69,12 +67,14 @@ type Module struct {
 	core.Locator
 	o Options
 
-	mu       sync.Mutex
-	cached   string      // cached `lambe state-dir -json` answer
-	tried    bool        // the state-dir command already ran (even if it failed) since Detect
-	ownedCfg bool        // the config was written by abacus's setup step
-	guide    *core.Guide // cached config check, see Guide
-	guideAt  time.Time
+	mu           sync.Mutex
+	cached       string      // cached `lambe state-dir -json` answer
+	tried        bool        // the state-dir command already ran (even if it failed) since Detect
+	ownedCfg     bool        // the config was written by abacus's setup step
+	guide        *core.Guide // cached config check, see Guide
+	guideAt      time.Time
+	guideKnown   bool // guide holds an answer (nil means: nothing to set up)
+	guideProbing bool // a doctor probe is in flight
 	// tracker is the last degraded view, reused until trackerAt+trackerTTL.
 	tracker   View
 	trackerAt time.Time
@@ -326,7 +326,7 @@ func (m *Module) Queues(ctx context.Context) (core.QueuesReport, error) {
 		if g := m.Guide(ctx); g != nil {
 			return core.QueuesReport{}, &core.NeedsSetupError{Guide: *g}
 		}
-		return core.QueuesReport{}, &core.NotConnectedError{Reason: NoDaemonReason, HowToConnect: m.startHint()}
+		return core.QueuesReport{}, &core.NotConnectedError{Reason: NoDaemonReason, HowToConnect: m.StartHint()}
 	}
 	if err != nil {
 		return core.QueuesReport{}, errors.New(core.Sanitize(err.Error()))
@@ -374,21 +374,32 @@ func queuesReport(v View, demo bool) core.QueuesReport {
 // The doctor answer is cached briefly because Guide is asked on every redraw tick.
 func (m *Module) Domain() core.DomainID { return core.DomainQueues }
 
-const guideTTL = 10 * time.Second
+// guideTTL is how long a "needs setup" answer is trusted before asking again (someone may run
+// `lambe init` themselves). An answer of "nothing to set up" is kept until something changes
+// (a setup step, or InvalidateGuide), so the tab is never probed again and again.
+const guideTTL = 30 * time.Second
+
+// InvalidateGuide forgets the cached setup answer; the next Guide asks lambe again.
+func (m *Module) InvalidateGuide() {
+	m.mu.Lock()
+	m.guideKnown = false
+	m.mu.Unlock()
+}
 
 func (m *Module) Guide(ctx context.Context) *core.Guide {
-	if m.o.Demo {
+	if m.o.Demo || m.o.StateDir != "" { // a state dir chosen by the user means a setup of their own
 		return nil
 	}
 	if cfg, _ := m.config(); cfg != "" {
 		return nil
 	}
 	m.mu.Lock()
-	if !m.guideAt.IsZero() && time.Since(m.guideAt) < guideTTL {
+	if m.guideProbing || (m.guideKnown && (m.guide == nil || time.Since(m.guideAt) < guideTTL)) {
 		g := m.guide
 		m.mu.Unlock()
 		return g
 	}
+	m.guideProbing = true
 	bin := m.Bin()
 	m.mu.Unlock()
 	var g *core.Guide
@@ -403,13 +414,12 @@ func (m *Module) Guide(ctx context.Context) *core.Guide {
 		}
 	}
 	m.mu.Lock()
-	m.guide, m.guideAt = g, time.Now()
+	m.guide, m.guideAt, m.guideKnown, m.guideProbing = g, time.Now(), true, false
 	m.mu.Unlock()
 	return g
 }
 
-var queuesGuide = core.Guide{Domain: core.DomainQueues, Step: core.StepQueues, Key: "s",
-	Message: "Queues need a supervisor config", Action: "set up",
+var queuesGuide = core.Guide{Domain: core.DomainQueues, Step: core.StepQueues, Message: "Queues need a supervisor config", Action: "set up",
 	Detail: "Writes a starter Lambe config for your fleet workspace. Nothing is started: you run the supervisor yourself."}
 
 // BuildInitArgv is the one argv the init write may run, for a config at configPath.
@@ -463,13 +473,10 @@ func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
 // no supervisor is running, not because anything is broken.
 const NoDaemonReason = "The supervisor is not running, so there are no live runs or queue to show."
 
-// startHint says how to start the supervisor. abacus never does it for you.
-func (m *Module) startHint() string {
+// StartHint says how to start the supervisor. abacus never does it for you.
+func (m *Module) StartHint() string {
 	if cfg, _ := m.config(); cfg != "" {
 		return "Start it yourself with: lambe run -config " + cfg + "  (abacus never starts it for you). Its state API must be on to show live runs."
 	}
 	return "Start it yourself with: lambe run  (abacus never starts it for you). Its state API must be on to show live runs."
 }
-
-// StartHint is startHint for front-ends that render the section themselves.
-func (m *Module) StartHint() string { return m.startHint() }

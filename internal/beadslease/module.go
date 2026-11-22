@@ -81,8 +81,7 @@ func (m *Module) Guide(context.Context) *core.Guide {
 	return &actorGuide
 }
 
-var actorGuide = core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Key: "s",
-	Message: "Leases need an actor name", Action: "choose one",
+var actorGuide = core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Message: "Leases need an actor name", Action: "choose one",
 	Detail: "The name this machine's agents hold leases under. Change it any time with: abacus config set actor NAME"}
 
 func (m *Module) ID() string   { return "beads-lease" }

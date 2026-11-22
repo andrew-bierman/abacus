@@ -8,9 +8,7 @@ import (
 	"os/user"
 	"regexp"
 	"strings"
-	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
 )
@@ -46,16 +44,15 @@ func DefaultSetupOptions() SetupOptions {
 }
 
 // Setup is the one door to first-run setup. Each step is planned (validated, with the exact
-// command), needs an explicit Confirm, can be applied once, and is audited like a Tasks write.
-// Nothing here starts a daemon.
+// command), needs an explicit Confirm, can be applied once, and is audited like a Tasks write
+// (both go through the same gate). Nothing here starts a daemon.
 type Setup struct {
 	o       SetupOptions
 	writer  TaskWriter
 	applier *Applier
 	lambe   LambeInitializer
 	guiders map[DomainID]Guider
-	mu      sync.Mutex
-	applied map[uint64]bool
+	gate    *gate
 }
 
 // NewSetup picks the providers it needs out of the detected modules.
@@ -64,7 +61,7 @@ func NewSetup(entries []Entry, o SetupOptions) *Setup {
 		o.Audit = DefaultAudit()
 	}
 	p := ResolveProviders(entries)
-	s := &Setup{o: o, writer: p.Writer, guiders: p.Guiders, applied: map[uint64]bool{}}
+	s := &Setup{o: o, writer: p.Writer, guiders: p.Guiders, gate: newGate(o.Audit)}
 	if p.Writer != nil {
 		s.applier = NewApplier(p.Writer, o.Audit)
 	}
@@ -90,6 +87,8 @@ type SetupPlan struct {
 	Argv      []string
 	wp        WritePlan // the workspace step goes through the Tasks write gate
 	actor     string
+	dir       string // queues: the tracker directory lambe init runs in
+	adopt     bool   // queues: only record an existing config
 	confirmed bool
 }
 
@@ -97,6 +96,28 @@ type SetupPlan struct {
 func (p SetupPlan) Confirm() SetupPlan { p.confirmed = true; return p }
 
 var setupSeq atomic.Uint64
+
+// trackerDir is where the Queues starter files go: the tracker Tasks reads (the working
+// directory when it holds one), else the managed workspace once it exists.
+func (s *Setup) trackerDir() (string, bool) {
+	if s.writer != nil {
+		if d := s.writer.TrackerDir(); d != "" {
+			return d, HasTracker(d)
+		}
+		if HasTracker("") {
+			wd, err := os.Getwd()
+			return wd, err == nil
+		}
+	}
+	return s.o.Workspace, HasOwnTracker(s.o.Workspace)
+}
+
+func (s *Setup) blockedQueuesReason() error {
+	if d, ok := s.writer.(InitDirer); ok && d.InitDir() != "" {
+		return errors.New("create your fleet workspace first (Tasks tab, press i, or run `" + brand.Name + " setup`)")
+	}
+	return errors.New("Tasks has no usable tracker yet: fix what the Tasks tab says first")
+}
 
 // Plan builds the plan for a step without side effects. It fails with a plain reason when the
 // step cannot be done safely (no tool, nothing to do, a prerequisite missing).
@@ -107,31 +128,16 @@ func (s *Setup) Plan(step StepID) (SetupPlan, error) {
 		if s.writer == nil || !ok || d.InitDir() == "" {
 			return SetupPlan{}, errors.New("a tracker is already set up (or bd was not found): nothing to create")
 		}
+		if HasOwnTracker(d.InitDir()) {
+			return SetupPlan{}, errors.New("the workspace already has a tracker: nothing to create")
+		}
 		wp, err := PlanTaskChange(s.writer, TaskChange{Op: TaskInit, Dir: d.InitDir()})
 		if err != nil {
 			return SetupPlan{}, err
 		}
 		return SetupPlan{id: setupSeq.Add(1), Step: step, Domain: DomainTasks, Lines: wp.Lines, Argv: wp.Argv, wp: wp}, nil
 	case StepQueues:
-		if s.lambe == nil {
-			return SetupPlan{}, errors.New("Lambe was not found: nothing to set up")
-		}
-		if s.o.Workspace == "" || s.o.LambeConfig == "" {
-			return SetupPlan{}, errors.New("no home directory to keep the config in")
-		}
-		if !HasTracker(s.o.Workspace) {
-			return SetupPlan{}, errors.New("create your fleet workspace first (Tasks tab, press i)")
-		}
-		argv, err := s.lambe.BuildInitArgv(s.o.LambeConfig)
-		if err != nil {
-			return SetupPlan{}, err
-		}
-		return SetupPlan{id: setupSeq.Add(1), Step: step, Domain: DomainQueues, Argv: argv, Lines: []string{
-			"write a starter supervisor config for your fleet workspace",
-			"config: " + s.o.LambeConfig,
-			"workspace files: a starter WORKFLOW.md and formula in " + s.o.Workspace,
-			"nothing is started: you run the supervisor yourself (lambe run)",
-		}}, nil
+		return s.planQueues()
 	case StepActor:
 		if s.o.Config.Path == "" {
 			return SetupPlan{}, errors.New("no home directory to keep the config in")
@@ -144,6 +150,126 @@ func (s *Setup) Plan(step StepID) (SetupPlan, error) {
 			}}, nil
 	}
 	return SetupPlan{}, fmt.Errorf("unknown setup step %q", step)
+}
+
+func (s *Setup) planQueues() (SetupPlan, error) {
+	if s.lambe == nil {
+		return SetupPlan{}, errors.New("Lambe was not found: nothing to set up")
+	}
+	if s.o.Workspace == "" || s.o.LambeConfig == "" {
+		return SetupPlan{}, errors.New("no home directory to keep the config in")
+	}
+	// An abacus config that is already there (an earlier run was interrupted after writing it) is
+	// adopted, not refused: the step only records the path. A link or a non-file is refused.
+	if fi, err := os.Lstat(s.o.LambeConfig); err == nil {
+		switch {
+		case fi.Mode()&os.ModeSymlink != 0:
+			return SetupPlan{}, fmt.Errorf("refusing %s: it is a symlink", s.o.LambeConfig)
+		case !fi.Mode().IsRegular():
+			return SetupPlan{}, fmt.Errorf("refusing %s: it is not a regular file", s.o.LambeConfig)
+		}
+		return SetupPlan{id: setupSeq.Add(1), Step: StepQueues, Domain: DomainQueues, adopt: true,
+			Argv: []string{brand.Name, "config", "set", "lambe_config", s.o.LambeConfig}, Lines: []string{
+				"use the existing supervisor config: " + s.o.LambeConfig,
+				"nothing is written or started: abacus only remembers the path",
+			}}, nil
+	}
+	dir, ok := s.trackerDir()
+	if !ok {
+		return SetupPlan{}, s.blockedQueuesReason()
+	}
+	argv, err := s.lambe.BuildInitArgv(s.o.LambeConfig)
+	if err != nil {
+		return SetupPlan{}, err
+	}
+	return SetupPlan{id: setupSeq.Add(1), Step: StepQueues, Domain: DomainQueues, Argv: argv, dir: dir, Lines: []string{
+		"write a starter supervisor config",
+		"config: " + s.o.LambeConfig,
+		"workspace files: a starter WORKFLOW.md and formula in " + dir,
+		"nothing is started: you run the supervisor yourself (lambe run)",
+	}}, nil
+}
+
+// changed is the fail-closed error for a precondition that no longer holds at apply time.
+func changed(what string) error {
+	return errors.New("changed since you opened it: " + what + "; nothing was done, look again")
+}
+
+// recheck re-verifies, at apply time, what the plan assumed when it was made.
+func (s *Setup) recheck(ctx context.Context, p SetupPlan) error {
+	switch p.Step {
+	case StepWorkspace:
+		d, ok := s.writer.(InitDirer)
+		if !ok || d.InitDir() == "" || HasOwnTracker(d.InitDir()) {
+			return changed("a tracker already exists")
+		}
+	case StepActor:
+		if g := s.guiders[DomainLeases]; g != nil && g.Guide(ctx) == nil {
+			return changed("an actor name is already set")
+		}
+	case StepQueues:
+		if g := s.guiders[DomainQueues]; g != nil && g.Guide(ctx) == nil {
+			return changed("Queues no longer needs a config")
+		}
+	}
+	return nil
+}
+
+// Apply runs a confirmed plan once and returns a one-line result. Preconditions are re-checked
+// first (fail closed); the attempt is audited before anything runs and a failed audit blocks the
+// step; an outcome that cannot be known is reported as unknown, never as "not applied".
+func (s *Setup) Apply(ctx context.Context, p SetupPlan) (string, error) {
+	if !p.confirmed {
+		return "", ErrNotConfirmed
+	}
+	if p.Step != StepWorkspace && p.Step != StepQueues && p.Step != StepActor {
+		return "", fmt.Errorf("unknown setup step %q", p.Step)
+	}
+	if err := s.recheck(ctx, p); err != nil {
+		return "", err
+	}
+	if p.Step == StepWorkspace {
+		if _, err := s.applier.Apply(ctx, p.wp.Confirm()); err != nil {
+			return "", err
+		}
+		return "created your fleet workspace", nil
+	}
+	var msg string
+	e := AuditEntry{Domain: string(p.Domain), Verb: "setup-" + string(p.Step), Argv: p.Argv, Tracker: p.dir}
+	err := s.gate.do(p.id, e, func() error {
+		var err error
+		msg, err = s.run(ctx, p)
+		return err
+	})
+	return msg, err
+}
+
+func (s *Setup) run(ctx context.Context, p SetupPlan) (string, error) {
+	if p.Step == StepActor {
+		note, err := s.o.Config.UpdateNote(func(c *Config) error { return c.Set("actor", p.actor) })
+		if err != nil {
+			return "", err
+		}
+		return joinNote("leases will be held as "+p.actor, note), nil
+	}
+	msg := "wrote the starter supervisor config (nothing was started)"
+	if p.adopt {
+		msg = "using the existing supervisor config"
+	} else if err := s.lambe.RunInit(ctx, p.dir, s.o.LambeConfig); err != nil {
+		return "", err
+	}
+	note, err := s.o.Config.UpdateNote(func(c *Config) error { return c.Set("lambe_config", s.o.LambeConfig) })
+	if err != nil {
+		return "", fmt.Errorf("the config is at %s but could not be remembered (%s): run `%s config set lambe_config %s`", s.o.LambeConfig, Sanitize(err.Error()), brand.Name, s.o.LambeConfig)
+	}
+	return joinNote(msg, note), nil
+}
+
+func joinNote(msg, note string) string {
+	if note == "" {
+		return msg
+	}
+	return msg + " (" + note + ")"
 }
 
 var notNameRE = regexp.MustCompile(`[^a-z0-9._-]+`)
@@ -172,62 +298,6 @@ func (s *Setup) suggest() string {
 		return s.o.Suggest()
 	}
 	return SuggestActor()
-}
-
-// Apply runs a confirmed plan once and returns a one-line result. The attempt is audited
-// before anything runs and a failed audit blocks the step; an outcome that cannot be known is
-// reported as unknown, never as "not applied".
-func (s *Setup) Apply(ctx context.Context, p SetupPlan) (string, error) {
-	if !p.confirmed {
-		return "", ErrNotConfirmed
-	}
-	switch p.Step {
-	case StepWorkspace:
-		if _, err := s.applier.Apply(ctx, p.wp.Confirm()); err != nil {
-			return "", err
-		}
-		return "created your fleet workspace", nil
-	case StepQueues, StepActor:
-	default:
-		return "", fmt.Errorf("unknown setup step %q", p.Step)
-	}
-	s.mu.Lock()
-	if s.applied[p.id] {
-		s.mu.Unlock()
-		return "", ErrAlreadyApplied
-	}
-	s.applied[p.id] = true
-	s.mu.Unlock()
-	e := AuditEntry{Time: time.Now().UTC(), Domain: string(p.Domain), Verb: "setup-" + string(p.Step), Phase: "attempt", Argv: p.Argv}
-	if err := s.o.Audit.Record(e); err != nil {
-		return "", err
-	}
-	msg, err := s.run(ctx, p)
-	e.Time, e.Phase = time.Now().UTC(), "ok"
-	if err != nil {
-		e.Phase, e.Error = "error", Sanitize(err.Error())
-		if errors.Is(err, ErrOutcomeUnknown) {
-			e.Phase = "unknown"
-		}
-	}
-	_ = s.o.Audit.Record(e)
-	return msg, err
-}
-
-func (s *Setup) run(ctx context.Context, p SetupPlan) (string, error) {
-	if p.Step == StepActor {
-		if err := s.o.Config.Update(func(c *Config) error { return c.Set("actor", p.actor) }); err != nil {
-			return "", err
-		}
-		return "leases will be held as " + p.actor, nil
-	}
-	if err := s.lambe.RunInit(ctx, s.o.Workspace, s.o.LambeConfig); err != nil {
-		return "", err
-	}
-	if err := s.o.Config.Update(func(c *Config) error { return c.Set("lambe_config", s.o.LambeConfig) }); err != nil {
-		return "", fmt.Errorf("the config was written to %s but could not be remembered (%s): run `%s config set lambe_config %s`", s.o.LambeConfig, Sanitize(err.Error()), brand.Name, s.o.LambeConfig)
-	}
-	return "wrote the starter supervisor config (nothing was started)", nil
 }
 
 // StepInfo is one step as `abacus setup` reports it.

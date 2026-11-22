@@ -55,6 +55,19 @@ type guidedSection struct {
 	geom
 }
 
+// stepKey is the key that starts a setup step; keys are a front-end choice, not data.
+func stepKey(step core.StepID) string {
+	if step == core.StepWorkspace {
+		return "i"
+	}
+	return "s"
+}
+
+// guideLine is the one guided sentence: "<message> — press <key> to <action>".
+func guideLine(g core.Guide) string {
+	return g.Message + " — press " + stepKey(g.Step) + " to " + g.Action
+}
+
 func newGuidedSection(d core.DomainID, inner section, setup *core.Setup) *guidedSection {
 	return &guidedSection{domain: d, inner: inner, setup: setup, th: DefaultTheme()}
 }
@@ -67,7 +80,7 @@ func (s *guidedSection) Capturing() bool {
 func (s *guidedSection) setupKey() key.Binding {
 	k := "s"
 	if s.guide != nil {
-		k = s.guide.Key
+		k = stepKey(s.guide.Step)
 	}
 	return key.NewBinding(key.WithKeys(k), key.WithHelp(k, "set up"))
 }
@@ -202,7 +215,7 @@ func (s *guidedSection) lines() []string {
 	}
 	g := s.guide
 	out := []string{th.Header.Render(san(g.Domain.Title())) + " " + th.Badge(KindWarn, "needs setup"), ""}
-	out = append(out, wrap(th.Text(KindAccent, san(g.Line())), w)...)
+	out = append(out, wrap(th.Text(KindAccent, san(guideLine(*g))), w)...)
 	if g.Detail != "" {
 		out = append(out, "")
 		out = append(out, wrap(th.Text(KindMuted, san(g.Detail)), w)...)

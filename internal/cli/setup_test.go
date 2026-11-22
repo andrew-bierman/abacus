@@ -18,7 +18,7 @@ type guidedLeases struct{ *modtest.Fake }
 
 func (guidedLeases) Domain() core.DomainID { return core.DomainLeases }
 func (guidedLeases) Guide(context.Context) *core.Guide {
-	return &core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Key: "s", Message: "Leases need an actor name", Action: "choose one"}
+	return &core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Message: "Leases need an actor name", Action: "choose one"}
 }
 
 type setupRun struct {

@@ -478,7 +478,7 @@ func TestMissingActorIsAGuidedSetupStateNotAnError(t *testing.T) {
 	m := newMod(&fake{resp: map[string]result{"--json list": {out: body, exit: 64}}}, Options{})
 	_, err := m.Leases(context.Background())
 	g, ok := core.AsNeedsSetup(err)
-	if !ok || g.Step != core.StepActor || g.Line() != "Leases need an actor name — press s to choose one" {
+	if !ok || g.Step != core.StepActor || g.Message != "Leases need an actor name" || g.Action != "choose one" {
 		t.Fatalf("%+v %v", g, err)
 	}
 	if m.Guide(context.Background()) == nil {

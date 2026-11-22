@@ -1,0 +1,44 @@
+package core
+
+import (
+	"errors"
+	"sync"
+	"time"
+)
+
+// gate is the one write gate shared by the Tasks Applier and the Setup steps: a plan id can be
+// claimed once, the attempt is audited before anything runs (a failed audit blocks it), and the
+// outcome is audited after. It does not know what is being written.
+type gate struct {
+	audit   Audit
+	mu      sync.Mutex
+	applied map[uint64]bool
+}
+
+func newGate(a Audit) *gate { return &gate{audit: a, applied: map[uint64]bool{}} }
+
+// do claims id (ErrAlreadyApplied if it was used), records the attempt e (fail closed), runs
+// the write, and records its outcome. An outcome that cannot be known is recorded as "unknown".
+func (g *gate) do(id uint64, e AuditEntry, run func() error) error {
+	g.mu.Lock()
+	if g.applied[id] {
+		g.mu.Unlock()
+		return ErrAlreadyApplied
+	}
+	g.applied[id] = true
+	g.mu.Unlock()
+	e.Time, e.Phase = time.Now().UTC(), "attempt"
+	if err := g.audit.Record(e); err != nil {
+		return err
+	}
+	err := run()
+	e.Time, e.Phase = time.Now().UTC(), "ok"
+	if err != nil {
+		e.Phase, e.Error = "error", Sanitize(err.Error())
+		if errors.Is(err, ErrOutcomeUnknown) {
+			e.Phase = "unknown"
+		}
+	}
+	_ = g.audit.Record(e) // the attempt line already exists; a failed result line must not mask the outcome
+	return err
+}
