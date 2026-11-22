@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "note": "Pinned sidecar tools shipped in every release archive. Edit pins with scripts/update-bundled-tools.sh, never by hand: it fills each sha256 from the upstream checksum file and verifies a real download against it.",
+  "note": "Pinned sidecar tools shipped in every release archive. Fields and which are hand-edited versus script-written are documented in scripts/lib/bundle.sh. Re-pin with scripts/update-bundled-tools.sh, never by hand.",
   "tools": [
     {
       "name": "bd",
@@ -11,7 +11,6 @@
       "asset_template": "beads_{version}_{os}_{arch}.tar.gz",
       "checksums_asset": "checksums.txt",
       "member": "bd",
-      "install_as": "bd",
       "license_source": {
         "from": "archive",
         "member": "LICENSE"
@@ -49,7 +48,6 @@
       "asset_template": "bv_{version}_{os}_{arch}.tar.gz",
       "checksums_asset": "checksums.txt",
       "member": "bv",
-      "install_as": "bv",
       "license_source": {
         "from": "archive",
         "member": "LICENSE"
@@ -87,7 +85,6 @@
       "asset_template": "lambe_{version}_{os}_{arch}.tar.gz",
       "checksums_asset": "checksums.txt",
       "member": "lambe",
-      "install_as": "lambe",
       "license_source": {
         "from": "archive",
         "member": "LICENSE"
@@ -125,7 +122,6 @@
       "asset_template": "beadle-{os}-{arch}.tar.gz",
       "checksums_asset": "SHA256SUMS",
       "member": "beadle-{os}-{arch}",
-      "install_as": "beads-lease",
       "license_source": {
         "from": "tag",
         "path": "LICENSE"

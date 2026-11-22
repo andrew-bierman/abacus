@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -302,5 +303,25 @@ func TestSidecarEnvOmitsUnsafeDirsAndFiles(t *testing.T) {
 	env := []string{"PATH=/usr/bin"}
 	if got := core.SidecarEnv(env); pathOf(got) != "/usr/bin" {
 		t.Fatalf("an unsafe sidecar must not reach a child's PATH: %q", pathOf(got))
+	}
+}
+
+func TestTheManifestShipsExactlyTheToolsAbacusLooksFor(t *testing.T) {
+	b, err := os.ReadFile("../../bundled-tools.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m struct {
+		Tools []struct{ Name string } `json:"tools"`
+	}
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, tl := range m.Tools {
+		names = append(names, tl.Name)
+	}
+	if strings.Join(names, ",") != strings.Join(core.KnownTools, ",") {
+		t.Fatalf("manifest tools %v != core.KnownTools %v: a shipped tool abacus never looks for, or the reverse", names, core.KnownTools)
 	}
 }

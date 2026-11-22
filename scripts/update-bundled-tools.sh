@@ -5,26 +5,27 @@
 #   scripts/update-bundled-tools.sh --all            re-pin every tool at its current version
 #
 # For each platform it reads the sha256 from the tool's own upstream checksum file, downloads
-# the asset with gh (which uses your gh auth, so private repos work), and fails unless the
-# download matches. If upstream publishes no checksum for an asset, it stops; pass
-# --trust-first-download to record the hash of this one download instead, and say so in the PR.
-# It also pins the sha256 of each tool's license file. It never publishes or tags anything.
+# the asset with gh (your gh login, so private repos work), and fails unless the download matches.
+# If upstream publishes no checksum for an asset it stops; --trust-first-download records the
+# hash of that one download instead (say so in the PR). It also pins the sha256 of each tool's
+# license. The manifest is rewritten atomically (temp file in the same directory, then mv).
+# It never publishes or tags anything. Fields are documented in scripts/lib/bundle.sh.
+#
+# Environment: ABACUS_BUNDLE_CACHE (downloads) and ABACUS_BUNDLE_MANIFEST (manifest path).
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-manifest="$root/bundled-tools.json"
+BUNDLE_SCRIPT=update-bundled-tools
+manifest="${ABACUS_BUNDLE_MANIFEST:-$root/bundled-tools.json}"
 cache="${ABACUS_BUNDLE_CACHE:-$root/.cache/bundle}"
 platforms=(darwin-amd64 darwin-arm64 linux-amd64 linux-arm64)
+# shellcheck source=lib/bundle.sh
+source "$root/scripts/lib/bundle.sh"
+need gh; need jq
 
-die() { echo "update-bundled-tools: $*" >&2; exit 1; }
-command -v gh >/dev/null || die "gh is required"
-command -v jq >/dev/null || die "jq is required"
-if command -v sha256sum >/dev/null; then sha() { sha256sum "$1" | cut -d' ' -f1; }
-else sha() { shasum -a 256 "$1" | cut -d' ' -f1; }; fi
-
-expand() { # TEMPLATE VERSION OS ARCH
-  local s="$1"; s="${s//\{version\}/$2}"; s="${s//\{os\}/$3}"; echo "${s//\{arch\}/$4}"
-}
+tmps=()
+cleanup() { [ "${#tmps[@]}" = 0 ] || rm -rf "${tmps[@]}"; }
+trap cleanup EXIT
 
 trust=0; all=0; args=()
 for a in "$@"; do
@@ -39,17 +40,16 @@ done
 pin_tool() {
   local tool="$1" version="$2"
   jq -e --arg t "$tool" '.tools[] | select(.name==$t)' "$manifest" >/dev/null || die "unknown tool $tool"
-  field() { jq -r --arg t "$tool" ".tools[] | select(.name==\$t) | $1" "$manifest"; }
-  local repo tag_t asset_t sums member_t
-  repo="$(field .repo)"; tag_t="$(field .tag_template)"; asset_t="$(field .asset_template)"
-  sums="$(field .checksums_asset)"; member_t="$(field .member)"
-  local tag; tag="$(expand "$tag_t" "$version" x x)"
-  local dir="$cache/$tool"; mkdir -p "$dir"
-  local sumfile="$dir/$sums.$version"
+  local repo asset_t sums member_t tag dir sumfile
+  repo="$(tool_field "$tool" .repo)"; asset_t="$(tool_field "$tool" .asset_template)"
+  sums="$(tool_field "$tool" .checksums_asset)"; member_t="$(tool_field "$tool" .member)"
+  tag="$(tag_for "$tool" "$version")"
+  dir="$cache/$tool"; mkdir -p "$dir"
+  sumfile="$dir/$sums.$version"
   gh release download "$tag" -R "$repo" -p "$sums" -O "$sumfile" --clobber \
     || die "$tool: cannot read $sums from $repo $tag"
 
-  local assets="{}"
+  local assets="{}" p
   for p in "${platforms[@]}"; do
     local os="${p%-*}" arch="${p#*-}" asset want got
     asset="$(expand "$asset_t" "$version" "$os" "$arch")"
@@ -67,21 +67,17 @@ pin_tool() {
       '. + {($p): {asset: $a, sha256: $h, member: $m}}' <<<"$assets")"
   done
 
-  # License: from the archive (verified above) or fetched from the pinned tag.
-  local lsrc lic lsha
-  lsrc="$(field '.license_source.from')"; lic="$(mktemp)"
-  if [ "$lsrc" = archive ]; then
-    local ex; ex="$(mktemp -d)"
-    tar -xzf "$dir/$(expand "$asset_t" "$version" darwin arm64)" -C "$ex"
-    cp "$ex/$(field '.license_source.member')" "$lic"; rm -rf "$ex"
+  # The license: from the first platform's archive (verified above) or fetched at the pinned tag.
+  local lic lsha; lic="$(mktemp)"; tmps+=("$lic")
+  if [ "$(tool_field "$tool" .license_source.from)" = archive ]; then
+    extract_member "$dir/$(expand "$asset_t" "$version" darwin arm64)" "$(tool_field "$tool" .license_source.member)" "$lic"
   else
-    gh api -H 'Accept: application/vnd.github.raw' "repos/$repo/contents/$(field '.license_source.path')?ref=$tag" >"$lic" \
-      || die "$tool: cannot fetch the license at $tag"
+    fetch_license "$tool" "$version" "$lic"
   fi
   [ -s "$lic" ] || die "$tool: empty license"
-  lsha="$(sha "$lic")"; rm -f "$lic"
+  lsha="$(sha "$lic")"
 
-  local tmp; tmp="$(mktemp)"
+  local tmp; tmp="$(mktemp "$manifest.XXXXXX")"; tmps+=("$tmp")
   jq --arg t "$tool" --arg v "$version" --argjson a "$assets" --arg l "$lsha" \
     '(.tools[] | select(.name==$t)) |= (.version=$v | .assets=$a | .license_sha256=$l)' "$manifest" >"$tmp"
   mv "$tmp" "$manifest"

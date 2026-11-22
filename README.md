@@ -96,13 +96,25 @@ that is not world-writable and not in a world-writable directory. Doctor shows, 
 whether it is `bundled`, from `PATH` or an override, or missing, with its version. Child tools
 see the sidecar directories first on `PATH`, so bv finds the bundled bd.
 
+**The manifest, field by field.** Hand-edited: `schema`, `note`, and per tool `name` (the file
+name in `bundled/`; it must equal the tool names abacus looks for, a test checks it), `repo`,
+`license` (display name), `tag_template`, `asset_template` and `member` (with `{version}`, `{os}`
+and `{arch}` placeholders), `checksums_asset`, `license_source` (`{from: archive, member}` or
+`{from: tag, path}`). Written only by `scripts/update-bundled-tools.sh`: `version`, `assets`
+(platform to asset, sha256 and member) and `license_sha256`. The same list is at the top of
+`scripts/lib/bundle.sh`, which both scripts share.
+
 **Refreshing a pin:** `scripts/update-bundled-tools.sh TOOL VERSION` (or `--all` to re-pin the
 current versions). It reads each platform's sha256 from the tool's upstream checksum file,
 downloads the asset with your `gh` login and fails unless the download matches. If upstream
 published no checksum for an asset it stops; `--trust-first-download` pins the hash of that one
 download instead (say so in the PR; all four tools publish checksums today, so none needed it).
 Then run `scripts/package-release.sh VERSION --platforms darwin-arm64 --out DIR` to check the
-result. Both scripts need `gh` and `jq`, and read `ABACUS_BUNDLE_CACHE` (default `.cache/bundle`).
+result. Both scripts need `jq` (and `gh` to download), and read `ABACUS_BUNDLE_CACHE` (default
+`.cache/bundle`) and `ABACUS_BUNDLE_MANIFEST` (default `bundled-tools.json`). Archives are built
+in a work directory and moved into the output directory only after every platform succeeded;
+tar members that are links, absolute or contain `..` are refused before anything is read. The
+scripts are tested offline (`internal/release`) with fake archives and a fake `gh`.
 
 ## Architecture
 
