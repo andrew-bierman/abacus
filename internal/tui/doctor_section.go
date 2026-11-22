@@ -2,10 +2,12 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -143,36 +145,54 @@ func (s *doctorSection) View() string { return s.render(s.lines()) }
 // tuiLine is a domain's one-liner in front-end words: the setup key, not the CLI command.
 func tuiLine(l core.DomainLine) string {
 	if l.Guide != nil {
-		return l.Guide.Message + " — press " + l.Guide.Key + " on the " + l.Title + " tab to " + l.Guide.Action
+		return l.Guide.Message + " — press " + l.Guide.Key + " on the " + l.Title + " tab"
 	}
 	return l.Line
+}
+
+// hang wraps text to w cells with a hanging indent, so a wrapped line stays under its label.
+func hang(prefix, text string, w int) []string {
+	pw := lipgloss.Width(prefix)
+	parts := wrap(text, max(w-pw, 8))
+	for i := range parts {
+		if i == 0 {
+			parts[i] = prefix + parts[i]
+		} else {
+			parts[i] = strings.Repeat(" ", pw) + parts[i]
+		}
+	}
+	return parts
 }
 
 // overviewLines leads Doctor: ready or needs attention in plain language, each area in one
 // line, and each tool with where it came from.
 func (s *doctorSection) overviewLines(ov core.Overview) []string {
 	th, w := s.th, s.width()
-	var attention []string
+	todo := 0
 	for _, l := range ov.Domains {
 		if l.Domain != core.DomainBoard && l.State != core.Connected {
-			attention = append(attention, l.Title+": "+tuiLine(l))
+			todo++
 		}
 	}
 	var out []string
 	switch {
-	case ov.Ready && len(attention) == 0:
+	case ov.Ready && todo == 0:
 		out = append(out, th.Badge(KindOK, "Ready"))
 	case ov.Ready:
 		out = append(out, th.Badge(KindOK, "Ready")+" "+th.Text(KindMuted, strings.TrimPrefix(ov.Headline, "Ready")))
 	default:
-		out = append(out, th.Badge(KindWarn, "Needs attention"))
-	}
-	for _, a := range attention {
-		out = append(out, wrap("  - "+san(a), w)...)
+		out = append(out, th.Badge(KindWarn, "Needs attention")+" "+th.Text(KindMuted, fmt.Sprintf("%d to set up, see below", todo)))
 	}
 	out = append(out, "", th.Header.Render("Areas"))
 	for _, l := range ov.Domains {
-		out = append(out, wrap("  "+th.Label.Render(padTo(san(l.Title), 7))+" "+san(tuiLine(l)), w)...)
+		kind := KindMuted
+		switch l.State {
+		case core.Connected:
+			kind = KindOK
+		case core.NeedsSetup, core.Degraded:
+			kind = KindWarn
+		}
+		out = append(out, hang("  "+th.Label.Render(padTo(san(l.Title), 7))+" ", th.Text(kind, san(tuiLine(l))), w)...)
 	}
 	out = append(out, "", th.Header.Render("Tools"))
 	for _, t := range ov.Tools {
@@ -183,7 +203,7 @@ func (s *doctorSection) overviewLines(ov core.Overview) []string {
 		case "PATH", "override":
 			where = th.Badge(KindMuted, san(t.Where))
 		}
-		out = append(out, "  "+th.Label.Render(padTo(san(t.ID), 12))+" "+where+" "+th.Text(KindMuted, strings.TrimSpace(san(t.Version)+"  "+san(t.Path))))
+		out = append(out, "  "+th.Label.Render(padTo(san(t.ID), 12))+" "+where+" "+th.Text(KindMuted, san(t.Version)))
 	}
 	return out
 }

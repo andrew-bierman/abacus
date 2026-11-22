@@ -4,6 +4,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -141,6 +142,10 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 // leasesStatus reads the Leases domain and shapes the typed report as rows for the section.
 func leasesStatus(p core.LeaseProvider, ctx context.Context) core.Status {
 	r, err := p.Leases(ctx)
+	var nc *core.NotConnectedError
+	if errors.As(err, &nc) {
+		return core.Status{Unavailable: core.Sanitize(nc.Reason), HowToConnect: core.Sanitize(nc.HowToConnect)}
+	}
 	if err != nil {
 		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}

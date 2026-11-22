@@ -77,7 +77,11 @@ func (s *genericSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *genericSection) lines() []string {
 	out := s.bodyLines()
 	if s.title != "" {
-		return append([]string{s.th.Header.Render(s.title)}, out...)
+		head := s.th.Header.Render(s.title)
+		if s.loaded && s.status.Unavailable != "" && s.status.HowToConnect != "" {
+			head += " " + s.th.Badge(KindSkip, "not connected")
+		}
+		return append([]string{head}, out...)
 	}
 	return out
 }
@@ -88,6 +92,10 @@ func (s *genericSection) bodyLines() []string {
 	switch {
 	case !s.loaded:
 		return []string{th.Text(KindMuted, "loading…")}
+	case s.status.Unavailable != "" && s.status.HowToConnect != "":
+		out := []string{""}
+		out = append(out, wrap(th.Text(KindWarn, san(s.status.Unavailable)), w)...)
+		return append(append(out, ""), wrap(th.Text(KindAccent, "how to connect: ")+san(s.status.HowToConnect), w)...)
 	case s.status.Unavailable != "":
 		return wrap(th.Text(KindWarn, "state unavailable: "+san(s.status.Unavailable)), w)
 	}

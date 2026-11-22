@@ -105,7 +105,7 @@ func TestSetupKeyOpensAConfirmScreenAndNothingRunsUntilY(t *testing.T) {
 	if len(bd.ran) != 1 || au.n != 2 {
 		t.Fatalf("y applies exactly once, audited: ran=%d audit=%d", len(bd.ran), au.n)
 	}
-	if v := m.View(); strings.Contains(v, "No tracker here") || !strings.Contains(v, "created fleet workspace") {
+	if v := m.View(); strings.Contains(v, "No tracker here") || !strings.Contains(v, "created your fleet workspace") {
 		t.Fatalf("after setup the guide is gone and the result is shown:\n%s", v)
 	}
 }

@@ -183,11 +183,10 @@ func (s *Setup) Apply(ctx context.Context, p SetupPlan) (string, error) {
 	}
 	switch p.Step {
 	case StepWorkspace:
-		res, err := s.applier.Apply(ctx, p.wp.Confirm())
-		if err != nil {
+		if _, err := s.applier.Apply(ctx, p.wp.Confirm()); err != nil {
 			return "", err
 		}
-		return "created " + Sanitize(res.Title), nil
+		return "created your fleet workspace", nil
 	case StepQueues, StepActor:
 	default:
 		return "", fmt.Errorf("unknown setup step %q", p.Step)
@@ -228,7 +227,7 @@ func (s *Setup) run(ctx context.Context, p SetupPlan) (string, error) {
 	if err := s.o.Config.Update(func(c *Config) error { return c.Set("lambe_config", s.o.LambeConfig) }); err != nil {
 		return "", fmt.Errorf("the config was written to %s but could not be remembered (%s): run `%s config set lambe_config %s`", s.o.LambeConfig, Sanitize(err.Error()), brand.Name, s.o.LambeConfig)
 	}
-	return "wrote " + s.o.LambeConfig + " (start the supervisor yourself: lambe run -config " + s.o.LambeConfig + ")", nil
+	return "wrote the starter supervisor config (nothing was started)", nil
 }
 
 // StepInfo is one step as `abacus setup` reports it.

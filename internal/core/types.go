@@ -91,7 +91,10 @@ type Status struct {
 	Lines       []string `json:"lines,omitempty"`
 	Rows        []Row    `json:"rows,omitempty"` // additive: typed twin of Lines
 	Unavailable string   `json:"unavailable,omitempty"`
-	Source      string   `json:"source,omitempty"`
+	// HowToConnect accompanies Unavailable when the reason is a plain "not connected" with a
+	// fix the user can act on (not an internal error). Additive.
+	HowToConnect string `json:"how_to_connect,omitempty"`
+	Source       string `json:"source,omitempty"`
 }
 
 // Module is one composable tool.
