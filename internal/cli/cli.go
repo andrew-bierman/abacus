@@ -115,6 +115,9 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 		case m.Status.Unavailable != "":
 			fmt.Fprintf(w, "  state unavailable: %s\n", m.Status.Unavailable)
 		default:
+			if m.Status.Source != "" {
+				fmt.Fprintf(w, "  source: %s\n", m.Status.Source)
+			}
 			fmt.Fprintf(w, "  %s\n", m.Status.Summary)
 			for _, l := range m.Status.Lines {
 				fmt.Fprintf(w, "    %s\n", l)
