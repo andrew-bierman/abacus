@@ -27,7 +27,11 @@ type Options struct {
 type Module struct {
 	o   Options
 	bin string
+	src core.Source
 }
+
+// Located reports which binary Detect found and where it came from.
+func (m *Module) Located() (string, core.Source) { return m.bin, m.src }
 
 func New(o Options) *Module {
 	if o.Runner == nil {
@@ -69,11 +73,11 @@ func (m *Module) read(ctx context.Context, a []string) ([]byte, int, error) {
 }
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	bin, absent := core.Locate("bd", m.o.Bin, m.o.LookPath)
+	bin, src, absent := core.LocateSource("bd", m.o.Bin, m.o.LookPath)
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
-	m.bin = bin
+	m.bin, m.src = bin, src
 	// version needs no tracker, so it never takes -C: a bad tracker dir must not read as a broken install.
 	cctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()

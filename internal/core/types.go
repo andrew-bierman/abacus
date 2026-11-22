@@ -42,6 +42,16 @@ type Detection struct {
 	Version    string `json:"version,omitempty"`
 	APIVersion int    `json:"api_version,omitempty"`
 	Detail     string `json:"detail,omitempty"`
+	// Path and Source say which binary was found and where ("bundled", "PATH", "override").
+	// Both are additive (schema_version stays 1) and filled in by the registry.
+	Path   string `json:"path,omitempty"`
+	Source Source `json:"source,omitempty"`
+}
+
+// Located is implemented by modules that find a binary; the registry copies the answer into
+// their Detection so Doctor and status can say where each tool came from.
+type Located interface {
+	Located() (path string, src Source)
 }
 
 // Check is one doctor result.

@@ -21,6 +21,10 @@ func (r *Registry) Detect(ctx context.Context) []Entry {
 		d := m.Detect(ctx)
 		// Version and Detail come from the tool; no front-end should ever see control characters.
 		d.Version, d.Detail = Sanitize(d.Version), Sanitize(d.Detail)
+		if l, ok := m.(Located); ok && d.State != Absent {
+			d.Path, d.Source = l.Located()
+			d.Path = Sanitize(d.Path)
+		}
 		out = append(out, Entry{Module: m, Detection: d})
 	}
 	return out

@@ -42,6 +42,7 @@ const trackerTTL = 15 * time.Second
 type Module struct {
 	o   Options
 	bin string
+	src core.Source
 
 	mu     sync.Mutex
 	cached string // cached `lambe state-dir -json` answer
@@ -100,6 +101,13 @@ func New(o Options) *Module {
 	return &Module{o: o}
 }
 
+// Located reports which binary Detect found and where it came from.
+func (m *Module) Located() (string, core.Source) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.bin, m.src
+}
+
 func (m *Module) ID() string   { return "lambe" }
 func (m *Module) Name() string { return "Lambe" }
 
@@ -112,7 +120,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	if m.o.Demo {
 		return core.Detection{State: core.Ready, Version: "demo", APIVersion: SupportedAPIVersion}
 	}
-	bin, absent := core.Locate("lambe", m.o.Bin, m.o.LookPath)
+	bin, src, absent := core.LocateSource("lambe", m.o.Bin, m.o.LookPath)
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
@@ -132,7 +140,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 			Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", v.APIVersion, SupportedAPIVersion)}
 	}
 	m.mu.Lock()
-	m.bin, m.cached, m.tried, m.trackerAt = bin, "", false, time.Time{}
+	m.bin, m.src, m.cached, m.tried, m.trackerAt = bin, src, "", false, time.Time{}
 	m.mu.Unlock()
 	return core.Detection{State: core.Ready, Version: v.Version, APIVersion: v.APIVersion}
 }

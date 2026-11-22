@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/andrew-bierman/abacus/internal/brand"
 )
 
 // Source says where a tool was found. It is shown in Doctor and status so "which bd is this?"
@@ -31,14 +33,14 @@ var SidecarDirs = func() []string {
 }
 
 // SidecarDirsFor is the sidecar search order for an executable: its own directory, then
-// ../libexec/abacus, then bundled/. The executable is resolved through symlinks first, so a
+// ../libexec/<name>, then bundled/. The executable is resolved through symlinks first, so a
 // symlink in ~/bin still finds the install it points into.
 func SidecarDirsFor(exe string) []string {
 	if real, err := filepath.EvalSymlinks(exe); err == nil {
 		exe = real
 	}
 	dir := filepath.Dir(exe)
-	return []string{dir, filepath.Join(dir, "..", "libexec", "abacus"), filepath.Join(dir, "bundled")}
+	return []string{dir, filepath.Join(dir, "..", "libexec", brand.Name), filepath.Join(dir, "bundled")}
 }
 
 // sidecar returns the safe sidecar for tool, or why a candidate was ignored. A sidecar is

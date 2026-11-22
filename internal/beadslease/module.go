@@ -29,6 +29,7 @@ type Module struct {
 	run      readOnly
 	lookup   func(string) (string, error)
 	bin      string
+	src      core.Source
 	explicit string
 	timeout  time.Duration
 	// hasDoctor is set by Detect when the binary reports api_version 1, which includes
@@ -50,6 +51,9 @@ func New(o Options) *Module {
 	return &Module{run: readOnly{inner: o.Runner}, lookup: o.LookPath, explicit: o.Bin, timeout: o.Timeout}
 }
 
+// Located reports which binary Detect found and where it came from.
+func (m *Module) Located() (string, core.Source) { return m.bin, m.src }
+
 func (m *Module) ID() string   { return "beads-lease" }
 func (m *Module) Name() string { return "beads-lease" }
 
@@ -66,7 +70,7 @@ type versionInfo struct {
 }
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	bin, absent := core.Locate("beads-lease", m.explicit, m.lookup)
+	bin, src, absent := core.LocateSource("beads-lease", m.explicit, m.lookup)
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
@@ -84,7 +88,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 					Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", *v.APIVersion, supportedAPIVersion)}
 			}
 			if ver != "" {
-				m.bin, m.hasDoctor = bin, true
+				m.bin, m.src, m.hasDoctor = bin, src, true
 				return core.Detection{State: core.Ready, Version: ver, APIVersion: supportedAPIVersion}
 			}
 		}
@@ -100,7 +104,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	if match == nil {
 		return core.Detection{State: core.Incompatible, Detail: "beads-lease version: unrecognized output"}
 	}
-	m.bin = bin
+	m.bin, m.src = bin, src
 	// Legacy binary: api_version stays unknown, but it is usable for `--json list`.
 	return core.Detection{State: core.Ready, Version: match[1]}
 }

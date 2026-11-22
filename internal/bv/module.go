@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -30,7 +31,14 @@ type Options struct {
 type Module struct {
 	o   Options
 	bin string
+	src core.Source
+
+	mu      sync.Mutex
+	lastErr string // why the last insights read failed, for Doctor
 }
+
+// Located reports which binary Detect found and where it came from.
+func (m *Module) Located() (string, core.Source) { return m.bin, m.src }
 
 func New(o Options) *Module {
 	if o.Runner == nil {
@@ -48,18 +56,46 @@ func New(o Options) *Module {
 func (m *Module) ID() string   { return "bv" }
 func (m *Module) Name() string { return "bv" }
 
-// Detect is by PATH lookup alone: abacus runs nothing to detect it.
-func (m *Module) Detect(context.Context) core.Detection {
-	bin, absent := core.Locate("bv", m.o.Bin, m.o.LookPath)
+var versionRE = regexp.MustCompile(`^bv\s+v?(\d+\.\d+\S*)`)
+
+// Detect finds the binary and, best effort, asks it `bv --version` for display. A failing
+// version call never makes bv unusable: only the robot reads decide that.
+func (m *Module) Detect(ctx context.Context) core.Detection {
+	bin, src, absent := core.LocateSource("bv", m.o.Bin, m.o.LookPath)
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
-	m.bin = bin
-	return core.Detection{State: core.Ready}
+	m.bin, m.src = bin, src
+	d := core.Detection{State: core.Ready}
+	vctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
+	defer cancel()
+	if out, exit, err := m.o.Runner.Run(vctx, bin, "--version"); err == nil && exit == 0 {
+		if sm := versionRE.FindStringSubmatch(strings.TrimSpace(core.Sanitize(string(out)))); sm != nil {
+			d.Version = sm[1]
+		}
+	}
+	return d
 }
 
+func (m *Module) setErr(err error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.lastErr = ""
+	if err != nil {
+		m.lastErr = core.Sanitize(err.Error())
+	}
+}
+
+// Doctor reports where bv was found and, if the last insights read failed, the one-line reason:
+// that detail lives here and not on the Tasks tab.
 func (m *Module) Doctor(context.Context) []core.Check {
-	return []core.Check{{Name: "installation", Status: core.StatusOK, Detail: "found at " + core.Sanitize(m.bin) + " (detected by PATH only)"}}
+	m.mu.Lock()
+	last := m.lastErr
+	m.mu.Unlock()
+	if last != "" {
+		return []core.Check{{Name: "insights", Status: core.StatusWarn, Detail: "the last graph-insights read failed: " + last, Fix: "check that bd can read this tracker (bd status), then press r"}}
+	}
+	return []core.Check{{Name: "installation", Status: core.StatusOK, Detail: "found at " + core.Sanitize(m.bin)}}
 }
 
 func (m *Module) Status(ctx context.Context) core.Status {
@@ -279,8 +315,11 @@ func (m *Module) Insights(ctx context.Context) (core.InsightsReport, error) {
 		r.GraphNodes, r.GraphEdges = count(g.Nodes), count(g.Edges)
 	}
 	if len(failed) == len(modes) {
-		return core.InsightsReport{}, errors.New(strings.Join(why, "; "))
+		err := errors.New(strings.Join(why, "; "))
+		m.setErr(err)
+		return core.InsightsReport{}, err
 	}
+	m.setErr(nil)
 	if len(why) > 0 {
 		r.Reason = strings.Join(why, "; ")
 	}
