@@ -145,9 +145,20 @@ func (m *Module) Status(ctx context.Context) core.Status {
 // deliberately not an issue browser.
 func (m *Module) Tasks(ctx context.Context) (core.TasksReport, error) {
 	out, exit, err := m.read(ctx, readStatus)
-	var st statusDoc
-	if err != nil || exit != 0 || json.Unmarshal(out, &st) != nil || st.SchemaVersion != 1 {
+	switch {
+	case errors.Is(err, core.ErrTimedOut):
+		return core.TasksReport{}, errors.New("bd timed out reading the tracker")
+	case err != nil:
+		return core.TasksReport{}, fmt.Errorf("bd could not run: %s", core.Sanitize(err.Error()))
+	case exit != 0:
 		return core.TasksReport{}, errors.New(noTrackerHint)
+	}
+	var st statusDoc
+	if json.Unmarshal(out, &st) != nil {
+		return core.TasksReport{}, errors.New("bd status: unreadable output")
+	}
+	if st.SchemaVersion != supportedSchema {
+		return core.TasksReport{}, fmt.Errorf("bd status: unsupported schema_version %d", st.SchemaVersion)
 	}
 	r := core.TasksReport{Header: core.Header{Source: core.SourceLive}}
 	s := st.Summary
@@ -181,22 +192,63 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	defer cancel()
 	out, exit, err := m.o.Runner.Run(ctx, m.bin, argv[1:]...)
 	if err != nil {
+		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) {
+			return core.TaskResult{}, unknownOutcome()
+		}
 		return core.TaskResult{}, fmt.Errorf("bd write could not run: %s", core.Sanitize(err.Error()))
 	}
-	var one issueJSON
-	var many []issueJSON
-	var e struct {
-		Error string `json:"error"`
+	if exit < 0 { // killed by a signal: it may have written first
+		return core.TaskResult{}, unknownOutcome()
 	}
-	switch {
-	case json.Unmarshal(out, &many) == nil && len(many) > 0:
-		one = many[0]
-	case json.Unmarshal(out, &e) == nil && e.Error != "":
-		return core.TaskResult{}, errors.New("bd: " + core.Sanitize(e.Error))
-	case exit == 0 && json.Unmarshal(out, &one) == nil:
-	}
+	issue, bdErr := decodeIssue(out)
 	if exit != 0 {
+		if bdErr != "" {
+			return core.TaskResult{}, errors.New("bd: " + core.Sanitize(bdErr))
+		}
 		return core.TaskResult{}, fmt.Errorf("bd exited %d", exit)
 	}
-	return core.TaskResult{ID: core.Sanitize(one.ID), Title: core.Sanitize(one.Title), Status: core.Sanitize(one.Status)}, nil
+	if bdErr != "" {
+		return core.TaskResult{}, errors.New("bd: " + core.Sanitize(bdErr))
+	}
+	// Exit 0 is not enough: the write counts only if bd returned the issue that was asked for.
+	if issue.ID == "" {
+		return core.TaskResult{}, errors.New("bd wrote but returned no issue: check the tracker")
+	}
+	if want := requestedID(argv[1:], m.o.Dir); want != "" && issue.ID != want {
+		return core.TaskResult{}, fmt.Errorf("bd returned an unexpected issue (%s, wanted %s): check the tracker", core.Sanitize(issue.ID), want)
+	}
+	return core.TaskResult{ID: core.Sanitize(issue.ID), Title: core.Sanitize(issue.Title), Status: core.Sanitize(issue.Status)}, nil
+}
+
+func unknownOutcome() error {
+	return fmt.Errorf("bd timed out or was cut off, so the result is unknown; refresh before retrying: %w", core.ErrOutcomeUnknown)
+}
+
+// decodeIssue reads bd's `--json` answer: a bare issue, a one-element array, or an error
+// object. Anything else yields an empty issue.
+func decodeIssue(out []byte) (issueJSON, string) {
+	var many []issueJSON
+	if json.Unmarshal(out, &many) == nil {
+		if len(many) == 1 {
+			return many[0], ""
+		}
+		return issueJSON{}, ""
+	}
+	var o struct {
+		issueJSON
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(out, &o) != nil {
+		return issueJSON{}, ""
+	}
+	return o.issueJSON, o.Error
+}
+
+// requestedID is the issue id an update or close names ("" for create).
+func requestedID(a []string, dir string) string {
+	a, _ = stripDir(a, dir)
+	if len(a) >= 2 && (a[0] == "update" || a[0] == "close") {
+		return a[1]
+	}
+	return ""
 }

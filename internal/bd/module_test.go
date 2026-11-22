@@ -12,12 +12,16 @@ import (
 type fakeRun struct {
 	resp  map[string]string // joined argv -> stdout
 	exit  map[string]int
+	errs  map[string]error
 	calls []string
 }
 
 func (f *fakeRun) Run(_ context.Context, _ string, args ...string) ([]byte, int, error) {
 	k := strings.Join(args, " ")
 	f.calls = append(f.calls, k)
+	if err := f.errs[k]; err != nil {
+		return nil, -1, err
+	}
 	out, ok := f.resp[k]
 	if !ok {
 		return nil, -1, fmt.Errorf("unexpected argv %q", k)
@@ -122,5 +126,38 @@ func TestStatusMirrorsTheSummary(t *testing.T) {
 	m.Detect(context.Background())
 	if st := m.Status(context.Background()); !strings.Contains(st.Summary, "5 tasks") {
 		t.Fatalf("%+v", st)
+	}
+}
+
+func TestTasksFailuresAreDistinguishedAndOnlyANonZeroExitIsNoTracker(t *testing.T) {
+	cases := map[string]struct {
+		body string
+		exit int
+		err  error
+		want string
+	}{
+		"timeout":    {"", 0, fmt.Errorf("%w after 10s", core.ErrTimedOut), "timed out"},
+		"cannot run": {"", 0, fmt.Errorf("fork/exec: nope"), "could not run"},
+		"bad json":   {"warning: x", 0, nil, "unreadable"},
+		"schema":     {`{"schema_version":2,"summary":{}}`, 0, nil, "schema_version 2"},
+		"no tracker": {"", 1, nil, "ABACUS_BD_DIR"},
+	}
+	for name, c := range cases {
+		f := newFake()
+		k := "--readonly status --json --no-activity"
+		f.resp[k], f.exit = c.body, map[string]int{k: c.exit}
+		f.errs = map[string]error{}
+		if c.err != nil {
+			f.errs[k] = c.err
+		}
+		m := mod(f, Options{})
+		m.Detect(context.Background())
+		_, err := m.Tasks(context.Background())
+		if err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: %v, want %q", name, err, c.want)
+		}
+		if name != "no tracker" && strings.Contains(err.Error(), "ABACUS_BD_DIR") {
+			t.Errorf("%s: must not claim there is no tracker: %v", name, err)
+		}
 	}
 }
