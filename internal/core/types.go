@@ -52,6 +52,26 @@ type Check struct {
 	Fix    string      `json:"fix,omitempty"`
 }
 
+// Tone is a front-end-neutral severity for a row, so no front-end re-parses text to color it.
+type Tone string
+
+const (
+	ToneOK    Tone = "ok"
+	ToneWarn  Tone = "warn"
+	ToneFail  Tone = "fail"
+	ToneInfo  Tone = "info"
+	ToneMuted Tone = "muted"
+)
+
+// Row is one status line in typed form (for example a lease). Status.Rows parallels
+// Status.Lines when a module provides it; Lines stays the plain-text rendering.
+type Row struct {
+	Resource string `json:"resource"`
+	State    string `json:"state"`
+	Tone     Tone   `json:"tone"`
+	Detail   string `json:"detail,omitempty"`
+}
+
 // Status is a module's state summary. Unavailable carries the reason a ready tool
 // has no readable state (API disabled, no live daemon, ambiguous daemon). Source is empty
 // for a live read and names the reduced source when state came from a degraded one (for
@@ -59,6 +79,7 @@ type Check struct {
 type Status struct {
 	Summary     string   `json:"summary,omitempty"`
 	Lines       []string `json:"lines,omitempty"`
+	Rows        []Row    `json:"rows,omitempty"` // additive: typed twin of Lines
 	Unavailable string   `json:"unavailable,omitempty"`
 	Source      string   `json:"source,omitempty"`
 }
