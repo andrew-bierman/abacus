@@ -15,6 +15,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck disable=SC2034  # read by scripts/lib/bundle.sh
 BUNDLE_SCRIPT=update-bundled-tools
 manifest="${ABACUS_BUNDLE_MANIFEST:-$root/bundled-tools.json}"
 cache="${ABACUS_BUNDLE_CACHE:-$root/.cache/bundle}"
