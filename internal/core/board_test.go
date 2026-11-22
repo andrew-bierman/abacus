@@ -5,15 +5,16 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 func TestScrubBoardEnvKeepsOnlyWhatTheCliNeeds(t *testing.T) {
-	in := []string{"HOME=/h", "PATH=/bin", "BOARD_TOKEN=t", "BOARD_URL=u", "VERCEL_AUTH_TOKEN=v", "VERCEL_ORG_ID=o", "XDG_CONFIG_HOME=/c", "LC_ALL=C",
+	in := []string{"HOME=/h", "PATH=/bin", "BOARD_TOKEN=t", "VERCEL_AUTH_TOKEN=v", "VERCEL_ORG_ID=o", "XDG_CONFIG_HOME=/c", "LC_ALL=C",
 		"BEADS_DIR=/x", "BD_ACTOR=a", "AWS_SECRET_ACCESS_KEY=k", "NODE_OPTIONS=--require /evil.js", "VERCEL_TOKEN=never-sent", "GITHUB_TOKEN=g", "ANTHROPIC_API_KEY=a", "SSH_AUTH_SOCK=/s"}
-	got := strings.Join(core.ScrubBoardEnv(in), " ")
-	for _, want := range []string{"HOME=/h", "PATH=/bin", "BOARD_TOKEN=t", "BOARD_URL=u", "VERCEL_AUTH_TOKEN=v", "VERCEL_ORG_ID=o", "XDG_CONFIG_HOME=/c", "LC_ALL=C"} {
+	got := strings.Join(core.ScrubBoardEnvFor("")(in), " ")
+	for _, want := range []string{"HOME=/h", "PATH=/bin", "BOARD_TOKEN=t", "VERCEL_AUTH_TOKEN=v", "VERCEL_ORG_ID=o", "XDG_CONFIG_HOME=/c", "LC_ALL=C"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("must keep %s", want)
 		}
@@ -26,12 +27,14 @@ func TestScrubBoardEnvKeepsOnlyWhatTheCliNeeds(t *testing.T) {
 }
 
 func TestValidateBoardURL(t *testing.T) {
-	for _, ok := range []string{"http://127.0.0.1:4100/api/board", "https://api.vercel.com/v1/messageboard/boards/brd_x?teamId=team_y"} {
+	for _, ok := range []string{"http://127.0.0.1:4100/api/board", "http://localhost:4100/api/board", "http://127.0.0.5/x", "http://[::1]:4100/api/board", "https://example.com/api/board", "https://api.vercel.com/v1/messageboard/boards/brd_x"} {
 		if err := core.ValidateBoardURL(ok); err != nil {
 			t.Errorf("%s: %v", ok, err)
 		}
 	}
-	for _, bad := range []string{"", "ftp://h/x", "file:///etc/passwd", "http://", "not a url", "http://user:pw@host/x", "http://h/\x1b[2J", "javascript:alert(1)", "http://h/a b"} {
+	for _, bad := range []string{"", "ftp://h/x", "file:///etc/passwd", "http://", "not a url", "http://user:pw@host/x", "http://h/\x1b[2J", "javascript:alert(1)", "http://h/a b",
+		"https://h/x?token=abc", "https://h/x?", "https://h/x#frag", "http://127.0.0.1:4100/api/board?x=1",
+		"http://example.com/api/board", "http://10.0.0.5/api/board", "http://localhost.evil.com/x", "http://127.0.0.1.evil.com/x"} {
 		if core.ValidateBoardURL(bad) == nil {
 			t.Errorf("must refuse %q", bad)
 		}
@@ -66,7 +69,11 @@ func (f *fakeBoardWriter) RunBoard(_ context.Context, argv []string, ch core.Boa
 	f.ran = append(f.ran, argv)
 	return core.BoardResult{ID: "7", Text: ch.Text}, f.fail
 }
-func (f *fakeBoardWriter) Target() string { return "http://127.0.0.1:4100/api/board" }
+func (f *fakeBoardWriter) Target() string       { return "http://127.0.0.1:4100/api/board" }
+func (f *fakeBoardWriter) TargetSource() string { return "board_url (config)" }
+func (f *fakeBoardWriter) Describe(context.Context, core.BoardChange) []string {
+	return []string{"channel dev: new"}
+}
 
 func TestBoardChangeValidation(t *testing.T) {
 	w := &fakeBoardWriter{}
@@ -129,11 +136,127 @@ func TestBoardUnknownOutcomeIsAuditedAsUnknown(t *testing.T) {
 	}
 }
 
-func TestEveryPlanGetsItsOwnIdempotencyKey(t *testing.T) {
+func TestBoardTargetIsSchemeHostPathOnly(t *testing.T) {
+	for in, want := range map[string]string{
+		"http://127.0.0.1:4100/api/board": "http://127.0.0.1:4100/api/board",
+		"https://example.com/a/b":         "https://example.com/a/b",
+		"https://example.com":             "https://example.com",
+		"":                                "the CLI's default board",
+	} {
+		if got := core.BoardTarget(in); got != want {
+			t.Errorf("%q -> %q, want %q", in, got, want)
+		}
+	}
+	// Even a value that would not validate never leaks its query, fragment or credentials.
+	if got := core.BoardTarget("https://u:p@h/x?token=s#f"); strings.ContainsAny(got, "?#@") || strings.Contains(got, "token") {
+		t.Errorf("%q", got)
+	}
+}
+
+func TestScrubBoardEnvForDropsBoardURLAndTokensOnAnUntrustedTransport(t *testing.T) {
+	in := []string{"HOME=/h", "PATH=/p", "BOARD_URL=http://evil", "BOARD_NAME=n", "BOARD_TOKEN=t", "VERCEL_AUTH_TOKEN=v", "VERCEL_AUTOMATION_BYPASS_SECRET=b", "VERCEL_ORG_ID=o"}
+	has := func(env []string, name string) bool {
+		for _, e := range env {
+			if strings.HasPrefix(e, name+"=") {
+				return true
+			}
+		}
+		return false
+	}
+	for _, url := range []string{"", "https://example.com/api/board", "http://127.0.0.1:4100/api/board"} {
+		got := core.ScrubBoardEnvFor(url)(in)
+		if has(got, "BOARD_URL") {
+			t.Errorf("%q: BOARD_URL must never pass through (abacus passes --url itself)", url)
+		}
+		if !has(got, "BOARD_TOKEN") || !has(got, "VERCEL_AUTH_TOKEN") {
+			t.Errorf("%q: a trusted target keeps the credentials", url)
+		}
+		if (url != "") == has(got, "BOARD_NAME") {
+			t.Errorf("%q: BOARD_NAME is misuse beside --url and only kept without one", url)
+		}
+	}
+	bad := core.ScrubBoardEnvFor("http://example.com/api/board")(in)
+	for _, n := range []string{"BOARD_TOKEN", "VERCEL_AUTH_TOKEN", "VERCEL_AUTOMATION_BYPASS_SECRET", "VERCEL_ORG_ID", "BOARD_URL"} {
+		if has(bad, n) {
+			t.Errorf("tokens are only passed when the target is https or loopback: %s leaked to http://example.com", n)
+		}
+	}
+	if !has(bad, "HOME") || !has(bad, "PATH") {
+		t.Error("HOME and PATH still pass")
+	}
+}
+
+func TestProbeEnvHasNoSecretsAndNoBoardSettings(t *testing.T) {
+	in := []string{"HOME=/h", "PATH=/p", "XDG_CONFIG_HOME=/c", "LC_ALL=C", "BOARD_TOKEN=t", "VERCEL_AUTH_TOKEN=v", "VERCEL_AUTOMATION_BYPASS_SECRET=b", "VERCEL_ORG_ID=o", "BOARD_URL=u", "BOARD_NAME=n", "HTTPS_PROXY=p"}
+	got := strings.Join(core.ScrubBoardProbeEnv(in), " ")
+	for _, bad := range []string{"BOARD_", "VERCEL_", "PROXY"} {
+		if strings.Contains(got, bad) {
+			t.Errorf("the identity probe must not see %s: %s", bad, got)
+		}
+	}
+	for _, want := range []string{"HOME=/h", "PATH=/p", "XDG_CONFIG_HOME=/c", "LC_ALL=C"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+}
+
+func TestIdempotencyKeyIsDerivedSoARetryOfAnUnknownOutcomeReusesIt(t *testing.T) {
+	now := time.Date(2026, 11, 22, 20, 3, 0, 0, time.UTC)
+	defer core.SetBoardClockForTest(func() time.Time { return now })()
 	w := &fakeBoardWriter{}
-	a, _ := core.PlanBoardChange(w, core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hi"})
-	b, _ := core.PlanBoardChange(w, core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hi"})
-	if !strings.HasPrefix(a.Argv[3], "abacus-") || a.Argv[3] == b.Argv[3] {
-		t.Fatalf("%v %v", a.Argv, b.Argv)
+	key := func(ch core.BoardChange) string {
+		p, err := core.PlanBoardChange(w, ch)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return p.Argv[3]
+	}
+	post := core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hello"}
+	k := key(post)
+	if !strings.HasPrefix(k, "abacus-") || len(k) != len("abacus-")+16 {
+		t.Fatalf("shape: %s", k)
+	}
+	if key(post) != k {
+		t.Fatal("re-planning the same post (a retry after an unknown outcome) must reuse the key")
+	}
+	now = now.Add(5 * time.Minute) // same ten-minute bucket
+	if key(post) != k {
+		t.Fatal("a retry a few minutes later is the same post")
+	}
+	for name, other := range map[string]core.BoardChange{
+		"text":    {Op: core.BoardPost, Channel: "dev", Text: "hello!"},
+		"channel": {Op: core.BoardPost, Channel: "dev2", Text: "hello"},
+		"op":      {Op: core.BoardReply, ID: "7", Text: "hello"},
+	} {
+		if key(other) == k {
+			t.Errorf("a different %s must get a different key", name)
+		}
+	}
+	if key(core.BoardChange{Op: core.BoardReply, ID: "8", Text: "hello"}) == key(core.BoardChange{Op: core.BoardReply, ID: "7", Text: "hello"}) {
+		t.Error("a different reply target must get a different key")
+	}
+	now = now.Add(time.Hour)
+	if key(post) == k {
+		t.Fatal("a much later identical post is a new post: the key changes with the time bucket")
+	}
+}
+
+func TestExecRunnerCapsStdoutAndSaysSo(t *testing.T) {
+	r := core.ExecRunner{MaxOut: 1024}
+	out, _, _, err := r.RunSplit(context.Background(), "sh", "-c", "head -c 100000 /dev/zero | tr '\\0' x")
+	if !errors.Is(err, core.ErrOutputTooLarge) || len(out) > 1024 {
+		t.Fatalf("len=%d err=%v", len(out), err)
+	}
+	out, _, exit, err := r.RunSplit(context.Background(), "sh", "-c", "echo small")
+	if err != nil || exit != 0 || string(out) != "small\n" {
+		t.Fatalf("%q %d %v", out, exit, err)
+	}
+}
+
+func TestSanitizeTextKeepsNewlinesAndDropsTheRest(t *testing.T) {
+	got := core.SanitizeText("a\r\nb\tc\x1b[2Jd\u200be\rf")
+	if got != "a\nb c[2Jde\nf" {
+		t.Fatalf("%q", got)
 	}
 }

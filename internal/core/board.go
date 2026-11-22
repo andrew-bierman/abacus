@@ -2,13 +2,16 @@ package core
 
 import (
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 	"unicode"
 )
 
@@ -28,45 +31,115 @@ const (
 // boardEnv is everything the Vercel Board CLI may inherit: where it runs (HOME, PATH, XDG
 // dirs: it keeps a local board's token and claims under ~/.config/board), its own documented
 // settings, proxies and a CA bundle. Nothing else (no BEADS_*, no cloud keys, no NODE_OPTIONS).
+// BOARD_URL is never passed: abacus validates the board URL itself and passes it as --url.
 var boardEnv = map[string]bool{
 	"HOME": true, "PATH": true, "TMPDIR": true, "USER": true, "LOGNAME": true, "LANG": true, "TERM": true, "NO_COLOR": true,
 	"XDG_CONFIG_HOME": true, "XDG_STATE_HOME": true, "XDG_DATA_HOME": true, "XDG_CACHE_HOME": true,
-	"BOARD_URL": true, "BOARD_NAME": true, "BOARD_TOKEN": true,
+	"BOARD_NAME": true, "BOARD_TOKEN": true,
 	"VERCEL_AUTH_TOKEN": true, "VERCEL_ORG_ID": true, "VERCEL_AUTOMATION_BYPASS_SECRET": true,
 	"HTTPS_PROXY": true, "HTTP_PROXY": true, "NO_PROXY": true, "https_proxy": true, "http_proxy": true, "no_proxy": true,
 	"NODE_EXTRA_CA_CERTS": true, "SSL_CERT_FILE": true,
 }
 
+// boardSecrets are the variables that carry a credential or pick a team.
+var boardSecrets = map[string]bool{"BOARD_TOKEN": true, "VERCEL_AUTH_TOKEN": true, "VERCEL_AUTOMATION_BYPASS_SECRET": true, "VERCEL_ORG_ID": true}
+
 // BoardSecretEnv are the variables whose values must never appear in any text abacus prints.
 var BoardSecretEnv = []string{"BOARD_TOKEN", "VERCEL_AUTH_TOKEN", "VERCEL_AUTOMATION_BYPASS_SECRET"}
 
-// ScrubBoardEnv keeps only what the Vercel Board CLI needs (an allowlist, unlike the Beads
-// scrub): everything else inherited from the user's shell is dropped.
-func ScrubBoardEnv(env []string) []string {
-	out := make([]string, 0, len(boardEnv))
+// ScrubBoardEnvFor is the environment filter for a run against the board at url ("" is the
+// CLI's own default): an allowlist, unlike the Beads scrub. BOARD_URL never passes; BOARD_NAME
+// passes only without a url (the CLI treats it as misuse beside --url); credentials pass only
+// when the target is https or loopback, so a token is never sent over plain http to a remote host.
+func ScrubBoardEnvFor(url string) func([]string) []string {
+	trusted := url == "" || boardTransportOK(url)
+	return func(env []string) []string {
+		out := make([]string, 0, len(boardEnv))
+		for _, e := range env {
+			name, _, _ := strings.Cut(e, "=")
+			switch {
+			case !boardEnv[name] && !strings.HasPrefix(name, "LC_"):
+			case name == "BOARD_NAME" && url != "":
+			case boardSecrets[name] && !trusted:
+			default:
+				out = append(out, e)
+			}
+		}
+		return out
+	}
+}
+
+// boardProbe is all the identity probe may see: where it runs, and nothing about any board.
+var boardProbe = map[string]bool{
+	"HOME": true, "PATH": true, "TMPDIR": true, "USER": true, "LOGNAME": true, "LANG": true, "TERM": true, "NO_COLOR": true,
+	"XDG_CONFIG_HOME": true, "XDG_STATE_HOME": true, "XDG_DATA_HOME": true, "XDG_CACHE_HOME": true,
+}
+
+// ScrubBoardProbeEnv is the environment of the `--help` identity probe: it runs a binary that is
+// not yet trusted, so it gets no token, no team and no board setting.
+func ScrubBoardProbeEnv(env []string) []string {
+	out := make([]string, 0, len(boardProbe))
 	for _, e := range env {
 		name, _, _ := strings.Cut(e, "=")
-		if boardEnv[name] || strings.HasPrefix(name, "LC_") {
+		if boardProbe[name] || strings.HasPrefix(name, "LC_") {
 			out = append(out, e)
 		}
 	}
 	return out
 }
 
-// ValidateBoardURL accepts an http(s) URL with a host and no embedded credentials or control
-// characters: it goes to the CLI as --url, and a token in a URL would end up in logs.
+// loopbackHost reports whether host is localhost or a loopback address.
+func loopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+// boardTransportOK is https anywhere, or plain http to a loopback host only.
+func boardTransportOK(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == "https" || (u.Scheme == "http" && loopbackHost(u.Hostname()))
+}
+
+// ValidateBoardURL accepts an https URL, or an http one for a loopback host, with a host and no
+// embedded credentials, query, fragment or control characters: it goes to the CLI as --url, and a
+// token in a URL (or sent over plain http to a remote host) would leak.
 func ValidateBoardURL(raw string) error {
 	if Sanitize(raw) != raw || strings.ContainsAny(raw, " \\") {
 		return errors.New("board_url must be a plain URL")
 	}
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
-		return errors.New("board_url must be an http(s) URL, for example http://127.0.0.1:4100/api/board")
+		return errors.New("board_url must be an https URL, or http for a local board, for example http://127.0.0.1:4100/api/board")
 	}
 	if u.User != nil {
 		return errors.New("board_url must not contain a username or password")
 	}
+	if u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.Contains(raw, "#") {
+		return errors.New("board_url must not contain a query or fragment")
+	}
+	if u.Scheme == "http" && !loopbackHost(u.Hostname()) {
+		return errors.New("board_url must use https unless the board is on this machine (localhost, 127.0.0.1 or ::1)")
+	}
 	return nil
+}
+
+// BoardTarget is where a write goes, for people and the audit log: scheme://host/path only,
+// never a credential, query or fragment ("the CLI's default board" when no URL is set).
+func BoardTarget(raw string) string {
+	if raw == "" {
+		return "the CLI's default board"
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return "an unreadable board URL"
+	}
+	return u.Scheme + "://" + u.Host + u.Path
 }
 
 // ---- Board writes: post and reply ----
@@ -109,7 +182,13 @@ type BoardResult struct {
 type BoardWriter interface {
 	BuildBoardArgv(BoardChange, string) ([]string, error)
 	RunBoard(ctx context.Context, argv []string, ch BoardChange) (BoardResult, error)
-	Target() string // where the write goes, for the audit line (never a credential)
+	// Target is where the write goes: scheme://host/path only, never a credential.
+	Target() string
+	// TargetSource says where the target came from (ABACUS_BOARD_URL, board_url, BOARD_URL, default).
+	TargetSource() string
+	// Describe is read-only, bounded context for the confirm step (what a reply answers, whether
+	// a channel is new). Best effort: a failed read is itself a line, and never blocks the write.
+	Describe(ctx context.Context, ch BoardChange) []string
 }
 
 // BoardPlan is a validated change with its exact argv. It cannot be applied until Confirm.
@@ -150,15 +229,45 @@ func validateBoard(ch BoardChange) error {
 	return nil
 }
 
+var (
+	boardClockMu sync.Mutex
+	boardClock   = time.Now
+)
+
+// SetBoardClockForTest swaps the clock the idempotency key buckets on and returns a restore func.
+func SetBoardClockForTest(f func() time.Time) (restore func()) {
+	boardClockMu.Lock()
+	old := boardClock
+	boardClock = f
+	boardClockMu.Unlock()
+	return func() { boardClockMu.Lock(); boardClock = old; boardClockMu.Unlock() }
+}
+
+// BoardKeyWindow is the bucket an idempotency key is stable for. A retry of a write whose outcome
+// was unknown re-plans the same change and gets the same key, so the board posts it at most once.
+// The same text to the same place within a window is therefore treated as that retry.
+const BoardKeyWindow = 10 * time.Minute
+
+// boardKey derives the idempotency key from (target, op, channel or id, text, time bucket): the
+// simplest way to make a retry reuse it without persisting anything.
+func boardKey(target string, ch BoardChange) string {
+	boardClockMu.Lock()
+	now := boardClock()
+	boardClockMu.Unlock()
+	dest := ch.Channel
+	if ch.Op == BoardReply {
+		dest = ch.ID
+	}
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%d", target, ch.Op, dest, ch.Text, now.Unix()/int64(BoardKeyWindow/time.Second))))
+	return "abacus-" + hex.EncodeToString(sum[:8])
+}
+
 // PlanBoardChange validates a change and builds its argv and description without side effects.
-// The idempotency key is made here, once, so a retried apply of the same plan posts at most once.
 func PlanBoardChange(w BoardWriter, ch BoardChange) (BoardPlan, error) {
 	if err := validateBoard(ch); err != nil {
 		return BoardPlan{}, err
 	}
-	var k [8]byte
-	_, _ = rand.Read(k[:])
-	argv, err := w.BuildBoardArgv(ch, "abacus-"+hex.EncodeToString(k[:]))
+	argv, err := w.BuildBoardArgv(ch, boardKey(w.Target(), ch))
 	if err != nil {
 		return BoardPlan{}, err
 	}
@@ -166,7 +275,7 @@ func PlanBoardChange(w BoardWriter, ch BoardChange) (BoardPlan, error) {
 	if ch.Op == BoardReply {
 		lines = []string{"reply in the thread of message " + ch.ID}
 	}
-	lines = append(lines, fmt.Sprintf("text: %q", ch.Text), "board: "+w.Target())
+	lines = append(lines, fmt.Sprintf("text: %q", ch.Text), "board: "+w.Target()+" ("+w.TargetSource()+")")
 	return BoardPlan{id: planSeq.Add(1), Change: ch, Argv: argv, Lines: lines}, nil
 }
 
