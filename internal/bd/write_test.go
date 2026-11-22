@@ -60,6 +60,9 @@ func TestRunTaskExitZeroWithoutAnIssueIsAnError(t *testing.T) {
 			t.Errorf("%s: exit 0 with %q must be an error, got %+v %v", name, body, res, err)
 		}
 	}
+	if _, err, _ := runClose(t, `{"error":"x boom","schema_version":1}`, 0, nil); err == nil || !strings.Contains(err.Error(), "x boom") {
+		t.Errorf("bd's own error text must surface even on exit 0: %v", err)
+	}
 	_, err, _ := runClose(t, "", 0, nil)
 	if !strings.Contains(err.Error(), "check the tracker") {
 		t.Errorf("message must point at the tracker: %v", err)
