@@ -20,6 +20,15 @@ cd abacus_VERSION_darwin_arm64
 ./abacus
 ```
 
+### Supported platforms
+
+| Platform | Status |
+| --- | --- |
+| Linux, amd64 | Release archive; run end to end on Arch Linux (doctor, setup, the TUI in tmux) with only the bundled tools on `PATH` |
+| Linux, arm64 | Release archive; cross-compiles, not yet run on real hardware |
+| macOS, arm64 and amd64 | Release archive (the primary development platform) |
+| Windows | Not supported yet. It compiles, but its safety checks are placeholders; see `docs/plans/2026-11-22-1900-plan-windows-support.md` |
+
 Nothing else needs to be installed. The archive carries the tools abacus talks to (`bd`, `bv`,
 Lambe and beads-lease) in `bundled/`, and abacus finds them there. Keep the folder together: if
 you copy `abacus` somewhere else, copy `bundled/` with it (or symlink `abacus`; the link is
@@ -91,8 +100,9 @@ Read `THIRD_PARTY_NOTICES.md` and `third_party/bv/LICENSE` before redistributing
 
 **Where abacus looks for a tool**, first match wins: an explicit `ABACUS_*_BIN`; then the
 directory of the abacus executable (symlinks resolved), `../libexec/abacus/` and `bundled/`
-next to it; then your `PATH`. A bundled copy is run only if it is a regular, executable file
-that is not world-writable and not in a world-writable directory. Doctor shows, for every tool,
+next to it; then your `PATH`. A bundled copy is run only if it resolves (through symlinks) to a regular,
+executable file that is not group- or world-writable, is owned by you or root, and sits (with its
+link, if any) in a directory nobody else can write to. Doctor shows, for every tool,
 whether it is `bundled`, from `PATH` or an override, or missing, with its version. Child tools
 see the sidecar directories first on `PATH`, so bv finds the bundled bd.
 
