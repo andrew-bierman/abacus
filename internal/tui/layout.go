@@ -91,3 +91,20 @@ func panes(th Theme, w, h int, list, detail []string, drilled bool) []string {
 	}
 	return out
 }
+
+// scroller is a plain line list with a scroll offset, for sections without a cursor.
+type scroller struct{ off int }
+
+// move scrolls by delta and clamps against the content and visible height.
+func (s *scroller) move(delta, total, h int) {
+	s.off = max(0, min(s.off+delta, total-max(h, 1)))
+}
+
+// view returns the lines visible at the current offset (h <= 0: all).
+func (s *scroller) view(lines []string, h int) []string {
+	if h <= 0 || len(lines) <= h {
+		return lines
+	}
+	s.off = max(0, min(s.off, len(lines)-h))
+	return lines[s.off : s.off+h]
+}

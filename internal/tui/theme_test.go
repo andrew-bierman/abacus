@@ -1,6 +1,10 @@
 package tui
 
 import (
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
 	"bytes"
 	"strings"
 	"testing"
@@ -82,5 +86,27 @@ func TestSemanticKindsRenderDistinctly(t *testing.T) {
 			t.Errorf("kinds %d and %d render identically: %q", prev, k, s)
 		}
 		seen[s] = k
+	}
+}
+
+// Colors live in theme.go only, so a palette change is one file.
+func TestNoColorLiteralsOutsideTheme(t *testing.T) {
+	files, _ := filepath.Glob("*.go")
+	for _, f := range files {
+		if f == "theme.go" || strings.HasSuffix(f, "_test.go") {
+			continue
+		}
+		src, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := parser.ParseFile(token.NewFileSet(), f, src, 0); err != nil {
+			t.Fatal(err)
+		}
+		for _, bad := range []string{"lipgloss.Color(", "AdaptiveColor", `"#`, ".Foreground(", "Style().Background(", ".Reverse("} {
+			if strings.Contains(string(src), bad) {
+				t.Errorf("%s contains %q; define it in theme.go", f, bad)
+			}
+		}
 	}
 }

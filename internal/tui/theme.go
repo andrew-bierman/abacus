@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 )
@@ -94,3 +95,17 @@ func (t Theme) Badge(k Kind, text string) string {
 	}
 	return t.r.NewStyle().Bold(true).Foreground(colOnBadge).Background(colorFor(k)).Padding(0, 1).Render(text)
 }
+
+// HelpStyles styles bubbles' help bar from the theme.
+func (t Theme) HelpStyles() help.Styles {
+	key := t.r.NewStyle().Foreground(colAccent)
+	desc := t.r.NewStyle().Foreground(colMuted)
+	sep := t.r.NewStyle().Foreground(colMuted).Faint(true)
+	return help.Styles{
+		Ellipsis: sep, ShortKey: key, ShortDesc: desc, ShortSeparator: sep,
+		FullKey: key, FullDesc: desc, FullSeparator: sep,
+	}
+}
+
+// Key styles a key name in the help overlay.
+func (t Theme) Key(s string) string { return t.r.NewStyle().Foreground(colAccent).Render(s) }
