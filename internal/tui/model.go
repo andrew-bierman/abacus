@@ -245,6 +245,9 @@ func (m *Model) goTo(i int) tea.Cmd {
 	if i < 0 || i >= len(m.tabs) {
 		return nil
 	}
+	if d, ok := m.tabs[m.sel].sec.(deactivator); ok && m.sel != i {
+		d.deactivate()
+	}
 	m.sel = i
 	if a, ok := m.tabs[i].sec.(activator); ok {
 		return a.activate()

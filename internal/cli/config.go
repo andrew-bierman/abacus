@@ -73,11 +73,21 @@ func runConfig(rest []string, d Deps) int {
 		}
 		fmt.Fprintln(d.Out, core.Sanitize(v))
 	case verb == "set" && len(args) == 2:
-		if err := st.Update(func(c *core.Config) error { return c.Set(args[0], args[1]) }); err != nil {
+		// A bad key or value is a usage error; checked on a scratch copy so it never depends on the file.
+		var scratch core.Config
+		if err := scratch.Set(args[0], args[1]); err != nil {
 			fmt.Fprintf(d.Err, "config: %v\n", err)
 			return core.ExitUsage
 		}
+		note, err := st.UpdateNote(func(c *core.Config) error { return c.Set(args[0], args[1]) })
+		if err != nil { // the file, the lock or the disk: not the user's typing
+			fmt.Fprintf(d.Err, "config: %v\n", err)
+			return core.ExitFail
+		}
 		fmt.Fprintf(d.Out, "%s set\n", args[0])
+		if note != "" {
+			fmt.Fprintln(d.Err, "config: "+note)
+		}
 	default:
 		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path")
 		return core.ExitUsage

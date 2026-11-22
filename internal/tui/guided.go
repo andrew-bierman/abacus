@@ -48,6 +48,7 @@ type guidedSection struct {
 	setup  *core.Setup
 
 	guide  *core.Guide
+	active bool // this tab is the visible one: only then is the (possibly slow) probe asked
 	mode   guidedMode
 	plan   core.SetupPlan
 	notice string
@@ -111,15 +112,22 @@ func (s *guidedSection) tick() tea.Cmd {
 	return tea.Tick(guideEvery, func(time.Time) tea.Msg { return guideTickMsg{domain: d} })
 }
 
-func (s *guidedSection) Init() tea.Cmd { return tea.Batch(s.inner.Init(), s.probe(), s.tick()) }
+// Init loads the inner section but does not probe: a hidden tab never runs a probe (the Queues
+// one shells out to lambe doctor). The probe runs when the tab is first shown.
+func (s *guidedSection) Init() tea.Cmd { return tea.Batch(s.inner.Init(), s.tick()) }
 
-// activate forwards lazy loading to a section that has it.
+// activate runs when the tab becomes the visible one: probe now, and forward lazy loading.
 func (s *guidedSection) activate() tea.Cmd {
+	s.active = true
+	cmds := []tea.Cmd{s.probe()}
 	if a, ok := s.inner.(activator); ok {
-		return a.activate()
+		cmds = append(cmds, a.activate())
 	}
-	return nil
+	return tea.Batch(cmds...)
 }
+
+// deactivate runs when another tab is shown.
+func (s *guidedSection) deactivate() { s.active = false }
 
 func (s *guidedSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
@@ -130,6 +138,9 @@ func (s *guidedSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return s, nil
 	case guideTickMsg:
 		if m.domain == s.domain {
+			if !s.active {
+				return s, s.tick()
+			}
 			return s, tea.Batch(s.probe(), s.tick())
 		}
 		return s, nil

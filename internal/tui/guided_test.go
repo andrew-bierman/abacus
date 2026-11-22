@@ -159,3 +159,39 @@ func pressSettle(t *testing.T, m tea.Model, k string) tea.Model {
 	m, cmd := m.Update(runeOrKey(k))
 	return settle(t, m, cmd)
 }
+
+// countingBd counts how often its guide is asked.
+type countingBd struct {
+	*freshBd
+	n int
+}
+
+func (c *countingBd) Guide(ctx context.Context) *core.Guide { c.n++; return c.freshBd.Guide(ctx) }
+
+func TestAHiddenGuidedTabNeverProbesAndTheVisibleOneDoes(t *testing.T) {
+	bd := &countingBd{freshBd: &freshBd{Fake: &modtest.Fake{IDStr: "bd"}}}
+	au := &tuiAudit{}
+	en := []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready}}}
+	setup := core.NewSetup(en, core.SetupOptions{Audit: au})
+	mod := New(en, WithTheme(asciiTheme()), WithAudit(au), WithSetup(setup))
+	var tm tea.Model = sized(mod, 100, 30)
+	sec := mod.tabs[1].sec.(*guidedSection)
+	// A tick while the Tasks tab is hidden asks nothing.
+	before := bd.n
+	_, cmd := sec.Update(guideTickMsg{domain: core.DomainTasks})
+	_ = cmd // only a tick is re-armed; it is never run here (it sleeps)
+	if bd.n != before {
+		t.Fatal("a hidden tab must not probe on its tick")
+	}
+	// Showing the tab probes.
+	tm, cmd = tm.Update(runeOrKey("2"))
+	_ = tm
+	if !sec.active || cmd == nil {
+		t.Fatal("the tab became active and must probe")
+	}
+	// Leaving it deactivates.
+	tm.Update(runeOrKey("1"))
+	if sec.active {
+		t.Fatal("deactivated on leaving")
+	}
+}

@@ -68,6 +68,8 @@ func runSetup(rest []string, d Deps) int {
 			}
 			p, err := s.Plan(st.Step)
 			if err != nil {
+				// With --yes the caller asked for it to be done: a step that cannot be is a failure.
+				failed = failed || yes
 				results = append(results, setupResult{Step: st.Step, Error: err.Error()})
 				continue
 			}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -121,5 +122,65 @@ func TestConfigSetGetShow(t *testing.T) {
 		if code, _, _ := do(bad...); code != core.ExitUsage {
 			t.Errorf("%v should be a usage error, got %d", bad, code)
 		}
+	}
+}
+
+// guidedQueues needs setup but there is no Lambe initializer, so its step cannot be planned.
+type guidedQueues struct{ *modtest.Fake }
+
+func (guidedQueues) Domain() core.DomainID { return core.DomainQueues }
+func (guidedQueues) Guide(context.Context) *core.Guide {
+	return &core.Guide{Domain: core.DomainQueues, Step: core.StepQueues, Message: "Queues need a supervisor config", Action: "set up"}
+}
+
+func TestSetupYesExitsOneWhenANeededStepCannotBePlanned(t *testing.T) {
+	root := t.TempDir()
+	cfg := core.ConfigStore{Path: filepath.Join(root, "config.json")}
+	for _, c := range []struct {
+		args []string
+		want int
+	}{{[]string{"setup", "--yes"}, core.ExitFail}, {[]string{"setup"}, core.ExitOK}} {
+		var o, e bytes.Buffer
+		code := cli.Run(c.args, cli.Deps{Out: &o, Err: &e, Version: "test", Config: cfg, Audit: &memAudit{},
+			Build: func(cli.Options) *core.Registry { return core.NewRegistry(guidedQueues{ready("lambe")}) },
+			Setup: func(en []core.Entry) *core.Setup {
+				return core.NewSetup(en, core.SetupOptions{Config: cfg, Audit: &memAudit{}})
+			}})
+		if code != c.want {
+			t.Errorf("%v: exit %d, want %d\n%s%s", c.args, code, c.want, o.String(), e.String())
+		}
+	}
+}
+
+func TestConfigSetExitCodesSeparateUsageFromWriteFailures(t *testing.T) {
+	root := t.TempDir()
+	do := func(path string, args ...string) int {
+		var o, e bytes.Buffer
+		return cli.Run(append([]string{"config"}, args...), cli.Deps{Out: &o, Err: &e, Config: core.ConfigStore{Path: path}})
+	}
+	good := filepath.Join(root, "c.json")
+	for _, bad := range [][]string{{"set", "nope", "x"}, {"set", "actor", "has space"}, {"set", "tracker_dir", "relative"}} {
+		if got := do(good, bad...); got != core.ExitUsage {
+			t.Errorf("%v: exit %d, want usage (2)", bad, got)
+		}
+	}
+	// A valid change that cannot be written (the parent is a file) is a failure, not a usage error.
+	blocker := filepath.Join(root, "blocker")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := do(filepath.Join(blocker, "sub", "c.json"), "set", "actor", "fine-1"); got != core.ExitFail {
+		t.Errorf("an unwritable config: exit %d, want failure (1)", got)
+	}
+	// A corrupt file is kept aside and the change goes through.
+	corrupt := filepath.Join(root, "corrupt.json")
+	if err := os.WriteFile(corrupt, []byte("{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := do(corrupt, "set", "actor", "fine-1"); got != core.ExitOK {
+		t.Errorf("corrupt file: exit %d", got)
+	}
+	if _, err := os.Stat(corrupt + ".corrupt"); err != nil {
+		t.Errorf("the corrupt file should be kept: %v", err)
 	}
 }

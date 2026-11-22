@@ -26,6 +26,9 @@ type section interface {
 // activator is implemented by sections that load lazily, on first selection.
 type activator interface{ activate() tea.Cmd }
 
+// deactivator is implemented by sections that care when another tab is shown.
+type deactivator interface{ deactivate() }
+
 // geom is the body size a section was last given; zero means "not told yet".
 type geom struct{ w, h int }
 
