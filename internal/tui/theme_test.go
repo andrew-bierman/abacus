@@ -1,11 +1,11 @@
 package tui
 
 import (
+	"bytes"
 	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
-	"bytes"
 	"strings"
 	"testing"
 

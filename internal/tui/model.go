@@ -264,7 +264,7 @@ func (m *Model) headerLines(w int) []string {
 		case t.sec == nil:
 			parts[i] = m.tabLabel(t)
 		case i == m.sel:
-			parts[i] = m.th.TabActive.Render(t.name)
+			parts[i] = m.th.ActiveTab(t.name)
 		default:
 			parts[i] = m.th.TabIdle.Render(t.name)
 		}
@@ -272,7 +272,7 @@ func (m *Model) headerLines(w int) []string {
 	line := brandPrefix + strings.Join(parts, "")
 	if lipgloss.Width(line) > w {
 		pos := m.th.Text(KindMuted, " "+strconv.Itoa(m.sel+1)+"/"+strconv.Itoa(len(m.tabs)))
-		line = m.th.TabActive.Render(m.tabs[m.sel].name) + pos
+		line = m.th.ActiveTab(m.tabs[m.sel].name) + pos
 	}
 	out := []string{trunc(line, w)}
 	if m.headerHeight() == 2 {

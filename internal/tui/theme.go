@@ -109,3 +109,12 @@ func (t Theme) HelpStyles() help.Styles {
 
 // Key styles a key name in the help overlay.
 func (t Theme) Key(s string) string { return t.r.NewStyle().Foreground(colAccent).Render(s) }
+
+// ActiveTab renders the selected tab; without color it is bracketed so the selection is
+// still visible.
+func (t Theme) ActiveTab(name string) string {
+	if t.plain {
+		return t.TabActive.Render("[" + name + "]")
+	}
+	return t.TabActive.Render(name)
+}

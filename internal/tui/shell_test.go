@@ -189,3 +189,15 @@ func TestDegenerateSizesNeverPanicAndKeepHeaderAndFooter(t *testing.T) {
 		}
 	}
 }
+
+func TestActiveTabIsMarkedEvenWithoutColor(t *testing.T) {
+	var m tea.Model = New(entriesFor(fake("a", core.Ready), fake("b", core.Ready)), WithTheme(asciiTheme()))
+	m = sized(m, 100, 20)
+	if h := lines(m)[0]; !strings.Contains(h, "[Fake a]") || strings.Contains(h, "[Fake b]") {
+		t.Fatalf("header %q", h)
+	}
+	m = press(m, "tab")
+	if h := lines(m)[0]; !strings.Contains(h, "[Fake b]") {
+		t.Fatalf("header %q", h)
+	}
+}
