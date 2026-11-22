@@ -3,11 +3,19 @@ package tui
 import (
 	"context"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
+
+// genericPollEvery is deliberately slow: modules without a dedicated section (today
+// beads-lease) shell out to a shared production hub, so a 5s poll would be too heavy.
+const genericPollEvery = 30 * time.Second
+
+// genericTickMsg is scoped to one module: the shell broadcasts messages to every section.
+type genericTickMsg struct{ id string }
 
 type genericMsg struct {
 	id     string
@@ -20,6 +28,13 @@ type genericSection struct {
 	m      core.Module
 	status core.Status
 	loaded bool
+	tick   func() tea.Cmd // injectable so tests never sleep
+}
+
+func newGenericSection(m core.Module) *genericSection {
+	return &genericSection{m: m, tick: func() tea.Cmd {
+		return tea.Tick(genericPollEvery, func(time.Time) tea.Msg { return genericTickMsg{id: m.ID()} })
+	}}
 }
 
 func (s *genericSection) fetch() tea.Cmd {
@@ -30,11 +45,18 @@ func (s *genericSection) fetch() tea.Cmd {
 	}
 }
 
-func (s *genericSection) Init() tea.Cmd { return s.fetch() }
+func (s *genericSection) Init() tea.Cmd { return tea.Batch(s.fetch(), s.tick()) }
 
 func (s *genericSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m, ok := msg.(genericMsg); ok && m.id == s.m.ID() {
-		s.status, s.loaded = m.status, true
+	switch m := msg.(type) {
+	case genericMsg:
+		if m.id == s.m.ID() {
+			s.status, s.loaded = m.status, true
+		}
+	case genericTickMsg:
+		if m.id == s.m.ID() {
+			return s, tea.Batch(s.fetch(), s.tick())
+		}
 	}
 	return s, nil
 }

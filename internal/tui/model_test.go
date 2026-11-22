@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -21,12 +22,25 @@ func key(s string) tea.KeyMsg {
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
 }
 
+// settle runs a command and returns its message, or nil when it does not finish promptly:
+// a refresh timer would otherwise block (and re-arm) for the whole poll interval.
+func settle(cmd tea.Cmd) tea.Msg {
+	done := make(chan tea.Msg, 1)
+	go func() { done <- cmd() }()
+	select {
+	case msg := <-done:
+		return msg
+	case <-time.After(300 * time.Millisecond):
+		return nil
+	}
+}
+
 // drain executes a command tree and feeds every resulting message back to the model.
 func drain(m tea.Model, cmd tea.Cmd) tea.Model {
 	if cmd == nil {
 		return m
 	}
-	switch msg := cmd().(type) {
+	switch msg := settle(cmd).(type) {
 	case tea.BatchMsg:
 		for _, c := range msg {
 			m = drain(m, c)

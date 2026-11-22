@@ -2,9 +2,11 @@ package core_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,5 +56,14 @@ func TestExecRunnerDoesNotBlockOnAGrandchildHoldingStdout(t *testing.T) {
 sleep 5`))
 	if time.Since(start) > 4*time.Second {
 		t.Fatalf("blocked %v on a grandchild holding the pipe", time.Since(start))
+	}
+}
+
+func TestExecRunnerReportsParentCancellationNotATimeout(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() { time.Sleep(100 * time.Millisecond); cancel() }()
+	_, _, err := core.ExecRunner{Timeout: 5 * time.Second}.Run(ctx, writeScript(t, `sleep 5`))
+	if err == nil || strings.Contains(err.Error(), "timed out") || !errors.Is(err, context.Canceled) {
+		t.Fatalf("a cancelled run must not read as a timeout: %v", err)
 	}
 }

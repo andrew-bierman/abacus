@@ -583,3 +583,11 @@ func TestDiscoverAcceptsEmptyIdentityWhenPidIsAlive(t *testing.T) {
 		t.Fatalf("got %+v, %v", got, err)
 	}
 }
+
+func TestBareNameBinOverrideResolvesOnPathNotTheWorkingDirectory(t *testing.T) {
+	f := &fakeRunner{resp: map[string]result{"version --json": {out: `{"version":"v0.10.0","api_version":1}`}}}
+	d := New(Options{Bin: "lambe", Runner: f, LookPath: found}).Detect(context.Background())
+	if d.State != core.Ready {
+		t.Fatalf("a bare-name override must resolve through PATH, got %+v", d)
+	}
+}

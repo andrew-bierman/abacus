@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -54,15 +53,9 @@ func (m *Module) Name() string { return "beads-lease" }
 var versionRE = regexp.MustCompile(`^\S+\s+v?(\d+\.\d+\S*)`)
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	bin := m.explicit
-	if bin == "" {
-		p, err := m.lookup("beads-lease")
-		if err != nil {
-			return core.Detection{State: core.Absent, Detail: "beads-lease not found on PATH"}
-		}
-		bin = p
-	} else if _, err := os.Stat(bin); err != nil {
-		return core.Detection{State: core.Absent, Detail: "beads-lease not found at " + bin}
+	bin, absent := core.Locate("beads-lease", m.explicit, m.lookup)
+	if absent != "" {
+		return core.Detection{State: core.Absent, Detail: absent}
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
