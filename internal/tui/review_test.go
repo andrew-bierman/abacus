@@ -223,7 +223,12 @@ func TestFilterThatHidesTheSelectionDoesNotMoveItPermanently(t *testing.T) {
 	m, _ = m.Update(viewOf("A-1", "B-2", "C-3"))
 	m = press(m, "j") // select B-2
 	m = press(m, "/")
-	m = press(m, "c") // hides B-2
+	for _, r := range "c-3" { // matches only C-3, so B-2 is hidden
+		m = press(m, string(r))
+	}
+	if strings.Contains(m.View(), "B-2") {
+		t.Fatal("test setup: the filter must hide B-2")
+	}
 	m = press(m, "esc")
 	_ = press(m, "o")
 	if len(*calls) != 1 || (*calls)[0][2] != "mac-B-2" {
@@ -322,7 +327,13 @@ func TestScrollKeysMoveAndClampGenericAndDoctorAtSmallHeight(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			m = press(m, "j")
 		}
+		m = press(m, "k") // before any View: an unclamped offset would still be far past the end
+		oneUp := m.View()
+		m = press(m, "j")
 		end := m.View()
+		if oneUp == end {
+			t.Fatalf("%s: one k after hammering j must scroll back (offset left unclamped)", name)
+		}
 		if !strings.Contains(end, tc.last) {
 			t.Fatalf("%s: end of list not reachable:\n%s", name, end)
 		}
