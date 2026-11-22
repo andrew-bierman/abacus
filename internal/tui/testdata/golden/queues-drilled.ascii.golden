@@ -84,7 +84,7 @@ last event 30s
 ? help · q quit · tab/→ next tab · ↑/↓ move · esc back · / filter …
 === 120x10 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
-Runs 3                                           │ T-1 (running)
+Runs 3 (demo data)                               │ T-1 (running)
 ▸ T-1     running  gating                        │
   T-2     deferred  deferred                     │ phase      gating
   T-3     running  running  (stalled)            │ workflow   general
@@ -96,7 +96,7 @@ Needs attention 1                                │ machine    operators-mac
 === 120x30 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Runs 3                                           │ T-1 (running)
+Runs 3 (demo data)                               │ T-1 (running)
 ▸ T-1     running  gating                        │
   T-2     deferred  deferred                     │ phase      gating
   T-3     running  running  (stalled)            │ workflow   general

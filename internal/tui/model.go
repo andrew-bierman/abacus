@@ -4,7 +4,6 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -131,36 +130,7 @@ func leasesStatus(p core.LeaseProvider, ctx context.Context) core.Status {
 	if err != nil {
 		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
-	held, stale, free := 0, 0, 0
-	st := core.Status{}
-	if r.Source != "" && r.Source != core.SourceLive {
-		st.Source = r.Source
-	}
-	for _, l := range r.Leases {
-		row := core.Row{Resource: l.Resource, State: string(l.State), Tone: core.ToneMuted}
-		switch l.State {
-		case core.LeaseHeld:
-			held++
-			exp := l.ExpiresAt
-			if exp == "" {
-				exp = "?"
-			}
-			row.Tone, row.Detail = core.ToneInfo, "by "+l.Holder+" (expires "+exp+")"
-		case core.LeaseStale:
-			stale++
-			row.Tone, row.Detail = core.ToneWarn, "(last holder "+l.Holder+")"
-		case core.LeaseFree:
-			free++
-			row.Tone = core.ToneOK
-		}
-		line := row.Resource + "  " + row.State
-		if row.Detail != "" {
-			line += " " + row.Detail
-		}
-		st.Lines, st.Rows = append(st.Lines, line), append(st.Rows, row)
-	}
-	st.Summary = fmt.Sprintf("%d held, %d stale, %d free", held, stale, free)
-	return st
+	return r.Status()
 }
 
 // defaultFullView probes for the full-view tool and, only if it answers, hands it the

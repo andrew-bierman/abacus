@@ -165,6 +165,13 @@ type tasksMsg struct {
 }
 type insightsMsg struct{ report core.InsightsReport }
 type tasksTickMsg struct{}
+
+// taskVerifiedMsg is the answer to the re-read of an issue before its confirm screen opens.
+type taskVerifiedMsg struct {
+	id   string
+	task core.Task
+	err  error
+}
 type taskAppliedMsg struct {
 	res core.TaskResult
 	err error
@@ -178,11 +185,13 @@ const (
 	modeForm
 	modeConfirm
 	modeBusy
+	modeVerify // re-reading the issue before the confirm screen
 )
 
 type formField struct {
-	label string
-	value string
+	label  string
+	value  string
+	edited bool // the user changed it, so it is sent even if it equals the old value
 }
 
 // tasksSection is a compact Tasks summary (counts, recent changes, graph insights) and the
@@ -191,6 +200,8 @@ type formField struct {
 type tasksSection struct {
 	prov     core.TaskProvider
 	ins      core.InsightsProvider
+	insWhy   string
+	reader   core.TaskReader
 	applier  *core.Applier
 	writer   core.TaskWriter
 	fullView func(string) tea.Cmd
@@ -205,20 +216,24 @@ type tasksSection struct {
 	top      int
 	notice   string
 
-	mode    taskMode
-	op      core.TaskOp
-	fields  []formField
-	fi      int
-	target  core.Task
-	plan    core.WritePlan
-	formErr string
+	mode        taskMode
+	op          core.TaskOp
+	fields      []formField
+	fi          int
+	target      core.Task
+	plan        core.WritePlan
+	formErr     string
+	pending     core.TaskChange // the change waiting for the re-read
+	changedNote string          // on the confirm screen: the issue changed, or could not be checked
+	tasksBusy   bool            // a refresh is in flight: r is ignored
+	insBusy     bool
 
 	th Theme
 	geom
 }
 
 func newTasksSection(p core.Providers, cfg *config) *tasksSection {
-	s := &tasksSection{prov: p.Tasks, ins: p.Insights, writer: p.Writer, fullView: cfg.fullView, th: DefaultTheme()}
+	s := &tasksSection{prov: p.Tasks, ins: p.Insights, insWhy: p.InsightsWhy, reader: p.Reader, writer: p.Writer, fullView: cfg.fullView, th: DefaultTheme()}
 	if p.Writer != nil {
 		s.applier = core.NewApplier(p.Writer, cfg.audit)
 	}
@@ -235,6 +250,8 @@ func (s *tasksSection) Bindings() []key.Binding {
 		return []key.Binding{key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "next/review")), keyBack}
 	case modeConfirm:
 		return []key.Binding{keyYes, keyNo}
+	case modeVerify:
+		return []key.Binding{keyBack}
 	case modeBusy:
 		return nil
 	}
@@ -242,6 +259,7 @@ func (s *tasksSection) Bindings() []key.Binding {
 }
 
 func (s *tasksSection) fetchTasks() tea.Cmd {
+	s.tasksBusy = true
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
@@ -252,24 +270,21 @@ func (s *tasksSection) fetchTasks() tea.Cmd {
 
 // fetchInsights runs only at start and on refresh: it can run several subprocesses.
 func (s *tasksSection) fetchInsights() tea.Cmd {
+	s.insBusy = true
 	return func() tea.Msg {
-		h := core.Header{Domain: core.DomainTasks, Title: "Insights"}
-		if s.ins == nil {
-			h.State, h.HowToConnect = core.NotConnected, core.HowToConnectInsights
-			return insightsMsg{core.InsightsReport{Header: h}}
-		}
 		ctx, cancel := context.WithTimeout(context.Background(), 4*fetchTimeout)
 		defer cancel()
-		r, err := s.ins.Insights(ctx)
-		if err != nil {
-			h.State, h.Reason, h.HowToConnect = core.Degraded, core.Sanitize(err.Error()), core.HowToConnectInsights
-			return insightsMsg{core.InsightsReport{Header: h}}
-		}
-		r.State = core.Connected
-		if r.Reason != "" {
-			r.State = core.Degraded
-		}
-		return insightsMsg{r}
+		return insightsMsg{core.ReadInsights(ctx, s.ins, s.insWhy)}
+	}
+}
+
+// verify re-reads the issue a change targets, before its confirm screen opens.
+func (s *tasksSection) verify(id string) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
+		defer cancel()
+		t, err := s.reader.ReadTask(ctx, id)
+		return taskVerifiedMsg{id: id, task: t, err: err}
 	}
 }
 
@@ -282,16 +297,41 @@ func (s *tasksSection) recent() []core.Task { return s.report.Recent }
 func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case tasksMsg:
-		s.report, s.err, s.loaded = m.report, m.err, true
+		s.report, s.err, s.loaded, s.tasksBusy = m.report, m.err, true, false
 		s.reanchor()
 	case insightsMsg:
-		s.insights = &m.report
+		s.insights, s.insBusy = &m.report, false
+	case taskVerifiedMsg:
+		if s.mode != modeVerify || m.id != s.pending.ID { // cancelled, or an answer for another issue
+			return s, nil
+		}
+		ch := s.pending
+		s.changedNote = ""
+		if m.err != nil {
+			s.changedNote = "could not re-read the issue (" + core.Sanitize(m.err.Error()) + "): its current values are unverified"
+		} else {
+			var diff []string
+			if m.task.Title != s.target.Title {
+				diff = append(diff, "title")
+			}
+			if m.task.Status != s.target.Status {
+				diff = append(diff, "status")
+			}
+			if m.task.Priority != s.target.Priority {
+				diff = append(diff, "priority")
+			}
+			if len(diff) > 0 {
+				s.changedNote = "changed since you opened it: " + strings.Join(diff, ", ") + " (the change below is against the current values)"
+			}
+			ch.Before = m.task
+		}
+		s.toConfirm(ch)
 	case tasksTickMsg:
 		return s, tea.Batch(s.fetchTasks(), s.tick())
 	case taskAppliedMsg:
 		s.mode = modeList
 		if m.err != nil {
-			s.notice = "not applied: " + core.Sanitize(m.err.Error())
+			s.notice = core.DescribeWriteError(m.err)
 		} else {
 			s.notice = fmt.Sprintf("%sd %s %s", m.op, san(m.res.ID), san(m.res.Title))
 		}
@@ -342,6 +382,11 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			s.mode, s.notice = modeList, "cancelled: nothing was changed"
 		}
 		return s, nil
+	case modeVerify:
+		if key.Matches(k, keyBack) {
+			s.mode, s.notice = modeList, "cancelled: nothing was changed"
+		}
+		return s, nil
 	case modeBusy:
 		return s, nil
 	}
@@ -354,7 +399,17 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		s.cursor = min(max(0, len(s.recent())-1), s.cursor+1)
 		s.remember()
 	case key.Matches(k, keyReload):
-		return s, tea.Batch(s.fetchTasks(), s.fetchInsights())
+		var cmds []tea.Cmd
+		if !s.tasksBusy {
+			cmds = append(cmds, s.fetchTasks())
+		}
+		if !s.insBusy {
+			cmds = append(cmds, s.fetchInsights())
+		}
+		if len(cmds) == 0 {
+			return s, nil
+		}
+		return s, tea.Batch(cmds...)
 	case key.Matches(k, keyFull):
 		dir := ""
 		if s.writer != nil {
@@ -367,7 +422,7 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return s, nil
 		}
 		s.op, s.target = core.TaskCreate, core.Task{}
-		s.fields, s.fi, s.formErr, s.mode = []formField{{"Title", ""}, {"Description", ""}, {"Priority 0-4", ""}}, 0, "", modeForm
+		s.fields, s.fi, s.formErr, s.mode = []formField{{label: "Title"}, {label: "Description"}, {label: "Priority 0-4"}}, 0, "", modeForm
 	case key.Matches(k, keyEdit):
 		t, ok := s.current()
 		switch {
@@ -377,7 +432,7 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			s.notice = "no task selected"
 		default:
 			s.op, s.target = core.TaskUpdate, t
-			s.fields = []formField{{"Title", t.Title}, {"Description (blank: keep)", ""}, {"Priority 0-4", fmt.Sprint(t.Priority)}, {"Status (blank: keep)", ""}}
+			s.fields = []formField{{label: "Title", value: t.Title}, {label: "Description (blank: keep)"}, {label: "Priority 0-4", value: fmt.Sprint(t.Priority)}, {label: "Status (blank: keep)"}}
 			s.fi, s.formErr, s.mode = 0, "", modeForm
 		}
 	case key.Matches(k, keyClose):
@@ -390,7 +445,7 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		default:
 			s.op, s.target = core.TaskClose, t
 			s.plan, s.formErr = core.WritePlan{}, ""
-			s.toConfirm(core.TaskChange{Op: core.TaskClose, ID: t.ID, Before: t})
+			return s, s.beginConfirm(core.TaskChange{Op: core.TaskClose, ID: t.ID, Before: t})
 		}
 	}
 	return s, nil
@@ -413,42 +468,67 @@ func (s *tasksSection) formKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		s.fi = (s.fi + len(s.fields) - 1) % len(s.fields)
 	case tea.KeyBackspace:
 		if r := []rune(f.value); len(r) > 0 {
-			f.value = string(r[:len(r)-1])
+			f.value, f.edited = string(r[:len(r)-1]), true
 		}
 	case tea.KeyEnter:
 		if s.fi < len(s.fields)-1 {
 			s.fi++
 			return s, nil
 		}
-		s.submitForm()
+		return s, s.submitForm()
 	case tea.KeyRunes, tea.KeySpace:
-		f.value += string(k.Runes)
+		f.value, f.edited = f.value+string(k.Runes), true
 	}
 	return s, nil
 }
 
-// submitForm turns the form into a change and moves to the confirm screen. Nothing is
-// written here: a plan only describes the change.
-func (s *tasksSection) submitForm() {
+// submitForm turns the form into a change and moves toward the confirm screen. Nothing is
+// written here: a plan only describes the change. Only fields the user edited are sent.
+func (s *tasksSection) submitForm() tea.Cmd {
 	v := func(i int) string { return strings.TrimSpace(s.fields[i].value) }
-	ch := core.TaskChange{Op: s.op, Title: v(0), Description: v(1), Before: s.target}
-	if p := v(2); p != "" {
+	ch := core.TaskChange{Op: s.op, Before: s.target}
+	update := s.op == core.TaskUpdate
+	if !update || s.fields[0].edited {
+		if update && v(0) == "" {
+			s.formErr = "title must not be empty"
+			return nil
+		}
+		ch.Title = v(0)
+	}
+	if !update || s.fields[1].edited {
+		ch.Description = v(1)
+	}
+	if p := v(2); p != "" && (!update || s.fields[2].edited) {
 		var n int
 		if _, err := fmt.Sscanf(p, "%d", &n); err != nil || fmt.Sprint(n) != p {
 			s.formErr = "priority must be a number 0-4"
-			return
+			return nil
 		}
-		if s.op != core.TaskUpdate || n != s.target.Priority {
-			ch.Priority = &n
-		}
+		ch.Priority = &n
 	}
-	if s.op == core.TaskUpdate {
+	if update {
 		ch.ID, ch.Status = s.target.ID, v(3)
-		if ch.Title == s.target.Title {
-			ch.Title = ""
-		}
 	}
-	s.toConfirm(ch)
+	return s.beginConfirm(ch)
+}
+
+// beginConfirm validates the change, then (for an existing issue, when it can be re-read)
+// re-reads the issue first so the confirm screen shows the current values.
+func (s *tasksSection) beginConfirm(ch core.TaskChange) tea.Cmd {
+	s.changedNote = ""
+	if _, err := core.PlanTaskChange(s.writer, ch); err != nil {
+		s.formErr = core.Sanitize(err.Error())
+		if ch.Op == core.TaskClose {
+			s.notice, s.mode = s.formErr, modeList
+		}
+		return nil
+	}
+	if ch.Op == core.TaskCreate || s.reader == nil {
+		s.toConfirm(ch)
+		return nil
+	}
+	s.pending, s.formErr, s.mode = ch, "", modeVerify
+	return s.verify(ch.ID)
 }
 
 func (s *tasksSection) toConfirm(ch core.TaskChange) {
@@ -490,8 +570,14 @@ func (s *tasksSection) lines() ([]string, int) {
 			out = append(out, "", th.Text(KindFail, san(s.formErr)))
 		}
 		return out, 0
+	case modeVerify:
+		return []string{th.Header.Render("Checking the current state of " + san(s.pending.ID) + "…"), "", th.Text(KindMuted, "esc cancels")}, 0
 	case modeConfirm, modeBusy:
 		out := []string{th.Header.Render("Confirm this change"), ""}
+		if s.changedNote != "" {
+			out = append(out, wrap(th.Text(KindWarn, san(s.changedNote)), w)...)
+			out = append(out, "")
+		}
 		for _, l := range s.plan.Lines {
 			out = append(out, wrap("  "+san(l), w)...)
 		}

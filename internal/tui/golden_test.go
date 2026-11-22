@@ -64,7 +64,9 @@ func leaseFake() leaseProv {
 // taskProv is a fixture Tasks provider and writer; it records writes and never touches a tracker.
 type taskProv struct {
 	named
-	ran *[][]string
+	ran     *[][]string
+	fresh   *map[string]core.Task // what ReadTask returns now; absent ids fall back to the fixture
+	readErr *error
 }
 
 func fixtureTasks() core.TasksReport {
@@ -95,6 +97,12 @@ func (p taskProv) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 	if ch.Title != "" {
 		a = append(a, "--title="+ch.Title)
 	}
+	if ch.Priority != nil {
+		a = append(a, fmt.Sprintf("--priority=%d", *ch.Priority))
+	}
+	if ch.Status != "" {
+		a = append(a, "--status="+ch.Status)
+	}
 	return a, nil
 }
 func (p taskProv) RunTask(_ context.Context, argv []string) (core.TaskResult, error) {
@@ -103,9 +111,25 @@ func (p taskProv) RunTask(_ context.Context, argv []string) (core.TaskResult, er
 }
 func (taskProv) TrackerDir() string { return "" }
 
+func (p taskProv) ReadTask(_ context.Context, id string) (core.Task, error) {
+	if *p.readErr != nil {
+		return core.Task{}, *p.readErr
+	}
+	if t, ok := (*p.fresh)[id]; ok {
+		return t, nil
+	}
+	for _, t := range fixtureTasks().Recent {
+		if t.ID == id {
+			return t, nil
+		}
+	}
+	return core.Task{}, fmt.Errorf("no such issue %s", id)
+}
+
 func tasksFake() taskProv {
 	f := &modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1.3.4"}}
-	return taskProv{named{f, "bd"}, new([][]string)}
+	fresh, readErr := map[string]core.Task{}, error(nil)
+	return taskProv{named{f, "bd"}, new([][]string), &fresh, &readErr}
 }
 
 func brokenFake() named {
@@ -156,7 +180,18 @@ func scenarios() []scenario {
 		}},
 		{name: "tasks", build: std, keys: []string{"2"}, tab: "Tasks"},
 		{name: "tasks-new", build: std, keys: []string{"2", "n", "h", "i"}, tab: "Tasks"},
-		{name: "tasks-confirm", build: std, keys: []string{"2", "x"}, tab: "Tasks"},
+		{name: "tasks-confirm", tab: "Tasks", build: func(t *testing.T, th Theme) tea.Model {
+			m := press(press(load(t, th, nil), "2"), "x") // the check of the current state is async
+			m, _ = m.Update(taskVerifiedMsg{id: "ac-12", task: fixtureTasks().Recent[0]})
+			return m
+		}},
+		{name: "tasks-confirm-stale", tab: "Tasks", build: func(t *testing.T, th Theme) tea.Model {
+			m := press(press(load(t, th, nil), "2"), "x")
+			fresh := fixtureTasks().Recent[0]
+			fresh.Status = "blocked"
+			m, _ = m.Update(taskVerifiedMsg{id: "ac-12", task: fresh})
+			return m
+		}},
 		{name: "leases", build: std, keys: []string{"3"}, tab: "Leases"},
 		{name: "board", build: std, tab: "Board"},
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},

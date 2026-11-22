@@ -109,6 +109,14 @@ func newTasksRig(t *testing.T) tasksRig {
 	return tasksRig{m, p, au, &full}
 }
 
+// pressRun presses a key and runs the command it returns, feeding the results back (a Batch is
+// flattened), so an async step such as the re-read before a confirm completes.
+func pressRun(t *testing.T, m tea.Model, k string) tea.Model {
+	t.Helper()
+	m, cmd := m.Update(runeOrKey(k))
+	return run(t, m, cmd)
+}
+
 func typeText(m tea.Model, s string) tea.Model {
 	for _, r := range s {
 		m = press(m, string(r))
@@ -191,7 +199,7 @@ func runeOrKey(k string) tea.KeyMsg {
 func TestCancelAtConfirmWritesNothing(t *testing.T) {
 	for _, k := range []string{"n", "esc"} {
 		r := newTasksRig(t)
-		m := press(r.m, "x") // close the selected task
+		m := pressRun(t, r.m, "x") // close the selected task (re-reads it first)
 		if !strings.Contains(m.View(), "close task ac-12") {
 			t.Fatalf("no confirm screen:\n%s", m.View())
 		}
@@ -213,7 +221,7 @@ func TestEditPrefillsAndOnlySendsWhatChanged(t *testing.T) {
 	m = press(m, "enter")
 	m = press(m, "enter")
 	m = press(m, "enter")
-	m = press(m, "enter") // review with nothing changed
+	m = pressRun(t, m, "enter") // review with nothing changed
 	if v := m.View(); !strings.Contains(v, "nothing to change") {
 		t.Fatalf("an edit with no change must not reach the confirm screen:\n%s", v)
 	}
@@ -225,7 +233,7 @@ func TestEditPrefillsAndOnlySendsWhatChanged(t *testing.T) {
 	m = press(m, "enter")
 	m = press(m, "enter")
 	m = press(m, "enter")
-	m = press(m, "enter")
+	m = pressRun(t, m, "enter")
 	v := m.View()
 	if !strings.Contains(v, `title: "wire the lease heartbeat" -> "wire the lease heartbeat!"`) || !strings.Contains(v, `bd update ac-12 "--title=wire`) {
 		t.Fatalf("%s", v)
@@ -273,7 +281,7 @@ func TestWritesUnavailableWithoutAWritableProvider(t *testing.T) {
 
 func TestFailedWriteIsShownAndNothingIsClaimedDone(t *testing.T) {
 	r := newTasksRig(t)
-	m := press(r.m, "x")
+	m := pressRun(t, r.m, "x")
 	m, _ = m.Update(taskAppliedMsg{err: errors.New("bd: boom\x1b[2J"), op: core.TaskClose})
 	v := m.View()
 	if !strings.Contains(v, "not applied: bd: boom") || strings.ContainsRune(v, 0x1b) {
@@ -336,6 +344,146 @@ func TestHostileTextInTasksNeverReachesTheScreen(t *testing.T) {
 		for _, c := range v {
 			if c < 0x20 && c != '\n' || c == 0x7f || c >= 0x200b && c <= 0x200f || c >= 0x202a && c <= 0x202e {
 				t.Fatalf("w=%d: forbidden rune %U in %q", w, c, v)
+			}
+		}
+	}
+}
+
+// ---- stale confirm, edited fields, refresh guard, unknown outcome ----
+
+func TestConfirmShowsAChangedSinceBannerAndTheFreshOldValues(t *testing.T) {
+	r := newTasksRig(t)
+	(*r.prov.fresh)["ac-12"] = core.Task{ID: "ac-12", Title: "wire the lease heartbeat v2", Status: "blocked", Priority: 1}
+	m := pressRun(t, r.m, "x")
+	v := m.View()
+	for _, want := range []string{"changed since you opened it", "title", "status", "Confirm this change", `"wire the lease heartbeat v2"`, "y apply"} {
+		if !strings.Contains(v, want) {
+			t.Errorf("missing %q:\n%s", want, v)
+		}
+	}
+	if len(*r.prov.ran) != 0 {
+		t.Fatal("verification must not write")
+	}
+	m = pressRun(t, m, "y")
+	if len(*r.prov.ran) != 1 {
+		t.Fatalf("y on the refreshed plan applies it: %v", *r.prov.ran)
+	}
+}
+
+func TestConfirmWithoutChangeHasNoBanner(t *testing.T) {
+	r := newTasksRig(t)
+	if v := pressRun(t, r.m, "x").View(); strings.Contains(v, "changed since") || !strings.Contains(v, "Confirm this change") {
+		t.Fatalf("%s", v)
+	}
+}
+
+func TestUnverifiableIssueIsFlaggedNotSilentlyConfirmed(t *testing.T) {
+	r := newTasksRig(t)
+	*r.prov.readErr = errors.New("bd show exited 1: issue not found?")
+	v := pressRun(t, r.m, "x").View()
+	if !strings.Contains(v, "could not re-read") || !strings.Contains(v, "Confirm this change") {
+		t.Fatalf("%s", v)
+	}
+}
+
+func TestEscWhileCheckingCancelsAndALateAnswerIsIgnored(t *testing.T) {
+	r := newTasksRig(t)
+	m, cmd := r.m.Update(runeOrKey("x")) // now verifying
+	if !strings.Contains(m.View(), "Checking") {
+		t.Fatalf("%s", m.View())
+	}
+	m = press(m, "esc")
+	m = run(t, m, cmd) // the late answer
+	if strings.Contains(m.View(), "Confirm this change") {
+		t.Fatalf("a late answer must not open the confirm screen:\n%s", m.View())
+	}
+}
+
+func TestPriorityIsSentWheneverTheUserEditedIt(t *testing.T) {
+	r := newTasksRig(t)
+	m := press(r.m, "e")
+	m = press(m, "tab")
+	m = press(m, "tab") // priority field, prefilled with 1
+	m = press(m, "backspace")
+	m = typeText(m, "1")  // the same value again
+	m = press(m, "enter") // on to the status field
+	m = pressRun(t, m, "enter")
+	v := m.View()
+	if !strings.Contains(v, "--priority=1") {
+		t.Fatalf("an edited priority must be sent even if it equals the old one:\n%s", v)
+	}
+}
+
+func TestRefreshIsIgnoredWhileOneIsInFlight(t *testing.T) {
+	r := newTasksRig(t)
+	_, c1 := r.m.Update(runeOrKey("r"))
+	_, c2 := r.m.Update(runeOrKey("r"))
+	if c1 == nil || c2 != nil {
+		t.Fatalf("a second r while the first is in flight must be ignored (c1=%v c2=%v)", c1 != nil, c2 != nil)
+	}
+	m := run(t, r.m, c1) // the answers arrive
+	if _, c3 := m.Update(runeOrKey("r")); c3 == nil {
+		t.Fatal("r works again once the refresh finished")
+	}
+}
+
+func TestUnknownOutcomeIsShownAsUnknownNeverNotApplied(t *testing.T) {
+	r := newTasksRig(t)
+	m, _ := r.m.Update(taskAppliedMsg{err: core.UnknownOutcome("bd timed out; refresh before retrying"), op: core.TaskClose})
+	v := m.View()
+	if !strings.Contains(v, "result unknown: bd timed out; refresh before retrying") || strings.Contains(v, "not applied") {
+		t.Fatalf("%s", v)
+	}
+}
+
+func TestQueuesLabelsDemoDataAndTheTrackerSubset(t *testing.T) {
+	m := sized(load(t, asciiTheme(), nil), 100, 30)
+	m = press(m, "4")
+	if v := m.View(); !strings.Contains(v, "(demo data)") {
+		t.Fatalf("demo data must be labelled:\n%s", v)
+	}
+}
+
+// outsideAllowlist drops the regions where a provider may be named: a "how to connect" fix
+// message (including the wrapped lines under it), and the exact command on a confirm screen.
+// Everything else on a domain tab is domain language.
+func outsideAllowlist(view string) []string {
+	var out []string
+	skip := false
+	for _, l := range strings.Split(view, "\n") {
+		switch {
+		case strings.Contains(l, "how to connect:"), strings.Contains(l, "Insights") && strings.Contains(l, "not connected"), strings.Contains(l, "Insights") && strings.Contains(l, "unavailable"):
+			skip = true
+		case strings.Contains(l, "exact command:"):
+			skip = true
+		case strings.TrimSpace(l) == "":
+			skip = false
+		}
+		// The daemon's own actor identity (for example lambe@host) is data, not a label.
+		if !skip && !strings.HasPrefix(l, "? help") && !strings.Contains(l, "actor ") {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+func TestDomainBodiesNameNoToolOutsideFixMessages(t *testing.T) {
+	banned := []string{"Lambe", "lambe", "beads-lease", "board-beads", "b9s", "Rex", "bv", "bd"}
+	build := map[string]func() tea.Model{
+		"data": func() tea.Model { return load(t, asciiTheme(), nil) },
+		"none": func() tea.Model { return New(nil, WithTheme(asciiTheme()), WithFullView(noFullView)) },
+	}
+	for name, mk := range build {
+		for _, w := range []int{60, 80, 120} {
+			for _, k := range []string{"1", "2", "3", "4"} { // the four domains; Doctor is the one place providers are named
+				m := press(sized(mk(), w, 40), k)
+				for _, l := range outsideAllowlist(m.View()) {
+					for _, bad := range banned {
+						if strings.Contains(l, bad) {
+							t.Errorf("%s tab %s w=%d: %q names %q", name, k, w, l, bad)
+						}
+					}
+				}
 			}
 		}
 	}
