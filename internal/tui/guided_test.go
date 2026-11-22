@@ -176,18 +176,18 @@ func TestAHiddenGuidedTabNeverProbesAndTheVisibleOneDoes(t *testing.T) {
 	mod := New(en, WithTheme(asciiTheme()), WithAudit(au), WithSetup(setup))
 	var tm tea.Model = sized(mod, 100, 30)
 	sec := mod.tabs[1].sec.(*guidedSection)
-	// A tick while the Tasks tab is hidden asks nothing.
-	before := bd.n
-	_, cmd := sec.Update(guideTickMsg{domain: core.DomainTasks})
-	_ = cmd // only a tick is re-armed; it is never run here (it sleeps)
-	if bd.n != before {
+	sec.tickFn = func() tea.Cmd { return nil } // never sleep in a test
+	// A tick while the Tasks tab is hidden re-arms nothing and probes nothing.
+	if _, cmd := sec.Update(guideTickMsg{domain: core.DomainTasks}); cmd != nil {
 		t.Fatal("a hidden tab must not probe on its tick")
 	}
-	// Showing the tab probes.
-	tm, cmd = tm.Update(runeOrKey("2"))
-	_ = tm
+	// Showing the tab probes, and the tick then probes too.
+	tm, cmd := tm.Update(runeOrKey("2"))
 	if !sec.active || cmd == nil {
 		t.Fatal("the tab became active and must probe")
+	}
+	if _, cmd := sec.Update(guideTickMsg{domain: core.DomainTasks}); cmd == nil {
+		t.Fatal("a visible tab probes on its tick")
 	}
 	// Leaving it deactivates.
 	tm.Update(runeOrKey("1"))

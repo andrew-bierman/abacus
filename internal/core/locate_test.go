@@ -206,6 +206,25 @@ func TestLocateRefusesAFileOrDirectoryOwnedBySomeoneElse(t *testing.T) {
 	}
 }
 
+func TestLocateRefusesALinkSittingInAnUnsafeDirectoryEvenWithASafeTarget(t *testing.T) {
+	root := t.TempDir()
+	target := fakeTool(t, filepath.Join(root, "store"), "bd-real", 0o755)
+	dir := filepath.Join(root, "bundled")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(dir, "bd")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o777); err != nil { // anyone could swap the link
+		t.Fatal(err)
+	}
+	withSidecarDirs(t, dir)
+	if f, detail := core.LocateFound("bd", "", noPath); f.Bin != "" || !strings.Contains(detail, "directory") {
+		t.Fatalf("%+v %q", f, detail)
+	}
+}
+
 func TestLocateSkipsAnUnsafeSidecarForASafeOneLater(t *testing.T) {
 	root := t.TempDir()
 	fakeTool(t, filepath.Join(root, "a"), "bd", 0o777)

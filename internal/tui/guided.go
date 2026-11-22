@@ -52,6 +52,7 @@ type guidedSection struct {
 	mode   guidedMode
 	plan   core.SetupPlan
 	notice string
+	tickFn func() tea.Cmd // injectable so tests never sleep
 	th     Theme
 	geom
 }
@@ -70,7 +71,9 @@ func guideLine(g core.Guide) string {
 }
 
 func newGuidedSection(d core.DomainID, inner section, setup *core.Setup) *guidedSection {
-	return &guidedSection{domain: d, inner: inner, setup: setup, th: DefaultTheme()}
+	s := &guidedSection{domain: d, inner: inner, setup: setup, th: DefaultTheme()}
+	s.tickFn = s.tick
+	return s
 }
 
 func (s *guidedSection) SetTheme(t Theme) { s.th = t; s.inner.SetTheme(t) }
@@ -114,7 +117,7 @@ func (s *guidedSection) tick() tea.Cmd {
 
 // Init loads the inner section but does not probe: a hidden tab never runs a probe (the Queues
 // one shells out to lambe doctor). The probe runs when the tab is first shown.
-func (s *guidedSection) Init() tea.Cmd { return tea.Batch(s.inner.Init(), s.tick()) }
+func (s *guidedSection) Init() tea.Cmd { return tea.Batch(s.inner.Init(), s.tickFn()) }
 
 // activate runs when the tab becomes the visible one: probe now, and forward lazy loading.
 func (s *guidedSection) activate() tea.Cmd {
@@ -139,9 +142,9 @@ func (s *guidedSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case guideTickMsg:
 		if m.domain == s.domain {
 			if !s.active {
-				return s, s.tick()
+				return s, s.tickFn()
 			}
-			return s, tea.Batch(s.probe(), s.tick())
+			return s, tea.Batch(s.probe(), s.tickFn())
 		}
 		return s, nil
 	case setupAppliedMsg:

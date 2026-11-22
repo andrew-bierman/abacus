@@ -209,6 +209,7 @@ func TestPackageUntouchedArchivePasses(t *testing.T) {
 
 func TestPackageFailsClosedOnAFlippedByte(t *testing.T) {
 	r := newRig(t, nil)
+	must(t, os.WriteFile(filepath.Join(r.out, "SHA256SUMS"), []byte("stale\n"), 0o644))
 	p := filepath.Join(r.cache, "bd", "fake_linux_amd64.tar.gz")
 	b, _ := os.ReadFile(p)
 	b[len(b)-1] ^= 0xff
