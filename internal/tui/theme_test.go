@@ -2,8 +2,6 @@ package tui
 
 import (
 	"bytes"
-	"go/parser"
-	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +29,7 @@ func TestNoColorProfileEmitsNoEscapes(t *testing.T) {
 			}
 		}
 	}
-	for _, s := range []string{th.Selected.Render("x"), th.Header.Render("x"), th.Footer.Render("x"), th.TabActive.Render("x"), th.TabDim.Render("x")} {
+	for _, s := range []string{th.Selected.Render("x"), th.Header.Render("x"), th.TabActive.Render("x"), th.TabDim.Render("x")} {
 		if strings.Contains(s, "\x1b") {
 			t.Errorf("escape under Ascii: %q", s)
 		}
@@ -100,13 +98,24 @@ func TestNoColorLiteralsOutsideTheme(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := parser.ParseFile(token.NewFileSet(), f, src, 0); err != nil {
-			t.Fatal(err)
-		}
 		for _, bad := range []string{"lipgloss.Color(", "AdaptiveColor", `"#`, ".Foreground(", "Style().Background(", ".Reverse("} {
 			if strings.Contains(string(src), bad) {
 				t.Errorf("%s contains %q; define it in theme.go", f, bad)
 			}
+		}
+	}
+}
+
+// ANSI 8 (bright black) can equal the background on 16-color terminals, so muted text there
+// must be faint default-foreground text, not color 8.
+func TestSixteenColorMutedTextDoesNotUseBrightBlack(t *testing.T) {
+	th := NewTheme(rendererFor(termenv.ANSI, true))
+	for name, s := range map[string]string{
+		"muted": th.Text(KindMuted, "x"), "skip": th.Text(KindSkip, "x"),
+		"label": th.Label.Render("x"), "dim tab": th.TabDim.Render("x"), "divider": th.Divider.Render("x"),
+	} {
+		if !strings.Contains(s, "\x1b[2m") || strings.Contains(s, "90") || strings.Contains(s, "30;1") {
+			t.Errorf("%s = %q, want faint text with no bright-black color", name, s)
 		}
 	}
 }

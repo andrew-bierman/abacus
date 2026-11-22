@@ -57,27 +57,36 @@ func colorFor(k Kind) lipgloss.TerminalColor {
 // profile (NO_COLOR, 16/256/truecolor) and light/dark background come from one source.
 type Theme struct {
 	plain bool // no color profile: badges fall back to parentheses
+	basic bool // 16-color terminal: bright black can equal the background, so mute with faint
 	r     *lipgloss.Renderer
 
-	Selected, Header, Footer, Title, Label lipgloss.Style
-	TabActive, TabIdle, TabDim, Divider    lipgloss.Style
+	Selected, Header, Title, Label      lipgloss.Style
+	TabActive, TabIdle, TabDim, Divider lipgloss.Style
 }
 
 // NewTheme builds the theme for r. The termenv Ascii profile (NO_COLOR, a dumb terminal or a
 // pipe) strips every attribute, so structure never depends on color alone.
 func NewTheme(r *lipgloss.Renderer) Theme {
-	t := Theme{r: r, plain: r.ColorProfile() == termenv.Ascii}
+	t := Theme{r: r, plain: r.ColorProfile() == termenv.Ascii, basic: r.ColorProfile() == termenv.ANSI}
 	s := r.NewStyle
 	t.Title = s().Bold(true).Foreground(colAccent)
 	t.Header = s().Bold(true)
-	t.Label = s().Foreground(colMuted)
-	t.Footer = s().Foreground(colMuted)
+	t.Label = t.muted()
 	t.Selected = s().Bold(true).Background(colSelBG)
 	t.TabActive = s().Bold(true).Foreground(colOnBadge).Background(colAccent).Padding(0, 1)
 	t.TabIdle = s().Padding(0, 1)
-	t.TabDim = s().Foreground(colMuted).Faint(true).Padding(0, 1)
-	t.Divider = s().Foreground(colMuted)
+	t.TabDim = t.muted().Faint(true).Padding(0, 1)
+	t.Divider = t.muted()
 	return t
+}
+
+// muted is the quiet text style: the muted color, or on a 16-color terminal faint text in the
+// default foreground (ANSI 8 is often indistinguishable from the background there).
+func (t Theme) muted() lipgloss.Style {
+	if t.basic {
+		return t.r.NewStyle().Faint(true)
+	}
+	return t.r.NewStyle().Foreground(colMuted)
 }
 
 // DefaultTheme follows the process's terminal (and NO_COLOR) via lipgloss's default renderer.
@@ -85,6 +94,9 @@ func DefaultTheme() Theme { return NewTheme(lipgloss.DefaultRenderer()) }
 
 // Text colors s with the role's foreground.
 func (t Theme) Text(k Kind, s string) string {
+	if k == KindMuted || k == KindSkip {
+		return t.muted().Render(s)
+	}
 	return t.r.NewStyle().Foreground(colorFor(k)).Render(s)
 }
 
@@ -99,8 +111,8 @@ func (t Theme) Badge(k Kind, text string) string {
 // HelpStyles styles bubbles' help bar from the theme.
 func (t Theme) HelpStyles() help.Styles {
 	key := t.r.NewStyle().Foreground(colAccent)
-	desc := t.r.NewStyle().Foreground(colMuted)
-	sep := t.r.NewStyle().Foreground(colMuted).Faint(true)
+	desc := t.muted()
+	sep := t.muted().Faint(true)
 	return help.Styles{
 		Ellipsis: sep, ShortKey: key, ShortDesc: desc, ShortSeparator: sep,
 		FullKey: key, FullDesc: desc, FullSeparator: sep,
