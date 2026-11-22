@@ -29,12 +29,16 @@ func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byt
 	if timeout <= 0 {
 		timeout = DefaultExecTimeout
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	parent := ctx
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.WaitDelay = waitDelay
 	out, err := cmd.Output()
 	if ctx.Err() != nil {
+		if parent.Err() != nil {
+			return nil, -1, fmt.Errorf("canceled: %w", parent.Err())
+		}
 		return nil, -1, fmt.Errorf("timed out after %s", timeout)
 	}
 	var ee *exec.ExitError
