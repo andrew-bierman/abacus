@@ -175,10 +175,12 @@ func TestTUICommandPassesAllDetectedEntriesWhenSomethingIsReady(t *testing.T) {
 	}
 }
 
-func TestTUICommandWithNothingReadyKeepsTheEmptyShell(t *testing.T) {
+// Domains never disappear, so the TUI always gets every entry: with nothing ready it shows
+// each domain as not connected.
+func TestTUICommandPassesEntriesEvenWhenNothingIsReady(t *testing.T) {
 	broken := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Broken}}
-	if got := tuiEntries(t, broken); len(got) != 0 {
-		t.Fatalf("with no ready tool the TUI gets no entries (it shows its guidance), got %s", ids(got))
+	if got := ids(tuiEntries(t, broken)); got != "b:broken" {
+		t.Fatalf("entries = %s", got)
 	}
 }
 

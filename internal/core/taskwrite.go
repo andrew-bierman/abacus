@@ -279,3 +279,15 @@ func (a *Applier) Apply(ctx context.Context, p WritePlan) (TaskResult, error) {
 	_ = a.audit.Record(e) // the attempt line already exists; a failed result line must not mask the outcome
 	return res, err
 }
+
+// DisplayArgv renders an argv for a person: arguments with spaces or quotes are quoted.
+func DisplayArgv(argv []string) string {
+	out := make([]string, len(argv))
+	for i, a := range argv {
+		if a == "" || strings.ContainsAny(a, " \t\n\"'\\$`") {
+			a = fmt.Sprintf("%q", a)
+		}
+		out[i] = a
+	}
+	return strings.Join(out, " ")
+}
