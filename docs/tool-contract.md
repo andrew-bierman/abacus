@@ -1,5 +1,10 @@
 # Tool contract
 
+Providers are how abacus fills its fleet domains (Board, Tasks, Leases, Queues); users see domains, not
+providers. `bd` (Tasks, with reads and allowlisted writes) and `bv` (graph insights, `--robot-*` JSON
+only) are composed the same way as the tools below: through their documented `--json` surfaces, behind
+argv allowlists. See `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
+
 What a Beads-family tool exposes so an umbrella tool can compose it without tool-specific
 logic. Lambe is the reference implementation; its owned wire spec is
 `docs/api/state-api.md` in the Lambe repo and is cited here, not restated.
