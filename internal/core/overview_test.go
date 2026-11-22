@@ -51,15 +51,15 @@ func TestOverviewNeedsAttentionWhenTasksHasNoTracker(t *testing.T) {
 	}
 }
 
-func TestOverviewBoardKeepsTheUpstreamDetailAndEmptyDomainsExplainThemselves(t *testing.T) {
+func TestOverviewEmptyDomainsExplainThemselves(t *testing.T) {
 	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}}}
 	o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready}}})
 	by := map[core.DomainID]core.DomainLine{}
 	for _, d := range o.Domains {
 		by[d.Domain] = d
 	}
-	if !strings.Contains(by[core.DomainBoard].Line, "board-beads issue 15") || !strings.Contains(by[core.DomainBoard].Line, "press o") {
-		t.Errorf("board: %q", by[core.DomainBoard].Line)
+	if l := by[core.DomainBoard].Line; strings.Contains(l, "board-beads") || strings.Contains(l, "b9s") || !strings.Contains(l, "npm i -g @vercel/board") {
+		t.Errorf("board: %q", l)
 	}
 	if !strings.Contains(by[core.DomainTasks].Line, "no tasks yet") {
 		t.Errorf("tasks: %q", by[core.DomainTasks].Line)
@@ -102,8 +102,8 @@ func TestOverviewNotesAVersionThatDiffersFromThePinWithoutBlocking(t *testing.T)
 func TestOverviewHeadlineCountsOptionalThingsToSetUp(t *testing.T) {
 	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 1}}}
 	o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready}}})
-	// Leases and Queues have no provider here: two optional things, Tasks is fine.
-	if o.Headline != "Ready — 2 optional things to set up" {
+	// Board, Leases and Queues have no provider here: three optional things, Tasks is fine.
+	if o.Headline != "Ready — 3 optional things to set up" {
 		t.Fatalf("%q", o.Headline)
 	}
 }

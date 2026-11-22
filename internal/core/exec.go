@@ -41,7 +41,30 @@ type ExecRunner struct {
 	Scrub func([]string) []string
 }
 
+// SplitRunner is a Runner that also returns stderr, for a tool (Vercel Board's CLI) that reports
+// its failures as a JSON document on stderr. stdout stays data only.
+type SplitRunner interface {
+	RunSplit(ctx context.Context, name string, args ...string) (stdout, stderr []byte, exit int, err error)
+}
+
 func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
+	out, _, exit, err := r.RunSplit(ctx, name, args...)
+	return out, exit, err
+}
+
+// maxStderr bounds what is kept of a tool's stderr.
+const maxStderr = 16 << 10
+
+type capBuf struct{ b []byte }
+
+func (c *capBuf) Write(p []byte) (int, error) {
+	if room := maxStderr - len(c.b); room > 0 {
+		c.b = append(c.b, p[:min(room, len(p))]...)
+	}
+	return len(p), nil
+}
+
+func (r ExecRunner) RunSplit(ctx context.Context, name string, args ...string) ([]byte, []byte, int, error) {
 	timeout := r.Timeout
 	if timeout <= 0 {
 		timeout = DefaultExecTimeout
@@ -61,19 +84,21 @@ func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byt
 	}
 	cmd.Env = SidecarEnv(env)
 	cmd.WaitDelay = waitDelay
+	var stderr capBuf
+	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if ctx.Err() != nil {
 		if parent.Err() != nil {
-			return nil, -1, fmt.Errorf("%w: %w", ErrCanceled, parent.Err())
+			return nil, nil, -1, fmt.Errorf("%w: %w", ErrCanceled, parent.Err())
 		}
-		return nil, -1, fmt.Errorf("%w after %s", ErrTimedOut, timeout)
+		return nil, nil, -1, fmt.Errorf("%w after %s", ErrTimedOut, timeout)
 	}
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {
-		return out, ee.ExitCode(), nil
+		return out, stderr.b, ee.ExitCode(), nil
 	}
 	if err != nil {
-		return nil, -1, err
+		return nil, nil, -1, err
 	}
-	return out, 0, nil
+	return out, stderr.b, 0, nil
 }

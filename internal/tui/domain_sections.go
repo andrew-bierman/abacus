@@ -2,7 +2,9 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -72,88 +74,292 @@ func (s *notConnectedSection) lines() []string {
 
 func (s *notConnectedSection) View() string { return s.render(s.lines()) }
 
-// boardSection shows the Board domain when a provider exists (none does today).
-type boardSection struct {
-	p        core.BoardProvider
-	fullView func(string) tea.Cmd
-	report   core.BoardReport
-	err      error
-	loaded   bool
-	notice   string
-	linesSection
-}
+// boardInspector is implemented by a Board provider that can hand the terminal to its local
+// web inspector (a command, run only from an explicit keypress).
+type boardInspector interface{ InspectCmd() *exec.Cmd }
+
+// hash marks a message id, as the board prints it.
+const hash = "\u0023"
+
+const boardPollEvery = 30 * time.Second
 
 type boardMsg struct {
 	report core.BoardReport
 	err    error
 }
+type boardTickMsg struct{ gen int }
+type boardInspectDoneMsg struct{ err error }
 
-func newBoardSection(p core.BoardProvider, fv func(string) tea.Cmd) *boardSection {
-	return &boardSection{p: p, fullView: fv, linesSection: linesSection{th: DefaultTheme()}}
+// boardSection shows the Board domain: channels, recent threads and open tasks, with the
+// selected one in full below. Reads are bounded by the provider; polling runs only while the
+// tab is visible, one read at a time.
+type boardSection struct {
+	p       core.BoardProvider
+	inspect func() *exec.Cmd // nil: the provider has no inspector
+
+	report   core.BoardReport
+	err      error
+	loaded   bool
+	busy     bool
+	active   bool
+	gen      int // bumped on every (de)activation: a tick from an older visit is dropped
+	cursor   int
+	selected string // "t:<id>" or "k:<id>", so a refresh cannot move the cursor to another row
+	top      int
+	notice   string
+	th       Theme
+	geom
 }
 
-func (s *boardSection) Bindings() []key.Binding { return append(moveBindings(), keyFull, keyReload) }
+func newBoardSection(p core.BoardProvider) *boardSection {
+	s := &boardSection{p: p, th: DefaultTheme()}
+	if bi, ok := p.(boardInspector); ok {
+		s.inspect = bi.InspectCmd
+	}
+	return s
+}
+
+func (s *boardSection) SetTheme(t Theme) { s.th = t }
+func (s *boardSection) Capturing() bool  { return false }
+
+func (s *boardSection) Bindings() []key.Binding {
+	out := append(moveBindings(), keyReload)
+	if s.inspect != nil {
+		out = append(out, keyBrowser)
+	}
+	return out
+}
 
 func (s *boardSection) fetch() tea.Cmd {
+	s.busy = true
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
 		defer cancel()
 		r, err := s.p.Board(ctx)
 		return boardMsg{r, err}
 	}
 }
 
-func (s *boardSection) Init() tea.Cmd { return s.fetch() }
+func (s *boardSection) tick() tea.Cmd {
+	gen := s.gen
+	return tea.Tick(boardPollEvery, func(time.Time) tea.Msg { return boardTickMsg{gen} })
+}
+
+func (s *boardSection) Init() tea.Cmd { return nil }
+
+// activate loads on the first visit and then polls while the tab stays visible.
+func (s *boardSection) activate() tea.Cmd {
+	s.active = true
+	s.gen++
+	if s.busy {
+		return s.tick()
+	}
+	return tea.Batch(s.fetch(), s.tick())
+}
+
+func (s *boardSection) deactivate() { s.active = false; s.gen++ }
+
+// row is one selectable line: a thread or a task.
+type boardRow struct {
+	id   string
+	text string // the list line
+	body []string
+}
+
+func (s *boardSection) rows() []boardRow {
+	var out []boardRow
+	for _, t := range s.report.Threads {
+		out = append(out, boardRow{id: "t:" + t.Root.ID, text: threadRow(t), body: threadBody(t)})
+	}
+	for _, t := range s.report.Tasks {
+		out = append(out, boardRow{id: "k:" + t.ID, text: taskRow(t), body: taskBody(t)})
+	}
+	return out
+}
+
+func firstLine(s string) string {
+	l, _, _ := strings.Cut(strings.TrimSpace(s), "\n")
+	return l
+}
+
+func when(iso string) string {
+	if t, err := time.Parse(time.RFC3339, iso); err == nil {
+		return t.UTC().Format("Jan 2 15:04")
+	}
+	return ""
+}
+
+func threadRow(t core.BoardThread) string {
+	return fmt.Sprintf("%s  %s  %s  %s", padTo(trunc(hash+san(t.Root.ID), 8), 8), padTo(trunc(orDash(t.Root.Channel), 12), 12), padTo(trunc(orDash(t.Root.Author), 12), 12), san(firstLine(t.Root.Text)))
+}
+
+func threadBody(t core.BoardThread) []string {
+	out := []string{fmt.Sprintf(hash+"%s in %s by %s %s", san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), when(t.Root.At)), san(t.Root.Text)}
+	if t.Replies == 0 {
+		return append(out, "no replies")
+	}
+	out = append(out, fmt.Sprintf("%d replies, latest:", t.Replies))
+	if t.Last != nil {
+		out = append(out, fmt.Sprintf(hash+"%s by %s %s", san(t.Last.ID), orDash(t.Last.Author), when(t.Last.At)), san(t.Last.Text))
+	}
+	return out
+}
+
+func taskRow(t core.BoardTask) string {
+	who := t.Claimant
+	return fmt.Sprintf("%s  %s  %s  %s", padTo(trunc(hash+san(t.ID), 8), 8), padTo(trunc(orDash(t.State), 10), 10), padTo(trunc(orDash(who), 12), 12), san(firstLine(t.Text)))
+}
+
+func taskBody(t core.BoardTask) []string {
+	out := []string{fmt.Sprintf("task #%s in %s: %s", san(t.ID), orDash(t.Channel), orDash(t.State))}
+	if t.Claimant != "" {
+		out = append(out, "held by "+san(t.Claimant)+" until "+orDash(when(t.Until)))
+	}
+	return append(out, san(t.Text))
+}
+
+func (s *boardSection) reanchor() {
+	rows := s.rows()
+	for i, r := range rows {
+		if s.selected != "" && r.id == s.selected {
+			s.cursor = i
+			return
+		}
+	}
+	s.cursor = min(s.cursor, max(0, len(rows)-1))
+	if s.cursor < len(rows) {
+		s.selected = rows[s.cursor].id
+	}
+}
 
 func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case boardMsg:
-		s.report, s.err, s.loaded = m.report, m.err, true
+		s.report, s.err, s.loaded, s.busy = m.report, m.err, true, false
+		s.reanchor()
+	case boardTickMsg:
+		if !s.active || m.gen != s.gen { // not visible, or a tick of an earlier visit
+			return s, nil
+		}
+		if s.busy {
+			return s, s.tick()
+		}
+		return s, tea.Batch(s.fetch(), s.tick())
+	case boardInspectDoneMsg:
+		if m.err != nil {
+			s.notice = "the inspector stopped: " + core.Sanitize(m.err.Error())
+		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
-	case fullViewDoneMsg:
-		if m.err != nil {
-			s.notice = core.Sanitize(m.err.Error())
-		}
 	case tea.KeyMsg:
 		s.notice = ""
+		rows := s.rows()
 		switch {
-		case s.scrollKey(m, len(s.lines())):
-		case key.Matches(m, keyFull):
-			return s, s.fullView(core.FullViewDir(""))
+		case key.Matches(m, keyUp):
+			s.cursor = max(0, s.cursor-1)
+		case key.Matches(m, keyDown):
+			s.cursor = min(max(0, len(rows)-1), s.cursor+1)
 		case key.Matches(m, keyReload):
-			return s, s.fetch()
+			if !s.busy {
+				return s, s.fetch()
+			}
+		case key.Matches(m, keyBrowser) && s.inspect != nil:
+			return s, tea.ExecProcess(s.inspect(), func(err error) tea.Msg { return boardInspectDoneMsg{err} })
+		}
+		if s.cursor < len(rows) {
+			s.selected = rows[s.cursor].id
 		}
 	}
 	return s, nil
 }
 
-func (s *boardSection) lines() []string {
-	th := s.th
+func (s *boardSection) lines() ([]string, int) {
+	th, w := s.th, s.width()
 	switch {
 	case !s.loaded:
-		return []string{th.Text(KindMuted, "loading…")}
+		return []string{th.Text(KindMuted, "loading…")}, 0
 	case s.err != nil:
-		return wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), s.width())
+		var nc *core.NotConnectedError
+		if errors.As(s.err, &nc) { // the tool is there but no board is set up: say how to connect
+			out := []string{th.Header.Render("Board") + " " + th.Badge(KindSkip, "not connected"), ""}
+			out = append(out, wrap(th.Text(KindWarn, san(nc.Reason)), w)...)
+			if nc.HowToConnect != nc.Reason {
+				out = append(out, "")
+				out = append(out, wrap(th.Text(KindAccent, "how to connect: ")+san(nc.HowToConnect), w)...)
+			}
+			return out, 0
+		}
+		return wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w), 0
 	}
+	r := s.report
 	head := th.Header.Render("Board")
-	if src := s.report.Source; src != "" && src != core.SourceLive {
+	if src := r.Source; src != "" && src != core.SourceLive {
 		head += " " + th.Badge(KindWarn, san(src))
 	}
-	out := []string{head}
-	for _, c := range s.report.Columns {
-		out = append(out, "", th.Header.Render(san(c.Name))+" "+th.Text(KindMuted, fmt.Sprint(len(c.Cards))))
-		for _, k := range c.Cards {
-			out = append(out, "  "+san(k.ID)+"  "+san(k.Title))
+	out := []string{head, r.Summarize()}
+	if r.Reason != "" {
+		out = append(out, wrap(th.Text(KindWarn, san(r.Reason)), w)...)
+	}
+	out = append(out, "", th.Header.Render("Channels"))
+	if len(r.Channels) == 0 {
+		out = append(out, th.Text(KindMuted, "  none yet: the first post makes one"))
+	}
+	var chans []string
+	for _, c := range r.Channels {
+		chans = append(chans, san(c.Path)+th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads)))
+	}
+	if len(chans) > 0 {
+		out = append(out, wrap("  "+strings.Join(chans, " · "), w)...)
+	}
+	rows := s.rows()
+	cursorLine := len(out)
+	section := func(title string, n int, empty string) {
+		out = append(out, "", th.Header.Render(title))
+		if n == 0 {
+			out = append(out, th.Text(KindMuted, "  "+empty))
+		}
+	}
+	line := func(i int, text string) {
+		if i == s.cursor {
+			cursorLine = len(out)
+			out = append(out, th.Selected.Render(padTo(trunc("▸ "+text, w), w)))
+		} else {
+			out = append(out, "  "+text)
+		}
+	}
+	section("Recent threads", len(r.Threads), "no threads yet")
+	for i := range r.Threads {
+		line(i, rows[i].text)
+	}
+	section("Tasks", len(r.Tasks), "no open tasks")
+	for i := range r.Tasks {
+		line(len(r.Threads)+i, rows[len(r.Threads)+i].text)
+	}
+	if s.cursor < len(rows) {
+		out = append(out, "", th.Header.Render("Selected"))
+		for _, b := range rows[s.cursor].body {
+			out = append(out, wrap("  "+b, w)...)
 		}
 	}
 	if s.notice != "" {
-		out = append(out, "", th.Text(KindWarn, s.notice))
+		out = append(out, "", th.Text(KindWarn, san(s.notice)))
 	}
-	return out
+	return out, cursorLine
 }
 
-func (s *boardSection) View() string { return s.render(s.lines()) }
+func (s *boardSection) View() string {
+	lines, cursorLine := s.lines()
+	vis, top, hidden := windowMore(lines, cursorLine, s.h, s.top)
+	s.top = top
+	body := make([]string, 0, len(vis)+1)
+	for _, l := range vis {
+		body = append(body, trunc(l, s.width()))
+	}
+	if hidden > 0 && s.h >= 2 {
+		body = append(body, s.th.moreMarker(hidden))
+	}
+	return strings.Join(body, "\n") + "\n"
+}
 
 // ---- Tasks ----
 

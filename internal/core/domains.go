@@ -218,20 +218,46 @@ type QueuesReport struct {
 	History   []HistoryItem `json:"history,omitempty"`
 }
 
-type BoardCard struct {
-	ID    string `json:"id"`
-	Title string `json:"title,omitempty"`
+// BoardChannel is a place on the board where threads are posted.
+type BoardChannel struct {
+	Path     string `json:"path"`
+	Threads  int    `json:"threads,omitempty"`
+	Messages int    `json:"messages,omitempty"`
 }
 
-type BoardColumn struct {
-	Name  string      `json:"name"`
-	Cards []BoardCard `json:"cards,omitempty"`
+// BoardMessage is one post: who wrote it, when, and what it says.
+type BoardMessage struct {
+	ID      string `json:"id"`
+	Channel string `json:"channel,omitempty"`
+	Author  string `json:"author,omitempty"`
+	At      string `json:"at,omitempty"`
+	Text    string `json:"text,omitempty"`
 }
 
+// BoardThread is a root message with its reply count and its latest reply.
+type BoardThread struct {
+	Root    BoardMessage  `json:"root"`
+	Replies int           `json:"replies"`
+	Last    *BoardMessage `json:"last,omitempty"`
+}
+
+// BoardTask is a thread agents are to do: a state the board keeps, and who holds it.
+type BoardTask struct {
+	ID       string `json:"id"`
+	Channel  string `json:"channel,omitempty"`
+	Text     string `json:"text,omitempty"`
+	State    string `json:"state"`
+	Claimant string `json:"claimant,omitempty"`
+	Until    string `json:"until,omitempty"`
+}
+
+// BoardReport is the Board domain: a message board for agents. It is bounded by the provider
+// (a few channels, a few recent threads, one page of open tasks), not a full mirror.
 type BoardReport struct {
 	Header
-	Columns  []BoardColumn   `json:"columns,omitempty"`
-	Insights *InsightsReport `json:"insights,omitempty"`
+	Channels []BoardChannel `json:"channels,omitempty"`
+	Threads  []BoardThread  `json:"threads,omitempty"`
+	Tasks    []BoardTask    `json:"tasks,omitempty"`
 }
 
 // DomainsReport is the additive `domains` section of `status --json`.
@@ -263,7 +289,7 @@ type (
 // HowToConnect is the fix message shown for a domain with no usable provider. It may name
 // the provider command because it helps the user fix a provider.
 var HowToConnect = map[DomainID]string{
-	DomainBoard:  "The board is not available in abacus yet. Press o to open the full board in b9s.",
+	DomainBoard:  HowToConnectBoard,
 	DomainTasks:  "The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
 	DomainLeases: "Leases need beads-lease, which comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
 	DomainQueues: "Queues need Lambe, which comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
@@ -364,7 +390,9 @@ func (r QueuesReport) Summarize() string {
 	return fmt.Sprintf("%d runs, %d queued, %d need attention", len(r.Runs), len(r.Queue), len(r.Attention))
 }
 
-func (r BoardReport) Summarize() string { return fmt.Sprintf("%d columns", len(r.Columns)) }
+func (r BoardReport) Summarize() string {
+	return fmt.Sprintf("%d channels, %d recent threads, %d open tasks", len(r.Channels), len(r.Threads), len(r.Tasks))
+}
 
 func (r InsightsReport) Summarize() string {
 	return fmt.Sprintf("%d actionable, %d blocked, %d cycles", r.TotalActionable, r.TotalBlocked, len(r.Cycles))
@@ -469,7 +497,7 @@ func (r *DomainsReport) readBoard(ctx context.Context, entries []Entry) {
 	r.Board = readDomain(ctx, entries, DomainBoard, func(p BoardProvider, c context.Context) (BoardReport, error) { return p.Board(c) }, boardHdr, BoardReport.Summarize)
 }
 
-// ReadDomain reads one domain only (and its insights, for Tasks and Board): a single-domain
+// ReadDomain reads one domain only (and its insights, for Tasks): a single-domain
 // command must not run the other providers. The other domains are left empty.
 func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport {
 	var r DomainsReport
@@ -481,9 +509,6 @@ func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport
 		r.Tasks.Insights = &ins
 	case DomainBoard:
 		r.readBoard(ctx, entries)
-		p, why, _ := pick[InsightsProvider](entries)
-		ins := ReadInsights(ctx, p, why)
-		r.Board.Insights = &ins
 	case DomainLeases:
 		r.readLeases(ctx, entries)
 	case DomainQueues:
@@ -501,7 +526,7 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	r.readQueues(ctx, entries)
 	r.readBoard(ctx, entries)
 	ins := readInsightsFor(ctx, entries, r.Tasks)
-	r.Tasks.Insights, r.Board.Insights = &ins, &ins
+	r.Tasks.Insights = &ins
 	return r
 }
 
@@ -547,7 +572,9 @@ type Providers struct {
 	Queues QueueProvider
 	Board  BoardProvider
 	Writer TaskWriter // the module that can write tasks, if any
-	Reader TaskReader // re-reads one task before a write is confirmed
+	// BoardWriter is the module that can post and reply to the board, if any.
+	BoardWriter BoardWriter
+	Reader      TaskReader // re-reads one task before a write is confirmed
 	// Insights is the graph-analysis provider; nil means insights are not connected.
 	Insights    InsightsProvider
 	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
@@ -579,6 +606,7 @@ func ResolveProviders(entries []Entry) Providers {
 		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
 	}
 	p.Writer, _, _ = pick[TaskWriter](entries)
+	p.BoardWriter, _, _ = pick[BoardWriter](entries)
 	p.Reader, _, _ = pick[TaskReader](entries)
 	p.Insights, p.InsightsWhy, _ = pick[InsightsProvider](entries)
 	return p

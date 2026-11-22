@@ -345,7 +345,7 @@ func newCount() *countMod {
 }
 
 func TestSingleDomainCommandsReadOnlyThatProvider(t *testing.T) {
-	want := map[string][5]int{"leases": {0, 1, 0, 0, 0}, "queues": {0, 0, 1, 0, 0}, "tasks": {1, 0, 0, 0, 1}, "board": {0, 0, 0, 1, 1}}
+	want := map[string][5]int{"leases": {0, 1, 0, 0, 0}, "queues": {0, 0, 1, 0, 0}, "tasks": {1, 0, 0, 0, 1}, "board": {0, 0, 0, 1, 0}}
 	for cmd, w := range want {
 		m := newCount()
 		runIn(t, "", []core.Module{m}, cmd)
@@ -384,5 +384,103 @@ func TestLeasesTextUsesTheSharedLeaseDetail(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q:\n%s", want, out)
 		}
+	}
+}
+
+// boardMod is a module that provides the Board domain and its writer, recording every write.
+type boardMod struct {
+	*modtest.Fake
+	ran  [][]string
+	fail error
+}
+
+func (m *boardMod) Board(context.Context) (core.BoardReport, error) {
+	return core.BoardReport{Header: core.Header{Source: core.SourceLive},
+		Channels: []core.BoardChannel{{Path: "dev", Threads: 1}},
+		Threads:  []core.BoardThread{{Root: core.BoardMessage{ID: "2", Channel: "dev", Author: "ada", Text: "deploys are green\nagain"}, Replies: 1, Last: &core.BoardMessage{ID: "3", Author: "claude", Text: "ack"}}},
+		Tasks:    []core.BoardTask{{ID: "4", State: "claimed", Claimant: "codex via ada", Text: "fix it"}}}, nil
+}
+func (m *boardMod) BuildBoardArgv(ch core.BoardChange, key string) ([]string, error) {
+	return []string{"board", string(ch.Op), ch.Channel + ch.ID, "--idempotency-key", key, "--", ch.Text}, nil
+}
+func (m *boardMod) RunBoard(_ context.Context, argv []string, ch core.BoardChange) (core.BoardResult, error) {
+	m.ran = append(m.ran, argv)
+	return core.BoardResult{ID: "9", Text: ch.Text}, m.fail
+}
+func (m *boardMod) Target() string { return "the default board" }
+
+func newBoardMod() *boardMod {
+	return &boardMod{Fake: &modtest.Fake{IDStr: "board", Det: core.Detection{State: core.Ready, Version: "0.54.0"}}}
+}
+
+func TestBoardCommandRendersChannelsThreadsAndTasks(t *testing.T) {
+	_, out, _, _ := runIn(t, "", []core.Module{newBoardMod()}, "board")
+	for _, want := range []string{"channel dev", "thread #2", "deploys are green", "latest #3", "task #4  claimed  held by codex via ada"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	_, js, _, _ := runIn(t, "", []core.Module{newBoardMod()}, "board", "--json")
+	var got struct {
+		SchemaVersion int `json:"schema_version"`
+		Channels      []struct{ Path string }
+		Threads       []struct{ Replies int }
+		Tasks         []struct{ State, Claimant string }
+	}
+	if err := json.Unmarshal([]byte(js), &got); err != nil || got.SchemaVersion != 1 || len(got.Channels) != 1 || got.Threads[0].Replies != 1 || got.Tasks[0].Claimant != "codex via ada" {
+		t.Fatalf("%v %s", err, js)
+	}
+}
+
+func TestBoardPostNeedsAConfirmAndRunsOnce(t *testing.T) {
+	m := newBoardMod()
+	code, out, _, au := runIn(t, "n\n", []core.Module{m}, "board", "post", "dev", "hello")
+	if code == 0 || len(m.ran) != 0 || au.n != 0 || !strings.Contains(out, "channel dev") || !strings.Contains(out, `"hello"`) {
+		t.Fatalf("a declined confirm runs nothing: code=%d ran=%v out=%s", code, m.ran, out)
+	}
+	code, out, _, au = runIn(t, "y\n", []core.Module{m}, "board", "post", "dev", "hello")
+	if code != 0 || len(m.ran) != 1 || au.n != 2 || !strings.Contains(out, "done: posted #9") {
+		t.Fatalf("code=%d ran=%v audit=%d out=%s", code, m.ran, au.n, out)
+	}
+	code, _, _, _ = runIn(t, "y\n", []core.Module{m}, "board", "reply", "17", "ack", "--yes")
+	if code != 0 || len(m.ran) != 2 || m.ran[1][1] != "reply" || m.ran[1][2] != "17" {
+		t.Fatalf("%v", m.ran)
+	}
+}
+
+func TestBoardWriteDryRunAndJSONRules(t *testing.T) {
+	m := newBoardMod()
+	if code, out, _, _ := runIn(t, "", []core.Module{m}, "board", "post", "dev", "hi", "--dry-run"); code != 0 || len(m.ran) != 0 || !strings.Contains(out, "command: board post dev") {
+		t.Fatalf("%d %s", code, out)
+	}
+	if code, _, e, _ := runIn(t, "", []core.Module{m}, "board", "post", "dev", "hi", "--json"); code == 0 || !strings.Contains(e, "--yes or --dry-run") {
+		t.Fatalf("--json cannot prompt: %d %s", code, e)
+	}
+	// Text that starts with a dash goes through --text, never as an option.
+	if code, _, _, _ := runIn(t, "", []core.Module{m}, "board", "post", "dev", "--text", "--file x", "--yes"); code != 0 || m.ran[0][len(m.ran[0])-1] != "--file x" {
+		t.Fatalf("%v", m.ran)
+	}
+	for _, bad := range [][]string{{"board", "post"}, {"board", "post", "dev"}, {"board", "post", "bad channel", "x", "--yes"}, {"board", "reply", "dev", "x", "--yes"}, {"board", "delete", "1"}, {"board", "post", "dev", "a", "b", "--yes"}} {
+		if code, _, _, _ := runIn(t, "", []core.Module{m}, bad...); code == 0 {
+			t.Errorf("must refuse %v", bad)
+		}
+	}
+	if len(m.ran) != 1 {
+		t.Fatalf("only the --text write ran: %v", m.ran)
+	}
+}
+
+func TestBoardWriteFailsClosedAndSaysUnknownOutcomeHonestly(t *testing.T) {
+	m := newBoardMod()
+	if code, _, _, _ := runAudit(t, "", []core.Module{m}, &memAudit{err: errors.New("disk full")}, "board", "post", "dev", "hi", "--yes"); code == 0 || len(m.ran) != 0 {
+		t.Fatal("a failed audit blocks the write")
+	}
+	m.fail = core.UnknownOutcome("timed out")
+	_, _, e, _ := runIn(t, "", []core.Module{m}, "board", "post", "dev", "hi", "--yes")
+	if strings.Contains(e, "not applied") || !strings.Contains(e, "result unknown") {
+		t.Fatalf("%s", e)
+	}
+	if code, _, e, _ := runIn(t, "", nil, "board", "post", "dev", "hi", "--yes"); code == 0 || !strings.Contains(e, "npm i -g @vercel/board") {
+		t.Fatalf("not connected says how: %d %s", code, e)
 	}
 }

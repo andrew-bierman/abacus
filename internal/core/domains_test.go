@@ -101,7 +101,7 @@ func (m insMod) Insights(context.Context) (core.InsightsReport, error) { return 
 
 func TestInsightsNotConnectedNamesHowToInstallAndDoesNotHideTheDomain(t *testing.T) {
 	d := core.ReadDomains(context.Background(), nil)
-	for _, in := range []*core.InsightsReport{d.Tasks.Insights, d.Board.Insights} {
+	for _, in := range []*core.InsightsReport{d.Tasks.Insights} {
 		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "brew install") {
 			t.Fatalf("%+v", in)
 		}
@@ -154,7 +154,7 @@ func (m *countMod) Insights(context.Context) (core.InsightsReport, error) {
 func TestReadDomainReadsOnlyThatDomainsProvider(t *testing.T) {
 	cases := map[core.DomainID][5]int{ // tasks, leases, queues, board, insights
 		core.DomainTasks:  {1, 0, 0, 0, 1},
-		core.DomainBoard:  {0, 0, 0, 1, 1},
+		core.DomainBoard:  {0, 0, 0, 1, 0}, // Board is not a graph: bv is not run for it
 		core.DomainLeases: {0, 1, 0, 0, 0},
 		core.DomainQueues: {0, 0, 1, 0, 0},
 	}

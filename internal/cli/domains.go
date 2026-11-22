@@ -123,13 +123,27 @@ func orQ(s string) string {
 
 func renderBoard(w io.Writer, r core.BoardReport) {
 	head(w, r.Header)
-	for _, c := range r.Columns {
-		fmt.Fprintf(w, "    %s (%d)\n", c.Name, len(c.Cards))
-		for _, k := range c.Cards {
-			fmt.Fprintf(w, "      %s  %s\n", k.ID, k.Title)
+	for _, c := range r.Channels {
+		fmt.Fprintf(w, "    channel %s  (%d threads)\n", c.Path, c.Threads)
+	}
+	for _, t := range r.Threads {
+		fmt.Fprintf(w, "    thread #%s  %s  %s  %s  (%d replies)\n", t.Root.ID, t.Root.Channel, t.Root.Author, oneLine(t.Root.Text), t.Replies)
+		if t.Last != nil {
+			fmt.Fprintf(w, "      latest #%s  %s  %s\n", t.Last.ID, t.Last.Author, oneLine(t.Last.Text))
 		}
 	}
-	renderInsights(w, r.Insights)
+	for _, t := range r.Tasks {
+		s := fmt.Sprintf("    task #%s  %s", t.ID, t.State)
+		if t.Claimant != "" {
+			s += "  held by " + t.Claimant
+		}
+		fmt.Fprintf(w, "%s  %s\n", s, oneLine(t.Text))
+	}
+}
+
+func oneLine(s string) string {
+	l, _, _ := strings.Cut(strings.TrimSpace(s), "\n")
+	return l
 }
 
 func renderDomains(w io.Writer, d core.DomainsReport) {
@@ -143,6 +157,9 @@ func renderDomains(w io.Writer, d core.DomainsReport) {
 func runDomain(cmd string, rest []string, d Deps) int {
 	if cmd == "tasks" && len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
 		return runTaskWrite(rest[0], rest[1:], d)
+	}
+	if cmd == "board" && len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
+		return runBoardWrite(rest[0], rest[1:], d)
 	}
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
@@ -310,4 +327,107 @@ func confirmed(in io.Reader) bool {
 		return true
 	}
 	return false
+}
+
+// runBoardWrite handles `board post CHANNEL TEXT` and `board reply ID TEXT`, through the same
+// plan, confirm, single-use and audit gate as the Tasks writes.
+func runBoardWrite(verb string, rest []string, d Deps) int {
+	op := core.BoardOp(verb)
+	if op != core.BoardPost && op != core.BoardReply {
+		fmt.Fprintf(d.Err, "unknown board command %q (post CHANNEL TEXT, reply ID TEXT)\n", verb)
+		return core.ExitUsage
+	}
+	if len(rest) == 0 || strings.HasPrefix(rest[0], "-") {
+		what := "a channel"
+		if op == core.BoardReply {
+			what = "a message id"
+		}
+		fmt.Fprintf(d.Err, "board %s needs %s first\n", verb, what)
+		return core.ExitUsage
+	}
+	target, rest := rest[0], rest[1:]
+	text := ""
+	if len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
+		text, rest = rest[0], rest[1:]
+	}
+	fs := flag.NewFlagSet("board "+verb, flag.ContinueOnError)
+	fs.SetOutput(d.Err)
+	var o Options
+	var yes, dry, asJSON bool
+	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
+	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
+	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	fs.StringVar(&text, "text", text, "the message text (use it when the text starts with -)")
+	if fs.Parse(rest) != nil {
+		return core.ExitUsage
+	}
+	if fs.NArg() > 0 {
+		fmt.Fprintf(d.Err, "board %s: unexpected argument %q (quote the text as one argument)\n", verb, fs.Arg(0))
+		return core.ExitUsage
+	}
+	if asJSON && !yes && !dry {
+		fmt.Fprintf(d.Err, "board %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
+	ch := core.BoardChange{Op: op, Text: text}
+	if op == core.BoardPost {
+		ch.Channel = target
+	} else {
+		ch.ID = target
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	defer cancel()
+	w := core.ResolveProviders(d.Build(o).Detect(ctx)).BoardWriter
+	if w == nil {
+		fmt.Fprintf(d.Err, "board: not connected. %s\n", core.HowToConnect[core.DomainBoard])
+		return core.ExitFail
+	}
+	plan, err := core.PlanBoardChange(w, ch)
+	if err != nil {
+		fmt.Fprintf(d.Err, "board %s: %v\n", verb, err)
+		return core.ExitUsage
+	}
+	if dry && asJSON {
+		jsonOut(d.Out, struct {
+			DryRun bool     `json:"dry_run"`
+			Lines  []string `json:"change"`
+			Argv   []string `json:"argv"`
+		}{true, plan.Lines, plan.Argv})
+		return core.ExitOK
+	}
+	if !asJSON {
+		for _, l := range plan.Lines {
+			fmt.Fprintln(d.Out, l)
+		}
+		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(plan.Argv))
+	}
+	if dry {
+		return core.ExitOK
+	}
+	if !yes {
+		fmt.Fprint(d.Out, "Post this to the board? [y/N] ")
+		if !confirmed(d.In) {
+			fmt.Fprintln(d.Out)
+			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
+			return core.ExitFail
+		}
+	}
+	au := d.Audit
+	if au == nil {
+		au = core.DefaultAudit()
+	}
+	res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
+	if err != nil {
+		fmt.Fprintf(d.Err, "board %s: %s\n", verb, core.DescribeWriteError(err))
+		return core.ExitFail
+	}
+	if asJSON {
+		jsonOut(d.Out, struct {
+			Applied bool             `json:"applied"`
+			Result  core.BoardResult `json:"result"`
+		}{true, res})
+	} else {
+		fmt.Fprintf(d.Out, "done: posted #%s\n", res.ID)
+	}
+	return core.ExitOK
 }

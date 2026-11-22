@@ -111,7 +111,7 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 	switch d {
 	case core.DomainBoard:
 		if p.Board != nil {
-			return newBoardSection(p.Board, cfg.fullView)
+			return newBoardSection(p.Board)
 		}
 	case core.DomainTasks:
 		if p.Tasks != nil {
@@ -133,7 +133,7 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 		h = core.Header{Domain: d, Title: d.Title(), State: core.NotConnected, Reason: "no view for this provider", HowToConnect: core.HowToConnect[d]}
 	}
 	var fv func(string) tea.Cmd
-	if d == core.DomainBoard || d == core.DomainTasks {
+	if d == core.DomainTasks {
 		fv = cfg.fullView
 	}
 	return newNotConnectedSection(h, fv)

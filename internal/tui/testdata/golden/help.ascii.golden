@@ -21,7 +21,7 @@ Keys
   q             quit
 
   ↑/↓           move
-  o             full view
+  r             refresh
 
 ? or esc closes
 
@@ -50,7 +50,7 @@ Keys
   ?             help
   q             quit
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ Keys
   q             quit
 
   ↑/↓           move
-  o             full view
+  r             refresh
 
 ? or esc closes
 
@@ -81,7 +81,7 @@ Keys
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 120x10 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 Keys
@@ -92,7 +92,7 @@ Keys
   ?             help
   q             quit
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ Keys
   q             quit
 
   ↑/↓           move
-  o             full view
+  r             refresh
 
 ? or esc closes
 
@@ -123,4 +123,4 @@ Keys
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
