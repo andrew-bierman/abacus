@@ -367,3 +367,58 @@ func TestDoctorNormalizesUnknownStatusesAndSanitizesText(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectHonoursAnExplicitUnsupportedAPIVersionEvenWithoutAVersion(t *testing.T) {
+	for name, out := range map[string]string{
+		"api_version 2 alone":   `{"api_version":2}`,
+		"api_version 0 present": `{"api_version":0,"version":"1.0.0"}`,
+		"api_version 3":         `{"api_version":3,"version":"3.0.0"}`,
+	} {
+		f := &fake{resp: map[string]result{"version --json": {out: out}, "version": {out: versionLine}}}
+		d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+		if d.State != core.Incompatible {
+			t.Errorf("%s: %+v, want incompatible", name, d)
+		}
+		if len(f.calls) != 1 {
+			t.Errorf("%s: fell through to legacy: %v", name, f.calls)
+		}
+	}
+}
+
+func TestDetectStringAPIVersionIsNotReadAsV1(t *testing.T) {
+	f := &fake{resp: map[string]result{"version --json": {out: `{"api_version":"1","version":"0.2.0"}`}, "version": {out: versionLine}}}
+	d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+	if d.APIVersion == 1 || d.State == core.Ready && d.APIVersion != 0 {
+		t.Fatalf("%+v", d)
+	}
+}
+
+func TestDetectLegacyWhenVersionJSONFailsButPlainVersionWorks(t *testing.T) {
+	f := &fake{resp: map[string]result{"version --json": {exit: 2}, "version": {out: versionLine}}}
+	d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+	if d.State != core.Ready || d.Version != "0.1.0" || d.APIVersion != 0 {
+		t.Fatalf("%+v", d)
+	}
+}
+
+func TestDoctorEmptyReportWithNonZeroExitFails(t *testing.T) {
+	for _, body := range []string{"[]", "null"} {
+		m, _ := readyMod(t, result{out: body, exit: 64})
+		if c := m.Doctor(context.Background()); len(c) != 1 || c[0].Status != core.StatusFail {
+			t.Errorf("%s: %+v", body, c)
+		}
+	}
+}
+
+func TestAllowlistMatchesElementsNotJoinedStrings(t *testing.T) {
+	f := &fake{resp: map[string]result{"doctor --json": {}, "--json list": {}, "version --json": {}}}
+	r := New(Options{Runner: f, LookPath: found}).run
+	for _, argv := range [][]string{{"doctor --json"}, {"--json list"}, {"version --json"}, {"version", "--json "}} {
+		if _, _, err := r.Run(context.Background(), "/fake/beads-lease", argv...); err == nil {
+			t.Errorf("single-element or padded argv %q was allowed", argv)
+		}
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("reached the runner: %v", f.calls)
+	}
+}

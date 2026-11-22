@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -177,12 +178,13 @@ func TestStateDirFallsBackToTheDerivedDefault(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", x)
 	want := DefaultStateDir()
 	bad := map[string]result{
-		"command failed":  {exit: 2},
-		"runner error":    {err: errors.New("boom")},
-		"not json":        {out: "oops"},
-		"empty state_dir": {out: `{"state_dir":""}`},
-		"relative path":   {out: `{"state_dir":"relative/dir"}`},
-		"control chars":   {out: `{"state_dir":"/a\u001b[2J"}`},
+		"command failed":           {exit: 2},
+		"runner error":             {err: errors.New("boom")},
+		"not json":                 {out: "oops"},
+		"empty state_dir":          {out: `{"state_dir":""}`},
+		"relative path":            {out: `{"state_dir":"relative/dir"}`},
+		"control chars":            {out: `{"state_dir":"/a\u001b[2J"}`},
+		"exit 1 with a valid body": {out: `{"state_dir":"/abs/dir"}`, exit: 1},
 	}
 	for name, r := range bad {
 		f := &fakeRunner{resp: map[string]result{"version --json": {out: versionOK}, "state-dir -json": r}}
@@ -237,16 +239,70 @@ func TestRunnerRefusesDisallowedArgvBeforeTheInnerRunner(t *testing.T) {
 	}
 }
 
-func TestEveryExecutedLambeArgvIsAllowlisted(t *testing.T) {
-	f := &fakeRunner{resp: map[string]result{"status -json": {out: string(trackerFixture(t))}, "state-dir -json": {out: `{"state_dir":"/nonexistent-abacus-dir"}`}, "doctor -json": {out: "[]"}}}
+func TestExactLambeCallSequenceIsReadOnly(t *testing.T) {
+	f := &fakeRunner{resp: map[string]result{
+		"status -json": {out: string(trackerFixture(t))}, "doctor -json": {out: `[{"name":"x","status":"ok"}]`},
+		"state-dir -json": {out: `{"state_dir":"/nonexistent-abacus-dir"}`},
+	}}
 	m := degradedModule(t, f, Options{})
 	m.o.StateDir = ""
 	m.Doctor(context.Background())
 	m.Status(context.Background())
-	for _, c := range f.calls {
-		if !allowedArgv(strings.Fields(strings.TrimPrefix(c, "/fake/lambe "))) {
-			t.Errorf("executed %q", c)
+	want := "/fake/lambe version --json|/fake/lambe doctor -json|/fake/lambe state-dir -json|/fake/lambe status -json"
+	if got := strings.Join(f.calls, "|"); got != want {
+		t.Fatalf("calls = %q\nwant    %q", got, want)
+	}
+}
+
+func TestFailingStateDirRunsOnceAcrossReadsAndRedetectResets(t *testing.T) {
+	f := &fakeRunner{resp: map[string]result{"version --json": {out: versionOK}, "state-dir -json": {exit: 2}}}
+	m := newModule(f, Options{})
+	m.Detect(context.Background())
+	count := func() (n int) {
+		for _, c := range f.calls {
+			if strings.HasSuffix(c, "state-dir -json") {
+				n++
+			}
 		}
+		return
+	}
+	m.stateDir(context.Background())
+	m.stateDir(context.Background())
+	_, _ = m.Read(context.Background())
+	if count() != 1 {
+		t.Fatalf("failing state-dir ran %d times, want 1: %v", count(), f.calls)
+	}
+	m.Detect(context.Background())
+	m.stateDir(context.Background())
+	if count() != 2 {
+		t.Fatalf("Detect must reset the attempt: %d", count())
+	}
+}
+
+func TestTrackerViewIsCachedWithinTTLAndRefetchedAfter(t *testing.T) {
+	now := time.Date(2026, 11, 21, 12, 0, 0, 0, time.UTC)
+	f := &fakeRunner{resp: map[string]result{"status -json": {out: string(trackerFixture(t))}}}
+	m := degradedModule(t, f, Options{Now: func() time.Time { return now }})
+	count := func() (n int) {
+		for _, c := range f.calls {
+			if strings.HasSuffix(c, "status -json") {
+				n++
+			}
+		}
+		return
+	}
+	for i := 0; i < 2; i++ {
+		v, err := m.Read(context.Background())
+		if err != nil || v.Source != SourceTracker {
+			t.Fatalf("read %d: %+v %v", i, v, err)
+		}
+	}
+	if count() != 1 {
+		t.Fatalf("two reads inside the TTL ran the command %d times", count())
+	}
+	now = now.Add(trackerTTL + time.Second)
+	if v, _ := m.Read(context.Background()); v.Source != SourceTracker || count() != 2 {
+		t.Fatalf("after the TTL: source=%q count=%d", v.Source, count())
 	}
 }
 
