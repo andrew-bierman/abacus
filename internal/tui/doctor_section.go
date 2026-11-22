@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -108,6 +109,12 @@ func (s *doctorSection) lines() []string {
 	if s.pending {
 		out = append(out, th.Text(KindMuted, "running doctor…"), "")
 	}
+	if ov := s.report.Overview; ov != nil {
+		out = append(out, s.overviewLines(*ov)...)
+		if len(s.report.Modules) > 0 {
+			out = append(out, "", th.Header.Render("Details"))
+		}
+	}
 	if len(s.report.Modules) == 0 {
 		return append(out, th.Text(KindMuted, "no tools to check"))
 	}
@@ -132,3 +139,51 @@ func (s *doctorSection) lines() []string {
 }
 
 func (s *doctorSection) View() string { return s.render(s.lines()) }
+
+// tuiLine is a domain's one-liner in front-end words: the setup key, not the CLI command.
+func tuiLine(l core.DomainLine) string {
+	if l.Guide != nil {
+		return l.Guide.Message + " — press " + l.Guide.Key + " on the " + l.Title + " tab to " + l.Guide.Action
+	}
+	return l.Line
+}
+
+// overviewLines leads Doctor: ready or needs attention in plain language, each area in one
+// line, and each tool with where it came from.
+func (s *doctorSection) overviewLines(ov core.Overview) []string {
+	th, w := s.th, s.width()
+	var attention []string
+	for _, l := range ov.Domains {
+		if l.Domain != core.DomainBoard && l.State != core.Connected {
+			attention = append(attention, l.Title+": "+tuiLine(l))
+		}
+	}
+	var out []string
+	switch {
+	case ov.Ready && len(attention) == 0:
+		out = append(out, th.Badge(KindOK, "Ready"))
+	case ov.Ready:
+		out = append(out, th.Badge(KindOK, "Ready")+" "+th.Text(KindMuted, strings.TrimPrefix(ov.Headline, "Ready")))
+	default:
+		out = append(out, th.Badge(KindWarn, "Needs attention"))
+	}
+	for _, a := range attention {
+		out = append(out, wrap("  - "+san(a), w)...)
+	}
+	out = append(out, "", th.Header.Render("Areas"))
+	for _, l := range ov.Domains {
+		out = append(out, wrap("  "+th.Label.Render(padTo(san(l.Title), 7))+" "+san(tuiLine(l)), w)...)
+	}
+	out = append(out, "", th.Header.Render("Tools"))
+	for _, t := range ov.Tools {
+		where := th.Badge(KindSkip, "missing")
+		switch t.Where {
+		case "bundled":
+			where = th.Badge(KindOK, "bundled")
+		case "PATH", "override":
+			where = th.Badge(KindMuted, san(t.Where))
+		}
+		out = append(out, "  "+th.Label.Render(padTo(san(t.ID), 12))+" "+where+" "+th.Text(KindMuted, strings.TrimSpace(san(t.Version)+"  "+san(t.Path))))
+	}
+	return out
+}

@@ -52,6 +52,8 @@ func (s *genericSection) fetch() tea.Cmd {
 	}
 }
 
+func (s *genericSection) refresh() tea.Cmd { return s.fetch() }
+
 func (s *genericSection) Init() tea.Cmd { return tea.Batch(s.fetch(), s.tick()) }
 
 func (s *genericSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
