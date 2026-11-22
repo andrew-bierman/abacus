@@ -10,7 +10,8 @@ import (
 
 // allowed is every argv this module may run. beads-lease shares a production hub, so the
 // module can only ever read: no acquire, release, heartbeat, run or sync is reachable.
-var allowed = map[string]bool{"version": true, "--json list": true}
+// "version" is the legacy plain form for binaries that predate `version --json`.
+var allowed = map[string]bool{"version": true, "version --json": true, "doctor --json": true, "--json list": true}
 
 // readOnly wraps a Runner and rejects any argv outside the allowlist before it reaches
 // the underlying runner.
