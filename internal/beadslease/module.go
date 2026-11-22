@@ -159,6 +159,7 @@ func (m *Module) Status(ctx context.Context) core.Status {
 	st := core.Status{}
 	for _, l := range env.Leases {
 		res, holder := core.Sanitize(l.Resource), core.Sanitize(l.Holder)
+		row := core.Row{Resource: res, State: core.Sanitize(l.State), Tone: core.ToneMuted}
 		switch l.State {
 		case "held":
 			held++
@@ -166,16 +167,19 @@ func (m *Module) Status(ctx context.Context) core.Status {
 			if l.ExpiresAt != nil {
 				exp = l.ExpiresAt.UTC().Format(time.RFC3339)
 			}
-			st.Lines = append(st.Lines, fmt.Sprintf("%s  held by %s (expires %s)", res, holder, exp))
+			row.Tone, row.Detail = core.ToneInfo, fmt.Sprintf("by %s (expires %s)", holder, exp)
 		case "stale":
 			stale++
-			st.Lines = append(st.Lines, fmt.Sprintf("%s  stale (last holder %s)", res, holder))
+			row.Tone, row.Detail = core.ToneWarn, fmt.Sprintf("(last holder %s)", holder)
 		case "free":
 			free++
-			st.Lines = append(st.Lines, fmt.Sprintf("%s  free", res))
-		default:
-			st.Lines = append(st.Lines, fmt.Sprintf("%s  %s", res, core.Sanitize(l.State)))
+			row.Tone = core.ToneOK
 		}
+		line := res + "  " + row.State
+		if row.Detail != "" {
+			line += " " + row.Detail
+		}
+		st.Lines, st.Rows = append(st.Lines, line), append(st.Rows, row)
 	}
 	st.Summary = fmt.Sprintf("%d held, %d stale, %d free", held, stale, free)
 	return st

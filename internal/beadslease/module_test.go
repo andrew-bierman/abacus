@@ -421,3 +421,30 @@ func TestAllowlistMatchesElementsNotJoinedStrings(t *testing.T) {
 		t.Fatalf("reached the runner: %v", f.calls)
 	}
 }
+
+func TestStatusCarriesTypedRowsMatchingTheTextLines(t *testing.T) {
+	body := `{"schemaVersion":1,"ok":true,"leases":[
+	  {"resource":"r:a","holder":"alice","state":"held"},
+	  {"resource":"r:b","holder":"bob","state":"stale"},
+	  {"resource":"r:c","state":"free"},
+	  {"resource":"r:d","state":"mystery"}]}`
+	m := newMod(&fake{resp: map[string]result{"--json list": {out: body}}}, Options{})
+	st := m.Status(context.Background())
+	want := []core.Row{
+		{Resource: "r:a", State: "held", Tone: core.ToneInfo, Detail: "by alice (expires ?)"},
+		{Resource: "r:b", State: "stale", Tone: core.ToneWarn, Detail: "(last holder bob)"},
+		{Resource: "r:c", State: "free", Tone: core.ToneOK},
+		{Resource: "r:d", State: "mystery", Tone: core.ToneMuted},
+	}
+	if len(st.Rows) != len(want) || len(st.Lines) != len(want) {
+		t.Fatalf("rows=%+v lines=%q", st.Rows, st.Lines)
+	}
+	for i, w := range want {
+		if st.Rows[i] != w {
+			t.Errorf("row %d = %+v, want %+v", i, st.Rows[i], w)
+		}
+	}
+	if st.Lines[0] != "r:a  held by alice (expires ?)" {
+		t.Errorf("text line must stay unchanged: %q", st.Lines[0])
+	}
+}

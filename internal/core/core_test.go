@@ -2,6 +2,8 @@ package core_test
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -108,5 +110,15 @@ func TestRegistryDetectSanitizesToolSuppliedVersionAndDetail(t *testing.T) {
 	}
 	if e.Version != "1.0]0;pwned" {
 		t.Fatalf("version = %q", e.Version)
+	}
+}
+
+func TestStatusRowsAreAdditiveAndOmittedWhenEmpty(t *testing.T) {
+	b, _ := json.Marshal(core.Status{Summary: "s"})
+	if strings.Contains(string(b), "rows") {
+		t.Fatalf("rows must be omitempty so existing JSON is unchanged: %s", b)
+	}
+	if core.SchemaVersion != 1 {
+		t.Fatal("an additive field must not bump the schema version")
 	}
 }
