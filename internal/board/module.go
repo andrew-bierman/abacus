@@ -30,17 +30,23 @@ const (
 	readChannels      = 3
 	threadsPerChannel = 5
 	maxTasks          = 20
+	maxStdout         = 4 << 20 // a read answer larger than this is cut off and reported
 )
+
+// minVersion is the oldest CLI whose --json shapes were verified (see testdata/README.md).
+var minVersion = [3]int{0, 54, 0}
 
 // Options configure the module; every process boundary is injectable.
 type Options struct {
-	Bin      string // ABACUS_BOARD_BIN
-	URL      string // board_url / ABACUS_BOARD_URL, passed as --url; empty means the CLI's own default
-	URLErr   string // why the configured URL is unusable: every read and write then refuses
-	LookPath func(string) (string, error)
-	Runner   core.SplitRunner
-	Getenv   func(string) string // for redacting secrets from text
-	Timeout  time.Duration
+	Bin       string // ABACUS_BOARD_BIN
+	URL       string // the validated board URL, passed as --url; empty means the CLI's own default
+	URLSource string // where URL came from, for the confirm step (ABACUS_BOARD_URL, board_url (config), BOARD_URL)
+	URLErr    string // why the configured URL is unusable: every read and write then refuses
+	LookPath  func(string) (string, error)
+	Runner    core.SplitRunner    // reads and writes
+	Probe     core.SplitRunner    // the identity probe: no secrets (defaults to Runner when Runner is injected)
+	Getenv    func(string) string // for redacting secrets from text
+	Timeout   time.Duration
 }
 
 type Module struct {
@@ -53,7 +59,13 @@ type Module struct {
 
 func New(o Options) *Module {
 	if o.Runner == nil {
-		o.Runner = core.ExecRunner{Scrub: core.ScrubBoardEnv}
+		o.Runner = core.ExecRunner{Scrub: core.ScrubBoardEnvFor(o.URL), MaxOut: maxStdout}
+		if o.Probe == nil {
+			o.Probe = core.ExecRunner{Scrub: core.ScrubBoardProbeEnv, MaxOut: maxStdout}
+		}
+	}
+	if o.Probe == nil {
+		o.Probe = o.Runner
 	}
 	if o.LookPath == nil {
 		o.LookPath = exec.LookPath
@@ -70,15 +82,22 @@ func New(o Options) *Module {
 func (m *Module) ID() string   { return "board" }
 func (m *Module) Name() string { return "Vercel Board" }
 
-// clean is the one door for text from the CLI or the board: secrets redacted, then sanitized.
-func (m *Module) clean(s string) string {
+// redact replaces secret values; it runs after sanitizing so an invisible character cannot
+// split a secret and hide it from the match.
+func (m *Module) redact(s string) string {
 	for _, k := range core.BoardSecretEnv {
 		if v := m.o.Getenv(k); len(v) >= 8 {
 			s = strings.ReplaceAll(s, v, "[redacted]")
 		}
 	}
-	return core.Sanitize(s)
+	return s
 }
+
+// clean is the one door for one-line text from the CLI or the board.
+func (m *Module) clean(s string) string { return m.redact(core.Sanitize(s)) }
+
+// cleanText is clean for message text: line breaks are kept (renderers flatten per line).
+func (m *Module) cleanText(s string) string { return m.redact(core.SanitizeText(s)) }
 
 var identityRE = regexp.MustCompile(`^board (\d+\.\d+\.\d+[0-9A-Za-z.+-]*): your Vercel team's message board`)
 
@@ -86,7 +105,7 @@ var identityRE = regexp.MustCompile(`^board (\d+\.\d+\.\d+[0-9A-Za-z.+-]*): your
 func (m *Module) identify(ctx context.Context, bin string) (version, why string) {
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	out, _, exit, err := m.o.Runner.RunSplit(ctx, bin, "--help")
+	out, _, exit, err := m.o.Probe.RunSplit(ctx, bin, "--help")
 	if err != nil || exit != 0 {
 		return "", "did not answer --help"
 	}
@@ -95,7 +114,26 @@ func (m *Module) identify(ctx context.Context, bin string) (version, why string)
 	if sm == nil || !strings.Contains(string(out), "usage: board <command>") {
 		return "", "its --help does not identify Vercel Board"
 	}
+	if !versionAtLeast(sm[1], minVersion) {
+		return sm[1], "too old"
+	}
 	return sm[1], ""
+}
+
+var semverRE = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)`)
+
+func versionAtLeast(v string, min [3]int) bool {
+	sm := semverRE.FindStringSubmatch(v)
+	if sm == nil {
+		return false
+	}
+	for i := 0; i < 3; i++ {
+		n, _ := strconv.Atoi(sm[i+1])
+		if n != min[i] {
+			return n > min[i]
+		}
+	}
+	return true
 }
 
 // Detect looks for `board` (preferred) then `vb`, or only ABACUS_BOARD_BIN when set, and trusts
@@ -115,6 +153,9 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 		if why == "" {
 			m.SetFound(f)
 			return core.Detection{State: core.Ready, Version: ver}
+		}
+		if why == "too old" {
+			return core.Detection{State: core.Incompatible, Version: m.clean(ver), Detail: m.clean(fmt.Sprintf("Vercel Board %s is too old: abacus needs 0.54.0 or newer. Update it with: npm i -g @vercel/board", ver))}
 		}
 		rejected = append(rejected, fmt.Sprintf("%s at %s: %s", name, f.Bin, why))
 	}
@@ -137,6 +178,9 @@ func (m *Module) Doctor(context.Context) []core.Check {
 	m.mu.Lock()
 	last := m.lastErr
 	m.mu.Unlock()
+	if m.o.URLErr != "" {
+		return []core.Check{{Name: "board url", Status: core.StatusWarn, Detail: "the board URL is not used: " + m.clean(m.o.URLErr), Fix: "set a valid one with: abacus config set board_url <url>"}}
+	}
 	if last != "" {
 		return []core.Check{{Name: "board", Status: core.StatusWarn, Detail: "the last board read failed: " + last, Fix: "check the board URL (abacus config get board_url) or sign in, then press r"}}
 	}
@@ -243,22 +287,29 @@ type failure struct {
 	Hint    string `json:"hint"`
 }
 
-// run runs one allowlisted argv and decodes stdout into into (nil: ignore it). A non-zero exit
-// becomes an error classified from the failure document.
-func (m *Module) run(ctx context.Context, argv []string, into any, ok func([]string) bool) error {
+// call runs one allowlisted argv and returns the raw answer. A runner error is returned as is.
+func (m *Module) call(ctx context.Context, argv []string, ok func([]string) bool) (out, errOut []byte, exit int, err error) {
 	if !ok(argv) {
-		return fmt.Errorf("refused: %v is not an allowed argv", argv)
+		return nil, nil, 0, fmt.Errorf("refused: %v is not an allowed argv", argv)
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	out, errOut, exit, err := m.o.Runner.RunSplit(ctx, m.Bin(), argv...)
-	if err != nil {
-		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) {
+	return m.o.Runner.RunSplit(ctx, m.Bin(), argv...)
+}
+
+// run runs one allowlisted read argv and decodes stdout into into (nil: ignore it). A non-zero
+// exit becomes an error classified from the failure document.
+func (m *Module) run(ctx context.Context, argv []string, into any, ok func([]string) bool) error {
+	out, errOut, exit, err := m.call(ctx, argv, ok)
+	switch {
+	case errors.Is(err, core.ErrOutputTooLarge):
+		return errors.New("the answer was too large and was cut off")
+	case err != nil:
+		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) || strings.HasPrefix(err.Error(), "refused:") {
 			return err
 		}
 		return fmt.Errorf("could not run: %s", m.clean(err.Error()))
-	}
-	if exit != 0 {
+	case exit != 0:
 		return m.classify(exit, errOut)
 	}
 	if into != nil && json.Unmarshal(out, into) != nil {
@@ -329,6 +380,7 @@ type channelsDoc struct {
 		Messages  int    `json:"messages"`
 		Threads   int    `json:"threads"`
 	} `json:"channels"`
+	Next *string `json:"next"`
 }
 
 type threadsDoc struct {
@@ -345,7 +397,7 @@ func (m *Module) message(j messageJSON) core.BoardMessage {
 	if j.Deleted {
 		text = "(deleted)"
 	}
-	b := core.BoardMessage{ID: m.clean(j.ID), Channel: m.clean(j.Channel), At: m.clean(j.CreatedAt), Text: m.clean(text)}
+	b := core.BoardMessage{ID: m.clean(j.ID), Channel: m.clean(j.Channel), At: m.clean(j.CreatedAt), Text: m.cleanText(text)}
 	if a := j.Author; a != nil {
 		b.Author = m.clean(a.Handle)
 		if b.Author == "" {
@@ -366,26 +418,33 @@ func (m *Module) claimant(actor string) string {
 	return m.clean(actor)
 }
 
-// Board reads channels, a few recent threads and open tasks. No channels read and no tasks
-// read is an error; a part that fails alone is named in Reason (degraded).
+// Board reads channels, a few recent threads and open tasks. A channel list that cannot be read
+// is an error; a part that fails alone is named in Reason (degraded). Truncation (more than the
+// bounds shown) is named in Truncated and is not a failure.
 func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 	if m.o.URLErr != "" {
 		return core.BoardReport{}, &core.NotConnectedError{Reason: "board_url is not usable: " + m.clean(m.o.URLErr), HowToConnect: "Fix it with: abacus config set board_url <url> (or clear it with an empty value)"}
 	}
 	r := core.BoardReport{Header: core.Header{Source: core.SourceLive}}
 	var cd channelsDoc
-	if err := m.run(ctx, m.argv("channels", "list", "--json", "--limit", strconv.Itoa(maxChannels)), &cd, allowedRead); err != nil {
-		m.setErr(err)
-		return core.BoardReport{}, err
+	err := m.run(ctx, m.argv("channels", "list", "--json", "--limit", strconv.Itoa(maxChannels)), &cd, allowedRead)
+	if err == nil {
+		err = validChannels(cd)
 	}
-	if cd.Channels == nil {
-		err := errors.New("unreadable output")
+	if err != nil {
 		m.setErr(err)
 		return core.BoardReport{}, err
 	}
 	chans := *cd.Channels
 	// Newest activity first where the board says (a team board lists names only: keep its order).
 	sort.SliceStable(chans, func(i, j int) bool { return chans[i].LastIndex > chans[j].LastIndex })
+	var trunc []string
+	if cd.Next != nil {
+		trunc = append(trunc, fmt.Sprintf("only the first %d channels are listed", maxChannels))
+	}
+	if len(chans) > readChannels {
+		trunc = append(trunc, fmt.Sprintf("threads are shown for the %d most recently active channels", readChannels))
+	}
 	for _, c := range chans {
 		r.Channels = append(r.Channels, core.BoardChannel{Path: m.clean(c.Path), Threads: c.Threads, Messages: c.Messages})
 	}
@@ -395,7 +454,12 @@ func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 			break
 		}
 		var td threadsDoc
-		if err := m.run(ctx, m.argv("read", c.Path, "--json", "--limit", strconv.Itoa(threadsPerChannel)), &td, allowedRead); err != nil || td.Threads == nil {
+		err := m.run(ctx, m.argv("read", c.Path, "--json", "--limit", strconv.Itoa(threadsPerChannel)), &td, allowedRead)
+		switch {
+		case err != nil && strings.Contains(err.Error(), "too large"):
+			why = append(why, "channel "+m.clean(c.Path)+": the answer was too large and was cut off")
+			continue
+		case err != nil || td.Threads == nil || !threadsValid(*td.Threads):
 			why = append(why, "channel "+m.clean(c.Path)+" could not be read")
 			continue
 		}
@@ -410,11 +474,11 @@ func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 	}
 	sort.SliceStable(r.Threads, func(i, j int) bool { return activity(r.Threads[i]) > activity(r.Threads[j]) })
 	var tk threadsDocTasks
-	if err := m.run(ctx, m.argv("tasks", "--json", "--limit", strconv.Itoa(maxTasks)), &tk, allowedRead); err != nil || tk.Tasks == nil {
+	if err := m.run(ctx, m.argv("tasks", "--json", "--limit", strconv.Itoa(maxTasks)), &tk, allowedRead); err != nil || tk.Tasks == nil || !threadsValid(*tk.Tasks) {
 		why = append(why, "tasks could not be read")
 	} else {
 		for _, t := range *tk.Tasks {
-			bt := core.BoardTask{ID: m.clean(t.Message.ID), Channel: m.clean(t.Message.Channel), Text: m.clean(t.Message.Text), State: "unknown"}
+			bt := core.BoardTask{ID: m.clean(t.Message.ID), Channel: m.clean(t.Message.Channel), Text: m.cleanText(t.Message.Text), State: "unknown"}
 			if x := t.Message.Task; x != nil {
 				bt.State = m.clean(x.State)
 				if x.Claim != nil {
@@ -423,13 +487,40 @@ func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 			}
 			r.Tasks = append(r.Tasks, bt)
 		}
+		if len(*tk.Tasks) >= maxTasks {
+			trunc = append(trunc, fmt.Sprintf("only the first %d tasks are shown", maxTasks))
+		}
 	}
 	m.setErr(nil)
+	r.Truncated = strings.Join(trunc, "; ")
 	if len(why) > 0 {
 		r.Reason = strings.Join(why, "; ")
 		m.setErr(errors.New(r.Reason))
 	}
 	return r, nil
+}
+
+// validChannels is the shape check: a channel list with a blank path is not a board.
+func validChannels(d channelsDoc) error {
+	if d.Channels == nil {
+		return errors.New("unreadable output")
+	}
+	for _, c := range *d.Channels {
+		if strings.TrimSpace(c.Path) == "" {
+			return errors.New("unreadable output")
+		}
+	}
+	return nil
+}
+
+// threadsValid rejects a page where any root has no id: a blank row is never shown.
+func threadsValid(ts []threadJSON) bool {
+	for _, t := range ts {
+		if strings.TrimSpace(t.Message.ID) == "" {
+			return false
+		}
+	}
+	return true
 }
 
 type threadsDocTasks struct {
@@ -443,7 +534,7 @@ func activity(t core.BoardThread) string {
 	return t.Root.At
 }
 
-// Thread re-reads one thread by message id (the root and every reply), bounded by the deadline.
+// readDoc reads one thread by message id (the root and every reply), bounded by the deadline.
 func (m *Module) readDoc(ctx context.Context, id string) (threadDoc, error) {
 	var d threadDoc
 	if err := m.run(ctx, m.argv("read", id, "--json"), &d, allowedRead); err != nil {
@@ -453,22 +544,6 @@ func (m *Module) readDoc(ctx context.Context, id string) (threadDoc, error) {
 		return d, errors.New("unreadable output")
 	}
 	return d, nil
-}
-
-func (m *Module) Thread(ctx context.Context, id string) (core.BoardThread, []core.BoardMessage, error) {
-	d, err := m.readDoc(ctx, id)
-	if err != nil {
-		return core.BoardThread{}, nil, err
-	}
-	t := core.BoardThread{Root: m.message(*d.Message), Replies: len(d.Replies)}
-	var all []core.BoardMessage
-	for _, x := range d.Replies {
-		all = append(all, m.message(x))
-	}
-	if n := len(all); n > 0 {
-		t.Last = &all[n-1]
-	}
-	return t, all, nil
 }
 
 // ---- writes (post, reply) ----
@@ -497,12 +572,67 @@ func (m *Module) BuildBoardArgv(ch core.BoardChange, key string) ([]string, erro
 	return a, nil
 }
 
-// Target says where a write goes, for the audit line: the host of board_url, never a credential.
-func (m *Module) Target() string {
+// Target is where a write goes: scheme://host/path only, never a credential, query or fragment.
+func (m *Module) Target() string { return core.BoardTarget(m.o.URL) }
+
+// TargetSource says where the target came from, for the confirm step.
+func (m *Module) TargetSource() string {
 	if m.o.URL == "" {
-		return "the default board"
+		return "no board_url is set: the CLI's own default"
 	}
-	return m.o.URL
+	if m.o.URLSource == "" {
+		return "board_url"
+	}
+	return m.o.URLSource
+}
+
+// Describe is the read-only, bounded context for the confirm step. A failed read is a line of
+// its own and never blocks the write.
+func (m *Module) Describe(ctx context.Context, ch core.BoardChange) []string {
+	const still = " You can still confirm."
+	switch ch.Op {
+	case core.BoardReply:
+		d, err := m.readDoc(ctx, ch.ID)
+		if err != nil {
+			return []string{"could not read message " + ch.ID + " to show what you are replying to (" + m.clean(err.Error()) + ")." + still}
+		}
+		got := d.Message
+		for i := range d.Replies {
+			if d.Replies[i].ID == ch.ID {
+				got = &d.Replies[i]
+			}
+		}
+		msg := m.message(*got)
+		first, _, _ := strings.Cut(msg.Text, "\n")
+		return []string{fmt.Sprintf("replying to message %s in channel %s, by %s: %q", msg.ID, orUnknown(msg.Channel), orUnknown(msg.Author), first)}
+	case core.BoardPost:
+		var cd channelsDoc
+		if err := m.run(ctx, m.argv("channels", "list", "--json", "--limit", strconv.Itoa(maxChannels)), &cd, allowedRead); err != nil || validChannels(cd) != nil {
+			return []string{"could not check whether channel " + ch.Channel + " exists." + still}
+		}
+		for _, c := range *cd.Channels {
+			if c.Path == ch.Channel {
+				return []string{"existing channel " + ch.Channel}
+			}
+		}
+		if cd.Next != nil {
+			return []string{"channel " + ch.Channel + " is not among the first " + strconv.Itoa(maxChannels) + " channels: it may be new."}
+		}
+		return []string{"NEW channel " + ch.Channel + ": this post creates it"}
+	}
+	return nil
+}
+
+func orUnknown(s string) string {
+	if s == "" {
+		return "(unknown)"
+	}
+	return s
+}
+
+// ambiguous is the unknown outcome of a write that may or may not have landed.
+func ambiguous(why string) error {
+	return core.UnknownOutcome(why + "; it may have been posted. Refresh the Board before trying again")
 }
 
 type writeDoc struct {
@@ -513,25 +643,31 @@ type writeDoc struct {
 }
 
 // RunBoard runs a planned write, then re-reads the new message by id: "applied" means the board
-// has it with the text that was planned. A timeout or cancel means the outcome is unknown.
+// has it with the text that was planned. Anything that leaves it unclear whether the write landed
+// (a timeout, a cancel, a runner error, a network error, undecodable output, an exit with no
+// failure document) is an unknown outcome. Only a definite refusal is "not applied".
 func (m *Module) RunBoard(ctx context.Context, argv []string, ch core.BoardChange) (core.BoardResult, error) {
-	if !allowedWrite(argv) {
-		return core.BoardResult{}, fmt.Errorf("refused: %v is not an allowed argv", argv)
+	out, errOut, exit, err := m.call(ctx, argv, allowedWrite)
+	switch {
+	case err != nil && strings.HasPrefix(err.Error(), "refused:"):
+		return core.BoardResult{}, err
+	case err != nil:
+		return core.BoardResult{}, ambiguous("the board did not answer (" + m.clean(err.Error()) + ")")
+	case exit != 0:
+		var f failure
+		if json.Unmarshal(errOut, &f) != nil || f.Reason == "" || f.Reason == "network_error" || f.Reason == "timeout" {
+			return core.BoardResult{}, ambiguous(fmt.Sprintf("the CLI failed without a clear answer (exit %d)", exit))
+		}
+		return core.BoardResult{}, m.classify(exit, errOut)
 	}
 	var w writeDoc
-	if err := m.run(ctx, argv, &w, allowedWrite); err != nil {
-		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) {
-			return core.BoardResult{}, core.UnknownOutcome("the board did not answer in time; it may have been posted. Refresh the Board before trying again")
-		}
-		return core.BoardResult{}, err
-	}
-	if w.Message == nil || !core.BoardIDRE.MatchString(w.Message.ID) {
-		return core.BoardResult{}, core.UnknownOutcome("the board answered without a message id; refresh the Board to check")
+	if json.Unmarshal(out, &w) != nil || w.Message == nil || !core.BoardIDRE.MatchString(w.Message.ID) {
+		return core.BoardResult{}, ambiguous("the board's answer could not be read")
 	}
 	id := w.Message.ID
 	d, err := m.readDoc(ctx, id)
 	if err != nil {
-		return core.BoardResult{}, core.UnknownOutcome(fmt.Sprintf("posted as %s but it could not be re-read to confirm (%s)", m.clean(id), m.clean(err.Error())))
+		return core.BoardResult{}, core.UnknownOutcome(fmt.Sprintf("posted as %s but it could not be re-read to confirm (%s); refresh the Board to check", m.clean(id), m.clean(err.Error())))
 	}
 	got := d.Message
 	for i := range d.Replies {
@@ -554,6 +690,6 @@ func (m *Module) InspectCmd() *exec.Cmd {
 		a = append(a, "--url", m.o.URL)
 	}
 	c := exec.Command(m.Bin(), a...)
-	c.Env = core.ScrubBoardEnv(os.Environ())
+	c.Env = core.ScrubBoardEnvFor(m.o.URL)(os.Environ())
 	return c
 }

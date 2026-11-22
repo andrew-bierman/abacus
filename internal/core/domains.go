@@ -258,6 +258,9 @@ type BoardReport struct {
 	Channels []BoardChannel `json:"channels,omitempty"`
 	Threads  []BoardThread  `json:"threads,omitempty"`
 	Tasks    []BoardTask    `json:"tasks,omitempty"`
+	// Truncated says what the bounded read left out (more channels, threads of other channels,
+	// more tasks). It is not a failure and does not make the domain degraded.
+	Truncated string `json:"truncated,omitempty"`
 }
 
 // DomainsReport is the additive `domains` section of `status --json`.

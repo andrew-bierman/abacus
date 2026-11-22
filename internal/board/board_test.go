@@ -430,10 +430,14 @@ func readDoc(id, channel, text string) string {
 	return fmt.Sprintf(`{"message":{"id":%q,"channel":%q,"text":%q,"replies":[]},"replies":[],"cursor":%q}`, id, channel, text, id)
 }
 
-func writeRig(t *testing.T, post, read string, exit int) (*Module, core.BoardPlan, *fakeRun) {
+func writeRig(t *testing.T, post, read string, exit int, o ...Options) (*Module, core.BoardPlan, *fakeRun) {
 	t.Helper()
 	f := helpRuns(t)
-	m := readyModule(t, f, Options{})
+	opt := Options{}
+	if len(o) > 0 {
+		opt = o[0]
+	}
+	m := readyModule(t, f, opt)
 	plan, err := core.PlanBoardChange(m, core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hello"})
 	if err != nil {
 		t.Fatal(err)
@@ -502,5 +506,354 @@ func TestRealPostOutputShapeDecodes(t *testing.T) {
 	var w writeDoc
 	if err := json.Unmarshal([]byte(fx(t, "post.json")), &w); err != nil || w.Message == nil || !core.BoardIDRE.MatchString(w.Message.ID) || w.Outcome != "posted" {
 		t.Fatalf("%+v %v", w, err)
+	}
+}
+
+// ---- review fixes ----
+
+func TestAmbiguousWriteFailuresAreUnknownOutcome(t *testing.T) {
+	cases := map[string]func(f *fakeRun, k string){
+		"network_error": func(f *fakeRun, k string) {
+			f.errs[k], f.exit[k] = `{"status":"error","reason":"network_error","message":"Couldn't reach the board."}`, 1
+		},
+		"timeout reason": func(f *fakeRun, k string) {
+			f.errs[k], f.exit[k] = `{"status":"error","reason":"timeout","message":"Timed out."}`, 1
+		},
+		"exit 1, no failure": func(f *fakeRun, k string) { f.exit[k] = 1 },
+		"exit 1, not json":   func(f *fakeRun, k string) { f.errs[k], f.exit[k] = "segfault", 1 },
+		"exit 0, garbage":    func(f *fakeRun, k string) { f.out[k] = "not json" },
+		"exit 0, empty":      func(f *fakeRun, k string) { f.out[k] = "" },
+		"runner error":       func(f *fakeRun, _ string) { f.err["post dev"] = errors.New("pipe closed") },
+		"canceled":           func(f *fakeRun, _ string) { f.err["post dev"] = core.ErrCanceled },
+		"timed out":          func(f *fakeRun, _ string) { f.err["post dev"] = core.ErrTimedOut },
+	}
+	for name, set := range cases {
+		m, plan, f := writeRig(t, "", "", 0)
+		set(f, strings.Join(plan.Argv, " "))
+		a := &memAudit{}
+		_, err := core.NewBoardApplier(m, a).Apply(context.Background(), plan.Confirm())
+		if !errors.Is(err, core.ErrOutcomeUnknown) || !strings.Contains(strings.ToLower(err.Error()), "refresh") {
+			t.Errorf("%s: must be an unknown outcome that says to refresh: %v", name, err)
+		}
+		if a.lines[len(a.lines)-1].Phase != "unknown" {
+			t.Errorf("%s: audit %+v", name, a.lines)
+		}
+	}
+}
+
+func TestDefiniteWriteRefusalsStayNotApplied(t *testing.T) {
+	for _, reason := range []string{"permission_denied", "login_required", "missing_scope", "channel_not_found", "message_not_found", "invalid_arguments"} {
+		m, plan, f := writeRig(t, "", "", 1)
+		f.errs[strings.Join(plan.Argv, " ")] = `{"status":"error","reason":"` + reason + `","message":"refused: ` + reason + `"}`
+		_, err := core.NewBoardApplier(m, &memAudit{}).Apply(context.Background(), plan.Confirm())
+		if err == nil || errors.Is(err, core.ErrOutcomeUnknown) || !strings.HasPrefix(core.DescribeWriteError(err), "not applied") {
+			t.Errorf("%s is a definite refusal: %v", reason, err)
+		}
+	}
+}
+
+func TestWritesCarryTheBoardURLExactlyWhenOneIsConfigured(t *testing.T) {
+	const k = "abacus-0123456789abcdef"
+	for _, c := range []struct {
+		url  string
+		post []string
+		repl []string
+	}{
+		{"", []string{"post", "dev", "--json", "--idempotency-key", k, "--", "hi"}, []string{"reply", "17", "--json", "--idempotency-key", k, "--", "hi"}},
+		{url, []string{"post", "dev", "--json", "--url", url, "--idempotency-key", k, "--", "hi"}, []string{"reply", "17", "--json", "--url", url, "--idempotency-key", k, "--", "hi"}},
+	} {
+		m := readyModule(t, helpRuns(t), Options{URL: c.url})
+		got, err := m.BuildBoardArgv(core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hi"}, k)
+		if err != nil || strings.Join(got, "\x00") != strings.Join(c.post, "\x00") {
+			t.Errorf("url=%q post: %v %v", c.url, got, err)
+		}
+		got, err = m.BuildBoardArgv(core.BoardChange{Op: core.BoardReply, ID: "17", Text: "hi"}, k)
+		if err != nil || strings.Join(got, "\x00") != strings.Join(c.repl, "\x00") {
+			t.Errorf("url=%q reply: %v %v", c.url, got, err)
+		}
+	}
+	// And what actually runs is that argv, with the url.
+	m, plan, f := writeRig(t, postDoc("17", "dev", "hello"), readDoc("17", "dev", "hello"), 0, Options{URL: url})
+	f.out["read 17 --json --url "+url] = readDoc("17", "dev", "hello")
+	if _, err := core.NewBoardApplier(m, &memAudit{}).Apply(context.Background(), plan.Confirm()); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range f.calls[1:] {
+		if !strings.HasSuffix(c, "--url "+url) && !strings.Contains(c, "--url "+url+" --idempotency-key") {
+			t.Errorf("a call without the pinned --url: %s", c)
+		}
+	}
+}
+
+func TestReplyIsVerifiedByIdInTheThread(t *testing.T) {
+	thread := func(id, text string) string {
+		return fmt.Sprintf(`{"message":{"id":"3","channel":"dev/web","text":"root"},"replies":[{"id":%q,"channel":"dev/web","text":%q}],"cursor":%q}`, id, text, id)
+	}
+	for name, c := range map[string]struct {
+		read    string
+		unknown bool
+	}{"matches": {thread("21", "ack"), false}, "different text": {thread("21", "other"), true}, "id missing from the thread": {thread("22", "ack"), true}} {
+		f := helpRuns(t)
+		m := readyModule(t, f, Options{})
+		plan, err := core.PlanBoardChange(m, core.BoardChange{Op: core.BoardReply, ID: "3", Text: "ack"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.out[strings.Join(plan.Argv, " ")] = `{"message":{"id":"21"},"outcome":"posted"}`
+		f.out["read 21 --json"] = c.read
+		res, err := core.NewBoardApplier(m, &memAudit{}).Apply(context.Background(), plan.Confirm())
+		if c.unknown != errors.Is(err, core.ErrOutcomeUnknown) || (!c.unknown && (err != nil || res.ID != "21")) {
+			t.Errorf("%s: %+v %v", name, res, err)
+		}
+	}
+}
+
+func TestTasksReadAllowlistPinsJsonAndTheExactArgv(t *testing.T) {
+	if !allowedRead([]string{"tasks", "--json", "--limit", "20"}) {
+		t.Fatal("the exact tasks read is allowed")
+	}
+	for _, a := range [][]string{
+		{"tasks", "--limit", "20", "--json"}, {"tasks", "--limit", "20", "--json", "--limit", "20"}, {"tasks", "--jsonx", "--limit", "20"},
+		{"tasks", "--state", "all", "--limit", "20"}, {"tasks", "dev", "--json", "--limit", "20"}, {"tasks", "--json", "--limit"},
+		{"tasks", "--json", "--limit", "20", "--url"},
+	} {
+		if allowedRead(a) {
+			t.Errorf("must refuse %v", a)
+		}
+	}
+}
+
+func scriptBoard(t *testing.T) (bin, dir string) {
+	t.Helper()
+	dir = t.TempDir()
+	bin = filepath.Join(dir, "board")
+	body := "#!/bin/sh\ncase \"$1\" in\n--help) env > '" + dir + "/help.env'; printf '%s\\n' \"board 0.54.0: your Vercel team's message board, for people and agents\" '' 'usage: board <command> [options]' ;;\n*) env > '" + dir + "/read.env'; echo '{}' ;;\nesac\n"
+	if err := os.WriteFile(bin, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return bin, dir
+}
+
+func envNames(t *testing.T, path string) map[string]bool {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := map[string]bool{}
+	for _, l := range strings.Split(string(b), "\n") {
+		n, _, _ := strings.Cut(l, "=")
+		out[n] = true
+	}
+	return out
+}
+
+func TestIdentityProbeRunsWithoutAnySecretButReadsKeepTheTokens(t *testing.T) {
+	for k, v := range map[string]string{"BOARD_TOKEN": "tok-12345678", "VERCEL_AUTH_TOKEN": "vat-12345678", "VERCEL_AUTOMATION_BYPASS_SECRET": "byp-12345678", "VERCEL_ORG_ID": "team_x", "BOARD_URL": "http://evil.example/x", "BOARD_NAME": "n"} {
+		t.Setenv(k, v)
+	}
+	bin, dir := scriptBoard(t)
+	m := New(Options{Bin: bin, URL: "https://example.com/api/board"})
+	if d := m.Detect(context.Background()); d.State != core.Ready {
+		t.Fatalf("%+v", d)
+	}
+	_, _ = m.Board(context.Background())
+	probe, read := envNames(t, dir+"/help.env"), envNames(t, dir+"/read.env")
+	for _, n := range []string{"BOARD_TOKEN", "VERCEL_AUTH_TOKEN", "VERCEL_AUTOMATION_BYPASS_SECRET", "VERCEL_ORG_ID", "BOARD_URL", "BOARD_NAME"} {
+		if probe[n] {
+			t.Errorf("the identity probe must not see %s", n)
+		}
+	}
+	if !probe["PATH"] || !probe["HOME"] {
+		t.Error("the probe still has PATH and HOME")
+	}
+	if !read["BOARD_TOKEN"] || !read["VERCEL_AUTH_TOKEN"] {
+		t.Error("reads keep the credentials")
+	}
+	if read["BOARD_URL"] || read["BOARD_NAME"] {
+		t.Error("BOARD_URL never passes, and BOARD_NAME not beside --url")
+	}
+}
+
+func TestNothingRunsAtAllAgainstPlainHttpToARemoteHost(t *testing.T) {
+	t.Setenv("BOARD_TOKEN", "tok-12345678")
+	bin, dir := scriptBoard(t)
+	m := New(Options{Bin: bin, URL: "http://example.com/api/board"}) // not reachable through ValidateBoardURL; defense in depth
+	m.Detect(context.Background())
+	if _, err := m.Board(context.Background()); err == nil || !strings.Contains(err.Error(), "refused") {
+		t.Fatalf("the argv allowlist refuses it: %v", err)
+	}
+	if _, err := os.Stat(dir + "/read.env"); err == nil {
+		t.Fatal("the CLI must not have been run with a token for an http non-loopback target")
+	}
+}
+
+func TestShapeDriftIsUnreadableNotAnEmptyOrBlankRow(t *testing.T) {
+	f := helpRuns(t)
+	f.out["channels list --json --limit 50"] = `{"channels":[{"path":""}],"next":null}`
+	m := readyModule(t, f, Options{})
+	if _, err := m.Board(context.Background()); err == nil || !strings.Contains(err.Error(), "unreadable") {
+		t.Fatalf("an empty channel path: %v", err)
+	}
+	g := boardRuns(t)
+	g.out["read dev/web --json --limit 5"] = `{"threads":[{"message":{"id":"","channel":"dev/web"},"replies":0,"last":null}],"cursor":"1"}`
+	g.out["tasks --json --limit 20"] = `{"tasks":[{"message":{"id":"","channel":"work","task":{"state":"ready"}}}],"cursor":"1"}`
+	r, err := readyModule(t, g, Options{}).Board(context.Background())
+	if err != nil || !strings.Contains(r.Reason, "dev/web") || !strings.Contains(r.Reason, "tasks could not be read") {
+		t.Fatalf("an empty message or task id degrades that part: %+v %v", r.Header, err)
+	}
+	for _, th := range r.Threads {
+		if th.Root.ID == "" {
+			t.Fatal("a blank thread row must not be shown")
+		}
+	}
+	if len(r.Tasks) != 0 {
+		t.Fatalf("%+v", r.Tasks)
+	}
+}
+
+func TestMinimumCliVersion(t *testing.T) {
+	for ver, ok := range map[string]bool{"0.53.9": false, "0.9.0": false, "0.54.0": true, "0.54.1": true, "0.60.0": true, "1.0.0": true, "0.54.0-beta.1": true} {
+		help := strings.ReplaceAll(fx(t, "help.txt"), "board 0.54.0:", "board "+ver+":")
+		f := &fakeRun{out: map[string]string{"--help": help}, errs: map[string]string{}, exit: map[string]int{}, err: map[string]error{}}
+		d := New(Options{Runner: f, LookPath: look("board")}).Detect(context.Background())
+		if ok != (d.State == core.Ready) {
+			t.Errorf("%s: %+v", ver, d)
+		}
+		if !ok && (d.State != core.Incompatible || !strings.Contains(d.Detail, "0.54.0") || !strings.Contains(d.Detail, "npm i -g @vercel/board")) {
+			t.Errorf("%s: an old CLI says what to install: %+v", ver, d)
+		}
+	}
+}
+
+func TestTruncationIsNamedButDoesNotDegrade(t *testing.T) {
+	r, err := readyModule(t, boardRuns(t), Options{}).Board(context.Background())
+	if err != nil || r.Truncated != "" {
+		t.Fatalf("3 channels and 2 tasks are all there is: %q %v", r.Truncated, err)
+	}
+	many := `{"channels":[{"path":"a","lastIndex":5},{"path":"b","lastIndex":4},{"path":"c","lastIndex":3},{"path":"d","lastIndex":2}],"next":"e"}`
+	f := boardRuns(t)
+	f.out["channels list --json --limit 50"] = many
+	for _, c := range []string{"a", "b", "c"} {
+		f.out["read "+c+" --json --limit 5"] = `{"threads":[],"cursor":"1"}`
+	}
+	var tasks []string
+	for i := 0; i < maxTasks; i++ {
+		tasks = append(tasks, fmt.Sprintf(`{"message":{"id":"%d","channel":"a","text":"t","task":{"state":"ready"}},"replies":0,"last":null}`, i+1))
+	}
+	f.out["tasks --json --limit 20"] = `{"tasks":[` + strings.Join(tasks, ",") + `],"cursor":"20"}`
+	r, err = readyModule(t, f, Options{}).Board(context.Background())
+	if err != nil || r.Reason != "" {
+		t.Fatalf("truncation is not a failure: %+v %v", r.Header, err)
+	}
+	for _, want := range []string{"first 50 channels", "3 most recently active", "first 20 tasks"} {
+		if !strings.Contains(r.Truncated, want) {
+			t.Errorf("Truncated %q misses %q", r.Truncated, want)
+		}
+	}
+}
+
+func TestMessageTextKeepsItsNewlinesAndDeletedMessagesSayTheyAre(t *testing.T) {
+	f := boardRuns(t)
+	f.out["read dev/web --json --limit 5"] = `{"threads":[{"message":{"id":"1","channel":"dev/web","text":"line one\nline two\u001b[2J","createdAt":"2026-11-22T20:00:00Z","author":{"handle":"ada"}},"replies":1,"last":{"id":"2","channel":"dev/web","text":"secret text","deleted":true,"author":{"handle":"ada"}}}],"cursor":"2"}`
+	r, err := readyModule(t, f, Options{}).Board(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got *core.BoardThread
+	for i := range r.Threads {
+		if r.Threads[i].Root.ID == "1" {
+			got = &r.Threads[i]
+		}
+	}
+	if got == nil || got.Root.Text != "line one\nline two[2J" {
+		t.Fatalf("newlines are data, controls are not: %+v", got)
+	}
+	if got.Last.Text != "(deleted)" || strings.Contains(got.Last.Text, "secret") {
+		t.Fatalf("a deleted message never shows its old text: %+v", got.Last)
+	}
+}
+
+func TestRedactionHappensAfterSanitizingSoInvisibleCharsCannotSplitASecret(t *testing.T) {
+	f := helpRuns(t)
+	k := "channels list --json --limit 50"
+	f.errs[k], f.exit[k] = `{"status":"error","reason":"permission_denied","message":"bad token tok-\u200b12345678 here"}`, 1
+	m := readyModule(t, f, Options{Getenv: func(n string) string {
+		if n == "BOARD_TOKEN" {
+			return "tok-12345678"
+		}
+		return ""
+	}})
+	_, err := m.Board(context.Background())
+	if err == nil || strings.Contains(err.Error(), "12345678") {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestAnOversizedAnswerIsNamedInTheReason(t *testing.T) {
+	f := boardRuns(t)
+	delete(f.out, "read dev/web --json --limit 5")
+	f.err["read dev/web"] = core.ErrOutputTooLarge
+	r, err := readyModule(t, f, Options{}).Board(context.Background())
+	if err != nil || !strings.Contains(r.Reason, "too large") {
+		t.Fatalf("%+v %v", r.Header, err)
+	}
+}
+
+func TestDescribeForAReplyShowsWhatItAnswersAndSurvivesAFailedRead(t *testing.T) {
+	f := helpRuns(t)
+	f.out["read 3 --json"] = fx(t, "read-thread.json")
+	m := readyModule(t, f, Options{})
+	got := strings.Join(m.Describe(context.Background(), core.BoardChange{Op: core.BoardReply, ID: "3", Text: "x"}), "\n")
+	for _, want := range []string{"dev/web", "ada", "checkout times out"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q in %q", want, got)
+		}
+	}
+	f.errs["read 4 --json"], f.exit["read 4 --json"], f.out["read 4 --json"] = `{"status":"error","reason":"message_not_found","message":"Couldn't find message #4."}`, 1, ""
+	got = strings.Join(m.Describe(context.Background(), core.BoardChange{Op: core.BoardReply, ID: "4", Text: "x"}), "\n")
+	if !strings.Contains(got, "could not read message 4") || !strings.Contains(got, "still confirm") {
+		t.Errorf("a failed read is said on the confirm screen: %q", got)
+	}
+}
+
+func TestDescribeForAPostFlagsANewChannel(t *testing.T) {
+	f := boardRuns(t)
+	m := readyModule(t, f, Options{})
+	if got := strings.Join(m.Describe(context.Background(), core.BoardChange{Op: core.BoardPost, Channel: "dev/web", Text: "x"}), "\n"); !strings.Contains(got, "existing channel dev/web") || strings.Contains(got, "NEW") {
+		t.Errorf("%q", got)
+	}
+	if got := strings.Join(m.Describe(context.Background(), core.BoardChange{Op: core.BoardPost, Channel: "brand/new", Text: "x"}), "\n"); !strings.Contains(got, "NEW channel brand/new") {
+		t.Errorf("%q", got)
+	}
+	g := helpRuns(t)
+	g.errs["channels list --json --limit 50"], g.exit["channels list --json --limit 50"], g.out["channels list --json --limit 50"] = `{"status":"error","reason":"network_error","message":"x"}`, 1, ""
+	if got := strings.Join(readyModule(t, g, Options{}).Describe(context.Background(), core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "x"}), "\n"); !strings.Contains(got, "could not check") || !strings.Contains(got, "still confirm") {
+		t.Errorf("%q", got)
+	}
+}
+
+func TestTargetIsCredentialFreeAndSaysWhereItCameFrom(t *testing.T) {
+	m := readyModule(t, helpRuns(t), Options{URL: "https://h.example/api/board?token=s3cret#f", URLSource: "board_url (config)"})
+	if tg := m.Target(); strings.ContainsAny(tg, "?#") || strings.Contains(tg, "s3cret") || tg != "https://h.example/api/board" {
+		t.Errorf("%q", tg)
+	}
+	if m.TargetSource() != "board_url (config)" {
+		t.Errorf("%q", m.TargetSource())
+	}
+	d := readyModule(t, helpRuns(t), Options{})
+	if d.Target() != "the CLI's default board" || !strings.Contains(d.TargetSource(), "default") {
+		t.Errorf("%q %q", d.Target(), d.TargetSource())
+	}
+}
+
+func TestDoctorSaysWhenTheConfiguredURLIsUnusable(t *testing.T) {
+	m := readyModule(t, helpRuns(t), Options{URLErr: "BOARD_URL must use https"})
+	var warn bool
+	for _, c := range m.Doctor(context.Background()) {
+		warn = warn || (c.Status == core.StatusWarn && strings.Contains(c.Detail, "BOARD_URL must use https"))
+	}
+	if !warn {
+		t.Fatal("Doctor must say why the URL is not used")
 	}
 }
