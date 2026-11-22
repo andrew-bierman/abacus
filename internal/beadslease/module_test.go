@@ -270,7 +270,6 @@ func TestDetectFallsBackToLegacyWhenJSONIsMissingOrUnparsable(t *testing.T) {
 		"old binary prints the plain line": versionLine,
 		"empty":                            "",
 		"json without api_version":         `{"version":"0.1.0"}`,
-		"json with api_version 0":          `{"api_version":0,"version":"0.1.0"}`,
 		"json array":                       `[1]`,
 	} {
 		f := &fake{resp: map[string]result{"version --json": {out: out}, "version": {out: versionLine}}}

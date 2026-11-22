@@ -1,6 +1,10 @@
 package core
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+)
 
 // ModuleReport is one module's slice of a doctor, status or version report.
 type ModuleReport struct {
@@ -110,4 +114,32 @@ func normalized(checks []Check) []Check {
 		checks[i].Status = checks[i].Status.Normalize()
 	}
 	return checks
+}
+
+// ReadDoctor turns a tool's `doctor` run (output, exit code, runner error) into checks, so
+// no tool's red report reads green: an unreadable report is a failure, text is sanitized,
+// statuses are normalized, an empty report is a failure on a non-zero exit (else a warning),
+// and a non-zero exit with no failing check adds one.
+func ReadDoctor(tool string, out []byte, exit int, err error) []Check {
+	name := tool + " doctor"
+	var raw []Check
+	if err != nil || json.Unmarshal(out, &raw) != nil {
+		return []Check{{Name: name, Status: StatusFail, Detail: "no readable doctor report"}}
+	}
+	if len(raw) == 0 {
+		if exit != 0 {
+			return []Check{{Name: name, Status: StatusFail, Detail: fmt.Sprintf("exited %d with an empty report", exit)}}
+		}
+		return []Check{{Name: name, Status: StatusWarn, Detail: "doctor reported no checks"}}
+	}
+	failed := false
+	for i := range raw {
+		raw[i].Name, raw[i].Detail, raw[i].Fix = Sanitize(raw[i].Name), Sanitize(raw[i].Detail), Sanitize(raw[i].Fix)
+		raw[i].Status = raw[i].Status.Normalize()
+		failed = failed || raw[i].Status == StatusFail
+	}
+	if exit != 0 && !failed {
+		raw = append(raw, Check{Name: name, Status: StatusFail, Detail: fmt.Sprintf("exited %d without reporting a failed check", exit)})
+	}
+	return raw
 }

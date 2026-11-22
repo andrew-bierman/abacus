@@ -61,7 +61,7 @@ const supportedAPIVersion = 1
 
 type versionInfo struct {
 	Version    string `json:"version"`
-	APIVersion int    `json:"api_version"`
+	APIVersion *int   `json:"api_version"` // nil means the key is absent
 }
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
@@ -72,17 +72,20 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
 	m.hasDoctor = false
-	// Missing, unparsable or api_version-less JSON (an older binary) takes the legacy path.
+	// Only non-JSON or api_version-less output (an older binary) takes the legacy path; an
+	// explicit unsupported api_version is incompatible.
 	if out, exit, err := m.run.Run(ctx, bin, "version", "--json"); err == nil && exit == 0 {
 		var v versionInfo
-		if json.Unmarshal(out, &v) == nil && v.APIVersion > 0 && v.Version != "" {
+		if json.Unmarshal(out, &v) == nil && v.APIVersion != nil {
 			ver := core.Sanitize(v.Version)
-			if v.APIVersion != supportedAPIVersion {
-				return core.Detection{State: core.Incompatible, Version: ver, APIVersion: v.APIVersion,
-					Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", v.APIVersion, supportedAPIVersion)}
+			if *v.APIVersion != supportedAPIVersion {
+				return core.Detection{State: core.Incompatible, Version: ver, APIVersion: *v.APIVersion,
+					Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", *v.APIVersion, supportedAPIVersion)}
 			}
-			m.bin, m.hasDoctor = bin, true
-			return core.Detection{State: core.Ready, Version: ver, APIVersion: v.APIVersion}
+			if ver != "" {
+				m.bin, m.hasDoctor = bin, true
+				return core.Detection{State: core.Ready, Version: ver, APIVersion: supportedAPIVersion}
+			}
 		}
 	}
 	out, exit, err := m.run.Run(ctx, bin, "version")
@@ -110,23 +113,7 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
 	out, exit, err := m.run.Run(ctx, m.bin, "doctor", "--json")
-	var raw []core.Check
-	if err != nil || json.Unmarshal(out, &raw) != nil {
-		return []core.Check{{Name: "beads-lease doctor", Status: core.StatusFail, Detail: "doctor --json produced no readable report"}}
-	}
-	if len(raw) == 0 {
-		return []core.Check{{Name: "beads-lease doctor", Status: core.StatusWarn, Detail: "doctor --json reported no checks"}}
-	}
-	failed := false
-	for i := range raw {
-		raw[i].Name, raw[i].Detail, raw[i].Fix = core.Sanitize(raw[i].Name), core.Sanitize(raw[i].Detail), core.Sanitize(raw[i].Fix)
-		raw[i].Status = raw[i].Status.Normalize()
-		failed = failed || raw[i].Status == core.StatusFail
-	}
-	if exit != 0 && !failed {
-		raw = append(raw, core.Check{Name: "beads-lease doctor", Status: core.StatusFail, Detail: fmt.Sprintf("exited %d without reporting a failed check", exit)})
-	}
-	return raw
+	return core.ReadDoctor("beads-lease", out, exit, err)
 }
 
 type lease struct {
