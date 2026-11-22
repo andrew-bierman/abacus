@@ -39,7 +39,7 @@ func TestGenericSectionRefetchesOnEveryTick(t *testing.T) {
 		t.Fatalf("first load missing:\n%s", m.View())
 	}
 	f.Stat = core.Status{Summary: "v2"}
-	m, cmd := m.Update(genericTickMsg{})
+	m, cmd := m.Update(genericTickMsg{id: "g"})
 	m = run(t, m, cmd)
 	if !strings.Contains(m.View(), "v2") {
 		t.Fatalf("a tick must re-fetch; still showing:\n%s", m.View())
@@ -56,7 +56,7 @@ func TestGenericSectionRecoversFromAFailedFirstRead(t *testing.T) {
 		t.Fatalf("view:\n%s", m.View())
 	}
 	f.Stat = core.Status{Summary: "back"}
-	m, cmd := m.Update(genericTickMsg{})
+	m, cmd := m.Update(genericTickMsg{id: "g"})
 	m = run(t, m, cmd)
 	if !strings.Contains(m.View(), "back") {
 		t.Fatalf("a transient failure must not stick until restart:\n%s", m.View())
@@ -70,5 +70,22 @@ func TestGenericPollIntervalIsGentleOnSharedBackends(t *testing.T) {
 	}
 	if s := newGenericSection(&modtest.Fake{IDStr: "g"}); s.tick == nil {
 		t.Fatal("the production section must schedule its own refresh")
+	}
+}
+
+// The shell broadcasts every non-key message to every section, so a tick must be scoped to its
+// module: otherwise each extra generic section doubles the live timers (and hub polls).
+func TestATickForOneGenericSectionIsIgnoredByAnother(t *testing.T) {
+	a := newGenericSection(&modtest.Fake{IDStr: "a", Det: core.Detection{State: core.Ready}})
+	b := newGenericSection(&modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Ready}})
+	ticks := 0
+	a.tick = func() tea.Cmd { ticks++; return nil }
+	b.tick = func() tea.Cmd { ticks++; return nil }
+
+	if _, cmd := b.Update(genericTickMsg{id: "a"}); cmd != nil || ticks != 0 {
+		t.Fatalf("section b reacted to a's tick (cmd=%v, re-armed timers=%d)", cmd != nil, ticks)
+	}
+	if _, cmd := a.Update(genericTickMsg{id: "a"}); cmd == nil || ticks != 1 {
+		t.Fatalf("section a must handle its own tick and re-arm exactly once (cmd=%v, timers=%d)", cmd != nil, ticks)
 	}
 }

@@ -14,7 +14,8 @@ import (
 // beads-lease) shell out to a shared production hub, so a 5s poll would be too heavy.
 const genericPollEvery = 30 * time.Second
 
-type genericTickMsg struct{}
+// genericTickMsg is scoped to one module: the shell broadcasts messages to every section.
+type genericTickMsg struct{ id string }
 
 type genericMsg struct {
 	id     string
@@ -32,7 +33,7 @@ type genericSection struct {
 
 func newGenericSection(m core.Module) *genericSection {
 	return &genericSection{m: m, tick: func() tea.Cmd {
-		return tea.Tick(genericPollEvery, func(time.Time) tea.Msg { return genericTickMsg{} })
+		return tea.Tick(genericPollEvery, func(time.Time) tea.Msg { return genericTickMsg{id: m.ID()} })
 	}}
 }
 
@@ -53,7 +54,9 @@ func (s *genericSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.status, s.loaded = m.status, true
 		}
 	case genericTickMsg:
-		return s, tea.Batch(s.fetch(), s.tick())
+		if m.id == s.m.ID() {
+			return s, tea.Batch(s.fetch(), s.tick())
+		}
 	}
 	return s, nil
 }
