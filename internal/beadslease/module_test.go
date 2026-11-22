@@ -221,3 +221,11 @@ func TestListExitAndOutputEdgeCases(t *testing.T) {
 		}
 	}
 }
+
+func TestBareNameBinOverrideResolvesOnPathNotTheWorkingDirectory(t *testing.T) {
+	f := &fake{resp: map[string]result{"version": {out: versionLine}}}
+	d := New(Options{Bin: "beads-lease", Runner: f, LookPath: found}).Detect(context.Background())
+	if d.State != core.Ready {
+		t.Fatalf("a bare-name override must resolve through PATH, got %+v", d)
+	}
+}

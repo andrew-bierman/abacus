@@ -70,15 +70,9 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	if m.o.Demo {
 		return core.Detection{State: core.Ready, Version: "demo", APIVersion: SupportedAPIVersion}
 	}
-	bin := m.o.Bin
-	if bin == "" {
-		p, err := m.o.LookPath("lambe")
-		if err != nil {
-			return core.Detection{State: core.Absent, Detail: "lambe not found on PATH"}
-		}
-		bin = p
-	} else if _, err := os.Stat(bin); err != nil {
-		return core.Detection{State: core.Absent, Detail: "lambe not found at " + bin}
+	bin, absent := core.Locate("lambe", m.o.Bin, m.o.LookPath)
+	if absent != "" {
+		return core.Detection{State: core.Absent, Detail: absent}
 	}
 	out, exit, err := m.o.Runner.Run(ctx, bin, "version", "--json")
 	if err != nil {
