@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "daemon": {"pid": 0, "machine": "fixture-mac", "version": "v0.10.0", "config_path": "/fixture/lambe.yaml"},
+  "runs": [
+    {"issue": "T-7", "attempt": 1, "state": "running", "last_event_age": "n/a", "stalled": false},
+    {"issue": "T-9", "attempt": 2, "state": "running", "last_event_age": "n/a", "stalled": false}
+  ],
+  "needs_human": [{"issue": "T-3", "reason": "gate failed", "detail": "tests red", "since": "2026-11-21T10:00:00Z"}],
+  "gate_rejections": null,
+  "runs_as_of": "2026-11-21T12:00:00Z",
+  "needs_human_as_of": "2026-11-21T12:00:00Z",
+  "stall_after_seconds": 900
+}

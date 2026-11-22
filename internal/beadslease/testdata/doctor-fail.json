@@ -1,0 +1,6 @@
+[
+  {"name": "actor", "status": "fail", "detail": "BEADS_ACTOR is not set", "fix": "export BEADS_ACTOR=<agent-machine>"},
+  {"name": "config", "status": "ok", "detail": "no config file at /fixture/config.json; using defaults"},
+  {"name": "coord", "status": "ok", "detail": "coord wrapper: /fixture/bin/coord"},
+  {"name": "hub", "status": "skip", "detail": "needs a set actor and a usable coord wrapper"}
+]

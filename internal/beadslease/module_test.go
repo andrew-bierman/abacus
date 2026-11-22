@@ -51,6 +51,8 @@ func fixture(t *testing.T, name string) string {
 
 func found(string) (string, error) { return "/fake/beads-lease", nil }
 
+const versionJSON = `{"api_version":1,"name":"beads-lease","version":"0.2.0"}` + "\n"
+
 const versionLine = "beads-lease 0.1.0 — the fleet's keeper of leases\n"
 
 func newMod(f *fake, o Options) *Module {
@@ -66,7 +68,10 @@ func TestDetectStates(t *testing.T) {
 		bin  string
 		want core.State
 	}{
-		{"ready", &fake{resp: map[string]result{"version": {out: versionLine}}}, found, "", core.Ready},
+		{"ready (legacy)", &fake{resp: map[string]result{"version": {out: versionLine}}}, found, "", core.Ready},
+		{"ready (json)", &fake{resp: map[string]result{"version --json": {out: versionJSON}}}, found, "", core.Ready},
+		{"json api_version 2 is incompatible", &fake{resp: map[string]result{"version --json": {out: `{"api_version":2,"version":"9.0.0"}`}}}, found, "", core.Incompatible},
+		{"json exit 1 then legacy exit 1 is broken", &fake{resp: map[string]result{"version --json": {exit: 1}, "version": {exit: 1}}}, found, "", core.Broken},
 		{"missing on PATH is absent", &fake{}, func(string) (string, error) { return "", os.ErrNotExist }, "", core.Absent},
 		{"explicit missing bin is absent", &fake{}, found, "/nonexistent/beads-lease", core.Absent},
 		{"exit 1 is broken", &fake{resp: map[string]result{"version": {exit: 1}}}, found, "", core.Broken},
@@ -146,27 +151,44 @@ func TestBlockingListReturnsUnavailableWithinTheDeadline(t *testing.T) {
 	}
 }
 
-func TestDoctorIsASkipUntilBeadsLeaseShipsOne(t *testing.T) {
-	m := newMod(&fake{}, Options{})
+func TestLegacyBinaryDoctorIsASkipThatNeverRuns(t *testing.T) {
+	f := &fake{resp: map[string]result{"version": {out: versionLine}}}
+	m := newMod(f, Options{})
+	m.Detect(context.Background())
+	f.calls = nil
 	checks := m.Doctor(context.Background())
-	if len(checks) != 1 || checks[0].Status != core.StatusSkip || !strings.Contains(checks[0].Detail, "beads-lease#7") {
+	if len(checks) != 1 || checks[0].Status != core.StatusSkip || !strings.Contains(checks[0].Detail, "upgrade") {
 		t.Fatalf("doctor = %+v", checks)
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("a legacy binary must not be asked to doctor: %v", f.calls)
 	}
 }
 
-func TestOnlyVersionAndJSONListEverExecute(t *testing.T) {
-	f := &fake{resp: map[string]result{"version": {out: versionLine}, "--json list": {out: fixture(t, "list.json")}}}
+func TestOnlyTheFourReadOnlyArgvsEverExecute(t *testing.T) {
+	f := &fake{resp: map[string]result{
+		"version --json": {out: versionJSON}, "doctor --json": {out: fixture(t, "doctor-ok.json")},
+		"--json list": {out: fixture(t, "list.json")},
+	}}
 	m := newMod(f, Options{})
 	m.Detect(context.Background())
 	m.Doctor(context.Background())
 	m.Status(context.Background())
-	for _, c := range f.calls {
-		if c != "version" && c != "--json list" {
-			t.Errorf("executed %q; the module is read-only", c)
-		}
+	if got, want := strings.Join(f.calls, "|"), "version --json|doctor --json|--json list"; got != want {
+		t.Fatalf("calls = %q, want %q", got, want)
 	}
-	if len(f.calls) != 2 {
-		t.Fatalf("calls = %v, want exactly version and --json list", f.calls)
+}
+
+func TestAllowlistAcceptsExactlyTheFourReadOnlyArgvs(t *testing.T) {
+	f := &fake{resp: map[string]result{}}
+	for _, k := range []string{"version", "version --json", "doctor --json", "--json list"} {
+		f.resp[k] = result{}
+	}
+	r := New(Options{Runner: f, LookPath: found}).run
+	for _, argv := range [][]string{{"version"}, {"version", "--json"}, {"doctor", "--json"}, {"--json", "list"}} {
+		if _, _, err := r.Run(context.Background(), "/fake/beads-lease", argv...); err != nil {
+			t.Errorf("argv %v refused: %v", argv, err)
+		}
 	}
 }
 
@@ -175,7 +197,9 @@ func TestAllowlistRejectsEveryWriteOrSyncCommand(t *testing.T) {
 	r := New(Options{Runner: f, LookPath: found}).run
 	for _, argv := range [][]string{
 		{"acquire", "x"}, {"release", "x"}, {"heartbeat", "x"}, {"run", "x", "--", "true"},
-		{"status"}, {"--json", "status"}, {"sync"}, {"list"}, {"version", "--json"}, {},
+		{"status"}, {"--json", "status"}, {"sync"}, {"list"}, {},
+		{"doctor"}, {"acquire"}, {"release"}, {"heartbeat"}, {"run"}, {"--json"}, {"--json", "doctor"}, {"--json", "version"}, {"doctor", "--json", "--fix"}, {"doctor", "--json", "x"},
+		{"version", "--json", "x"}, {"version", "x"}, {"list", "--json"}, {"--json", "list", "x"}, {"completion"},
 	} {
 		if _, _, err := r.Run(context.Background(), "/fake/beads-lease", argv...); err == nil {
 			t.Errorf("argv %v was allowed", argv)
@@ -227,5 +251,173 @@ func TestBareNameBinOverrideResolvesOnPathNotTheWorkingDirectory(t *testing.T) {
 	d := New(Options{Bin: "beads-lease", Runner: f, LookPath: found}).Detect(context.Background())
 	if d.State != core.Ready {
 		t.Fatalf("a bare-name override must resolve through PATH, got %+v", d)
+	}
+}
+
+func TestDetectPrefersVersionJSONAndReportsAPIVersion(t *testing.T) {
+	f := &fake{resp: map[string]result{"version --json": {out: versionJSON}}}
+	d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+	if d.State != core.Ready || d.Version != "0.2.0" || d.APIVersion != 1 {
+		t.Fatalf("detection = %+v", d)
+	}
+	if len(f.calls) != 1 {
+		t.Fatalf("calls = %v, want only version --json", f.calls)
+	}
+}
+
+func TestDetectFallsBackToLegacyWhenJSONIsMissingOrUnparsable(t *testing.T) {
+	for name, out := range map[string]string{
+		"old binary prints the plain line": versionLine,
+		"empty":                            "",
+		"json without api_version":         `{"version":"0.1.0"}`,
+		"json array":                       `[1]`,
+	} {
+		f := &fake{resp: map[string]result{"version --json": {out: out}, "version": {out: versionLine}}}
+		d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+		if d.State != core.Ready || d.Version != "0.1.0" || d.APIVersion != 0 {
+			t.Errorf("%s: detection = %+v, want ready, 0.1.0, api_version unknown", name, d)
+		}
+	}
+}
+
+func TestDetectSanitizesJSONVersion(t *testing.T) {
+	f := &fake{resp: map[string]result{"version --json": {out: `{"api_version":2,"version":"1.0\u001b[2J"}`}}}
+	d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+	for _, r := range d.Version + d.Detail {
+		if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
+			t.Fatalf("control rune %U in %+v", r, d)
+		}
+	}
+}
+
+func readyMod(t *testing.T, doctor result) (*Module, *fake) {
+	t.Helper()
+	f := &fake{resp: map[string]result{"version --json": {out: versionJSON}, "doctor --json": doctor}}
+	m := newMod(f, Options{})
+	if d := m.Detect(context.Background()); d.State != core.Ready {
+		t.Fatal(d)
+	}
+	return m, f
+}
+
+func TestDoctorRunsRealChecksAndMapsThem(t *testing.T) {
+	m, _ := readyMod(t, result{out: fixture(t, "doctor-ok.json")})
+	checks := m.Doctor(context.Background())
+	if len(checks) != 4 || checks[0].Name != "actor" || checks[3].Name != "hub" {
+		t.Fatalf("checks = %+v", checks)
+	}
+	for _, c := range checks {
+		if c.Status != core.StatusOK {
+			t.Errorf("%+v", c)
+		}
+	}
+}
+
+func TestDoctorFailExitWithFailingCheckIsNotDoubled(t *testing.T) {
+	m, _ := readyMod(t, result{out: fixture(t, "doctor-fail.json"), exit: 1})
+	checks := m.Doctor(context.Background())
+	if len(checks) != 4 || checks[0].Status != core.StatusFail || checks[0].Fix == "" {
+		t.Fatalf("checks = %+v", checks)
+	}
+}
+
+func TestDoctorExitBackstopAddsFailWhenExitNonZeroWithoutAFailCheck(t *testing.T) {
+	m, _ := readyMod(t, result{out: fixture(t, "doctor-ok.json"), exit: 64})
+	checks := m.Doctor(context.Background())
+	last := checks[len(checks)-1]
+	if len(checks) != 5 || last.Status != core.StatusFail || !strings.Contains(last.Detail, "64") {
+		t.Fatalf("a non-zero exit with no failing check must not read healthy: %+v", checks)
+	}
+}
+
+func TestDoctorUnreadableOrFailedToRunReportFails(t *testing.T) {
+	for name, r := range map[string]result{
+		"not json": {out: "oops"}, "empty": {}, "object not array": {out: `{"a":1}`},
+		"runner error": {err: errors.New("boom")},
+	} {
+		m, _ := readyMod(t, r)
+		checks := m.Doctor(context.Background())
+		if len(checks) != 1 || checks[0].Status != core.StatusFail {
+			t.Errorf("%s: %+v", name, checks)
+		}
+	}
+}
+
+func TestDoctorEmptyReportIsNotHealthy(t *testing.T) {
+	m, _ := readyMod(t, result{out: "[]"})
+	checks := m.Doctor(context.Background())
+	if len(checks) != 1 || checks[0].Status == core.StatusOK {
+		t.Fatalf("an empty report proves nothing: %+v", checks)
+	}
+}
+
+func TestDoctorNormalizesUnknownStatusesAndSanitizesText(t *testing.T) {
+	body := `[{"name":"a\u001b[2J","status":"WEIRD","detail":"d\u001b]0;x\u0007","fix":"f\u001b[31m"},{"name":"b","status":"","detail":"ok"}]`
+	m, _ := readyMod(t, result{out: body})
+	checks := m.Doctor(context.Background())
+	if len(checks) != 2 || checks[0].Status != core.StatusWarn || checks[1].Status != core.StatusWarn {
+		t.Fatalf("unknown statuses must read warn: %+v", checks)
+	}
+	for _, c := range checks {
+		for _, r := range c.Name + c.Detail + c.Fix {
+			if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
+				t.Fatalf("control rune %U in %+v", r, c)
+			}
+		}
+	}
+}
+
+func TestDetectHonoursAnExplicitUnsupportedAPIVersionEvenWithoutAVersion(t *testing.T) {
+	for name, out := range map[string]string{
+		"api_version 2 alone":   `{"api_version":2}`,
+		"api_version 0 present": `{"api_version":0,"version":"1.0.0"}`,
+		"api_version 3":         `{"api_version":3,"version":"3.0.0"}`,
+	} {
+		f := &fake{resp: map[string]result{"version --json": {out: out}, "version": {out: versionLine}}}
+		d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+		if d.State != core.Incompatible {
+			t.Errorf("%s: %+v, want incompatible", name, d)
+		}
+		if len(f.calls) != 1 {
+			t.Errorf("%s: fell through to legacy: %v", name, f.calls)
+		}
+	}
+}
+
+func TestDetectStringAPIVersionIsNotReadAsV1(t *testing.T) {
+	f := &fake{resp: map[string]result{"version --json": {out: `{"api_version":"1","version":"0.2.0"}`}, "version": {out: versionLine}}}
+	d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+	if d.APIVersion == 1 || d.State == core.Ready && d.APIVersion != 0 {
+		t.Fatalf("%+v", d)
+	}
+}
+
+func TestDetectLegacyWhenVersionJSONFailsButPlainVersionWorks(t *testing.T) {
+	f := &fake{resp: map[string]result{"version --json": {exit: 2}, "version": {out: versionLine}}}
+	d := New(Options{Runner: f, LookPath: found}).Detect(context.Background())
+	if d.State != core.Ready || d.Version != "0.1.0" || d.APIVersion != 0 {
+		t.Fatalf("%+v", d)
+	}
+}
+
+func TestDoctorEmptyReportWithNonZeroExitFails(t *testing.T) {
+	for _, body := range []string{"[]", "null"} {
+		m, _ := readyMod(t, result{out: body, exit: 64})
+		if c := m.Doctor(context.Background()); len(c) != 1 || c[0].Status != core.StatusFail {
+			t.Errorf("%s: %+v", body, c)
+		}
+	}
+}
+
+func TestAllowlistMatchesElementsNotJoinedStrings(t *testing.T) {
+	f := &fake{resp: map[string]result{"doctor --json": {}, "--json list": {}, "version --json": {}}}
+	r := New(Options{Runner: f, LookPath: found}).run
+	for _, argv := range [][]string{{"doctor --json"}, {"--json list"}, {"version --json"}, {"version", "--json "}} {
+		if _, _, err := r.Run(context.Background(), "/fake/beads-lease", argv...); err == nil {
+			t.Errorf("single-element or padded argv %q was allowed", argv)
+		}
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("reached the runner: %v", f.calls)
 	}
 }

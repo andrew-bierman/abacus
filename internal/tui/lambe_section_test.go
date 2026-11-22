@@ -149,3 +149,19 @@ func TestSelectionDistinguishesRunsSharingAnIssueBySession(t *testing.T) {
 		t.Fatalf("handoff calls = %v, want mac-s2", *calls)
 	}
 }
+
+func TestTrackerSubsetViewIsLabelledAndShowsNoQueue(t *testing.T) {
+	var s tea.Model = newLambeSection(lambe.NewDemo(), nil)
+	s, _ = s.Update(lambeViewMsg{view: lambe.View{Source: lambe.SourceTracker,
+		Snapshot: lambe.Snapshot{Runs: []lambe.Run{{Issue: "T-7", State: "running"}}}}})
+	v := s.View()
+	if !strings.Contains(v, "tracker subset") || !strings.Contains(v, "T-7") || strings.Contains(v, "Queue") {
+		t.Fatalf("view:\n%s", v)
+	}
+}
+
+func TestLiveViewCarriesNoTrackerLabel(t *testing.T) {
+	if v := demoLoaded(t, nil).View(); strings.Contains(v, "tracker subset") {
+		t.Fatalf("live view mislabelled:\n%s", v)
+	}
+}

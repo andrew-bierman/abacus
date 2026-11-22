@@ -143,7 +143,11 @@ func (s *lambeSection) View() string {
 	case s.err != nil:
 		w("state unavailable: " + core.Sanitize(s.err.Error()))
 	default:
-		w(bold.Render("Runs"))
+		if s.view.Source == lambe.SourceTracker {
+			w(bold.Render("Runs") + " (" + lambe.SourceTracker + ": no live daemon, no phases or queue)")
+		} else {
+			w(bold.Render("Runs"))
+		}
 		for i, r := range s.view.Snapshot.Runs {
 			mark := "  "
 			if i == s.cursor {
@@ -151,13 +155,15 @@ func (s *lambeSection) View() string {
 			}
 			w(mark + r.Line())
 		}
-		w(bold.Render("Queue"))
-		for _, q := range s.view.Queue.Rows {
-			state := "ready"
-			if q.Blocked {
-				state = "blocked"
+		if s.view.Source != lambe.SourceTracker {
+			w(bold.Render("Queue"))
+			for _, q := range s.view.Queue.Rows {
+				state := "ready"
+				if q.Blocked {
+					state = "blocked"
+				}
+				w(fmt.Sprintf("  %s  %s  %s", q.ID, state, q.Title))
 			}
-			w(fmt.Sprintf("  %s  %s  %s", q.ID, state, q.Title))
 		}
 		if n := s.view.Snapshot.NeedsHuman; len(n) > 0 {
 			w(bold.Render("Needs attention"))

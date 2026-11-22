@@ -218,3 +218,22 @@ func TestBrokenToolFailsDoctorThroughTheCLI(t *testing.T) {
 		t.Fatalf("status must list a broken tool and still exit 0: code=%d out=%q", code, out)
 	}
 }
+
+func TestStatusLabelsATrackerSubsetSourceInTextAndJSON(t *testing.T) {
+	m := ready("a")
+	m.Stat = core.Status{Summary: "2 runs (tracker subset)", Source: "tracker subset", Lines: []string{"T-1  running  ?"}}
+	_, out, _ := run(t, []core.Module{m}, "status")
+	if !strings.Contains(out, "source: tracker subset") {
+		t.Fatalf("text status must label the source:\n%s", out)
+	}
+	_, out, _ = run(t, []core.Module{m}, "status", "--json")
+	if !strings.Contains(out, `"source": "tracker subset"`) && !strings.Contains(out, `"source":"tracker subset"`) {
+		t.Fatalf("json status must carry the source:\n%s", out)
+	}
+	live := ready("b")
+	live.Stat = core.Status{Summary: "1 runs"}
+	_, out, _ = run(t, []core.Module{live}, "status")
+	if strings.Contains(out, "source:") {
+		t.Fatalf("a live status carries no source line:\n%s", out)
+	}
+}
