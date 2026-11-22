@@ -179,7 +179,7 @@ func (s *doctorSection) overviewLines(ov core.Overview) []string {
 	case ov.Ready && todo == 0:
 		out = append(out, th.Badge(KindOK, "Ready"))
 	case ov.Ready:
-		out = append(out, th.Badge(KindOK, "Ready")+" "+th.Text(KindMuted, strings.TrimPrefix(ov.Headline, "Ready")))
+		out = append(out, th.Badge(KindOK, "Ready")+" "+th.Text(KindMuted, strings.TrimSpace(strings.TrimPrefix(ov.Headline, "Ready"))))
 	default:
 		out = append(out, th.Badge(KindWarn, "Needs attention")+" "+th.Text(KindMuted, fmt.Sprintf("%d to set up, see below", todo)))
 	}

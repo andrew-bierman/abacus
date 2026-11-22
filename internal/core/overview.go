@@ -122,12 +122,10 @@ func domainLine(h Header, connected func() string) DomainLine {
 	case NeedsSetup:
 		l.Line, l.Guide = h.Setup.CLILine(), h.Setup
 	case NotConnected, Degraded:
+		// One line: the reason. The tab itself carries how to fix it.
 		l.Line = strings.TrimSpace(h.Reason)
-		if h.HowToConnect != "" {
-			if l.Line != "" {
-				l.Line += " "
-			}
-			l.Line += h.HowToConnect
+		if l.Line == "" {
+			l.Line = h.HowToConnect
 		}
 	}
 	if l.Line == "" {
