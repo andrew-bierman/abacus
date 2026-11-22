@@ -80,7 +80,9 @@ type boardErrMod struct {
 	err error
 }
 
-func (m boardErrMod) Board(context.Context) (core.BoardReport, error) { return core.BoardReport{}, m.err }
+func (m boardErrMod) Board(context.Context) (core.BoardReport, error) {
+	return core.BoardReport{}, m.err
+}
 
 func TestBoardReadFailureNeverSaysTheCliIsMissing(t *testing.T) {
 	m := boardErrMod{&modtest.Fake{IDStr: "b"}, errors.New("could not reach the board")}
