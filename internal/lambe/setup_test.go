@@ -191,3 +191,11 @@ func (b *blockingRunner) Run(context.Context, string, ...string) ([]byte, int, e
 	}
 	return []byte(b.out), 1, nil
 }
+
+func TestRunInitRefusesToFallBackToAPATHLambeWhenTheBundledOneWasRefused(t *testing.T) {
+	m := degradedModule(t, &fakeRunner{resp: map[string]result{}}, Options{InitRunner: func(string) core.Runner { return &dirRun{} }})
+	m.SetFound(core.Found{Bin: "/usr/local/bin/lambe", Src: core.SourcePATH, Ignored: "world-writable (/app/bundled/lambe)"})
+	if err := m.RunInit(context.Background(), t.TempDir(), filepath.Join(t.TempDir(), "lambe.yaml")); err == nil || !strings.Contains(err.Error(), "not writing") {
+		t.Fatalf("%v", err)
+	}
+}

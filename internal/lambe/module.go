@@ -444,6 +444,9 @@ func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
 	if bin == "" {
 		return errors.New("lambe was not found")
 	}
+	if f := m.Located(); f.Src == core.SourcePATH && f.Ignored != "" {
+		return fmt.Errorf("not writing: bundled lambe was refused (%s); not running init with the PATH one", f.Ignored)
+	}
 	if _, err := os.Stat(configPath); err == nil {
 		return fmt.Errorf("refused: %s already exists", configPath)
 	}

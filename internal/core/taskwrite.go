@@ -14,8 +14,6 @@ import (
 	"sync/atomic"
 	"time"
 	"unicode"
-
-	"github.com/andrew-bierman/abacus/internal/brand"
 )
 
 // TaskOp is a Tasks write verb. Delete is deliberately not offered.
@@ -252,14 +250,11 @@ func FileAudit(path string) Audit { return &fileAudit{path: path} }
 // DefaultAuditPath is $XDG_STATE_HOME/abacus/audit.jsonl (only when absolute) or
 // ~/.local/state/abacus/audit.jsonl. Without a usable home it is an error, never a relative path.
 func DefaultAuditPath() (string, error) {
-	if x := os.Getenv("XDG_STATE_HOME"); filepath.IsAbs(x) {
-		return filepath.Join(x, brand.Name, "audit.jsonl"), nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil || !filepath.IsAbs(home) {
+	d, err := xdgDir("XDG_STATE_HOME", filepath.Join(".local", "state"))
+	if err != nil {
 		return "", errors.New("audit log: no home directory to keep it in")
 	}
-	return filepath.Join(home, ".local", "state", brand.Name, "audit.jsonl"), nil
+	return filepath.Join(d, "audit.jsonl"), nil
 }
 
 type failAudit struct{ err error }
