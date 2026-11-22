@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+# shellcheck disable=SC2154  # manifest and BUNDLE_SCRIPT are set by the sourcing script
 # Shared helpers for package-release.sh and update-bundled-tools.sh. Source it, do not run it.
 #
 # bundled-tools.json, field by field. "script" fields are written by update-bundled-tools.sh and
