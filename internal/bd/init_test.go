@@ -85,7 +85,7 @@ func initModule(t *testing.T, dr *dirRunner, onInit func(string) error) (*Module
 			}
 			return dr
 		}})
-	m.bin = "/fake/bd"
+	m.SetFound(core.Found{Bin: "/fake/bd"})
 	return m, ref, ws
 }
 
@@ -166,5 +166,62 @@ func TestTasksWithNoTrackerAsksForSetupInsteadOfFailing(t *testing.T) {
 	}
 	if m.Guide(context.Background()) != nil {
 		t.Fatal("a tracker is there: nothing to offer")
+	}
+}
+
+// A fake bd that records the environment of every call it receives.
+func envRecordingBd(t *testing.T) (bin, out string) {
+	t.Helper()
+	dir := t.TempDir()
+	out = filepath.Join(dir, "env.txt")
+	bin = filepath.Join(dir, "bd")
+	script := `#!/bin/sh
+{ echo "--- $*"; env; } >> ` + out + `
+case "$*" in
+  *version*) echo '{"version":"1","schema_version":1}' ;;
+  *status*) echo '{"schema_version":1,"summary":{}}' ;;
+  *list*) echo '[]' ;;
+  init*) mkdir -p .beads && echo '{}' > .beads/metadata.json ;;
+esac
+`
+	if err := os.WriteFile(bin, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	return bin, out
+}
+
+func TestEveryBdCallRunsWithTheBeadsEnvironmentScrubbed(t *testing.T) {
+	t.Setenv("BEADS_DIR", "/real/tracker/.beads")
+	t.Setenv("BEADS_DB", "/real/tracker/db")
+	t.Setenv("BD_SOCKET", "/real/sock")
+	t.Setenv("BEADS_ACTOR", "me")
+	bin, out := envRecordingBd(t)
+	ws := filepath.Join(t.TempDir(), "ws")
+	ref := core.NewTrackerRef("")
+	m := New(Options{Bin: bin, InitDir: ws, Ref: ref, LookPath: found})
+	ctx := context.Background()
+	m.Detect(ctx) // version
+	argv, err := m.BuildTaskArgv(core.TaskChange{Op: core.TaskInit, Dir: ws})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.RunTask(ctx, argv); err != nil { // init
+		t.Fatal(err)
+	}
+	if _, err := m.Tasks(ctx); err != nil { // reads against the new tracker
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(out)
+	s := string(b)
+	if n := strings.Count(s, "--- "); n < 4 {
+		t.Fatalf("expected version, init, status and list calls, got %d:\n%s", n, s)
+	}
+	for _, bad := range []string{"BEADS_DIR=", "BEADS_DB=", "BD_SOCKET="} {
+		if strings.Contains(s, bad) {
+			t.Errorf("%s reached a bd process:\n%s", bad, s)
+		}
+	}
+	if strings.Count(s, "BEADS_ACTOR=me") != strings.Count(s, "--- ") {
+		t.Errorf("BEADS_ACTOR must still reach every call:\n%s", s)
 	}
 }

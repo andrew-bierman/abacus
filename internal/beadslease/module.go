@@ -31,10 +31,9 @@ type Options struct {
 
 // Module implements core.Module for beads-lease.
 type Module struct {
+	core.Locator
 	run      readOnly
 	lookup   func(string) (string, error)
-	bin      string
-	src      core.Source
 	explicit string
 	actor    func() string
 	timeout  time.Duration
@@ -86,9 +85,6 @@ var actorGuide = core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Key
 	Message: "Leases need an actor name", Action: "choose one",
 	Detail: "The name this machine's agents hold leases under. Change it any time with: abacus config set actor NAME"}
 
-// Located reports which binary Detect found and where it came from.
-func (m *Module) Located() (string, core.Source) { return m.bin, m.src }
-
 func (m *Module) ID() string   { return "beads-lease" }
 func (m *Module) Name() string { return "beads-lease" }
 
@@ -105,7 +101,8 @@ type versionInfo struct {
 }
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	bin, src, absent := core.LocateSource("beads-lease", m.explicit, m.lookup)
+	f, absent := core.LocateFound("beads-lease", m.explicit, m.lookup)
+	bin := f.Bin
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
@@ -123,7 +120,8 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 					Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", *v.APIVersion, supportedAPIVersion)}
 			}
 			if ver != "" {
-				m.bin, m.src, m.hasDoctor = bin, src, true
+				m.SetFound(f)
+				m.hasDoctor = true
 				return core.Detection{State: core.Ready, Version: ver, APIVersion: supportedAPIVersion}
 			}
 		}
@@ -139,7 +137,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	if match == nil {
 		return core.Detection{State: core.Incompatible, Detail: "beads-lease version: unrecognized output"}
 	}
-	m.bin, m.src = bin, src
+	m.SetFound(f)
 	// Legacy binary: api_version stays unknown, but it is usable for `--json list`.
 	return core.Detection{State: core.Ready, Version: match[1]}
 }
@@ -152,7 +150,7 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
-	out, exit, err := m.run.Run(ctx, m.bin, "doctor", "--json")
+	out, exit, err := m.run.Run(ctx, m.Bin(), "doctor", "--json")
 	return core.ReadDoctor("beads-lease", out, exit, err)
 }
 
@@ -177,7 +175,7 @@ type envelope struct {
 func (m *Module) readLeases(ctx context.Context) ([]lease, error) {
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
-	out, exit, err := m.run.Run(ctx, m.bin, "--json", "list")
+	out, exit, err := m.run.Run(ctx, m.Bin(), "--json", "list")
 	if err != nil {
 		return nil, fmt.Errorf("beads-lease list could not run: %w", err)
 	}

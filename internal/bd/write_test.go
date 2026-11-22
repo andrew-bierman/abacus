@@ -15,7 +15,7 @@ const closeKey = "close tt-1 --json"
 func writeMod(f *fakeRun, o Options) *Module {
 	o.Runner, o.LookPath = f, found
 	m := New(o)
-	m.bin = "/fake/bd"
+	m.SetFound(core.Found{Bin: "/fake/bd"})
 	return m
 }
 

@@ -66,9 +66,8 @@ const trackerTTL = 15 * time.Second
 
 // Module implements core.Module for Lambe.
 type Module struct {
-	o   Options
-	bin string
-	src core.Source
+	core.Locator
+	o Options
 
 	mu       sync.Mutex
 	cached   string      // cached `lambe state-dir -json` answer
@@ -124,17 +123,10 @@ func New(o Options) *Module {
 		o.LookPath = exec.LookPath
 	}
 	if o.Runner == nil {
-		o.Runner = core.ExecRunner{}
+		o.Runner = core.ExecRunner{Scrub: core.ScrubBeadsEnv}
 	}
 	o.Runner = readOnly{inner: o.Runner}
 	return &Module{o: o}
-}
-
-// Located reports which binary Detect found and where it came from.
-func (m *Module) Located() (string, core.Source) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.bin, m.src
 }
 
 func (m *Module) ID() string   { return "lambe" }
@@ -149,7 +141,8 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	if m.o.Demo {
 		return core.Detection{State: core.Ready, Version: "demo", APIVersion: SupportedAPIVersion}
 	}
-	bin, src, absent := core.LocateSource("lambe", m.o.Bin, m.o.LookPath)
+	f, absent := core.LocateFound("lambe", m.o.Bin, m.o.LookPath)
+	bin := f.Bin
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
@@ -169,7 +162,8 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 			Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", v.APIVersion, SupportedAPIVersion)}
 	}
 	m.mu.Lock()
-	m.bin, m.src, m.cached, m.tried, m.trackerAt = bin, src, "", false, time.Time{}
+	m.SetFound(f)
+	m.cached, m.tried, m.trackerAt = "", false, time.Time{}
 	m.mu.Unlock()
 	return core.Detection{State: core.Ready, Version: v.Version, APIVersion: v.APIVersion}
 }
@@ -183,7 +177,7 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 		args = append(args, "-config", cfg)
 	}
 	// Lambe exits 1 when a check fails but still prints the report; both are normal here.
-	out, exit, err := m.o.Runner.Run(ctx, m.bin, args...)
+	out, exit, err := m.o.Runner.Run(ctx, m.Bin(), args...)
 	return core.ReadDoctor("lambe", out, exit, err)
 }
 
@@ -199,12 +193,12 @@ func (m *Module) stateDir(ctx context.Context) string {
 	if m.cached != "" {
 		return m.cached
 	}
-	if m.bin != "" && !m.tried {
+	if m.Bin() != "" && !m.tried {
 		m.tried = true
 		var out struct {
 			StateDir string `json:"state_dir"`
 		}
-		b, exit, err := m.o.Runner.Run(ctx, m.bin, "state-dir", "-json")
+		b, exit, err := m.o.Runner.Run(ctx, m.Bin(), "state-dir", "-json")
 		if err == nil && exit == 0 && json.Unmarshal(b, &out) == nil &&
 			filepath.IsAbs(out.StateDir) && core.Sanitize(out.StateDir) == out.StateDir {
 			m.cached = out.StateDir
@@ -257,7 +251,7 @@ func (m *Module) Read(ctx context.Context) (View, error) {
 // no phase, no queue, no daemon, pid 0). Any failure, wrong schema or trailing data means
 // no view; nothing is inferred.
 func (m *Module) readTracker(ctx context.Context) (View, bool) {
-	if m.bin == "" {
+	if m.Bin() == "" {
 		return View{}, false
 	}
 	now := time.Now
@@ -274,7 +268,7 @@ func (m *Module) readTracker(ctx context.Context) (View, bool) {
 	if cfg != "" {
 		args = append(args, "-config", cfg)
 	}
-	out, exit, err := m.o.Runner.Run(ctx, m.bin, args...)
+	out, exit, err := m.o.Runner.Run(ctx, m.Bin(), args...)
 	if err != nil || exit != 0 {
 		return View{}, false
 	}
@@ -395,7 +389,7 @@ func (m *Module) Guide(ctx context.Context) *core.Guide {
 		m.mu.Unlock()
 		return g
 	}
-	bin := m.bin
+	bin := m.Bin()
 	m.mu.Unlock()
 	var g *core.Guide
 	if out, _, err := m.o.Runner.Run(ctx, bin, "doctor", "-json"); err == nil {
@@ -435,7 +429,7 @@ func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
 		return err
 	}
 	m.mu.Lock()
-	bin := m.bin
+	bin := m.Bin()
 	m.mu.Unlock()
 	if bin == "" {
 		return errors.New("lambe was not found")
@@ -443,7 +437,7 @@ func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
 	if _, err := os.Stat(configPath); err == nil {
 		return fmt.Errorf("refused: %s already exists", configPath)
 	}
-	run := core.Runner(core.ExecRunner{Dir: dir, Timeout: 30 * time.Second})
+	run := core.Runner(core.ExecRunner{Dir: dir, Timeout: 30 * time.Second, Scrub: core.ScrubBeadsEnv})
 	if m.o.InitRunner != nil {
 		run = m.o.InitRunner(dir)
 	}

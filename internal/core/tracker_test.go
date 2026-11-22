@@ -55,7 +55,7 @@ func TestResolveTrackerPrecedence(t *testing.T) {
 		{"env wins over everything", "/env/dir", core.Config{TrackerDir: cfgWS}, here, defWS, "/env/dir", "env", ""},
 		{"a tracker in the cwd beats the config", "", core.Config{TrackerDir: cfgWS}, here, defWS, "", "here", ""},
 		{"config tracker when the cwd has none", "", core.Config{TrackerDir: cfgWS}, empty, defWS, cfgWS, "config", ""},
-		{"a stale config path is not used", "", core.Config{TrackerDir: "/gone/ws"}, empty, defWS, "", "none", defWS},
+		{"a stale config path is reported, never replaced", "", core.Config{TrackerDir: "/gone/ws"}, empty, defWS, "", "config-missing", ""},
 		{"nothing found offers the managed workspace", "", core.Config{}, empty, defWS, "", "none", defWS},
 	}
 	for _, c := range cases {
@@ -63,6 +63,9 @@ func TestResolveTrackerPrecedence(t *testing.T) {
 		if got.Dir != c.wantDir || got.Source != c.want || got.Offer != c.wantOffer {
 			t.Errorf("%s: %+v", c.name, got)
 		}
+	}
+	if got := core.ResolveTracker("", core.Config{TrackerDir: "/gone/ws"}, empty, defWS); got.Missing != "/gone/ws" {
+		t.Errorf("the missing path must be named: %+v", got)
 	}
 	// A workspace created earlier is adopted even if the config forgot it.
 	mkTracker(t, defWS)
@@ -76,5 +79,24 @@ func TestTrackerRefIsShared(t *testing.T) {
 	r.Set("/b")
 	if r.Dir() != "/b" {
 		t.Fatal(r.Dir())
+	}
+}
+
+func TestAnAncestorTrackerNeverCountsAsTheManagedWorkspace(t *testing.T) {
+	above := mkTracker(t, t.TempDir())
+	ws := filepath.Join(above, "data", "abacus", "workspace")
+	if err := os.MkdirAll(ws, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if core.HasOwnTracker(ws) {
+		t.Fatal("the workspace has no tracker of its own")
+	}
+	got := core.ResolveTracker("", core.Config{}, t.TempDir(), ws)
+	if got.Source != "none" || got.Offer != ws {
+		t.Fatalf("an ancestor .beads must not stop setup from being offered: %+v", got)
+	}
+	mkTracker(t, ws)
+	if !core.HasOwnTracker(ws) {
+		t.Fatal("own tracker")
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
 )
@@ -34,6 +35,14 @@ func (c *Config) Set(key, val string) error {
 		}
 		c.Actor = val
 	case "tracker_dir", "lambe_config":
+		if val == "" { // clearing is how a saved path is dropped on purpose
+			if key == "tracker_dir" {
+				c.TrackerDir = ""
+			} else {
+				c.LambeConfig = ""
+			}
+			return nil
+		}
 		if !filepath.IsAbs(val) || Sanitize(val) != val {
 			return fmt.Errorf("%s must be an absolute path", key)
 		}
@@ -43,7 +52,7 @@ func (c *Config) Set(key, val string) error {
 			c.LambeConfig = filepath.Clean(val)
 		}
 	default:
-		return fmt.Errorf("unknown setting %q (known: actor, tracker_dir, lambe_config)", key)
+		return fmt.Errorf("unknown setting %q (known: %s)", key, strings.Join(ConfigKeys, ", "))
 	}
 	return nil
 }

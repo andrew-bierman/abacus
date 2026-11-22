@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 )
 
 // ModuleReport is one module's slice of a doctor, status or version report.
@@ -84,21 +85,40 @@ func VersionReport(version string, entries []Entry) Report {
 // check; an incompatible tool is a warn.
 func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 	r := newReport(version)
-	ov := BuildOverview(ctx, entries)
+	dom := readDomainsLite(ctx, entries)
+	ov := overviewFrom(entries, dom)
 	r.Overview = &ov
-	for _, e := range present(entries) {
-		m := base(e)
-		switch e.Detection.State {
-		case Broken:
-			m.Checks = []Check{{Name: "installation", Status: StatusFail, Detail: e.Detection.Detail}}
-		case Incompatible:
-			m.Checks = []Check{{Name: "compatibility", Status: StatusWarn, Detail: e.Detection.Detail}}
-		default:
-			m.Checks = normalized(e.Module.Doctor(ctx))
-		}
-		r.Modules = append(r.Modules, m)
+	list := present(entries)
+	mods := make([]ModuleReport, len(list))
+	var wg sync.WaitGroup
+	for i, e := range list { // independent tools: run their doctors side by side
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			m := base(e)
+			switch e.Detection.State {
+			case Broken:
+				m.Checks = []Check{{Name: "installation", Status: StatusFail, Detail: e.Detection.Detail}}
+			case Incompatible:
+				m.Checks = []Check{{Name: "compatibility", Status: StatusWarn, Detail: e.Detection.Detail}}
+			default:
+				if dd, ok := e.Module.(domainDoctor); ok {
+					m.Checks = normalized(dd.DoctorWith(ctx, dom))
+				} else {
+					m.Checks = normalized(e.Module.Doctor(ctx))
+				}
+			}
+			mods[i] = m
+		}()
 	}
+	wg.Wait()
+	r.Modules = append(r.Modules, mods...)
 	return r
+}
+
+// domainDoctor is a module whose doctor can reuse the domain reads Doctor already made.
+type domainDoctor interface {
+	DoctorWith(context.Context, DomainsReport) []Check
 }
 
 // StatusReport reads state from every ready module.

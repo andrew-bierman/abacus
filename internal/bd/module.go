@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
@@ -30,6 +31,9 @@ type Options struct {
 	// InitDir is the managed workspace a confirmed `bd init` may create. Set only when there
 	// is no tracker to read; it is the one directory the init write can touch.
 	InitDir string
+	// ConfigMissing is the tracker_dir saved in the config when that path no longer holds a
+	// tracker. Tasks then says so plainly and nothing offers to replace it.
+	ConfigMissing string
 	// OnInit persists the new workspace (the config file); it runs after a successful init.
 	OnInit func(dir string) error
 	// InitRunner runs `bd init` with dir as its working directory (bd init refuses -C for a
@@ -39,17 +43,13 @@ type Options struct {
 
 // Module is the Beads CLI as a core module, Tasks provider and task writer.
 type Module struct {
-	o   Options
-	bin string
-	src core.Source
+	core.Locator
+	o Options
 }
-
-// Located reports which binary Detect found and where it came from.
-func (m *Module) Located() (string, core.Source) { return m.bin, m.src }
 
 func New(o Options) *Module {
 	if o.Runner == nil {
-		o.Runner = core.ExecRunner{}
+		o.Runner = core.ExecRunner{Scrub: core.ScrubBeadsEnv}
 	}
 	if o.LookPath == nil {
 		o.LookPath = exec.LookPath
@@ -76,6 +76,24 @@ func (m *Module) InitDir() string { return m.o.InitDir }
 
 // Domain and Guide make bd the Tasks guider: with no tracker to read it offers the workspace.
 func (m *Module) Domain() core.DomainID { return core.DomainTasks }
+
+// writeBlocked refuses a write when the bundled bd exists but was rejected as unsafe and a PATH
+// bd was used for reading instead: a write never silently falls back to a different binary.
+func (m *Module) writeBlocked() error {
+	if f := m.Located(); f.Src == core.SourcePATH && f.Ignored != "" {
+		return fmt.Errorf("not writing: %s; fix or remove the bundled bd rather than writing with the PATH one", f.Ignored)
+	}
+	return nil
+}
+
+func (m *Module) configMissing() *core.NotConnectedError {
+	if m.o.ConfigMissing == "" || m.TrackerDir() != "" || core.HasTracker("") {
+		return nil
+	}
+	return &core.NotConnectedError{
+		Reason:       "The tracker saved in your settings (" + m.o.ConfigMissing + ") is not there any more.",
+		HowToConnect: "Restore it, or clear the setting with: " + brand.Name + ` config set tracker_dir ""  (abacus will then offer a new workspace).`}
+}
 
 func (m *Module) Guide(context.Context) *core.Guide {
 	if m.o.InitDir == "" || m.TrackerDir() != "" || core.HasTracker("") {
@@ -104,19 +122,17 @@ func (m *Module) read(ctx context.Context, a []string) ([]byte, int, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	return m.o.Runner.Run(ctx, m.bin, args...)
+	return m.o.Runner.Run(ctx, m.Bin(), args...)
 }
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	bin, src, absent := core.LocateSource("bd", m.o.Bin, m.o.LookPath)
-	if absent != "" {
+	if _, absent := m.Find("bd", m.o.Bin, m.o.LookPath); absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
-	m.bin, m.src = bin, src
 	// version needs no tracker, so it never takes -C: a bad tracker dir must not read as a broken install.
 	cctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	out, exit, err := m.o.Runner.Run(cctx, m.bin, readVersion...)
+	out, exit, err := m.o.Runner.Run(cctx, m.Bin(), readVersion...)
 	if err != nil {
 		return core.Detection{State: core.Broken, Detail: "bd version could not run: " + core.Sanitize(err.Error())}
 	}
@@ -171,6 +187,23 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	return []core.Check{{Name: "tracker", Status: core.StatusOK, Detail: "tracker readable"}}
 }
 
+// DoctorWith is Doctor over an already-read Tasks header, so the overview and the doctor do not
+// each read the tracker.
+func (m *Module) DoctorWith(_ context.Context, d core.DomainsReport) []core.Check {
+	h := d.Tasks.Header
+	switch h.State {
+	case core.Connected:
+		return []core.Check{{Name: "tracker", Status: core.StatusOK, Detail: "tracker readable"}}
+	case core.NeedsSetup:
+		return []core.Check{{Name: "tracker", Status: core.StatusWarn, Detail: core.Sanitize(h.Setup.Message), Fix: "run " + brand.Name + " setup, or press the setup key on the Tasks tab"}}
+	}
+	fix := h.HowToConnect
+	if fix == "" {
+		fix = "run abacus in a tracker directory or set ABACUS_BD_DIR"
+	}
+	return []core.Check{{Name: "tracker", Status: core.StatusWarn, Detail: core.Sanitize(h.Reason), Fix: core.Sanitize(fix)}}
+}
+
 func (m *Module) Status(ctx context.Context) core.Status {
 	r, err := m.Tasks(ctx)
 	if err != nil {
@@ -182,6 +215,9 @@ func (m *Module) Status(ctx context.Context) core.Status {
 // Tasks is the compact Tasks read: counts plus the most recently changed issues. It is
 // deliberately not an issue browser.
 func (m *Module) Tasks(ctx context.Context) (core.TasksReport, error) {
+	if nc := m.configMissing(); nc != nil {
+		return core.TasksReport{}, nc
+	}
 	if g := m.Guide(ctx); g != nil {
 		return core.TasksReport{}, &core.NeedsSetupError{Guide: *g}
 	}
@@ -222,19 +258,20 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	if len(argv) < 2 || argv[0] != "bd" || !writeAllowed(argv[1:], m.TrackerDir()) {
 		return core.TaskResult{}, errors.New("refused: not an allowed bd write")
 	}
-	if m.bin == "" {
-		bin, src, absent := core.LocateSource("bd", m.o.Bin, m.o.LookPath)
-		if absent != "" {
+	if err := m.writeBlocked(); err != nil {
+		return core.TaskResult{}, err
+	}
+	if m.Bin() == "" {
+		if _, absent := m.Find("bd", m.o.Bin, m.o.LookPath); absent != "" {
 			return core.TaskResult{}, errors.New(absent)
 		}
-		m.bin, m.src = bin, src
 	}
 	if argv[1] == "init" {
 		return m.runInit(ctx, argv[1:])
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	out, exit, err := m.o.Runner.Run(ctx, m.bin, argv[1:]...)
+	out, exit, err := m.o.Runner.Run(ctx, m.Bin(), argv[1:]...)
 	if err != nil {
 		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) {
 			return core.TaskResult{}, unknownOutcome()
@@ -326,16 +363,22 @@ const initTimeout = 60 * time.Second
 // config remember it. An init that may have run but cannot be confirmed is an unknown outcome.
 func (m *Module) runInit(ctx context.Context, argv []string) (core.TaskResult, error) {
 	dir := m.o.InitDir
+	if err := m.writeBlocked(); err != nil {
+		return core.TaskResult{}, err
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".beads")); err == nil && !core.HasOwnTracker(dir) {
+		return core.TaskResult{}, fmt.Errorf("half-created workspace at %s (a .beads folder without metadata.json): delete that folder and try again", dir)
+	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return core.TaskResult{}, fmt.Errorf("could not create %s: %s", dir, core.Sanitize(err.Error()))
 	}
-	run := core.Runner(core.ExecRunner{Dir: dir, Timeout: max(m.o.Timeout, initTimeout)})
+	run := core.Runner(core.ExecRunner{Dir: dir, Timeout: max(m.o.Timeout, initTimeout), Scrub: core.ScrubBeadsEnv})
 	if m.o.InitRunner != nil {
 		run = m.o.InitRunner(dir)
 	}
 	ctx, cancel := context.WithTimeout(ctx, max(m.o.Timeout, initTimeout))
 	defer cancel()
-	_, exit, err := run.Run(ctx, m.bin, argv...)
+	_, exit, err := run.Run(ctx, m.Bin(), argv...)
 	if err != nil {
 		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) {
 			return core.TaskResult{}, core.UnknownOutcome("bd init timed out; check " + dir + " before retrying")
@@ -345,7 +388,7 @@ func (m *Module) runInit(ctx context.Context, argv []string) (core.TaskResult, e
 	if exit != 0 {
 		return core.TaskResult{}, fmt.Errorf("bd init exited %d: nothing was set up (see `bd init` in %s)", exit, dir)
 	}
-	if !core.HasTracker(dir) {
+	if !core.HasOwnTracker(dir) {
 		return core.TaskResult{}, errors.New("bd init exited 0 but no tracker appeared in " + dir)
 	}
 	if m.o.Ref != nil {

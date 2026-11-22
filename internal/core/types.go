@@ -46,12 +46,14 @@ type Detection struct {
 	// Both are additive (schema_version stays 1) and filled in by the registry.
 	Path   string `json:"path,omitempty"`
 	Source Source `json:"source,omitempty"`
+	// Ignored says why a bundled copy that exists was refused when PATH was used instead.
+	Ignored string `json:"ignored,omitempty"`
 }
 
 // Located is implemented by modules that find a binary; the registry copies the answer into
 // their Detection so Doctor and status can say where each tool came from.
 type Located interface {
-	Located() (path string, src Source)
+	Located() Found
 }
 
 // Check is one doctor result.

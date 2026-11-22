@@ -137,6 +137,9 @@ func writeAllowed(a []string, dir string) bool {
 // BuildTaskArgv turns a validated change into the exact argv (argv[0] is the display name
 // "bd") and refuses anything the write allowlist does not accept.
 func (m *Module) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
+	if err := m.writeBlocked(); err != nil {
+		return nil, err
+	}
 	var a []string
 	switch ch.Op {
 	case core.TaskCreate:

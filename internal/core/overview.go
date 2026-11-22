@@ -40,11 +40,20 @@ type Overview struct {
 // summarizes it. Ready means Tasks works and no tool is broken; the other domains are
 // optional and only add attention items.
 func BuildOverview(ctx context.Context, entries []Entry) Overview {
+	return overviewFrom(entries, readDomainsLite(ctx, entries))
+}
+
+// readDomainsLite reads every domain except the graph insights.
+func readDomainsLite(ctx context.Context, entries []Entry) DomainsReport {
 	var d DomainsReport
 	d.readTasks(ctx, entries)
 	d.readLeases(ctx, entries)
 	d.readQueues(ctx, entries)
 	d.readBoard(ctx, entries)
+	return d
+}
+
+func overviewFrom(entries []Entry, d DomainsReport) Overview {
 	o := Overview{Ready: true}
 	var required []string
 	broken := false

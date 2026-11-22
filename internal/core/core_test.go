@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
@@ -120,5 +121,37 @@ func TestStatusRowsAreAdditiveAndOmittedWhenEmpty(t *testing.T) {
 	}
 	if core.SchemaVersion != 1 {
 		t.Fatal("an additive field must not bump the schema version")
+	}
+}
+
+type slowMod struct {
+	*modtest.Fake
+	d time.Duration
+}
+
+func (s slowMod) Detect(context.Context) core.Detection {
+	time.Sleep(s.d)
+	return core.Detection{State: core.Ready}
+}
+
+func TestDetectRunsModulesConcurrentlyUnderOneDeadline(t *testing.T) {
+	old := core.DetectDeadline
+	core.DetectDeadline = 400 * time.Millisecond
+	defer func() { core.DetectDeadline = old }()
+	reg := core.NewRegistry(
+		slowMod{&modtest.Fake{IDStr: "a"}, 250 * time.Millisecond},
+		slowMod{&modtest.Fake{IDStr: "b"}, 250 * time.Millisecond},
+		slowMod{&modtest.Fake{IDStr: "c"}, 3 * time.Second},
+	)
+	start := time.Now()
+	es := reg.Detect(context.Background())
+	if time.Since(start) > 900*time.Millisecond {
+		t.Fatalf("detection was not concurrent / bounded: %v", time.Since(start))
+	}
+	if es[0].Detection.State != core.Ready || es[1].Detection.State != core.Ready || es[0].Module.ID() != "a" || es[2].Module.ID() != "c" {
+		t.Fatalf("order or answers wrong: %+v", es)
+	}
+	if es[2].Detection.State != core.Broken || !strings.Contains(es[2].Detection.Detail, "timed out") {
+		t.Fatalf("a module past the deadline is reported, not waited for: %+v", es[2].Detection)
 	}
 }

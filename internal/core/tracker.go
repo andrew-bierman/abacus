@@ -29,11 +29,24 @@ func HasTracker(dir string) bool {
 	}
 }
 
+// HasOwnTracker reports whether dir itself holds a tracker (.beads/metadata.json), without
+// looking at its ancestors: a managed workspace must be its own tracker, so a tracker (or a
+// stray ~/.beads) above it can neither stand in for it nor hide the offer to create it.
+func HasOwnTracker(dir string) bool {
+	if dir == "" {
+		return false
+	}
+	fi, err := os.Stat(filepath.Join(dir, ".beads", "metadata.json"))
+	return err == nil && fi.Mode().IsRegular()
+}
+
 // TrackerChoice is which tracker Tasks reads. Dir is the directory for `bd -C` ("" means the
-// working directory); Source is env, here, config, workspace or none. When there is none,
-// Offer is the managed workspace a confirmed setup step may create.
+// working directory); Source is env, here, config, config-missing, workspace or none. When
+// there is none, Offer is the managed workspace a confirmed setup step may create. A
+// config-missing choice names the saved path in Missing and offers nothing: replacing a path the
+// user saved is never automatic.
 type TrackerChoice struct {
-	Dir, Source, Offer string
+	Dir, Source, Offer, Missing string
 }
 
 // ResolveTracker picks the tracker: ABACUS_BD_DIR, then a tracker at or above the working
@@ -47,7 +60,9 @@ func ResolveTracker(env string, cfg Config, cwd, workspace string) TrackerChoice
 		return TrackerChoice{Source: "here"}
 	case cfg.TrackerDir != "" && HasTracker(cfg.TrackerDir):
 		return TrackerChoice{Dir: cfg.TrackerDir, Source: "config"}
-	case workspace != "" && HasTracker(workspace):
+	case cfg.TrackerDir != "":
+		return TrackerChoice{Source: "config-missing", Missing: cfg.TrackerDir}
+	case HasOwnTracker(workspace):
 		return TrackerChoice{Dir: workspace, Source: "workspace"}
 	}
 	return TrackerChoice{Source: "none", Offer: workspace}
