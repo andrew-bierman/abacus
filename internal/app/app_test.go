@@ -243,30 +243,35 @@ func TestBoardBinaryNeedsAnIdentityCheckAndTheURLPrecedenceIsEnvThenConfigThenDe
 	}
 
 	const a, b = "http://127.0.0.1:4100/api/board", "https://example.com/api/board"
-	cfg := core.Config{BoardURL: b}
 	for _, c := range []struct {
-		env, cfg string
-		url, bad bool
-		want     string
+		abacus, cfg, boardEnv string
+		want, src             string
+		bad                   bool
 	}{
 		{want: ""},
-		{cfg: b, want: b},
-		{env: a, cfg: b, want: a},
-		{env: "ftp://nope", cfg: b, bad: true}, // a bad value is an error, not a silent fall back
+		{cfg: b, want: b, src: "board_url (config)"},
+		{abacus: a, cfg: b, want: a, src: "ABACUS_BOARD_URL"},
+		{boardEnv: b, want: b, src: "BOARD_URL"},
+		{cfg: b, boardEnv: a, want: b, src: "board_url (config)"}, // abacus's own settings win over the shell's BOARD_URL
+		{abacus: "ftp://nope", cfg: b, bad: true},                 // a bad value is an error, not a silent fall back
+		{boardEnv: "http://example.com/api/board", bad: true},     // BOARD_URL is validated like the others
+		{boardEnv: "https://example.com/x?token=s", bad: true},
 	} {
 		e := Env{Getenv: func(k string) string {
-			if k == "ABACUS_BOARD_URL" {
-				return c.env
+			switch k {
+			case "ABACUS_BOARD_URL":
+				return c.abacus
+			case "BOARD_URL":
+				return c.boardEnv
 			}
 			return ""
 		}}
-		cf := core.Config{}
-		if c.cfg != "" {
-			cf = cfg
-		}
-		o := boardOptions(e, cf)
-		if o.URL != c.want || (o.URLErr != "") != c.bad {
+		o := boardOptions(e, core.Config{BoardURL: c.cfg})
+		if o.URL != c.want || o.URLSource != c.src || (o.URLErr != "") != c.bad {
 			t.Errorf("%+v -> %+v", c, o)
+		}
+		if c.bad && strings.Contains(o.URLErr, "token=") {
+			t.Errorf("an error must not echo a credential: %q", o.URLErr)
 		}
 	}
 }

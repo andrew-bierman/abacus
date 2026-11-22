@@ -138,7 +138,7 @@ or error messages that help you fix one.
 - **beads-lease**: Leases (read only).
 - **Lambe**: Queues (read only, plus the one confirmed `lambe init` of the first-run setup; demo
   and a tracker-only fallback exist).
-- **bv**: graph insights for Tasks and Board, run as a subprocess in `--robot-*` JSON mode only.
+- **bv**: graph insights for Tasks only (the Board is a message board, not a graph), run as a subprocess in `--robot-*` JSON mode only.
   Not found? Tasks says so and how to get it.
 - **b9s**: works with b9s for the full tree and graph view: press `o` on Tasks to open it in the
   tracker directory (probes for it first; shows an install hint if it is missing).

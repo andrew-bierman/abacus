@@ -123,8 +123,15 @@ func orQ(s string) string {
 
 func renderBoard(w io.Writer, r core.BoardReport) {
 	head(w, r.Header)
+	if r.Truncated != "" {
+		fmt.Fprintf(w, "  note: %s\n", r.Truncated)
+	}
 	for _, c := range r.Channels {
-		fmt.Fprintf(w, "    channel %s  (%d threads)\n", c.Path, c.Threads)
+		if c.Threads > 0 { // a board that gives no counts shows none, not (0)
+			fmt.Fprintf(w, "    channel %s  (%d threads)\n", c.Path, c.Threads)
+		} else {
+			fmt.Fprintf(w, "    channel %s\n", c.Path)
+		}
 	}
 	for _, t := range r.Threads {
 		fmt.Fprintf(w, "    thread #%s  %s  %s  %s  (%d replies)\n", t.Root.ID, t.Root.Channel, t.Root.Author, oneLine(t.Root.Text), t.Replies)
@@ -272,27 +279,49 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "tasks %s: %v\n", verb, err)
 		return core.ExitUsage
 	}
-	if dry && asJSON {
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Apply this change? [y/N] ",
+		apply: func(au core.Audit) (any, string, error) {
+			res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
+			return res, fmt.Sprintf("done: %s %s", res.ID, res.Title), err
+		}})
+}
+
+// writeFlow is everything one confirmed write needs; runWrite is the one flow shared by the
+// Tasks and Board writes: print the plan, honor --dry-run, ask (on stderr, so stdout stays the
+// result) unless --yes, audit, apply, print the result.
+type writeFlow struct {
+	label      string
+	lines, ctx []string // the plan, and read-only context for the confirm step
+	argv       []string
+	yes, dry   bool
+	asJSON     bool
+	prompt     string
+	apply      func(au core.Audit) (result any, done string, err error)
+}
+
+func runWrite(d Deps, f writeFlow) int {
+	if f.dry && f.asJSON {
 		jsonOut(d.Out, struct {
-			DryRun bool     `json:"dry_run"`
-			Lines  []string `json:"change"`
-			Argv   []string `json:"argv"`
-		}{true, plan.Lines, plan.Argv})
+			DryRun  bool     `json:"dry_run"`
+			Lines   []string `json:"change"`
+			Context []string `json:"context,omitempty"`
+			Argv    []string `json:"argv"`
+		}{true, f.lines, f.ctx, f.argv})
 		return core.ExitOK
 	}
-	if !asJSON {
-		for _, l := range plan.Lines {
+	if !f.asJSON {
+		for _, l := range append(append([]string{}, f.lines...), f.ctx...) {
 			fmt.Fprintln(d.Out, l)
 		}
-		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(plan.Argv))
+		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(f.argv))
 	}
-	if dry {
+	if f.dry {
 		return core.ExitOK
 	}
-	if !yes {
-		fmt.Fprint(d.Out, "Apply this change? [y/N] ")
+	if !f.yes {
+		fmt.Fprint(d.Err, f.prompt)
 		if !confirmed(d.In) {
-			fmt.Fprintln(d.Out)
+			fmt.Fprintln(d.Err)
 			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
 			return core.ExitFail
 		}
@@ -301,18 +330,18 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if au == nil {
 		au = core.DefaultAudit()
 	}
-	res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
+	res, done, err := f.apply(au)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s: %s\n", verb, core.DescribeWriteError(err))
+		fmt.Fprintf(d.Err, "%s: %s\n", f.label, core.DescribeWriteError(err))
 		return core.ExitFail
 	}
-	if asJSON {
+	if f.asJSON {
 		jsonOut(d.Out, struct {
-			Applied bool            `json:"applied"`
-			Result  core.TaskResult `json:"result"`
+			Applied bool `json:"applied"`
+			Result  any  `json:"result"`
 		}{true, res})
 	} else {
-		fmt.Fprintf(d.Out, "done: %s %s\n", res.ID, res.Title)
+		fmt.Fprintln(d.Out, done)
 	}
 	return core.ExitOK
 }
@@ -387,47 +416,11 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "board %s: %v\n", verb, err)
 		return core.ExitUsage
 	}
-	if dry && asJSON {
-		jsonOut(d.Out, struct {
-			DryRun bool     `json:"dry_run"`
-			Lines  []string `json:"change"`
-			Argv   []string `json:"argv"`
-		}{true, plan.Lines, plan.Argv})
-		return core.ExitOK
-	}
-	if !asJSON {
-		for _, l := range plan.Lines {
-			fmt.Fprintln(d.Out, l)
-		}
-		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(plan.Argv))
-	}
-	if dry {
-		return core.ExitOK
-	}
-	if !yes {
-		fmt.Fprint(d.Out, "Post this to the board? [y/N] ")
-		if !confirmed(d.In) {
-			fmt.Fprintln(d.Out)
-			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
-			return core.ExitFail
-		}
-	}
-	au := d.Audit
-	if au == nil {
-		au = core.DefaultAudit()
-	}
-	res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
-	if err != nil {
-		fmt.Fprintf(d.Err, "board %s: %s\n", verb, core.DescribeWriteError(err))
-		return core.ExitFail
-	}
-	if asJSON {
-		jsonOut(d.Out, struct {
-			Applied bool             `json:"applied"`
-			Result  core.BoardResult `json:"result"`
-		}{true, res})
-	} else {
-		fmt.Fprintf(d.Out, "done: posted #%s\n", res.ID)
-	}
-	return core.ExitOK
+	dctx, dcancel := context.WithTimeout(ctx, 2*core.DefaultExecTimeout)
+	defer dcancel()
+	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Post this to the board? [y/N] ",
+		apply: func(au core.Audit) (any, string, error) {
+			res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
+			return res, "done: posted #" + res.ID, err
+		}})
 }

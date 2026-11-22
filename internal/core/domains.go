@@ -143,7 +143,7 @@ type TaskReader interface {
 	ReadTask(ctx context.Context, id string) (Task, error)
 }
 
-// InsightsProvider supplies graph analysis for the Tasks and Board domains. It is a separate
+// InsightsProvider supplies graph analysis for the Tasks domain. It is a separate
 // provider because it reads a different surface than the task counts do.
 type InsightsProvider interface {
 	Insights(context.Context) (InsightsReport, error)
@@ -298,6 +298,19 @@ var HowToConnect = map[DomainID]string{
 	DomainQueues: "Queues need Lambe, which comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
 }
 
+// HowToConnectBoardDegraded is the hint for a Board read that failed although the CLI is there:
+// an install message would be wrong.
+const HowToConnectBoardDegraded = "Check board_url and the network, then press r."
+
+// degradedHint is the hint under a failed read of a present provider: the install message for
+// most domains, a board-specific one for the Board (whose CLI is, by then, installed).
+func degradedHint(d DomainID) string {
+	if d == DomainBoard {
+		return HowToConnectBoardDegraded
+	}
+	return HowToConnect[d]
+}
+
 func header(d DomainID) Header { return Header{Domain: d, Title: d.Title()} }
 
 // notConnected builds the header for a domain with no usable provider.
@@ -344,7 +357,7 @@ func finish(d DomainID, h Header, err error) Header {
 	}
 	if err != nil {
 		out := header(d)
-		out.State, out.Reason, out.HowToConnect = Degraded, Sanitize(err.Error()), HowToConnect[d]
+		out.State, out.Reason, out.HowToConnect = Degraded, Sanitize(err.Error()), degradedHint(d)
 		return out
 	}
 	h.Domain, h.Title, h.State = d, d.Title(), Connected

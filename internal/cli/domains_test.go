@@ -119,12 +119,12 @@ func TestCreateDryRunPrintsArgvAndRunsNothing(t *testing.T) {
 func TestWriteWithoutYesAsksAndOnlyYesProceeds(t *testing.T) {
 	for stdin, wantRan := range map[string]int{"y\n": 1, "yes\n": 1, "n\n": 0, "\n": 0, "": 0, "maybe\n": 0} {
 		m := newTaskMod()
-		code, out, _, _ := runIn(t, stdin, []core.Module{m}, "tasks", "create", "--title", "hello")
+		code, out, errOut, _ := runIn(t, stdin, []core.Module{m}, "tasks", "create", "--title", "hello")
 		if len(m.ran) != wantRan {
 			t.Errorf("stdin %q: ran %d, want %d", stdin, len(m.ran), wantRan)
 		}
-		if !strings.Contains(out, "[y/N]") {
-			t.Errorf("stdin %q: no prompt:\n%s", stdin, out)
+		if strings.Contains(out, "[y/N]") || !strings.Contains(errOut, "[y/N]") {
+			t.Errorf("stdin %q: the prompt goes to stderr so stdout stays the result:\nout=%s\nerr=%s", stdin, out, errOut)
 		}
 		if wantRan == 0 && code == 0 {
 			t.Errorf("stdin %q: declining must exit non-zero", stdin)
@@ -390,15 +390,26 @@ func TestLeasesTextUsesTheSharedLeaseDetail(t *testing.T) {
 // boardMod is a module that provides the Board domain and its writer, recording every write.
 type boardMod struct {
 	*modtest.Fake
-	ran  [][]string
-	fail error
+	ran     [][]string
+	fail    error
+	readErr error
+	trunc   string
+}
+
+func (m *boardMod) TargetSource() string { return "board_url (config)" }
+func (m *boardMod) Describe(_ context.Context, ch core.BoardChange) []string {
+	return []string{"existing channel " + ch.Channel + ch.ID}
 }
 
 func (m *boardMod) Board(context.Context) (core.BoardReport, error) {
+	if m.readErr != nil {
+		return core.BoardReport{}, m.readErr
+	}
 	return core.BoardReport{Header: core.Header{Source: core.SourceLive},
-		Channels: []core.BoardChannel{{Path: "dev", Threads: 1}},
-		Threads:  []core.BoardThread{{Root: core.BoardMessage{ID: "2", Channel: "dev", Author: "ada", Text: "deploys are green\nagain"}, Replies: 1, Last: &core.BoardMessage{ID: "3", Author: "claude", Text: "ack"}}},
-		Tasks:    []core.BoardTask{{ID: "4", State: "claimed", Claimant: "codex via ada", Text: "fix it"}}}, nil
+		Truncated: m.trunc,
+		Channels:  []core.BoardChannel{{Path: "dev", Threads: 1}, {Path: "work"}},
+		Threads:   []core.BoardThread{{Root: core.BoardMessage{ID: "2", Channel: "dev", Author: "ada", Text: "deploys are green\nagain"}, Replies: 1, Last: &core.BoardMessage{ID: "3", Author: "claude", Text: "ack"}}},
+		Tasks:     []core.BoardTask{{ID: "4", State: "claimed", Claimant: "codex via ada", Text: "fix it"}}}, nil
 }
 func (m *boardMod) BuildBoardArgv(ch core.BoardChange, key string) ([]string, error) {
 	return []string{"board", string(ch.Op), ch.Channel + ch.ID, "--idempotency-key", key, "--", ch.Text}, nil
@@ -427,7 +438,7 @@ func TestBoardCommandRendersChannelsThreadsAndTasks(t *testing.T) {
 		Threads       []struct{ Replies int }
 		Tasks         []struct{ State, Claimant string }
 	}
-	if err := json.Unmarshal([]byte(js), &got); err != nil || got.SchemaVersion != 1 || len(got.Channels) != 1 || got.Threads[0].Replies != 1 || got.Tasks[0].Claimant != "codex via ada" {
+	if err := json.Unmarshal([]byte(js), &got); err != nil || got.SchemaVersion != 1 || len(got.Channels) != 2 || got.Threads[0].Replies != 1 || got.Tasks[0].Claimant != "codex via ada" {
 		t.Fatalf("%v %s", err, js)
 	}
 }
@@ -482,5 +493,51 @@ func TestBoardWriteFailsClosedAndSaysUnknownOutcomeHonestly(t *testing.T) {
 	}
 	if code, _, e, _ := runIn(t, "", nil, "board", "post", "dev", "hi", "--yes"); code == 0 || !strings.Contains(e, "npm i -g @vercel/board") {
 		t.Fatalf("not connected says how: %d %s", code, e)
+	}
+}
+
+func TestBoardConfirmShowsTheTargetAndTheContextBeforeThePrompt(t *testing.T) {
+	m := newBoardMod()
+	_, out, errOut, _ := runIn(t, "n\n", []core.Module{m}, "board", "post", "dev", "hello")
+	for _, want := range []string{"board: the default board (board_url (config))", "existing channel dev"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if !strings.Contains(errOut, "[y/N]") {
+		t.Error("the prompt follows the context")
+	}
+	_, js, _, _ := runIn(t, "", []core.Module{m}, "board", "reply", "5", "x", "--dry-run", "--json")
+	if !strings.Contains(js, `"context"`) || !strings.Contains(js, "existing channel 5") {
+		t.Fatalf("%s", js)
+	}
+}
+
+func TestBoardReadFailureIsDegradedWithoutAnInstallHint(t *testing.T) {
+	m := newBoardMod()
+	m.readErr = errors.New("could not reach the board")
+	_, js, _, _ := runIn(t, "", []core.Module{m}, "status", "--json")
+	if !strings.Contains(js, `"state": "degraded"`) || strings.Contains(js, "npm i -g") {
+		t.Fatalf("a present but failing CLI is degraded and is not told to install: %s", js)
+	}
+	_, out, _, _ := runIn(t, "", []core.Module{m}, "board")
+	if strings.Contains(out, "npm i") || !strings.Contains(out, "board_url") {
+		t.Fatalf("%s", out)
+	}
+}
+
+func TestBoardRenderHidesUnknownCountsAndShowsTruncation(t *testing.T) {
+	m := newBoardMod()
+	m.trunc = "only the first 50 channels are listed"
+	_, out, _, _ := runIn(t, "", []core.Module{m}, "board")
+	if !strings.Contains(out, "channel dev  (1 threads)") || strings.Contains(out, "(0 threads)") || !strings.Contains(out, "channel work\n") {
+		t.Fatalf("%s", out)
+	}
+	if !strings.Contains(out, "only the first 50 channels are listed") {
+		t.Fatalf("%s", out)
+	}
+	_, js, _, _ := runIn(t, "", []core.Module{m}, "board", "--json")
+	if !strings.Contains(js, `"truncated": "only the first 50`) || strings.Contains(js, `"state": "degraded"`) {
+		t.Fatalf("truncation is not degradation: %s", js)
 	}
 }

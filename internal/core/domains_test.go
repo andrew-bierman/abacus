@@ -75,6 +75,24 @@ func TestReadErrorIsDegradedAndSanitized(t *testing.T) {
 	}
 }
 
+type boardErrMod struct {
+	*modtest.Fake
+	err error
+}
+
+func (m boardErrMod) Board(context.Context) (core.BoardReport, error) { return core.BoardReport{}, m.err }
+
+func TestBoardReadFailureNeverSaysTheCliIsMissing(t *testing.T) {
+	m := boardErrMod{&modtest.Fake{IDStr: "b"}, errors.New("could not reach the board")}
+	h := core.ReadDomains(context.Background(), []core.Entry{entry(m, core.Ready, "")}).Board.Header
+	if h.State != core.Degraded || strings.Contains(h.HowToConnect, "npm i") || strings.Contains(h.HowToConnect, "not found") || !strings.Contains(h.HowToConnect, "board_url") {
+		t.Fatalf("a failed read of a present CLI is not an install problem: %+v", h)
+	}
+	if abs := core.ReadDomains(context.Background(), nil).Board.Header; !strings.Contains(abs.HowToConnect, "npm i -g @vercel/board") {
+		t.Fatalf("not found still says how to install: %+v", abs)
+	}
+}
+
 func TestDomainJSONShape(t *testing.T) {
 	b, _ := json.Marshal(core.ReadDomains(context.Background(), nil))
 	for _, want := range []string{`"board":`, `"tasks":`, `"leases":`, `"queues":`, `"state":"not-connected"`, `"how_to_connect":`} {
