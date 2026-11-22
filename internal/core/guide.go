@@ -18,15 +18,25 @@ const (
 // the front-end shows one guided line and offers the setup step.
 const NeedsSetup Connection = "needs-setup"
 
-// Guide is the one plain-language state a domain shows when it needs setup: what is missing,
-// the key that starts the step, and where it will happen. No tool jargon beyond the command
-// that will run, which the confirm screen shows in full anyway.
+// Guide is the one plain-language state a domain shows when it needs setup: what is missing
+// (Message), what the step does (Action), the key that starts it in the TUI, and where it will
+// happen (Detail). No tool jargon beyond the command that will run, which the confirm screen
+// shows in full anyway.
 type Guide struct {
 	Domain  DomainID `json:"domain"`
 	Step    StepID   `json:"step"`
 	Key     string   `json:"key"`
 	Message string   `json:"message"`
+	Action  string   `json:"action"`
 	Detail  string   `json:"detail,omitempty"`
+}
+
+// Line is the single guided sentence for the TUI: "<message> — press <key> to <action>".
+func (g Guide) Line() string { return g.Message + " — press " + g.Key + " to " + g.Action }
+
+// CLILine is the same sentence for the command line, where the step is `abacus setup`.
+func (g Guide) CLILine() string {
+	return g.Message + " — run `abacus setup` to " + g.Action
 }
 
 // Guider is implemented by a provider that can say its domain needs setup. Guide is cheap
@@ -40,6 +50,12 @@ type Guider interface {
 type NeedsSetupError struct{ Guide Guide }
 
 func (e *NeedsSetupError) Error() string { return e.Guide.Message }
+
+// NotConnectedError is a read that failed for a reason with a plain explanation and a fix
+// the user can act on, not an internal error. Front-ends show it as "not connected".
+type NotConnectedError struct{ Reason, HowToConnect string }
+
+func (e *NotConnectedError) Error() string { return e.Reason }
 
 // AsNeedsSetup extracts the guide from a read error.
 func AsNeedsSetup(err error) (Guide, bool) {

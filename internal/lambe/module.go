@@ -33,6 +33,32 @@ type Options struct {
 	Timeout    time.Duration
 	Now        func() time.Time // clock for the tracker cache; nil means time.Now
 	Demo       bool
+	// InitRunner runs `lambe init` with dir as its working directory; nil means a real process.
+	InitRunner func(dir string) core.Runner
+}
+
+// InitRunner and the config accessors support the one write this module has: `lambe init`.
+//
+// config is the Lambe config the module reads, and whether it is the abacus-owned one that a
+// confirmed setup step wrote.
+func (m *Module) config() (path string, owned bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.o.ConfigPath, m.ownedCfg
+}
+
+func (m *Module) selector() Selector {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.o.Selector
+}
+
+// SetConfigPath points the module at a config (after setup wrote one).
+func (m *Module) SetConfigPath(path string) {
+	m.mu.Lock()
+	m.o.ConfigPath, m.o.Selector.ConfigPath, m.ownedCfg = path, path, true
+	m.guideAt = time.Time{}
+	m.mu.Unlock()
 }
 
 // trackerTTL bounds how often the degraded read spawns `lambe status -json` while polled.
@@ -44,9 +70,12 @@ type Module struct {
 	bin string
 	src core.Source
 
-	mu     sync.Mutex
-	cached string // cached `lambe state-dir -json` answer
-	tried  bool   // the state-dir command already ran (even if it failed) since Detect
+	mu       sync.Mutex
+	cached   string      // cached `lambe state-dir -json` answer
+	tried    bool        // the state-dir command already ran (even if it failed) since Detect
+	ownedCfg bool        // the config was written by abacus's setup step
+	guide    *core.Guide // cached config check, see Guide
+	guideAt  time.Time
 	// tracker is the last degraded view, reused until trackerAt+trackerTTL.
 	tracker   View
 	trackerAt time.Time
@@ -150,8 +179,8 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 		return []core.Check{{Name: "demo", Status: core.StatusOK, Detail: "fixture data, no daemon contacted"}}
 	}
 	args := []string{"doctor", "-json"}
-	if m.o.ConfigPath != "" {
-		args = append(args, "-config", m.o.ConfigPath)
+	if cfg, _ := m.config(); cfg != "" {
+		args = append(args, "-config", cfg)
 	}
 	// Lambe exits 1 when a check fails but still prints the report; both are normal here.
 	out, exit, err := m.o.Runner.Run(ctx, m.bin, args...)
@@ -198,7 +227,7 @@ func (m *Module) Read(ctx context.Context) (View, error) {
 		sanitizeView(&v)
 		return v, nil
 	}
-	d, err := Discover(DiscoverOptions{StateDir: m.stateDir(ctx), Selector: m.o.Selector, Identity: m.o.Identity, PidAlive: m.o.PidAlive})
+	d, err := Discover(DiscoverOptions{StateDir: m.stateDir(ctx), Selector: m.selector(), Identity: m.o.Identity, PidAlive: m.o.PidAlive})
 	if errors.Is(err, ErrNoDaemon) {
 		if v, ok := m.readTracker(ctx); ok {
 			return v, nil
@@ -235,14 +264,15 @@ func (m *Module) readTracker(ctx context.Context) (View, bool) {
 	if m.o.Now != nil {
 		now = m.o.Now
 	}
+	cfg, _ := m.config() // before taking mu: config locks it too
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if !m.trackerAt.IsZero() && now().Sub(m.trackerAt) < trackerTTL {
 		return m.tracker, true
 	}
 	args := []string{"status", "-json"}
-	if m.o.ConfigPath != "" {
-		args = append(args, "-config", m.o.ConfigPath)
+	if cfg != "" {
+		args = append(args, "-config", cfg)
 	}
 	out, exit, err := m.o.Runner.Run(ctx, m.bin, args...)
 	if err != nil || exit != 0 {
@@ -298,6 +328,12 @@ func (m *Module) RexArgv(machine string) []string { return []string{"rex", "-S",
 // the tracker-only fallback is labelled as such, a live daemon read is live.
 func (m *Module) Queues(ctx context.Context) (core.QueuesReport, error) {
 	v, err := m.Read(ctx)
+	if errors.Is(err, ErrNoDaemon) {
+		if g := m.Guide(ctx); g != nil {
+			return core.QueuesReport{}, &core.NeedsSetupError{Guide: *g}
+		}
+		return core.QueuesReport{}, &core.NotConnectedError{Reason: NoDaemonReason, HowToConnect: m.startHint()}
+	}
 	if err != nil {
 		return core.QueuesReport{}, errors.New(core.Sanitize(err.Error()))
 	}
@@ -338,3 +374,108 @@ func queuesReport(v View, demo bool) core.QueuesReport {
 	}
 	return r
 }
+
+// Domain and Guide make Lambe the Queues guider. With no config of its own anywhere (no
+// explicit one, and `lambe doctor` reports its default config missing) it offers to write one.
+// The doctor answer is cached briefly because Guide is asked on every redraw tick.
+func (m *Module) Domain() core.DomainID { return core.DomainQueues }
+
+const guideTTL = 10 * time.Second
+
+func (m *Module) Guide(ctx context.Context) *core.Guide {
+	if m.o.Demo {
+		return nil
+	}
+	if cfg, _ := m.config(); cfg != "" {
+		return nil
+	}
+	m.mu.Lock()
+	if !m.guideAt.IsZero() && time.Since(m.guideAt) < guideTTL {
+		g := m.guide
+		m.mu.Unlock()
+		return g
+	}
+	bin := m.bin
+	m.mu.Unlock()
+	var g *core.Guide
+	if out, _, err := m.o.Runner.Run(ctx, bin, "doctor", "-json"); err == nil {
+		var checks []core.Check
+		if json.Unmarshal(out, &checks) == nil {
+			for _, c := range checks {
+				if c.Name == "config" && c.Status == core.StatusFail {
+					g = &queuesGuide
+				}
+			}
+		}
+	}
+	m.mu.Lock()
+	m.guide, m.guideAt = g, time.Now()
+	m.mu.Unlock()
+	return g
+}
+
+var queuesGuide = core.Guide{Domain: core.DomainQueues, Step: core.StepQueues, Key: "s",
+	Message: "Queues need a supervisor config", Action: "set up",
+	Detail: "Writes a starter Lambe config for your fleet workspace. Nothing is started: you run the supervisor yourself."}
+
+// BuildInitArgv is the one argv the init write may run, for a config at configPath.
+func (m *Module) BuildInitArgv(configPath string) ([]string, error) {
+	if !filepath.IsAbs(configPath) || core.Sanitize(configPath) != configPath {
+		return nil, errors.New("refused: the lambe config path must be absolute")
+	}
+	return []string{"lambe", "init", "-non-interactive", "-config", configPath}, nil
+}
+
+// RunInit runs `lambe init -non-interactive -config configPath` inside dir (the tracker
+// directory; init writes a starter WORKFLOW.md and formula there, and the config to configPath),
+// and then reads that config from now on. It never starts a daemon.
+func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
+	argv, err := m.BuildInitArgv(configPath)
+	if err != nil {
+		return err
+	}
+	m.mu.Lock()
+	bin := m.bin
+	m.mu.Unlock()
+	if bin == "" {
+		return errors.New("lambe was not found")
+	}
+	if _, err := os.Stat(configPath); err == nil {
+		return fmt.Errorf("refused: %s already exists", configPath)
+	}
+	run := core.Runner(core.ExecRunner{Dir: dir, Timeout: 30 * time.Second})
+	if m.o.InitRunner != nil {
+		run = m.o.InitRunner(dir)
+	}
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	_, exit, err := run.Run(ctx, bin, argv[1:]...)
+	switch {
+	case errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled):
+		return core.UnknownOutcome("lambe init timed out; check " + configPath + " before retrying")
+	case err != nil:
+		return fmt.Errorf("lambe init could not run: %s", core.Sanitize(err.Error()))
+	case exit != 0:
+		return fmt.Errorf("lambe init exited %d: nothing was set up", exit)
+	}
+	if _, err := os.Stat(configPath); err != nil {
+		return errors.New("lambe init exited 0 but wrote no config at " + configPath)
+	}
+	m.SetConfigPath(configPath)
+	return nil
+}
+
+// NoDaemonReason is the plain wording for "nothing is supervising": the queue is empty because
+// no supervisor is running, not because anything is broken.
+const NoDaemonReason = "The supervisor is not running, so there are no live runs or queue to show."
+
+// startHint says how to start the supervisor. abacus never does it for you.
+func (m *Module) startHint() string {
+	if cfg, _ := m.config(); cfg != "" {
+		return "Start it yourself with: lambe run -config " + cfg + "  (abacus never starts it for you). Its state API must be on to show live runs."
+	}
+	return "Start it yourself with: lambe run  (abacus never starts it for you). Its state API must be on to show live runs."
+}
+
+// StartHint is startHint for front-ends that render the section themselves.
+func (m *Module) StartHint() string { return m.startHint() }

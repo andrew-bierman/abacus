@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -303,7 +304,13 @@ func pick[P any](entries []Entry) (p P, reason string, ok bool) {
 func finish(d DomainID, h Header, err error) Header {
 	if g, ok := AsNeedsSetup(err); ok {
 		out := header(d)
-		out.State, out.Reason, out.Setup = NeedsSetup, Sanitize(g.Message), &g
+		out.State, out.Reason, out.Setup = NeedsSetup, Sanitize(g.CLILine()), &g
+		return out
+	}
+	var nc *NotConnectedError
+	if errors.As(err, &nc) {
+		out := header(d)
+		out.State, out.Reason, out.HowToConnect = NotConnected, Sanitize(nc.Reason), Sanitize(nc.HowToConnect)
 		return out
 	}
 	if err != nil {

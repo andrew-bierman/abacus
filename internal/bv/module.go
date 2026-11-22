@@ -20,18 +20,20 @@ import (
 // Options configure the module; every process boundary is injectable.
 type Options struct {
 	Bin      string
-	Dir      string // working directory for bv (its tracker); empty means the current one
-	Label    string // optional --label scope
-	Recipe   string // optional --recipe scope
+	Dir      string           // working directory for bv (its tracker); empty means the current one
+	Ref      *core.TrackerRef // when set, replaces Dir: the tracker directory shared with bd
+	Label    string           // optional --label scope
+	Recipe   string           // optional --recipe scope
 	LookPath func(string) (string, error)
 	Runner   core.Runner
 	Timeout  time.Duration
 }
 
 type Module struct {
-	o   Options
-	bin string
-	src core.Source
+	o    Options
+	bin  string
+	src  core.Source
+	live bool // the runner is a real process runner (not an injected fake)
 
 	mu      sync.Mutex
 	lastErr string // why the last insights read failed, for Doctor
@@ -41,7 +43,9 @@ type Module struct {
 func (m *Module) Located() (string, core.Source) { return m.bin, m.src }
 
 func New(o Options) *Module {
+	m := &Module{}
 	if o.Runner == nil {
+		m.live = true // a real process, in whatever tracker directory is current
 		o.Runner = core.ExecRunner{Dir: o.Dir}
 	}
 	if o.LookPath == nil {
@@ -50,7 +54,17 @@ func New(o Options) *Module {
 	if o.Timeout <= 0 {
 		o.Timeout = core.DefaultExecTimeout
 	}
-	return &Module{o: o}
+	m.o = o
+	return m
+}
+
+// runner is the process runner; a real one follows the shared tracker directory, so a
+// workspace created while abacus runs is analyzed without a restart.
+func (m *Module) runner() core.Runner {
+	if m.live && m.o.Ref != nil {
+		return core.ExecRunner{Dir: m.o.Ref.Dir()}
+	}
+	return m.o.Runner
 }
 
 func (m *Module) ID() string   { return "bv" }
@@ -69,7 +83,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	d := core.Detection{State: core.Ready}
 	vctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	if out, exit, err := m.o.Runner.Run(vctx, bin, "--version"); err == nil && exit == 0 {
+	if out, exit, err := m.runner().Run(vctx, bin, "--version"); err == nil && exit == 0 {
 		if sm := versionRE.FindStringSubmatch(strings.TrimSpace(core.Sanitize(string(out)))); sm != nil {
 			d.Version = sm[1]
 		}
@@ -154,7 +168,7 @@ func (m *Module) run(ctx context.Context, mode string, into any) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	out, exit, err := m.o.Runner.Run(ctx, m.bin, a...)
+	out, exit, err := m.runner().Run(ctx, m.bin, a...)
 	if err != nil {
 		return fmt.Errorf("could not run: %s", core.Sanitize(err.Error()))
 	}

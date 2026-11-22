@@ -82,8 +82,8 @@ func (m *Module) Guide(context.Context) *core.Guide {
 		return nil
 	}
 	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Key: "i",
-		Message: "No tracker here — press i to create your fleet workspace (bd init)",
-		Detail:  "It will be created in " + m.o.InitDir + " and abacus will use it from then on."}
+		Message: "No tracker here", Action: "create your fleet workspace (bd init)",
+		Detail: "It will be created in " + m.o.InitDir + " and abacus will use it from then on."}
 }
 
 // supportedSchema is the only `bd version --json` schema_version this module reads.
