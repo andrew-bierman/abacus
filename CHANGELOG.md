@@ -8,6 +8,7 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- README: supported platforms, verified on Linux amd64 from the release archive (doctor, setup, TUI with only bundled tools). A plan for Windows support is in `docs/plans/`.
 - The Board domain: channels, recent threads and messages (author, time, text) and open tasks
   with their state and claimant, read from the Vercel Board CLI (`@vercel/board`, `board` or
   `vb`) as a subprocess behind an argv allowlist and a scrubbed environment. Not found, not set
