@@ -24,6 +24,8 @@ type Report struct {
 	SchemaVersion int            `json:"schema_version"`
 	Version       string         `json:"version"`
 	Modules       []ModuleReport `json:"modules"`
+	// Domains is the fleet-domain view; additive, so schema_version stays 1. Set by `status`.
+	Domains *DomainsReport `json:"domains,omitempty"`
 }
 
 func newReport(version string) Report {

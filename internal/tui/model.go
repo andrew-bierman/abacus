@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"context"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -17,12 +18,11 @@ import (
 	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
-// tab is one header entry. Only ready modules (and doctor) have a section; the rest stay
-// visible, dimmed with their state, so a missing section is explained, not silent.
+// tab is one header entry: a fleet domain (or Doctor). Every domain always has a section: one
+// with no provider shows "not connected" and how to connect instead of disappearing.
 type tab struct {
-	name  string
-	state core.State
-	sec   section
+	name string
+	sec  section
 }
 
 // Model is the shell.
@@ -35,57 +35,122 @@ type Model struct {
 	showHelp bool
 }
 
+// config is what Options set before the sections are built.
+type config struct {
+	th       Theme
+	audit    core.Audit
+	fullView func(dir string) tea.Cmd
+}
+
 // Option customises the shell.
-type Option func(*Model)
+type Option func(*config)
 
 // WithTheme replaces the default (terminal-detected) theme.
-func WithTheme(t Theme) Option { return func(m *Model) { m.th = t } }
+func WithTheme(t Theme) Option { return func(c *config) { c.th = t } }
 
-// New builds the shell from detection entries. Absent tools get no tab.
+// WithAudit sets where Tasks writes are audited (default: the abacus state dir).
+func WithAudit(a core.Audit) Option { return func(c *config) { c.audit = a } }
+
+// WithFullView replaces the handoff to the full interactive view (tests inject a fake;
+// the default probes for it and runs it only on an explicit keypress).
+func WithFullView(f func(dir string) tea.Cmd) Option { return func(c *config) { c.fullView = f } }
+
+// New builds the cockpit from detection entries.
 func New(entries []core.Entry, opts ...Option) *Model {
 	return NewWithHandoff(entries, execHandoff, opts...)
 }
 
 // NewWithHandoff injects how a command is handed the terminal (default: run it in place).
 func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, opts ...Option) *Model {
-	m := &Model{th: DefaultTheme()}
+	cfg := &config{th: DefaultTheme(), fullView: defaultFullView}
 	for _, o := range opts {
-		o(m)
+		o(cfg)
 	}
+	m := &Model{th: cfg.th}
 	m.help = help.New()
 	m.help.Styles = m.th.HelpStyles()
 	m.help.ShortSeparator = " · "
+	prov := core.ResolveProviders(entries)
+	if cfg.audit == nil {
+		cfg.audit = core.DefaultAudit()
+	}
 	var present []core.Entry
 	for _, e := range entries {
-		if e.Detection.State == core.Absent {
-			continue
+		if e.Detection.State != core.Absent {
+			present = append(present, e)
 		}
-		present = append(present, e)
-		t := tab{name: e.Module.Name(), state: e.Detection.State}
-		if e.Detection.State == core.Ready {
-			t.sec = sectionFor(e.Module, handoff)
-		}
-		m.tabs = append(m.tabs, t)
 	}
-	if len(present) > 0 {
-		m.tabs = append(m.tabs, tab{name: "Doctor", state: core.Ready, sec: newDoctorSection(present)})
+	for _, d := range core.DomainOrder {
+		m.tabs = append(m.tabs, tab{name: d.Title(), sec: domainSection(d, prov, handoff, cfg)})
 	}
+	m.tabs = append(m.tabs, tab{name: "Doctor", sec: newDoctorSection(present)})
 	for _, t := range m.tabs {
-		if t.sec != nil {
-			t.sec.SetTheme(m.th)
-		}
+		t.sec.SetTheme(m.th)
 	}
-	m.sel = m.step(-1, 1)
 	return m
 }
 
-// sectionFor picks the dedicated section for a known module, else the generic status view.
-func sectionFor(mod core.Module, handoff func([]string) tea.Cmd) section {
-	if lm, ok := mod.(*lambe.Module); ok {
-		return newLambeSection(lm, handoff)
+// domainSection picks the section for a domain: the real one when a provider is usable,
+// otherwise the not-connected one.
+func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea.Cmd, cfg *config) section {
+	switch d {
+	case core.DomainBoard:
+		if p.Board != nil {
+			return newBoardSection(p.Board, cfg.fullView)
+		}
+	case core.DomainTasks:
+		if p.Tasks != nil {
+			return newTasksSection(p, cfg)
+		}
+	case core.DomainLeases:
+		if p.Leases != nil {
+			g := newGenericSection("leases", func(ctx context.Context) core.Status { return leasesStatus(p.Leases, ctx) })
+			g.title = "Leases"
+			return g
+		}
+	case core.DomainQueues:
+		if lm, ok := p.Queues.(*lambe.Module); ok {
+			return newLambeSection(lm, handoff)
+		}
 	}
-	return newGenericSection(mod)
+	h, ok := p.Missing[d]
+	if !ok { // a provider exists but this front-end has no renderer for it
+		h = core.Header{Domain: d, Title: d.Title(), State: core.NotConnected, Reason: "no view for this provider", HowToConnect: core.HowToConnect[d]}
+	}
+	var fv func(string) tea.Cmd
+	if d == core.DomainBoard || d == core.DomainTasks {
+		fv = cfg.fullView
+	}
+	return newNotConnectedSection(h, fv)
 }
+
+// leasesStatus reads the Leases domain and shapes the typed report as rows for the section.
+func leasesStatus(p core.LeaseProvider, ctx context.Context) core.Status {
+	r, err := p.Leases(ctx)
+	if err != nil {
+		return core.Status{Unavailable: core.Sanitize(err.Error())}
+	}
+	return r.Status()
+}
+
+// defaultFullView probes for the full-view tool and, only if it answers, hands it the
+// terminal in dir. It runs only from an explicit keypress, never at startup or in tests.
+func defaultFullView(dir string) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
+		bin, err := core.ProbeFullView(ctx, exec.LookPath, core.ExecRunner{})
+		cancel()
+		if err != nil {
+			return fullViewDoneMsg{err: err}
+		}
+		c := exec.Command(bin)
+		c.Dir = dir
+		return tea.ExecProcess(c, func(err error) tea.Msg { return fullViewDoneMsg{err: err} })()
+	}
+}
+
+// fullViewDoneMsg reports how the full-view handoff ended; a non-nil err is shown to the user.
+type fullViewDoneMsg struct{ err error }
 
 // execHandoff runs argv with the terminal, returning to the TUI when it exits. It is only
 // reached from an explicit keypress in a section.
@@ -113,33 +178,19 @@ func Run(entries []core.Entry) error {
 	return startProgram(New(entries), tea.WithAltScreen())
 }
 
-// step is the next selectable tab from index from in direction dir (wrapping), or from itself.
+// step is the next tab from index from in direction dir (wrapping).
 func (m *Model) step(from, dir int) int {
 	n := len(m.tabs)
-	for i := 1; i <= n; i++ {
-		j := ((from+dir*i)%n + n) % n
-		if m.tabs[j].sec != nil {
-			return j
-		}
-	}
-	return 0
+	return ((from+dir)%n + n) % n
 }
 
-func (m *Model) active() section {
-	if len(m.tabs) == 0 {
-		return nil
-	}
-	return m.tabs[m.sel].sec
-}
+func (m *Model) active() section { return m.tabs[m.sel].sec }
 
 func (m *Model) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	for _, t := range m.tabs {
-		if t.sec != nil {
-			cmds = append(cmds, t.sec.Init())
-		}
+		cmds = append(cmds, t.sec.Init())
 	}
-	// A shell whose only selectable tab is Doctor opens on it, so load it now.
 	if a, ok := m.active().(activator); ok {
 		cmds = append(cmds, a.activate())
 	}
@@ -172,7 +223,7 @@ func (m *Model) headerHeight() int {
 
 // goTo selects tab i if it is selectable, returning the section's lazy-load command.
 func (m *Model) goTo(i int) tea.Cmd {
-	if i < 0 || i >= len(m.tabs) || m.tabs[i].sec == nil {
+	if i < 0 || i >= len(m.tabs) {
 		return nil
 	}
 	m.sel = i
@@ -190,6 +241,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.broadcast(tea.WindowSizeMsg{Width: bw, Height: bh})
 	case tea.KeyMsg:
 		return m.key(msg)
+	case fullViewDoneMsg:
+		// Only the visible tab shows the notice: the other tab with a handoff would repeat it.
+		_, c := m.active().Update(msg)
+		return m, c
 	}
 	// Async results and ticks go to every section; each ignores message types it does not own.
 	return m, m.broadcast(msg)
@@ -198,21 +253,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) broadcast(msg tea.Msg) tea.Cmd {
 	var cmds []tea.Cmd
 	for _, t := range m.tabs {
-		if t.sec != nil {
-			_, c := t.sec.Update(msg)
-			cmds = append(cmds, c)
-		}
+		_, c := t.sec.Update(msg)
+		cmds = append(cmds, c)
 	}
 	return tea.Batch(cmds...)
 }
 
 func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || m.active() == nil || !m.active().Capturing()) {
-		return m, tea.Quit
-	}
 	sec := m.active()
-	if sec == nil {
-		return m, nil
+	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !sec.Capturing()) {
+		return m, tea.Quit
 	}
 	if sec.Capturing() {
 		_, cmd := sec.Update(k)
@@ -243,27 +293,11 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 // ShortHelp and FullHelp make the model a help.KeyMap: the footer and overlay are generated
 // from the same bindings the keys use. Escape hatches come first so a narrow footer keeps them.
 func (m *Model) ShortHelp() []key.Binding {
-	out := []key.Binding{keyHelp, keyQuit, keyNext}
-	if s := m.active(); s != nil {
-		out = append(out, s.Bindings()...)
-	}
-	return out
+	return append([]key.Binding{keyHelp, keyQuit, keyNext}, m.active().Bindings()...)
 }
 
 func (m *Model) FullHelp() [][]key.Binding {
-	groups := [][]key.Binding{{keyNext, keyPrev, keyJump, keyHelp, keyQuit}}
-	if s := m.active(); s != nil {
-		groups = append(groups, s.Bindings())
-	}
-	return groups
-}
-
-func (m *Model) tabLabel(t tab) string {
-	switch {
-	case t.sec == nil:
-		return m.th.TabDim.Render(t.name + " (" + string(t.state) + ")")
-	}
-	return t.name
+	return [][]key.Binding{{keyNext, keyPrev, keyJump, keyHelp, keyQuit}, m.active().Bindings()}
 }
 
 // headerLines is the tab bar (and a rule under it when tall enough). When the tabs do not
@@ -275,12 +309,9 @@ func (m *Model) headerLines(w int) []string {
 	}
 	parts := make([]string, len(m.tabs))
 	for i, t := range m.tabs {
-		switch {
-		case t.sec == nil:
-			parts[i] = m.tabLabel(t)
-		case i == m.sel:
+		if i == m.sel {
 			parts[i] = m.th.ActiveTab(t.name)
-		default:
+		} else {
 			parts[i] = m.th.TabIdle.Render(t.name)
 		}
 	}
@@ -315,11 +346,6 @@ func (m *Model) overlayLines(w int) []string {
 
 func (m *Model) View() string {
 	w := m.width()
-	if len(m.tabs) == 0 {
-		body := lipgloss.NewStyle().Width(w).Render("No Beads tools detected. Install one (for example lambe), then run `" + brand.Name + " doctor`.")
-		out := []string{trunc(m.th.Title.Render(brand.Name+" · Beads tool deck"), w), "", body, "", m.th.Text(KindMuted, "q quits")}
-		return strings.Join(m.fit(out, w, m.h), "\n")
-	}
 	head := m.headerLines(w)
 	var body []string
 	if m.showHelp {

@@ -1,0 +1,126 @@
+=== 40x10 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+Confirm this change
+
+  close task ac-12
+  title: "wire the lease heartbeat"
+
+exact command:
+  bd close ac-12
+
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+Confirm this change
+
+  close task ac-12
+  title: "wire the lease heartbeat"
+
+exact command:
+  bd close ac-12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x10 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+Confirm this change
+
+  close task ac-12
+  title: "wire the lease heartbeat"
+
+exact command:
+  bd close ac-12
+
+? help · q quit · tab/→ next tab · y apply · n/esc cancel
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Confirm this change
+
+  close task ac-12
+  title: "wire the lease heartbeat"
+
+exact command:
+  bd close ac-12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · y apply · n/esc cancel
+=== 120x10 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+Confirm this change
+
+  close task ac-12
+  title: "wire the lease heartbeat"
+
+exact command:
+  bd close ac-12
+
+? help · q quit · tab/→ next tab · y apply · n/esc cancel
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Confirm this change
+
+  close task ac-12
+  title: "wire the lease heartbeat"
+
+exact command:
+  bd close ac-12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · y apply · n/esc cancel

@@ -233,6 +233,9 @@ func (s *lambeSection) listLines(lw int) ([]string, int) {
 	if s.view.Source == lambe.SourceTracker {
 		head += " " + th.Badge(KindWarn, lambe.SourceTracker)
 	}
+	if s.m.IsDemo() {
+		head += " " + th.Badge(KindWarn, "demo data")
+	}
 	out := []string{head}
 	if s.view.Source == lambe.SourceTracker {
 		out = append(out, th.Text(KindMuted, "no live daemon, no phases or queue"))

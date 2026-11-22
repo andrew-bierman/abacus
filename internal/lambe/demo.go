@@ -15,7 +15,7 @@ func NewDemo() *Module { return New(Options{Demo: true}) }
 
 func demoView() (View, error) {
 	var v View
-	for name, dst := range map[string]any{"snapshot.json": &v.Snapshot, "queue.json": &v.Queue} {
+	for name, dst := range map[string]any{"snapshot.json": &v.Snapshot, "queue.json": &v.Queue, "history.json": &v.History} {
 		b, err := fixtures.ReadFile("testdata/contract/v1/" + name)
 		if err != nil {
 			return View{}, err

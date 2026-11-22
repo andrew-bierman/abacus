@@ -10,8 +10,8 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// genericPollEvery is deliberately slow: modules without a dedicated section (today
-// beads-lease) shell out to a shared production hub, so a 5s poll would be too heavy.
+// genericPollEvery is deliberately slow: the Leases read shells out to a shared production
+// hub, so a 5s poll would be too heavy.
 const genericPollEvery = 30 * time.Second
 
 // genericTickMsg is scoped to one module: the shell broadcasts messages to every section.
@@ -22,19 +22,21 @@ type genericMsg struct {
 	status core.Status
 }
 
-// genericSection shows any module's core status summary, so a new module gets a working
-// section before it has a dedicated one.
+// genericSection shows a domain read as a core.Status (summary, typed rows, source). The
+// Leases domain uses it: the fetch func turns the typed LeasesReport into rows.
 type genericSection struct {
-	m      core.Module
+	id     string
+	title  string // optional heading line (the domain name)
+	read   func(ctx context.Context) core.Status
 	status core.Status
 	loaded bool
 	tick   func() tea.Cmd // injectable so tests never sleep
 	linesSection
 }
 
-func newGenericSection(m core.Module) *genericSection {
-	return &genericSection{m: m, linesSection: linesSection{th: DefaultTheme()}, tick: func() tea.Cmd {
-		return tea.Tick(genericPollEvery, func(time.Time) tea.Msg { return genericTickMsg{id: m.ID()} })
+func newGenericSection(id string, read func(context.Context) core.Status) *genericSection {
+	return &genericSection{id: id, read: read, linesSection: linesSection{th: DefaultTheme()}, tick: func() tea.Cmd {
+		return tea.Tick(genericPollEvery, func(time.Time) tea.Msg { return genericTickMsg{id: id} })
 	}}
 }
 
@@ -46,7 +48,7 @@ func (s *genericSection) fetch() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
-		return genericMsg{id: s.m.ID(), status: s.m.Status(ctx)}
+		return genericMsg{id: s.id, status: s.read(ctx)}
 	}
 }
 
@@ -55,11 +57,11 @@ func (s *genericSection) Init() tea.Cmd { return tea.Batch(s.fetch(), s.tick()) 
 func (s *genericSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case genericMsg:
-		if m.id == s.m.ID() {
+		if m.id == s.id {
 			s.status, s.loaded = m.status, true
 		}
 	case genericTickMsg:
-		if m.id == s.m.ID() {
+		if m.id == s.id {
 			return s, tea.Batch(s.fetch(), s.tick())
 		}
 	case tea.WindowSizeMsg:
@@ -71,6 +73,14 @@ func (s *genericSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (s *genericSection) lines() []string {
+	out := s.bodyLines()
+	if s.title != "" {
+		return append([]string{s.th.Header.Render(s.title)}, out...)
+	}
+	return out
+}
+
+func (s *genericSection) bodyLines() []string {
 	th := s.th
 	w := s.width()
 	switch {

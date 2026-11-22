@@ -111,5 +111,8 @@ const SourceTracker = "tracker subset"
 type View struct {
 	Snapshot Snapshot
 	Queue    Queue
-	Source   string
+	History  History // best effort: empty when the history route is unavailable
+	// HistoryErr is why the history could not be read ("" when it was); sanitized with the rest.
+	HistoryErr string
+	Source     string
 }

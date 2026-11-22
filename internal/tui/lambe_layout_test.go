@@ -97,7 +97,7 @@ func TestHostileFieldsAreSanitizedInEveryPane(t *testing.T) {
 
 func TestLeaseStatesGetBadges(t *testing.T) {
 	g := fake("beads-lease", core.Ready)
-	s := newGenericSection(g)
+	s := genericFor(g)
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
 	m, _ = m.Update(genericMsg{id: "beads-lease", status: core.Status{Summary: "1 held, 1 stale, 1 free", Lines: []string{
@@ -115,7 +115,7 @@ func TestLeaseStatesGetBadges(t *testing.T) {
 }
 
 func TestTrackerSubsetAndSourceLabelsAreBadges(t *testing.T) {
-	s := newGenericSection(fake("g", core.Ready))
+	s := genericFor(fake("g", core.Ready))
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
 	m, _ = m.Update(genericMsg{id: "g", status: core.Status{Summary: "s", Source: "tracker subset"}})

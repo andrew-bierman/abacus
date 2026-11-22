@@ -23,13 +23,15 @@ type Options struct {
 // Deps are the process edges, injectable for tests.
 type Deps struct {
 	Out, Err io.Writer
+	In       io.Reader  // confirm prompts; nil means no input (a write then needs --yes)
+	Audit    core.Audit // nil means the default file audit log
 	Version  string
 	Build    func(Options) *core.Registry
 	RunTUI   func(entries []core.Entry) error
 }
 
 func usage(d Deps) {
-	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\ncommands:\n  version   print versions and which tools were detected\n  doctor    health checks across detected tools\n  status    state summary across detected tools\n  tui       interactive view, one section per detected tool\n\nflags: --json (version, doctor, status), --lambe-config FILE, --demo (tui)\n", brand.Name)
+	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     the board\n  tasks     task summary; tasks create|update|close change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
 }
 
 // Run dispatches a command and returns the process exit code.
@@ -41,6 +43,8 @@ func Run(args []string, d Deps) int {
 	cmd, rest := args[0], args[1:]
 	switch cmd {
 	case "version", "doctor", "status", "tui":
+	case "tasks", "leases", "queues", "board":
+		return runDomain(cmd, rest, d)
 	default:
 		fmt.Fprintf(d.Err, "unknown command %q\n", cmd)
 		usage(d)
@@ -55,7 +59,16 @@ func Run(args []string, d Deps) int {
 	if err := fs.Parse(rest); err != nil {
 		return core.ExitUsage
 	}
+	if fs.NArg() > 0 {
+		fmt.Fprintf(d.Err, "%s: unexpected argument %q\n", cmd, fs.Arg(0))
+		return core.ExitUsage
+	}
 	ctx := context.Background()
+	if cmd != "tui" { // the TUI is interactive and has no overall deadline
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, cliTimeout)
+		defer cancel()
+	}
 	entries := d.Build(o).Detect(ctx)
 	if cmd == "tui" {
 		if d.RunTUI == nil {
@@ -74,7 +87,7 @@ func Run(args []string, d Deps) int {
 	case "doctor":
 		r = core.DoctorReport(ctx, d.Version, entries)
 	case "status":
-		r = core.StatusReport(ctx, d.Version, entries)
+		r = core.FleetStatusReport(ctx, d.Version, entries)
 	}
 	if *asJSON {
 		enc := json.NewEncoder(d.Out)
@@ -94,9 +107,17 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 		}
 		return
 	}
-	if len(r.Modules) == 0 {
+	if len(r.Modules) == 0 && r.Domains == nil {
 		fmt.Fprintln(w, "no Beads tools detected")
 		return
+	}
+	if r.Domains != nil {
+		renderDomains(w, *r.Domains)
+		if len(r.Modules) > 0 {
+			fmt.Fprintln(w, "\nProviders")
+		} else {
+			fmt.Fprintln(w, "\nno Beads tools detected")
+		}
 	}
 	for _, m := range r.Modules {
 		fmt.Fprintf(w, "%s\n", m.Name)
@@ -126,12 +147,6 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 	}
 }
 
-// tuiEntries is what the TUI is handed: nothing when no tool is ready (it then shows its
-// guidance), otherwise every detected tool, so broken and incompatible ones appear as dimmed
-// tabs with their state instead of vanishing.
-func tuiEntries(entries []core.Entry) []core.Entry {
-	if len(core.ReadyOnly(entries)) == 0 {
-		return nil
-	}
-	return entries
-}
+// tuiEntries is what the TUI is handed: every detected provider. Domains never disappear, so
+// with nothing ready the TUI shows each one as not connected.
+func tuiEntries(entries []core.Entry) []core.Entry { return entries }

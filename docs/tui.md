@@ -1,9 +1,12 @@
 # abacus TUI
 
-The TUI renders core's typed reports and holds no logic of its own. abacus deliberately has
-no issue browser or kanban; tools such as b9s already do that. The TUI shows what is unique
-to abacus: a tab per detected module (Lambe runs, attention and queue; beads-lease held,
-stale and free leases), the Rex handoff, and doctor status.
+The TUI renders core's typed domain reports and holds no logic of its own. It is the fleet
+cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. abacus deliberately has
+no issue browser, kanban or dependency graph; Tasks and Board show a compact summary and hand off
+to a full view (`o`) for the rich board, tree and graph. Providers (the tools behind each domain)
+are named only in Doctor and in "how to connect" or error messages, never in navigation.
+
+A domain with no usable provider is still a tab: it says "not connected", why, and how to connect.
 
 ## Keys
 
@@ -12,22 +15,31 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 
 | Key | Action |
 | --- | --- |
-| `tab`, `right` / `shift+tab`, `left` | next / previous selectable tab |
-| `1`-`9` | jump to tab N (ignored for a dimmed tab) |
-| `j` `k`, `down` `up` | move the run cursor (scroll in the other tabs) |
-| `enter`, `esc` | narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
-| `/` | filter runs by issue, state, phase, machine or workflow; `enter` keeps it, `esc` clears it |
-| `o` | hand the selected run's machine to Rex (`rex -S <machine>`) |
-| `r` | Doctor tab: run doctor again |
+| `tab`, `right` / `shift+tab`, `left` | next / previous domain |
+| `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
+| `j` `k`, `down` `up` | move the cursor (scroll elsewhere) |
+| `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
+| `o` | Tasks and Board: open the full view in the tracker directory (probes for it first; an error notice with an install hint if it is missing). Queues: hand the selected run's machine to a session |
+| `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again |
+| `enter`, `esc` | Queues, narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
+| `/` | Queues: filter runs by issue, state, phase, machine or workflow |
 | `?` | full help overlay; `?` or `esc` closes it |
-| `q`, `ctrl+c` | quit (while typing a filter, only `ctrl+c`) |
+| `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
-While a filter is being typed, every key (including `q`, digits and `?`) goes to the filter.
+While a form, the confirm screen or the filter is open, every key (including `q`, digits and `?`)
+goes to it. Nothing writes except `y` on the confirm screen.
+
+## Tasks
+
+Counts by state, ready work, the most recent changes (a short list with a cursor, for `e` and `x`)
+and graph insights: the next pick, the issues that block the most, the critical path and dependency
+cycles. Insights are read on start and on `r`, not on a timer, because they run several processes.
+Without an insights provider the block says it is not connected and how to install one.
 
 ## Layout
 
 ```
- abacus  [Lambe] beads-lease ghost (broken) Doctor     header: module tabs
+ abacus  Board [Tasks] Leases Queues Doctor           header: domain tabs
  ───────────────────────────────────────────────
  list pane            │ detail pane                     body
  ───────────────────────────────────────────────
@@ -50,12 +62,11 @@ reach. Every line is truncated to the terminal width in display
 cells (wide characters and emoji count as their real width), with an ellipsis. Zero or tiny
 sizes never panic. Until the first size message arrives the shell assumes 80 columns.
 
-A tab for a module that was found but cannot be used (`broken`, `incompatible`) is dimmed and
-shows its state, for example `ghost (broken)`; it cannot be selected, and the Doctor tab says
-why. Modules that are not installed get no tab. `abacus tui` hands the TUI every detected tool
-whenever at least one is ready; with none ready it shows the "No Beads tools detected" guidance.
+A provider that was found but cannot be used (`broken`, `incompatible`) leaves its domain
+"not connected" with the reason; the Doctor tab says why. `abacus tui` always hands the TUI every
+detected provider.
 
-The Doctor tab runs `core.DoctorReport` the first time it is opened and on `r` (ignored while a
+The Doctor tab (the one place providers are listed by name) runs `core.DoctorReport` the first time it is opened and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
 other modules every 30 seconds.
@@ -72,14 +83,15 @@ appears in any other file.
 - `NO_COLOR` (or a terminal without color) turns styling off entirely. Structure then does
   not depend on color: badges become `(ok)`, `(held)`, `(stalled)`, the active tab is
   `[Lambe]`, the selected run has a `▸` marker, and dimmed tabs carry their state in text.
-- Badges: doctor `ok` `warn` `fail` `skip`, lease `held` `stale` `free`, `stalled`, `blocked`
-  and the `tracker subset` label.
+- Badges: doctor `ok` `warn` `fail` `skip`, lease `held` `stale` `free`, `stalled`, `blocked`,
+  `not connected` and the source labels (`tracker subset`, `graph analysis`).
 
 ## Tests
 
-Golden renders live in `internal/tui/testdata/golden/`, from demo and fixture data only.
+Golden renders live in `internal/tui/testdata/golden/`, from demo and fixture data only (fake
+providers; nothing runs a tool).
 Every scenario is rendered at widths 40, 80, 120 and heights 10, 30 with colors off, plus the
-Lambe tab in truecolor (light and dark, escape codes shown as `␛`).
+Queues tab in truecolor (light and dark, escape codes shown as `␛`).
 
 ```
 go test ./internal/tui                 # compare
@@ -90,3 +102,7 @@ Invariants checked for every scenario and many sizes: no line is wider than the 
 (display cells), no raw control characters reach the screen, header and footer are present.
 Goldens are rendered through a fixed color profile; they have not been inspected in a real
 terminal emulator.
+
+A domain-language test asserts that no header, rule or footer line on any tab, at any width,
+contains a provider name (Lambe, beads-lease, board-beads, b9s, Rex), connected or not. Tasks
+tests assert the confirm gate: no key path writes before `y`.

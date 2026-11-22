@@ -1,0 +1,126 @@
+=== 40x10 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+Tasks (not connected)
+
+how to connect: Install the Beads CLI
+(bd) and run abacus inside a tracker
+directory, or set ABACUS_BD_DIR to one.
+
+
+
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+Tasks (not connected)
+
+how to connect: Install the Beads CLI
+(bd) and run abacus inside a tracker
+directory, or set ABACUS_BD_DIR to one.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x10 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+Tasks (not connected)
+
+how to connect: Install the Beads CLI (bd) and run abacus inside a tracker
+directory, or set ABACUS_BD_DIR to one.
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Tasks (not connected)
+
+how to connect: Install the Beads CLI (bd) and run abacus inside a tracker
+directory, or set ABACUS_BD_DIR to one.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+=== 120x10 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+Tasks (not connected)
+
+how to connect: Install the Beads CLI (bd) and run abacus inside a tracker directory, or set ABACUS_BD_DIR to one.
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Tasks (not connected)
+
+how to connect: Install the Beads CLI (bd) and run abacus inside a tracker directory, or set ABACUS_BD_DIR to one.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view

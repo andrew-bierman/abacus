@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -206,6 +207,11 @@ func (m *Module) Read(ctx context.Context) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
+	// History is best effort: an older daemon without the route still shows runs and queue.
+	var herr error
+	if v.History, herr = c.History(ctx); herr != nil {
+		v.HistoryErr = herr.Error()
+	}
 	sanitizeView(&v)
 	return v, nil
 }
@@ -250,27 +256,20 @@ func (m *Module) Status(ctx context.Context) core.Status {
 	if err != nil {
 		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
-	var st core.Status
+	r := queuesReport(v, m.o.Demo)
+	st := core.Status{Summary: r.Summarize()}
 	if v.Source == SourceTracker {
-		st = core.Status{Source: SourceTracker, Summary: fmt.Sprintf("%d runs, %d need attention (%s, no live daemon)",
-			len(v.Snapshot.Runs), len(v.Snapshot.NeedsHuman), SourceTracker)}
-	} else {
-		st = core.Status{Summary: fmt.Sprintf("%d runs, %d queued, %d need attention",
-			len(v.Snapshot.Runs), len(v.Queue.Rows), len(v.Snapshot.NeedsHuman))}
+		st.Source = SourceTracker
 	}
-	for _, r := range v.Snapshot.Runs {
-		st.Lines = append(st.Lines, r.Line())
+	for _, x := range r.Runs {
+		st.Lines = append(st.Lines, x.Line())
 	}
 	return st
 }
 
 // Line is the one-line run summary every front-end shows.
 func (r Run) Line() string {
-	s := fmt.Sprintf("%s  %s  %s", r.Issue, orUnknown(r.State), orUnknown(r.Phase))
-	if r.Stalled {
-		s += "  (stalled)"
-	}
-	return s
+	return core.QueueRun{Issue: r.Issue, State: r.State, Phase: r.Phase, Stalled: r.Stalled}.Line()
 }
 
 func orUnknown(s string) string {
@@ -286,3 +285,48 @@ func (m *Module) IsDemo() bool { return m.o.Demo }
 // RexArgv is the command that hands a machine to Rex. A front-end decides how to run it,
 // and only in response to an explicit user action.
 func (m *Module) RexArgv(machine string) []string { return []string{"rex", "-S", machine} }
+
+// Queues is the Queues domain read. The Source is provider-neutral: a demo is a snapshot,
+// the tracker-only fallback is labelled as such, a live daemon read is live.
+func (m *Module) Queues(ctx context.Context) (core.QueuesReport, error) {
+	v, err := m.Read(ctx)
+	if err != nil {
+		return core.QueuesReport{}, errors.New(core.Sanitize(err.Error()))
+	}
+	return queuesReport(v, m.o.Demo), nil
+}
+
+func queuesReport(v View, demo bool) core.QueuesReport {
+	src := core.SourceLive
+	switch {
+	case demo:
+		src = core.SourceSnapshot
+	case v.Source == SourceTracker:
+		src = core.SourceTracker
+	}
+	r := core.QueuesReport{Header: core.Header{Source: src}}
+	var why []string
+	switch {
+	case demo:
+		why = append(why, "demo data: fixtures, no live daemon")
+	case v.Source == SourceTracker:
+		why = append(why, "no live daemon: showing the tracker's in-progress claims only")
+	}
+	if v.HistoryErr != "" {
+		why = append(why, "history unavailable: "+core.Sanitize(v.HistoryErr))
+	}
+	r.Reason = strings.Join(why, "; ")
+	for _, x := range v.Snapshot.Runs {
+		r.Runs = append(r.Runs, core.QueueRun{Issue: x.Issue, State: x.State, Phase: x.Phase, Machine: x.Machine, Stalled: x.Stalled})
+	}
+	for _, x := range v.Queue.Rows {
+		r.Queue = append(r.Queue, core.QueueItem{ID: x.ID, Title: x.Title, Blocked: x.Blocked})
+	}
+	for _, x := range v.Snapshot.NeedsHuman {
+		r.Attention = append(r.Attention, core.Attention{Issue: x.Issue, Reason: x.Reason, Detail: x.Detail})
+	}
+	for _, x := range v.History.Runs {
+		r.History = append(r.History, core.HistoryItem{Issue: x.Issue, Title: x.Title, Outcome: x.Outcome, UpdatedAt: x.UpdatedAt})
+	}
+	return r
+}
