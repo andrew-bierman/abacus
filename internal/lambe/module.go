@@ -30,8 +30,12 @@ type Options struct {
 	Identity   func(int) (string, error)
 	PidAlive   func(int) bool
 	Timeout    time.Duration
+	Now        func() time.Time // clock for the tracker cache; nil means time.Now
 	Demo       bool
 }
+
+// trackerTTL bounds how often the degraded read spawns `lambe status -json` while polled.
+const trackerTTL = 15 * time.Second
 
 // Module implements core.Module for Lambe.
 type Module struct {
@@ -40,6 +44,10 @@ type Module struct {
 
 	mu     sync.Mutex
 	cached string // cached `lambe state-dir -json` answer
+	tried  bool   // the state-dir command already ran (even if it failed) since Detect
+	// tracker is the last degraded view, reused until trackerAt+trackerTTL.
+	tracker   View
+	trackerAt time.Time
 }
 
 // allowedArgv is the whole set of lambe argvs this module may run, all read-only:
@@ -122,7 +130,9 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 		return core.Detection{State: core.Incompatible, Version: v.Version, APIVersion: v.APIVersion,
 			Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", v.APIVersion, SupportedAPIVersion)}
 	}
-	m.bin = bin
+	m.mu.Lock()
+	m.bin, m.cached, m.tried, m.trackerAt = bin, "", false, time.Time{}
+	m.mu.Unlock()
 	return core.Detection{State: core.Ready, Version: v.Version, APIVersion: v.APIVersion}
 }
 
@@ -136,21 +146,7 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	}
 	// Lambe exits 1 when a check fails but still prints the report; both are normal here.
 	out, exit, err := m.o.Runner.Run(ctx, m.bin, args...)
-	var raw []core.Check
-	if err != nil || json.Unmarshal(out, &raw) != nil {
-		return []core.Check{{Name: "lambe doctor", Status: core.StatusFail, Detail: "lambe doctor -json produced no readable report"}}
-	}
-	failed := false
-	for i := range raw {
-		raw[i].Name, raw[i].Detail, raw[i].Fix = core.Sanitize(raw[i].Name), core.Sanitize(raw[i].Detail), core.Sanitize(raw[i].Fix)
-		raw[i].Status = raw[i].Status.Normalize()
-		failed = failed || raw[i].Status == core.StatusFail
-	}
-	// Backstop: a non-zero exit with no failing check must not read as healthy.
-	if exit != 0 && !failed {
-		raw = append(raw, core.Check{Name: "lambe doctor", Status: core.StatusFail, Detail: fmt.Sprintf("exited %d without reporting a failed check", exit)})
-	}
-	return raw
+	return core.ReadDoctor("lambe", out, exit, err)
 }
 
 // stateDir resolves where descriptors live: an explicit option wins, then the answer from
@@ -165,7 +161,8 @@ func (m *Module) stateDir(ctx context.Context) string {
 	if m.cached != "" {
 		return m.cached
 	}
-	if m.bin != "" {
+	if m.bin != "" && !m.tried {
+		m.tried = true
 		var out struct {
 			StateDir string `json:"state_dir"`
 		}
@@ -220,6 +217,15 @@ func (m *Module) readTracker(ctx context.Context) (View, bool) {
 	if m.bin == "" {
 		return View{}, false
 	}
+	now := time.Now
+	if m.o.Now != nil {
+		now = m.o.Now
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.trackerAt.IsZero() && now().Sub(m.trackerAt) < trackerTTL {
+		return m.tracker, true
+	}
 	args := []string{"status", "-json"}
 	if m.o.ConfigPath != "" {
 		args = append(args, "-config", m.o.ConfigPath)
@@ -235,6 +241,7 @@ func (m *Module) readTracker(ctx context.Context) (View, bool) {
 	}
 	v := View{Snapshot: s, Source: SourceTracker}
 	sanitizeView(&v)
+	m.tracker, m.trackerAt = v, now()
 	return v, true
 }
 
@@ -243,11 +250,13 @@ func (m *Module) Status(ctx context.Context) core.Status {
 	if err != nil {
 		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
-	st := core.Status{Summary: fmt.Sprintf("%d runs, %d queued, %d need attention",
-		len(v.Snapshot.Runs), len(v.Queue.Rows), len(v.Snapshot.NeedsHuman))}
+	var st core.Status
 	if v.Source == SourceTracker {
-		st.Source = SourceTracker
-		st.Summary = fmt.Sprintf("%d runs, %d need attention (%s, no live daemon)", len(v.Snapshot.Runs), len(v.Snapshot.NeedsHuman), SourceTracker)
+		st = core.Status{Source: SourceTracker, Summary: fmt.Sprintf("%d runs, %d need attention (%s, no live daemon)",
+			len(v.Snapshot.Runs), len(v.Snapshot.NeedsHuman), SourceTracker)}
+	} else {
+		st = core.Status{Summary: fmt.Sprintf("%d runs, %d queued, %d need attention",
+			len(v.Snapshot.Runs), len(v.Queue.Rows), len(v.Snapshot.NeedsHuman))}
 	}
 	for _, r := range v.Snapshot.Runs {
 		st.Lines = append(st.Lines, r.Line())
