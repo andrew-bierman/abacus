@@ -1,5 +1,5 @@
 === 40x10 ===
- [Lambe]  1/4
+ Board  Tasks  Leases  [Queues]  Doctor
 T-1 (running)
 
 phase      gating
@@ -10,7 +10,7 @@ machine    operators-mac
 actor      lambe@operators-mac
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- [Lambe]  1/4
+ Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────
 T-1 (running)
 
@@ -41,7 +41,7 @@ last event 30s
 
 ? help · q quit · tab/→ next tab …
 === 80x10 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 T-1 (running)
 
 phase      gating
@@ -52,7 +52,7 @@ machine    operators-mac
 actor      lambe@operators-mac
 ? help · q quit · tab/→ next tab · ↑/↓ move · esc back · / filter …
 === 80x30 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 T-1 (running)
 
@@ -83,7 +83,7 @@ last event 30s
 
 ? help · q quit · tab/→ next tab · ↑/↓ move · esc back · / filter …
 === 120x10 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 Runs 3                                           │ T-1 (running)
 ▸ T-1     running  gating                        │
   T-2     deferred  deferred                     │ phase      gating
@@ -92,9 +92,9 @@ Runs 3                                           │ T-1 (running)
   ↕ +3 more                                      │ attempt    2
 Needs attention 1                                │ machine    operators-mac
   T-2  gate_failed  gh:pr rejected: merge confl… │ actor      lambe@operators-mac
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open in Rex
+? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
 === 120x30 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Runs 3                                           │ T-1 (running)
 ▸ T-1     running  gating                        │
@@ -123,4 +123,4 @@ Needs attention 1                                │
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open in Rex
+? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session

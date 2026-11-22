@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +11,11 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
 )
+
+// genericFor builds the status section over a fake module's scripted status.
+func genericFor(f *modtest.Fake) *genericSection {
+	return newGenericSection(f.IDStr, func(context.Context) core.Status { return f.Stat })
+}
 
 // run executes a command and feeds each resulting message to the section; a Batch is flattened.
 func run(t *testing.T, m tea.Model, cmd tea.Cmd) tea.Model {
@@ -31,7 +37,7 @@ func run(t *testing.T, m tea.Model, cmd tea.Cmd) tea.Model {
 
 func TestGenericSectionRefetchesOnEveryTick(t *testing.T) {
 	f := &modtest.Fake{IDStr: "g", Det: core.Detection{State: core.Ready}, Stat: core.Status{Summary: "v1"}}
-	s := newGenericSection(f)
+	s := genericFor(f)
 	s.tick = func() tea.Cmd { return nil } // never sleep in a test
 	var m tea.Model = s
 	m = run(t, m, s.Init())
@@ -48,7 +54,7 @@ func TestGenericSectionRefetchesOnEveryTick(t *testing.T) {
 
 func TestGenericSectionRecoversFromAFailedFirstRead(t *testing.T) {
 	f := &modtest.Fake{IDStr: "g", Det: core.Detection{State: core.Ready}, Stat: core.Status{Unavailable: "hub busy"}}
-	s := newGenericSection(f)
+	s := genericFor(f)
 	s.tick = func() tea.Cmd { return nil }
 	var m tea.Model = s
 	m = run(t, m, s.Init())
@@ -68,7 +74,7 @@ func TestGenericPollIntervalIsGentleOnSharedBackends(t *testing.T) {
 	if genericPollEvery < 30*time.Second {
 		t.Fatalf("genericPollEvery = %v, want at least 30s", genericPollEvery)
 	}
-	if s := newGenericSection(&modtest.Fake{IDStr: "g"}); s.tick == nil {
+	if s := genericFor(&modtest.Fake{IDStr: "g"}); s.tick == nil {
 		t.Fatal("the production section must schedule its own refresh")
 	}
 }
@@ -76,8 +82,8 @@ func TestGenericPollIntervalIsGentleOnSharedBackends(t *testing.T) {
 // The shell broadcasts every non-key message to every section, so a tick must be scoped to its
 // module: otherwise each extra generic section doubles the live timers (and hub polls).
 func TestATickForOneGenericSectionIsIgnoredByAnother(t *testing.T) {
-	a := newGenericSection(&modtest.Fake{IDStr: "a", Det: core.Detection{State: core.Ready}})
-	b := newGenericSection(&modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Ready}})
+	a := genericFor(&modtest.Fake{IDStr: "a", Det: core.Detection{State: core.Ready}})
+	b := genericFor(&modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Ready}})
 	ticks := 0
 	a.tick = func() tea.Cmd { ticks++; return nil }
 	b.tick = func() tea.Cmd { ticks++; return nil }

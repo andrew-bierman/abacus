@@ -89,7 +89,7 @@ func TestDoctorRefreshKeyIsIgnoredWhileARunIsPending(t *testing.T) {
 	c.Checks = []core.Check{{Name: "bin", Status: core.StatusOK}}
 	var m tea.Model = New(entriesFor2(c), WithTheme(asciiTheme()))
 	m = sized(m, 80, 20)
-	m, cmd := m.Update(runeKey("2"))
+	m, cmd := m.Update(runeKey("5"))
 	m = runCmd(m, cmd) // first open: one doctor run
 	if c.doctors.Load() != 1 {
 		t.Fatalf("first open ran doctor %d times", c.doctors.Load())
@@ -162,7 +162,7 @@ func TestRunProbesTheBackgroundBeforeBubbleTeOwnsTheTerminal(t *testing.T) {
 }
 
 func TestTypedLeaseRowsDriveBadgesNotTextParsing(t *testing.T) {
-	s := newGenericSection(fake("g", core.Ready))
+	s := genericFor(fake("g", core.Ready))
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
 	// Line text deliberately disagrees with the rows: the rows decide.
@@ -300,7 +300,7 @@ func TestScrollKeysMoveAndClampGenericAndDoctorAtSmallHeight(t *testing.T) {
 		lines = append(lines, fmt.Sprintf("L%02d  free", i))
 		rows = append(rows, core.Row{Resource: fmt.Sprintf("L%02d", i), State: "free", Tone: core.ToneOK})
 	}
-	g := newGenericSection(fake("g", core.Ready))
+	g := genericFor(fake("g", core.Ready))
 	g.SetTheme(asciiTheme())
 	d := newDoctorSection(nil)
 	d.SetTheme(asciiTheme())
@@ -355,7 +355,7 @@ func TestScrollKeysMoveAndClampGenericAndDoctorAtSmallHeight(t *testing.T) {
 
 func TestHostileFieldsInGenericAndDoctorSections(t *testing.T) {
 	bad := "x\x1b[2J\u202etxt\u200b\u200d\ufeff\x07y"
-	g := newGenericSection(fake("g", core.Ready))
+	g := genericFor(fake("g", core.Ready))
 	g.SetTheme(asciiTheme())
 	var m tea.Model = g
 	m, _ = m.Update(genericMsg{id: "g", status: core.Status{Summary: bad, Source: bad, Lines: []string{bad},
@@ -440,32 +440,9 @@ func TestFooterSurvivesHeightTwoAndOne(t *testing.T) {
 	for _, h := range []int{2, 3} {
 		mm := sized(m, 80, h)
 		ls := lines(mm)
-		if len(ls) != h || !strings.Contains(ls[len(ls)-1], "? help") || !strings.Contains(ls[0], "[Fake a]") {
+		if len(ls) != h || !strings.Contains(ls[len(ls)-1], "? help") || !strings.Contains(ls[0], "[Board]") {
 			t.Fatalf("h=%d: %q", h, ls)
 		}
-	}
-}
-
-func TestDoctorOnlyShellLoadsDoctorOnInit(t *testing.T) {
-	c := &counting{Fake: fake("a", core.Broken)}
-	var m tea.Model = New(entriesFor2(c), WithTheme(asciiTheme()))
-	m = sized(m, 80, 20)
-	cmd := m.Init()
-	if cmd == nil {
-		t.Fatal("Init must start the doctor load when Doctor is the only selectable tab")
-	}
-	msg := cmd()
-	if batch, ok := msg.(tea.BatchMsg); ok {
-		for _, c := range batch {
-			if c != nil {
-				m = runCmd(m, c)
-			}
-		}
-	} else {
-		m, _ = m.Update(msg)
-	}
-	if v := m.View(); !strings.Contains(v, "(broken)") || strings.Contains(v, "running doctor") {
-		t.Fatalf("doctor did not load:\n%s", v)
 	}
 }
 

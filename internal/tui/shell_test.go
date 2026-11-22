@@ -55,53 +55,6 @@ func press(m tea.Model, k string) tea.Model {
 
 func lines(m tea.Model) []string { return strings.Split(m.View(), "\n") }
 
-func TestBrokenAndIncompatibleTabsAreDimmedWithTheirStateAndNotSelectable(t *testing.T) {
-	a, b, c := fake("a", core.Ready), fake("b", core.Broken), fake("c", core.Incompatible)
-	a.Stat = core.Status{Summary: "summary-a"}
-	var m tea.Model = New(entriesFor(a, b, c), WithTheme(asciiTheme()))
-	m = sized(m, 100, 20)
-	m, _ = m.Update(genericMsg{id: "a", status: a.Stat})
-	head := lines(m)[0]
-	for _, want := range []string{"Fake a", "Fake b (broken)", "Fake c (incompatible)"} {
-		if !strings.Contains(head, want) {
-			t.Errorf("header %q missing %q", head, want)
-		}
-	}
-	m = press(m, "tab")
-	if got := lines(m)[0]; !strings.Contains(got, "Doctor") {
-		t.Fatal("tab must skip the dimmed tabs")
-	}
-	m = press(m, "1")
-	if !strings.Contains(m.View(), "summary-a") {
-		t.Fatalf("1 selects the first tab:\n%s", m.View())
-	}
-	m = press(m, "2") // broken tab: not selectable
-	if !strings.Contains(m.View(), "summary-a") {
-		t.Fatalf("a dimmed tab must not be selectable:\n%s", m.View())
-	}
-}
-
-func TestDimmedTabUsesTheMutedStyleAndReadyTabDoesNot(t *testing.T) {
-	th := NewTheme(rendererFor(termenv.TrueColor, true))
-	a, b := fake("a", core.Ready), fake("b", core.Broken)
-	var m tea.Model = New(entriesFor(a, b), WithTheme(th))
-	m = sized(m, 100, 20)
-	head := lines(m)[0]
-	muted := th.TabDim.Render("Fake b (broken)")
-	idle := th.TabIdle.Render("Fake b (broken)")
-	if !strings.Contains(head, muted) || muted == idle {
-		t.Fatalf("broken tab not dimmed.\nheader=%q\nmuted =%q", head, muted)
-	}
-}
-
-func TestAbsentModulesGetNoTab(t *testing.T) {
-	var m tea.Model = New(entriesFor(fake("a", core.Ready), fake("z", core.Absent)), WithTheme(asciiTheme()))
-	m = sized(m, 100, 20)
-	if strings.Contains(m.View(), "Fake z") {
-		t.Fatal("absent module shown")
-	}
-}
-
 func TestHelpOverlayTogglesAndFooterIsGeneratedFromBindings(t *testing.T) {
 	var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
 	m = sized(m, 100, 20)
@@ -130,17 +83,18 @@ func TestHelpOverlayTogglesAndFooterIsGeneratedFromBindings(t *testing.T) {
 
 func TestFilterModeCapturesGlobalKeys(t *testing.T) {
 	demo := lambe.NewDemo()
-	var m tea.Model = New([]core.Entry{{Module: demo, Detection: demo.Detect(context.Background())}, {Module: fake("b", core.Ready), Detection: core.Detection{State: core.Ready}}}, WithTheme(asciiTheme()))
+	var m tea.Model = New([]core.Entry{{Module: demo, Detection: demo.Detect(context.Background())}}, WithTheme(asciiTheme()))
 	m = sized(m, 100, 20)
 	v, _ := demo.Read(context.Background())
 	m, _ = m.Update(lambeViewMsg{view: v})
+	m = press(m, "4") // Queues
 	m = press(m, "/")
 	m, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	if cmd != nil {
 		t.Fatal("q while typing a filter must not quit")
 	}
 	m = press(m, "2")
-	if !strings.Contains(lines(m)[0], "Lambe") || !strings.Contains(m.View(), "/q2") {
+	if !strings.Contains(lines(m)[0], "[Queues]") || !strings.Contains(m.View(), "/q2") {
 		t.Fatalf("digits must go to the filter, not switch tabs:\n%s", m.View())
 	}
 	m = press(m, "esc")
@@ -155,10 +109,10 @@ func TestDoctorTabLoadsOnFirstSelectionFromTheTypedReport(t *testing.T) {
 	a.Checks = []core.Check{{Name: "bin", Status: core.StatusOK, Detail: "found"}, {Name: "hub", Status: core.StatusFail, Detail: "down", Fix: "restart it"}}
 	var m tea.Model = New(entriesFor(a, fake("b", core.Broken)), WithTheme(asciiTheme()))
 	m = sized(m, 100, 20)
-	m, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("3")}) // a, b (dimmed), Doctor
+	m, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("5")}) // Doctor
 	m = run(t, m, cmd)
 	v := m.View()
-	for _, want := range []string{"Fake a", "(ok)", "bin", "(fail)", "hub", "restart it", "(broken)"} {
+	for _, want := range []string{"Fake a", "(ok)", "bin", "(fail)", "hub", "restart it", "(broken)", "Fake b"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("doctor view missing %q:\n%s", want, v)
 		}
@@ -191,13 +145,13 @@ func TestDegenerateSizesNeverPanicAndKeepHeaderAndFooter(t *testing.T) {
 }
 
 func TestActiveTabIsMarkedEvenWithoutColor(t *testing.T) {
-	var m tea.Model = New(entriesFor(fake("a", core.Ready), fake("b", core.Ready)), WithTheme(asciiTheme()))
+	var m tea.Model = New(nil, WithTheme(asciiTheme()))
 	m = sized(m, 100, 20)
-	if h := lines(m)[0]; !strings.Contains(h, "[Fake a]") || strings.Contains(h, "[Fake b]") {
+	if h := lines(m)[0]; !strings.Contains(h, "[Board]") || strings.Contains(h, "[Tasks]") {
 		t.Fatalf("header %q", h)
 	}
 	m = press(m, "tab")
-	if h := lines(m)[0]; !strings.Contains(h, "[Fake b]") {
+	if h := lines(m)[0]; !strings.Contains(h, "[Tasks]") {
 		t.Fatalf("header %q", h)
 	}
 }

@@ -13,6 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 	"unicode"
+
+	"github.com/andrew-bierman/abacus/internal/brand"
 )
 
 // TaskOp is a Tasks write verb. Delete is deliberately not offered.
@@ -221,10 +223,10 @@ func FileAudit(path string) Audit { return &fileAudit{path: path} }
 // DefaultAuditPath is $XDG_STATE_HOME/abacus/audit.jsonl or ~/.local/state/abacus/audit.jsonl.
 func DefaultAuditPath() string {
 	if x := os.Getenv("XDG_STATE_HOME"); x != "" {
-		return filepath.Join(x, "abacus", "audit.jsonl")
+		return filepath.Join(x, brand.Name, "audit.jsonl")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".local", "state", "abacus", "audit.jsonl")
+	return filepath.Join(home, ".local", "state", brand.Name, "audit.jsonl")
 }
 
 func (f *fileAudit) Record(e AuditEntry) error {

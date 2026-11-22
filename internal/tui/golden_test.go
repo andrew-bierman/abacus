@@ -44,18 +44,68 @@ type scenario struct {
 	empty bool     // no tabs: the header/footer invariant does not apply
 }
 
-func leaseFake() named {
+// leaseProv is a fixture Leases provider (a fake module that also provides the domain).
+type leaseProv struct{ named }
+
+func (leaseProv) Leases(context.Context) (core.LeasesReport, error) {
+	return core.LeasesReport{Header: core.Header{Source: core.SourceLive}, Leases: []core.Lease{
+		{Resource: "ac-zoj", State: core.LeaseHeld, Holder: "glm-scheduler-01", ExpiresAt: "12m"},
+		{Resource: "ac-00h", State: core.LeaseHeld, Holder: "codex-macbookpro", ExpiresAt: "3m"},
+		{Resource: "ac-1k2", State: core.LeaseStale, Holder: "claude-mac"},
+		{Resource: "ac-9x1", State: core.LeaseFree}}}, nil
+}
+
+func leaseFake() leaseProv {
 	f := &modtest.Fake{IDStr: "beads-lease", Det: core.Detection{State: core.Ready, Version: "1.0.0"}}
-	f.Stat = core.Status{Summary: "2 held, 1 stale, 1 free", Lines: []string{
-		"ac-zoj  held by glm-scheduler-01 (expires 12m)", "ac-00h  held by codex-macbookpro (expires 3m)",
-		"ac-1k2  stale (last holder claude-mac)", "ac-9x1  free"}}
-	f.Stat.Rows = []core.Row{
-		{Resource: "ac-zoj", State: "held", Tone: core.ToneInfo, Detail: "by glm-scheduler-01 (expires 12m)"},
-		{Resource: "ac-00h", State: "held", Tone: core.ToneInfo, Detail: "by codex-macbookpro (expires 3m)"},
-		{Resource: "ac-1k2", State: "stale", Tone: core.ToneWarn, Detail: "(last holder claude-mac)"},
-		{Resource: "ac-9x1", State: "free", Tone: core.ToneOK}}
 	f.Checks = []core.Check{{Name: "hub reachable", Status: core.StatusOK, Detail: "fixture"}, {Name: "lease schema", Status: core.StatusWarn, Detail: "newer minor version", Fix: "upgrade beads-lease"}}
-	return named{f, "beads-lease"}
+	return leaseProv{named{f, "beads-lease"}}
+}
+
+// taskProv is a fixture Tasks provider and writer; it records writes and never touches a tracker.
+type taskProv struct {
+	named
+	ran *[][]string
+}
+
+func fixtureTasks() core.TasksReport {
+	return core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 14, Open: 6, InProgress: 3, Blocked: 2, Deferred: 1, Closed: 2, Ready: 4},
+		Recent: []core.Task{
+			{ID: "ac-12", Title: "wire the lease heartbeat", Status: "in_progress", Priority: 1},
+			{ID: "ac-09", Title: "queue attention digest", Status: "open", Priority: 2},
+			{ID: "ac-03", Title: "retire the old poller", Status: "closed", Priority: 3}}}
+}
+
+func fixtureInsights() core.InsightsReport {
+	return core.InsightsReport{Header: core.Header{Source: core.SourceGraph, State: core.Connected}, TotalActionable: 4, TotalBlocked: 2,
+		TopPicks:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
+		Blockers:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
+		CriticalPath: []core.Ranked{{ID: "ac-12", Value: 3}, {ID: "ac-09", Value: 2}},
+		Cycles:       [][]string{{"ac-20", "ac-21", "ac-20"}}}
+}
+
+func (taskProv) Tasks(context.Context) (core.TasksReport, error) { return fixtureTasks(), nil }
+func (taskProv) Insights(context.Context) (core.InsightsReport, error) {
+	return fixtureInsights(), nil
+}
+func (p taskProv) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
+	a := []string{"bd", string(ch.Op)}
+	if ch.ID != "" {
+		a = append(a, ch.ID)
+	}
+	if ch.Title != "" {
+		a = append(a, "--title="+ch.Title)
+	}
+	return a, nil
+}
+func (p taskProv) RunTask(_ context.Context, argv []string) (core.TaskResult, error) {
+	*p.ran = append(*p.ran, argv)
+	return core.TaskResult{ID: "ac-99", Title: "made"}, nil
+}
+func (taskProv) TrackerDir() string { return "" }
+
+func tasksFake() taskProv {
+	f := &modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1.3.4"}}
+	return taskProv{named{f, "bd"}, new([][]string)}
 }
 
 func brokenFake() named {
@@ -63,17 +113,24 @@ func brokenFake() named {
 	return named{f, "ghost"}
 }
 
+type memAudit struct{ n int }
+
+func (a *memAudit) Record(core.AuditEntry) error { a.n++; return nil }
+
+func noFullView(string) tea.Cmd { return nil }
+
 // load wires the shell to fixture data by injecting the messages the commands would deliver.
 func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 	t.Helper()
 	demo := lambe.NewDemo()
-	lease, ghost := leaseFake(), brokenFake()
+	lease, tasks, ghost := leaseFake(), tasksFake(), brokenFake()
 	en := []core.Entry{
 		{Module: demo, Detection: demo.Detect(context.Background())},
 		{Module: lease, Detection: lease.Det},
+		{Module: tasks, Detection: tasks.Det},
 		{Module: ghost, Detection: ghost.Det},
 	}
-	var m tea.Model = New(en, WithTheme(th))
+	var m tea.Model = New(en, WithTheme(th), WithFullView(noFullView), WithAudit(&memAudit{}))
 	v, err := demo.Read(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -82,7 +139,9 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 		v = view(v)
 	}
 	m, _ = m.Update(lambeViewMsg{view: v})
-	m, _ = m.Update(genericMsg{id: "beads-lease", status: lease.Stat})
+	m, _ = m.Update(genericMsg{id: "leases", status: leasesStatus(lease, context.Background())})
+	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
+	m, _ = m.Update(insightsMsg{report: fixtureInsights()})
 	m, _ = m.Update(doctorMsg{report: core.DoctorReport(context.Background(), "", en)})
 	return m
 }
@@ -90,23 +149,27 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 func scenarios() []scenario {
 	std := func(t *testing.T, th Theme) tea.Model { return load(t, th, nil) }
 	return []scenario{
-		{name: "lambe", build: std, tab: "Lambe"},
-		{name: "lambe-drilled", build: std, keys: []string{"enter"}, tab: "Lambe"},
-		{name: "lambe-tracker", tab: "Lambe", build: func(t *testing.T, th Theme) tea.Model {
+		{name: "queues", build: std, keys: []string{"4"}, tab: "Queues"},
+		{name: "queues-drilled", build: std, keys: []string{"4", "enter"}, tab: "Queues"},
+		{name: "queues-tracker", keys: []string{"4"}, tab: "Queues", build: func(t *testing.T, th Theme) tea.Model {
 			return load(t, th, func(v lambe.View) lambe.View { v.Source, v.Queue = lambe.SourceTracker, lambe.Queue{}; return v })
 		}},
-		{name: "leases", build: std, keys: []string{"2"}, tab: "beads-lease"},
-		{name: "doctor", build: std, keys: []string{"4"}, tab: "Doctor"},
-		{name: "help", build: std, keys: []string{"?"}, tab: "Lambe"},
-		{name: "empty", build: func(*testing.T, Theme) tea.Model { return New(nil) }, empty: true},
+		{name: "tasks", build: std, keys: []string{"2"}, tab: "Tasks"},
+		{name: "tasks-new", build: std, keys: []string{"2", "n", "h", "i"}, tab: "Tasks"},
+		{name: "tasks-confirm", build: std, keys: []string{"2", "x"}, tab: "Tasks"},
+		{name: "leases", build: std, keys: []string{"3"}, tab: "Leases"},
+		{name: "board", build: std, tab: "Board"},
+		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
+		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
+		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks"},
 	}
 }
 
 func render(t *testing.T, sc scenario, th Theme, w, h int) string {
 	t.Helper()
 	m := sc.build(t, th)
-	if sc.empty {
-		m = New(nil, WithTheme(th))
+	if sc.name == "none" {
+		m = New(nil, WithTheme(th), WithFullView(noFullView))
 	}
 	m = sized(m, w, h)
 	for _, k := range sc.keys {
@@ -169,9 +232,9 @@ func TestGoldenAsciiRenders(t *testing.T) {
 func TestGoldenTrueColorTheme(t *testing.T) {
 	for _, dark := range []bool{true, false} {
 		th := NewTheme(rendererFor(termenv.TrueColor, dark))
-		name := "lambe.truecolor-dark.golden"
+		name := "queues.truecolor-dark.golden"
 		if !dark {
-			name = "lambe.truecolor-light.golden"
+			name = "queues.truecolor-light.golden"
 		}
 		got := strings.ReplaceAll(render(t, scenarios()[0], th, 120, 30), "\x1b", "␛")
 		checkGolden(t, name, got, true)
@@ -201,7 +264,7 @@ func invariantErrs(sc scenario, out string, w, h int) []string {
 	if !strings.Contains(ls[0], sc.tab) {
 		errs = append(errs, fmt.Sprintf("header %q lacks the tab %q", ls[0], sc.tab))
 	}
-	if sc.name != "empty" && !strings.Contains(ls[0], "["+sc.tab+"]") && w >= 60 {
+	if !strings.Contains(ls[0], "["+sc.tab+"]") && w >= 60 {
 		errs = append(errs, fmt.Sprintf("header %q does not mark %q active", ls[0], sc.tab))
 	}
 	last := ls[len(ls)-1]
@@ -227,7 +290,7 @@ func TestEveryRenderRespectsWidthHeightAndKeepsItsChrome(t *testing.T) {
 }
 
 func expectedGoldens() map[string]bool {
-	want := map[string]bool{"lambe.truecolor-dark.golden": true, "lambe.truecolor-light.golden": true}
+	want := map[string]bool{"queues.truecolor-dark.golden": true, "queues.truecolor-light.golden": true}
 	for _, sc := range scenarios() {
 		want[sc.name+".ascii.golden"] = true
 	}
@@ -255,7 +318,7 @@ func TestNoOrphanedGoldens(t *testing.T) {
 
 // The README's 80-column sample is the Lambe golden, not a hand-copied picture.
 func TestReadmeSampleMatchesTheGolden(t *testing.T) {
-	golden, err := os.ReadFile(filepath.Join("testdata", "golden", "lambe.ascii.golden"))
+	golden, err := os.ReadFile(filepath.Join("testdata", "golden", "tasks.ascii.golden"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,13 +328,13 @@ func TestReadmeSampleMatchesTheGolden(t *testing.T) {
 	for len(ls) > 0 && ls[len(ls)-1] == "" {
 		ls = ls[:len(ls)-1]
 	}
-	want := strings.Join(append(ls[:13:13], foot), "\n")
+	want := strings.Join(append(ls[:17:17], foot), "\n")
 	path := filepath.Join("..", "..", "README.md")
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	const marker = "data plus a fixture beads-lease tab and a fixture broken tool:\n\n```\n"
+	const marker = "data from fixture providers:\n\n```\n"
 	head, rest, ok := strings.Cut(string(raw), marker)
 	if !ok {
 		t.Fatal("README sample marker not found")

@@ -1,5 +1,5 @@
 === 40x10 ===
- [Lambe]  1/4
+ Board  Tasks  Leases  [Queues]  Doctor
 Runs 3 (tracker subset)
 no live daemon, no phases or queue
 ▸ T-1     running  gating
@@ -10,7 +10,7 @@ Needs attention 1
   T-2  gate_failed  gh:pr rejected: mer…
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- [Lambe]  1/4
+ Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────
 Runs 3 (tracker subset)
 no live daemon, no phases or queue
@@ -41,7 +41,7 @@ Needs attention 1
 
 ? help · q quit · tab/→ next tab …
 === 80x10 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 Runs 3 (tracker subset)
 no live daemon, no phases or queue
 ▸ T-1     running  gating
@@ -52,7 +52,7 @@ Needs attention 1
   T-2  gate_failed  gh:pr rejected: merge conflict
 ? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
 === 80x30 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Runs 3 (tracker subset)
 no live daemon, no phases or queue
@@ -83,7 +83,7 @@ Needs attention 1
 
 ? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
 === 120x10 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 Runs 3 (tracker subset)                          │ T-1 (running)
 no live daemon, no phases or queue               │
 ▸ T-1     running  gating                        │ phase      gating
@@ -92,9 +92,9 @@ no live daemon, no phases or queue               │
                                                  │ attempt    2
 Needs attention 1                                │ machine    operators-mac
   T-2  gate_failed  gh:pr rejected: merge confl… │ actor      lambe@operators-mac
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open in Rex
+? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
 === 120x30 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Runs 3 (tracker subset)                          │ T-1 (running)
 no live daemon, no phases or queue               │
@@ -123,4 +123,4 @@ Needs attention 1                                │ machine    operators-mac
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open in Rex
+? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session

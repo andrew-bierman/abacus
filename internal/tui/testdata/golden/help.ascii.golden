@@ -1,5 +1,5 @@
 === 40x10 ===
- [Lambe]  1/4
+ [Board]  Tasks  Leases  Queues  Doctor
 Keys
 
   tab/→         next tab
@@ -10,7 +10,7 @@ Keys
 
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- [Lambe]  1/4
+ [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────
 Keys
 
@@ -21,11 +21,11 @@ Keys
   q             quit
 
   ↑/↓           move
-  enter         details
-  /             filter
-  o             open in Rex
+  o             full view
 
 ? or esc closes
+
+
 
 
 
@@ -41,7 +41,7 @@ Keys
 
 ? help · q quit · tab/→ next tab …
 === 80x10 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor
 Keys
 
   tab/→         next tab
@@ -50,9 +50,9 @@ Keys
   ?             help
   q             quit
 
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
 === 80x30 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Keys
 
@@ -63,9 +63,7 @@ Keys
   q             quit
 
   ↑/↓           move
-  enter         details
-  /             filter
-  o             open in Rex
+  o             full view
 
 ? or esc closes
 
@@ -81,9 +79,11 @@ Keys
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
 === 120x10 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor
 Keys
 
   tab/→         next tab
@@ -92,9 +92,9 @@ Keys
   ?             help
   q             quit
 
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open in Rex
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
 === 120x30 ===
-abacus   [Lambe]  beads-lease  ghost (broken)  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Keys
 
@@ -105,8 +105,7 @@ Keys
   q             quit
 
   ↑/↓           move
-  /             filter
-  o             open in Rex
+  o             full view
 
 ? or esc closes
 
@@ -123,4 +122,5 @@ Keys
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open in Rex
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
