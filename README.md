@@ -217,7 +217,7 @@ retrying", never "not applied", and the audit log records phase `unknown`.
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
 `ABACUS_BV_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
-`ABACUS_BEADSLEASE_BIN`, `ABACUS_BOARD_BIN`, `ABACUS_BOARD_URL` (also `abacus config set board_url`).
+`ABACUS_BEADSLEASE_BIN`, `ABACUS_BOARD_BIN`, `ABACUS_BOARD_URL` (also `abacus config set board_url`; the shell's `BOARD_URL` is used last). A board URL must be https, or http only for a local board, with no query or fragment. The Board JSON no longer has `columns` or `insights` (never populated with Board data): see the CHANGELOG.
 Leases need an actor name: `BEADS_ACTOR` in the environment, or
 `abacus config set actor NAME` (the environment wins).
 
@@ -229,7 +229,7 @@ with `-`; no edit, delete, react, attach or task claim/complete). Every change i
 needs an explicit yes: `y` on the TUI confirm screen, or the `[y/N]` prompt (`--yes` skips it,
 `--dry-run` prints the change and the command and runs nothing). A change can be applied once, every
 attempt is appended to an audit log (`$XDG_STATE_HOME/abacus/audit.jsonl`), and if the log cannot be
-written nothing runs. Writes are limited by an allowlist (create, update, close; no delete; for the Board only post and reply). A board post carries an idempotency key, is re-read by id afterwards, and a timeout is "result unknown", never "not applied". The TUI Board tab is read only: composing from it is not built yet.
+written nothing runs. Writes are limited by an allowlist (create, update, close; no delete; for the Board only post and reply). A board post carries an idempotency key derived from (board, op, destination, text, 10-minute window) so a retry posts at most once (and an identical post within ten minutes counts as that retry), is re-read by id afterwards, and anything unclear (timeout, cancel, network error, unreadable answer) is "result unknown", never "not applied". The confirm shows the board URL and where it came from, what a reply answers, and whether a post creates a new channel. The TUI Board tab is read only: composing from it is not built yet.
 The first-run setup steps (workspace, actor name, Queues config) go through the same confirm,
 single-use and audit gate. Leases and Queues writes are blocked upstream: see `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
 
