@@ -6,8 +6,15 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-22
+
+Works out of the box: a self-contained archive and guided first-run setup.
+
 ### Added
 
+- CI on every pull request and push to main (gofmt, vet, shellcheck, tests), and a release
+  workflow that builds the four archives from a version tag. The release workflow needs the
+  `ABACUS_RELEASE_TOKEN` secret to read the private beads-lease release.
 - Works out of the box: the release archive bundles `bd`, `bv`, Lambe and beads-lease as
   sidecar binaries in `bundled/` (pinned and sha256-verified in `bundled-tools.json`, built by
   `scripts/package-release.sh`, refreshed with `scripts/update-bundled-tools.sh`), with their
