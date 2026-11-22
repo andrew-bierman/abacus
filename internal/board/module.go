@@ -331,7 +331,7 @@ func (m *Module) classify(exit int, stderr []byte) error {
 	case "login_required":
 		return &core.NotConnectedError{Reason: core.BoardNotSignedInReason, HowToConnect: core.BoardNotSignedIn}
 	case "network_error", "timeout":
-		return errors.New("could not reach the board; check board_url and the network, then press r")
+		return errors.New("could not reach the board")
 	}
 	msg := f.Message
 	if msg == "" {
