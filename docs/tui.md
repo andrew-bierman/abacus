@@ -7,6 +7,11 @@ to a full view (`o`) for the rich board, tree and graph. Providers (the tools be
 are named only in Doctor and in "how to connect" or error messages, never in navigation.
 
 A domain with no usable provider is still a tab: it says "not connected", why, and how to connect.
+A domain whose tool is present but not set up shows one guided line instead ("No tracker here,
+press `i` to create your fleet workspace (bd init)", "Leases need an actor name, press `s`",
+"Queues need a supervisor config, press `s`"). The key opens a confirm screen with the exact
+command; `y` applies it once (audited), `n` or `esc` cancels. While a tab is guided, its other
+keys do nothing. Nothing is created or started without that `y`.
 
 ## Keys
 
@@ -20,6 +25,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `j` `k`, `down` `up` | move the cursor (scroll elsewhere) |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
 | `o` | Tasks and Board: open the full view in the tracker directory (probes for it first; an error notice with an install hint if it is missing). Queues: hand the selected run's machine to a session |
+| `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again |
 | `enter`, `esc` | Queues, narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
 | `/` | Queues: filter runs by issue, state, phase, machine or workflow |
@@ -66,7 +72,9 @@ A provider that was found but cannot be used (`broken`, `incompatible`) leaves i
 "not connected" with the reason; the Doctor tab says why. `abacus tui` always hands the TUI every
 detected provider.
 
-The Doctor tab (the one place providers are listed by name) runs `core.DoctorReport` the first time it is opened and on `r` (ignored while a
+The Doctor tab (the one place providers are listed by name) leads with "Ready" or "Needs attention",
+one line per area, and each tool with where it was found (`bundled`, `PATH`, `override` or
+`missing`) and its version, then the detailed checks. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
 other modules every 30 seconds.
