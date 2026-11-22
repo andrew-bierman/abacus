@@ -89,3 +89,45 @@ func TestTimeoutAndCancelAreTypedErrors(t *testing.T) {
 		t.Fatalf("cancel err = %v", err)
 	}
 }
+
+func TestExecRunnerScrubsTheInheritedEnvironmentBeforeAddingItsOwn(t *testing.T) {
+	t.Setenv("BEADS_DIR", "/real/tracker")
+	t.Setenv("BD_SOCKET", "/real/sock")
+	t.Setenv("BEADS_ACTOR", "kept")
+	t.Setenv("KEEP_ME", "yes")
+	r := core.ExecRunner{Scrub: core.ScrubBeadsEnv, Env: func() []string { return []string{"BEADS_ACTOR=added"} }}
+	out, _, err := r.Run(context.Background(), writeScript(t, `env`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	for _, bad := range []string{"BEADS_DIR=", "BD_SOCKET="} {
+		if strings.Contains(s, bad) {
+			t.Errorf("%s leaked into the child environment", bad)
+		}
+	}
+	if !strings.Contains(s, "KEEP_ME=yes") || !strings.Contains(s, "BEADS_ACTOR=added") {
+		t.Errorf("unrelated or explicitly added variables must survive:\n%s", s)
+	}
+}
+
+func TestExecRunnerKillsTheWholeProcessGroupOnTimeout(t *testing.T) {
+	pidFile := filepath.Join(t.TempDir(), "child.pid")
+	script := writeScript(t, `sleep 30 &
+echo $! > `+pidFile+`
+wait`)
+	r := core.ExecRunner{Timeout: 300 * time.Millisecond}
+	if _, _, err := r.Run(context.Background(), script); err == nil {
+		t.Fatal("want a timeout")
+	}
+	b, err := os.ReadFile(pidFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid := strings.TrimSpace(string(b))
+	time.Sleep(200 * time.Millisecond)
+	if err := exec.Command("kill", "-0", pid).Run(); err == nil {
+		exec.Command("kill", "-9", pid).Run()
+		t.Fatalf("the grandchild %s outlived the timed-out command", pid)
+	}
+}

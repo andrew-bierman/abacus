@@ -2,9 +2,13 @@ package tui
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -40,7 +44,7 @@ func (s *doctorSection) fetch() tea.Cmd {
 	s.pending = true
 	seq, entries := s.seq, s.entries
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), doctorTimeout)
 		defer cancel()
 		return doctorMsg{report: core.DoctorReport(ctx, "", entries), seq: seq}
 	}
@@ -49,11 +53,11 @@ func (s *doctorSection) fetch() tea.Cmd {
 func (s *doctorSection) Init() tea.Cmd { return nil }
 
 func (s *doctorSection) activate() tea.Cmd {
-	if s.asked || s.loaded {
+	if s.pending { // a run is already in flight
 		return nil
 	}
 	s.asked = true
-	return s.fetch()
+	return s.fetch() // every visit re-runs doctor: what you set up elsewhere shows up here
 }
 
 func (s *doctorSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -108,6 +112,12 @@ func (s *doctorSection) lines() []string {
 	if s.pending {
 		out = append(out, th.Text(KindMuted, "running doctor…"), "")
 	}
+	if ov := s.report.Overview; ov != nil {
+		out = append(out, s.overviewLines(*ov)...)
+		if len(s.report.Modules) > 0 {
+			out = append(out, "", th.Header.Render("Details"))
+		}
+	}
 	if len(s.report.Modules) == 0 {
 		return append(out, th.Text(KindMuted, "no tools to check"))
 	}
@@ -132,3 +142,76 @@ func (s *doctorSection) lines() []string {
 }
 
 func (s *doctorSection) View() string { return s.render(s.lines()) }
+
+// doctorTimeout is Doctor's own deadline: it runs every tool's doctor, which can take far longer
+// than the 8s a single section read gets.
+const doctorTimeout = 30 * time.Second
+
+// tuiLine is a domain's one-liner in front-end words: the setup key, not the CLI command.
+func tuiLine(l core.DomainLine) string {
+	if l.Guide != nil {
+		return l.Guide.Message + " — press " + stepKey(l.Guide.Step) + " on the " + l.Title + " tab"
+	}
+	return l.Line
+}
+
+// hang wraps text to w cells with a hanging indent, so a wrapped line stays under its label.
+func hang(prefix, text string, w int) []string {
+	pw := lipgloss.Width(prefix)
+	parts := wrap(text, max(w-pw, 8))
+	for i := range parts {
+		if i == 0 {
+			parts[i] = prefix + parts[i]
+		} else {
+			parts[i] = strings.Repeat(" ", pw) + parts[i]
+		}
+	}
+	return parts
+}
+
+// overviewLines leads Doctor: ready or needs attention in plain language, each area in one
+// line, and each tool with where it came from.
+func (s *doctorSection) overviewLines(ov core.Overview) []string {
+	th, w := s.th, s.width()
+	todo := 0
+	for _, l := range ov.Domains {
+		if l.Domain != core.DomainBoard && l.State != core.Connected {
+			todo++
+		}
+	}
+	var out []string
+	switch {
+	case ov.Ready && todo == 0:
+		out = append(out, th.Badge(KindOK, "Ready"))
+	case ov.Ready:
+		out = append(out, th.Badge(KindOK, "Ready")+" "+th.Text(KindMuted, strings.TrimSpace(strings.TrimPrefix(ov.Headline, "Ready"))))
+	default:
+		out = append(out, th.Badge(KindWarn, "Needs attention")+" "+th.Text(KindMuted, fmt.Sprintf("%d to set up, see below", todo)))
+	}
+	out = append(out, "", th.Header.Render("Areas"))
+	for _, l := range ov.Domains {
+		kind := KindMuted
+		switch l.State {
+		case core.Connected:
+			kind = KindOK
+		case core.NeedsSetup, core.Degraded:
+			kind = KindWarn
+		}
+		out = append(out, hang("  "+th.Label.Render(padTo(san(l.Title), 7))+" ", th.Text(kind, san(tuiLine(l))), w)...)
+	}
+	out = append(out, "", th.Header.Render("Tools"))
+	for _, t := range ov.Tools {
+		where := th.Badge(KindSkip, "missing")
+		switch t.Where {
+		case "bundled":
+			where = th.Badge(KindOK, "bundled")
+		case "PATH", "override":
+			where = th.Badge(KindMuted, san(t.Where))
+		}
+		out = append(out, "  "+th.Label.Render(padTo(san(t.ID), 12))+" "+where+" "+th.Text(KindMuted, san(t.Version)))
+		if t.Note != "" {
+			out = append(out, hang("    ", th.Text(KindWarn, san(t.Note)), w)...)
+		}
+	}
+	return out
+}

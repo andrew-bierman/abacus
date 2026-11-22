@@ -9,17 +9,112 @@ the tools that supply the data are providers behind each view (see Providers).
 > repo is private until then. The name lives in `internal/brand`, the module path in
 > `go.mod`, and the `cmd/` directory name.
 
+## Install
+
+Download the archive for your platform from the releases page (`abacus_VERSION_OS_ARCH.tar.gz`,
+for darwin or linux on amd64 or arm64), extract it and run it:
+
+```
+tar -xzf abacus_VERSION_darwin_arm64.tar.gz
+cd abacus_VERSION_darwin_arm64
+./abacus
+```
+
+Nothing else needs to be installed. The archive carries the tools abacus talks to (`bd`, `bv`,
+Lambe and beads-lease) in `bundled/`, and abacus finds them there. Keep the folder together: if
+you copy `abacus` somewhere else, copy `bundled/` with it (or symlink `abacus`; the link is
+followed to the real folder).
+
+On first run each tab that needs one-time setup says so in one line and offers a key for it, and
+shows the exact command before anything happens (see First run below). Press `Tab` to move
+between tabs and `?` for keys.
+
+On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it once with
+`xattr -dr com.apple.quarantine abacus_VERSION_darwin_arm64`.
+
 ## Domains
 
 | Domain | What you see | What you can change today |
 | --- | --- | --- |
 | Board | the board and epic lanes | nothing yet: not connected until a Board contract exists |
-| Tasks | counts by state, ready work, recent changes, graph insights (next pick, blockers, critical path, cycles) | create, update, close (with a confirm step) |
+| Tasks | counts by state, ready work, recent changes, graph insights (next pick, blockers, critical path, cycles) | create, update, close (with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
 `abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders.
+
+## First run
+
+A fresh machine has no tracker, no actor name and no supervisor config. abacus never creates any
+of them silently. Each is a setup step with a plain one-line prompt, a confirm screen that shows
+the exact command, and an audit entry; none starts a daemon.
+
+| Tab | Prompt | Key | What it does |
+| --- | --- | --- | --- |
+| Tasks | No tracker here, press `i` to create your fleet workspace | `i` | `bd init` in `$XDG_DATA_HOME/abacus/workspace` (or `~/.local/share/abacus/workspace`) with the fixed flags `--non-interactive --quiet --skip-agents --skip-hooks --prefix=abacus`; the folder is then remembered in the config |
+| Leases | Leases need an actor name | `s` | saves a suggested actor name (user and machine) in the config; `abacus config set actor NAME` changes it |
+| Queues | Queues need a supervisor config | `s` | `lambe init -non-interactive -config <abacus config dir>/lambe.yaml`, run in the workspace: writes a starter config and a starter WORKFLOW.md and formula there. It starts nothing; you run `lambe run -config ...` yourself. Needs the workspace first |
+
+`abacus setup [--json] [--yes] [--dry-run]` reports the same steps and, with `--yes` (or a `y` at
+the prompt on a terminal), performs them through the same gate. Without input or `--yes` it only
+reports. Leases also need a coordination hub (beads-lease reads one through its `coord`
+wrapper, `BEADS_LEASE_COORD`); abacus cannot create a shared hub, so on a machine without one
+Leases says so plainly and stays out of the way.
+
+Settings live in `$XDG_CONFIG_HOME/abacus/config.json` (written atomically, mode 0600):
+`abacus config show|get KEY|set KEY VALUE|path` with the keys `actor`, `tracker_dir` and
+`lambe_config`. The tracker used by Tasks is chosen in this order: `ABACUS_BD_DIR`, a tracker at
+or above the working directory, `tracker_dir` from the config, an existing managed workspace.
+
+An empty tracker is not an error: Insights reads "no tasks yet" and bv is not run. If bv fails on
+a tracker that has tasks, the tab says so in one plain line and the reason is in Doctor.
+
+## Bundled tools
+
+The release archive is built by `scripts/package-release.sh VERSION` from the pins in
+`bundled-tools.json`: each tool's repository, version, per-platform asset name and sha256, and
+the sha256 of its license. The script downloads each asset with `gh`, checks the sha256 against
+the pin (any mismatch fails the build), extracts only the one executable into `bundled/`, copies
+each tool's license verbatim into `third_party/<tool>/LICENSE` and writes
+`THIRD_PARTY_NOTICES.md`. It publishes nothing.
+
+| Tool | Version | License |
+| --- | --- | --- |
+| bd, [Beads](https://github.com/steveyegge/beads) | 1.3.4 | MIT |
+| bv, [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) | 0.27.0 | MIT with an OpenAI/Anthropic rider, shipped unmodified |
+| [Lambe](https://github.com/andrew-bierman/lambe) | 0.10.1 | GPL-3.0 |
+| [beads-lease](https://github.com/andrew-bierman/beads-lease), installed as `beads-lease` | 0.1.0 | MIT |
+
+The tools stay separate programs run as subprocesses; abacus imports none of their code.
+Read `THIRD_PARTY_NOTICES.md` and `third_party/bv/LICENSE` before redistributing the archive.
+
+**Where abacus looks for a tool**, first match wins: an explicit `ABACUS_*_BIN`; then the
+directory of the abacus executable (symlinks resolved), `../libexec/abacus/` and `bundled/`
+next to it; then your `PATH`. A bundled copy is run only if it is a regular, executable file
+that is not world-writable and not in a world-writable directory. Doctor shows, for every tool,
+whether it is `bundled`, from `PATH` or an override, or missing, with its version. Child tools
+see the sidecar directories first on `PATH`, so bv finds the bundled bd.
+
+**The manifest, field by field.** Hand-edited: `schema`, `note`, and per tool `name` (the file
+name in `bundled/`; it must equal the tool names abacus looks for, a test checks it), `repo`,
+`license` (display name), `tag_template`, `asset_template` and `member` (with `{version}`, `{os}`
+and `{arch}` placeholders), `checksums_asset`, `license_source` (`{from: archive, member}` or
+`{from: tag, path}`). Written only by `scripts/update-bundled-tools.sh`: `version`, `assets`
+(platform to asset, sha256 and member) and `license_sha256`. The same list is at the top of
+`scripts/lib/bundle.sh`, which both scripts share.
+
+**Refreshing a pin:** `scripts/update-bundled-tools.sh TOOL VERSION` (or `--all` to re-pin the
+current versions). It reads each platform's sha256 from the tool's upstream checksum file,
+downloads the asset with your `gh` login and fails unless the download matches. If upstream
+published no checksum for an asset it stops; `--trust-first-download` pins the hash of that one
+download instead (say so in the PR; all four tools publish checksums today, so none needed it).
+Then run `scripts/package-release.sh VERSION --platforms darwin-arm64 --out DIR` to check the
+result. Both scripts need `jq` (and `gh` to download), and read `ABACUS_BUNDLE_CACHE` (default
+`.cache/bundle`) and `ABACUS_BUNDLE_MANIFEST` (default `bundled-tools.json`). Archives are built
+in a work directory and moved into the output directory only after every platform succeeded;
+tar members that are links, absolute or contain `..` are refused before anything is read. The
+scripts are tested offline (`internal/release`) with fake archives and a fake `gh`.
 
 ## Architecture
 
@@ -38,14 +133,18 @@ Providers are invisible in navigation and appear only here, in Doctor and in "ho
 or error messages that help you fix one.
 
 - **Beads (`bd`)**: Tasks reads and writes. Reads always run `--readonly`; writes go through a
-  separate allowlist and the confirm step.
+  separate allowlist (create, update, close, and the fixed `init` of the first-run workspace) and
+  the confirm step.
 - **beads-lease**: Leases (read only).
-- **Lambe**: Queues (read only; demo and a tracker-only fallback exist).
+- **Lambe**: Queues (read only, plus the one confirmed `lambe init` of the first-run setup; demo
+  and a tracker-only fallback exist).
 - **bv**: graph insights for Tasks and Board, run as a subprocess in `--robot-*` JSON mode only.
-  Not installed? Tasks says so and how to install it.
+  Not found? Tasks says so and how to get it.
 - **b9s**: works with b9s for the full board, tree and graph view: press `o` on Tasks or Board to
   open it in the tracker directory (probes for it first; shows an install hint if it is missing).
-- **Board**: no provider yet (the Board contract is an open decision upstream).
+- **Board**: no provider yet: the Board contract is an open decision upstream (board-beads
+  issue 15). The tab only says it is not connected and points to `o` for b9s; the upstream detail
+  lives here and in Doctor.
 
 ## Credits & ecosystem
 
@@ -63,6 +162,7 @@ or error messages that help you fix one.
   production Lambe daemon, its state, its binary or real Beads data.
 - Nothing here launches an app or takes window focus. Tests use fakes for Lambe, HTTP and Rex; the only real
   tools tests run are `bd` and `bv`, against temp projects with an isolated `HOME`, and they skip when absent.
+  Sidecar tests use fake binaries in temp dirs.
 - Use a private `GOCACHE` for builds.
 
 Note: the two `signalZero` bodies under `internal/lambe` are kept separate on purpose; they port
@@ -78,8 +178,10 @@ abacus tasks create [--title T] [--description D] [--priority N] [--type X] [--y
 abacus tasks update ID [--title T] [--description D] [--priority N] [--status S] [--yes] [--dry-run]
 abacus tasks close  ID [--reason R] [--yes] [--dry-run]
 abacus tui     [--demo]
+abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
+abacus config  show [--json] | get KEY | set KEY VALUE | path
 abacus status  [--json] [--lambe-config FILE]     domains plus provider state
-abacus doctor  [--json] [--lambe-config FILE]
+abacus doctor  [--json] [--lambe-config FILE]     leads with ready or needs attention
 abacus version [--json]
 ```
 
@@ -100,7 +202,8 @@ retrying", never "not applied", and the audit log records phase `unknown`.
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
 `ABACUS_BV_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
-`ABACUS_BEADSLEASE_BIN`. Leases need your `BEADS_ACTOR` set.
+`ABACUS_BEADSLEASE_BIN`. Leases need an actor name: `BEADS_ACTOR` in the environment, or
+`abacus config set actor NAME` (the environment wins).
 
 ### Writes
 
@@ -109,11 +212,13 @@ needs an explicit yes: `y` on the TUI confirm screen, or the `[y/N]` prompt (`--
 `--dry-run` prints the change and the command and runs nothing). A change can be applied once, every
 attempt is appended to an audit log (`$XDG_STATE_HOME/abacus/audit.jsonl`), and if the log cannot be
 written nothing runs. Writes are limited by an allowlist (create, update, close; no delete).
-Leases, Queues and Board writes are blocked upstream: see `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
+The first-run setup steps (workspace, actor name, Queues config) go through the same confirm,
+single-use and audit gate. Leases, Queues and Board writes are blocked upstream: see `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
 
 ### TUI
 
-`abacus tui` has one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. In Queues, below 100
+`abacus tui` has one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. A tab whose tool
+needs one-time setup shows a single prompt (see First run) instead of an error. In Queues, below 100
 columns the list fills the screen and Enter drills into a run; at 100 and wider the run detail sits
 beside the list. This is the 80-column Tasks render with colors off (`NO_COLOR`), from the golden test,
 using data from fixture providers:

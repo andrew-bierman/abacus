@@ -227,6 +227,7 @@ type tasksSection struct {
 	changedNote string          // on the confirm screen: the issue changed, or could not be checked
 	tasksBusy   bool            // a refresh is in flight: r is ignored
 	insBusy     bool
+	wantIns     bool // insights are read after the next tasks read: an empty tracker skips bv
 
 	th Theme
 	geom
@@ -289,7 +290,14 @@ func (s *tasksSection) verify(id string) tea.Cmd {
 }
 
 func (s *tasksSection) Init() tea.Cmd {
-	return tea.Batch(s.fetchTasks(), s.fetchInsights(), s.tick())
+	s.wantIns = true
+	return tea.Batch(s.fetchTasks(), s.tick())
+}
+
+// refresh reloads everything now (after a setup step created the tracker).
+func (s *tasksSection) refresh() tea.Cmd {
+	s.wantIns = true
+	return s.fetchTasks()
 }
 
 func (s *tasksSection) recent() []core.Task { return s.report.Recent }
@@ -299,6 +307,19 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tasksMsg:
 		s.report, s.err, s.loaded, s.tasksBusy = m.report, m.err, true, false
 		s.reanchor()
+		if s.err == nil {
+			wasEmpty := s.insights != nil && s.insights.Empty
+			switch {
+			case s.report.Counts.Total == 0: // nothing to analyze: not a failure, and bv is not run
+				e := core.EmptyInsights()
+				s.insights, s.wantIns = &e, false
+			case s.wantIns || wasEmpty: // first read, a refresh, or the first task just appeared
+				s.wantIns = false
+				if !s.insBusy {
+					return s, s.fetchInsights()
+				}
+			}
+		}
 	case insightsMsg:
 		s.insights, s.insBusy = &m.report, false
 	case taskVerifiedMsg:
@@ -399,17 +420,11 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		s.cursor = min(max(0, len(s.recent())-1), s.cursor+1)
 		s.remember()
 	case key.Matches(k, keyReload):
-		var cmds []tea.Cmd
-		if !s.tasksBusy {
-			cmds = append(cmds, s.fetchTasks())
-		}
-		if !s.insBusy {
-			cmds = append(cmds, s.fetchInsights())
-		}
-		if len(cmds) == 0 {
+		if s.tasksBusy {
 			return s, nil
 		}
-		return s, tea.Batch(cmds...)
+		s.wantIns = true
+		return s, s.fetchTasks()
 	case key.Matches(k, keyFull):
 		dir := ""
 		if s.writer != nil {
@@ -609,7 +624,11 @@ func (s *tasksSection) lines() ([]string, int) {
 		out = append(out, th.Header.Render("Recent changes"))
 		cursorLine = len(out)
 		if len(s.recent()) == 0 {
-			out = append(out, th.Text(KindMuted, "  none"))
+			if s.report.Counts.Total == 0 {
+				out = append(out, th.Text(KindMuted, "  no tasks yet — press n to add the first one"))
+			} else {
+				out = append(out, th.Text(KindMuted, "  none"))
+			}
 		}
 		for i, t := range s.recent() {
 			row := fmt.Sprintf("%s  %s  P%d  %s", padTo(trunc(san(t.ID), 12), 12), orDash(t.Status), t.Priority, san(t.Title))
@@ -633,8 +652,12 @@ func (s *tasksSection) insightLines(w int) []string {
 	in := s.insights
 	head := th.Header.Render("Insights")
 	switch {
+	case in == nil && s.err != nil:
+		return nil
 	case in == nil:
 		return []string{head, th.Text(KindMuted, "  loading…")}
+	case in.Empty:
+		return []string{head + " " + th.Badge(KindMuted, "no tasks yet"), th.Text(KindMuted, "  next picks, blockers and the critical path appear once there are tasks")}
 	case in.State == core.NotConnected:
 		return append([]string{head + " " + th.Badge(KindSkip, "not connected")}, wrap(san(in.HowToConnect), w)...)
 	case in.State == core.Degraded && in.Reason != "" && len(in.TopPicks) == 0 && len(in.Cycles) == 0 && in.TotalActionable == 0:

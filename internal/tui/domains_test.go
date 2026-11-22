@@ -488,3 +488,19 @@ func TestDomainBodiesNameNoToolOutsideFixMessages(t *testing.T) {
 		}
 	}
 }
+
+func TestInsightsFollowAnEmptyTrackerOnceItHasATask(t *testing.T) {
+	r := newTasksRig(t)
+	sec := r.m.(*Model).tabs[1].sec.(*tasksSection)
+	empty := fixtureTasks()
+	empty.Counts = core.TaskCounts{}
+	empty.Recent = nil
+	_, cmd := sec.Update(tasksMsg{report: empty})
+	if cmd != nil || sec.insights == nil || !sec.insights.Empty {
+		t.Fatalf("an empty tracker says no tasks yet and runs nothing: cmd=%v ins=%+v", cmd != nil, sec.insights)
+	}
+	_, cmd = sec.Update(tasksMsg{report: fixtureTasks()})
+	if cmd == nil {
+		t.Fatal("the first task must trigger an insights read, not leave 'no tasks yet' on screen")
+	}
+}

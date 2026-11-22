@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -19,22 +20,29 @@ import (
 // Options configure the module; every process boundary is injectable.
 type Options struct {
 	Bin      string
-	Dir      string // working directory for bv (its tracker); empty means the current one
-	Label    string // optional --label scope
-	Recipe   string // optional --recipe scope
+	Dir      string           // working directory for bv (its tracker); empty means the current one
+	Ref      *core.TrackerRef // when set, replaces Dir: the tracker directory shared with bd
+	Label    string           // optional --label scope
+	Recipe   string           // optional --recipe scope
 	LookPath func(string) (string, error)
 	Runner   core.Runner
 	Timeout  time.Duration
 }
 
 type Module struct {
-	o   Options
-	bin string
+	core.Locator
+	o    Options
+	live bool // the runner is a real process runner (not an injected fake)
+
+	mu      sync.Mutex
+	lastErr string // why the last insights read failed, for Doctor
 }
 
 func New(o Options) *Module {
+	m := &Module{}
 	if o.Runner == nil {
-		o.Runner = core.ExecRunner{Dir: o.Dir}
+		m.live = true // a real process, in whatever tracker directory is current
+		o.Runner = core.ExecRunner{Dir: o.Dir, Scrub: core.ScrubBeadsEnv}
 	}
 	if o.LookPath == nil {
 		o.LookPath = exec.LookPath
@@ -42,24 +50,62 @@ func New(o Options) *Module {
 	if o.Timeout <= 0 {
 		o.Timeout = core.DefaultExecTimeout
 	}
-	return &Module{o: o}
+	m.o = o
+	return m
+}
+
+// runner is the process runner; a real one follows the shared tracker directory, so a
+// workspace created while abacus runs is analyzed without a restart.
+func (m *Module) runner() core.Runner {
+	if m.live && m.o.Ref != nil {
+		return core.ExecRunner{Dir: m.o.Ref.Dir(), Scrub: core.ScrubBeadsEnv}
+	}
+	return m.o.Runner
 }
 
 func (m *Module) ID() string   { return "bv" }
 func (m *Module) Name() string { return "bv" }
 
-// Detect is by PATH lookup alone: abacus runs nothing to detect it.
-func (m *Module) Detect(context.Context) core.Detection {
-	bin, absent := core.Locate("bv", m.o.Bin, m.o.LookPath)
+var versionRE = regexp.MustCompile(`^bv\s+v?(\d+\.\d+\S*)`)
+
+// Detect finds the binary and, best effort, asks it `bv --version` for display. A failing
+// version call never makes bv unusable: only the robot reads decide that.
+func (m *Module) Detect(ctx context.Context) core.Detection {
+	f, absent := m.Find("bv", m.o.Bin, m.o.LookPath)
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
-	m.bin = bin
-	return core.Detection{State: core.Ready}
+	bin := f.Bin
+	d := core.Detection{State: core.Ready}
+	vctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
+	defer cancel()
+	if out, exit, err := m.runner().Run(vctx, bin, "--version"); err == nil && exit == 0 {
+		if sm := versionRE.FindStringSubmatch(strings.TrimSpace(core.Sanitize(string(out)))); sm != nil {
+			d.Version = sm[1]
+		}
+	}
+	return d
 }
 
+func (m *Module) setErr(err error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.lastErr = ""
+	if err != nil {
+		m.lastErr = core.Sanitize(err.Error())
+	}
+}
+
+// Doctor reports where bv was found and, if the last insights read failed, the one-line reason:
+// that detail lives here and not on the Tasks tab.
 func (m *Module) Doctor(context.Context) []core.Check {
-	return []core.Check{{Name: "installation", Status: core.StatusOK, Detail: "found at " + core.Sanitize(m.bin) + " (detected by PATH only)"}}
+	m.mu.Lock()
+	last := m.lastErr
+	m.mu.Unlock()
+	if last != "" {
+		return []core.Check{{Name: "insights", Status: core.StatusWarn, Detail: "the last graph-insights read failed: " + last, Fix: "check that bd can read this tracker (bd status), then press r"}}
+	}
+	return []core.Check{{Name: "installation", Status: core.StatusOK, Detail: "found at " + core.Sanitize(m.Bin())}}
 }
 
 func (m *Module) Status(ctx context.Context) core.Status {
@@ -118,7 +164,7 @@ func (m *Module) run(ctx context.Context, mode string, into any) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	out, exit, err := m.o.Runner.Run(ctx, m.bin, a...)
+	out, exit, err := m.runner().Run(ctx, m.Bin(), a...)
 	if err != nil {
 		return fmt.Errorf("could not run: %s", core.Sanitize(err.Error()))
 	}
@@ -279,8 +325,11 @@ func (m *Module) Insights(ctx context.Context) (core.InsightsReport, error) {
 		r.GraphNodes, r.GraphEdges = count(g.Nodes), count(g.Edges)
 	}
 	if len(failed) == len(modes) {
-		return core.InsightsReport{}, errors.New(strings.Join(why, "; "))
+		err := errors.New(strings.Join(why, "; "))
+		m.setErr(err)
+		return core.InsightsReport{}, err
 	}
+	m.setErr(nil)
 	if len(why) > 0 {
 		r.Reason = strings.Join(why, "; ")
 	}

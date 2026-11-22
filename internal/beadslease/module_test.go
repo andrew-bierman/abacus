@@ -132,8 +132,8 @@ func TestUsageErrorNamesTheMissingActorVariableWithoutControlCharacters(t *testi
 	body := `{"schemaVersion":1,"ok":false,"error":{"reason":"usage","exitCode":2,"message":"BEADS_ACTOR is not set; export BEADS_ACTOR=<agent-machine>\u001b[2J"}}`
 	m := newMod(&fake{resp: map[string]result{"--json list": {out: body, exit: 2}}}, Options{})
 	st := m.Status(context.Background())
-	if !strings.Contains(st.Unavailable, "BEADS_ACTOR is not set") {
-		t.Fatalf("unavailable = %q, want the actor variable named", st.Unavailable)
+	if !strings.Contains(st.Unavailable, "actor name") {
+		t.Fatalf("unavailable = %q, want the missing actor named", st.Unavailable)
 	}
 	for _, r := range st.Unavailable {
 		if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
@@ -469,5 +469,49 @@ func TestLeasesReturnsAnErrorWhenTheListIsUnavailable(t *testing.T) {
 	m.Detect(context.Background())
 	if _, err := m.Leases(context.Background()); err == nil {
 		t.Fatal("want an error")
+	}
+}
+
+func TestMissingActorIsAGuidedSetupStateNotAnError(t *testing.T) {
+	t.Setenv("BEADS_ACTOR", "")
+	body := `{"schemaVersion":1,"ok":false,"error":{"reason":"invalid-argument","exitCode":64,"message":"BEADS_ACTOR is not set; export BEADS_ACTOR=<agent-machine>"}}`
+	m := newMod(&fake{resp: map[string]result{"--json list": {out: body, exit: 64}}}, Options{})
+	_, err := m.Leases(context.Background())
+	g, ok := core.AsNeedsSetup(err)
+	if !ok || g.Step != core.StepActor || g.Message != "Leases need an actor name" || g.Action != "choose one" {
+		t.Fatalf("%+v %v", g, err)
+	}
+	if m.Guide(context.Background()) == nil {
+		t.Fatal("no actor anywhere: the module should offer the step")
+	}
+	if withActor := newMod(&fake{}, Options{Actor: func() string { return "me-mac" }}); withActor.Guide(context.Background()) != nil {
+		t.Fatal("an actor from config means nothing to set up")
+	}
+	t.Setenv("BEADS_ACTOR", "from-env")
+	if m.Guide(context.Background()) != nil {
+		t.Fatal("an actor from the environment means nothing to set up")
+	}
+}
+
+func TestMissingHubIsAPlainNotConnectedReason(t *testing.T) {
+	body := `{"schemaVersion":1,"ok":false,"error":{"reason":"hub-failure","exitCode":1,"message":"coord list failed: fork/exec /h/Code/agent-coordination/bin/coord: no such file or directory"}}`
+	m := newMod(&fake{resp: map[string]result{"--json list": {out: body, exit: 1}}}, Options{})
+	_, err := m.Leases(context.Background())
+	var nc *core.NotConnectedError
+	if !errors.As(err, &nc) || !strings.Contains(nc.Reason, "coordination hub") || strings.Contains(nc.Reason, "fork/exec") {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestRealRunnerHandsTheConfiguredActorToTheTool(t *testing.T) {
+	t.Setenv("BEADS_ACTOR", "")
+	tool := filepath.Join(t.TempDir(), "beads-lease")
+	if err := os.WriteFile(tool, []byte("#!/bin/sh\necho \"actor=$BEADS_ACTOR\"\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	m := New(Options{Bin: tool, Actor: func() string { return "cfg-actor" }})
+	out, _, err := m.run.inner.Run(context.Background(), tool, "version")
+	if err != nil || !strings.Contains(string(out), "actor=cfg-actor") {
+		t.Fatalf("%q %v", out, err)
 	}
 }

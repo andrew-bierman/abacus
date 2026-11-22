@@ -2,11 +2,11 @@
  Board  [Tasks]  Leases  Queues  Doctor
 Tasks (not connected)
 
-how to connect: Install the Beads CLI
-(bd) and run abacus inside a tracker
-directory, or set ABACUS_BD_DIR to one.
-
-
+how to connect: The Beads CLI (bd) was
+not found. It comes with the abacus
+download (keep the whole folder
+together), or install it and put it on
+your PATH.
 
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
@@ -14,11 +14,11 @@ directory, or set ABACUS_BD_DIR to one.
 ────────────────────────────────────────
 Tasks (not connected)
 
-how to connect: Install the Beads CLI
-(bd) and run abacus inside a tracker
-directory, or set ABACUS_BD_DIR to one.
-
-
+how to connect: The Beads CLI (bd) was
+not found. It comes with the abacus
+download (keep the whole folder
+together), or install it and put it on
+your PATH.
 
 
 
@@ -44,9 +44,9 @@ directory, or set ABACUS_BD_DIR to one.
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 Tasks (not connected)
 
-how to connect: Install the Beads CLI (bd) and run abacus inside a tracker
-directory, or set ABACUS_BD_DIR to one.
-
+how to connect: The Beads CLI (bd) was not found. It comes with the abacus
+download (keep the whole folder together), or install it and put it on your
+PATH.
 
 
 
@@ -56,9 +56,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Tasks (not connected)
 
-how to connect: Install the Beads CLI (bd) and run abacus inside a tracker
-directory, or set ABACUS_BD_DIR to one.
-
+how to connect: The Beads CLI (bd) was not found. It comes with the abacus
+download (keep the whole folder together), or install it and put it on your
+PATH.
 
 
 
@@ -86,8 +86,8 @@ directory, or set ABACUS_BD_DIR to one.
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 Tasks (not connected)
 
-how to connect: Install the Beads CLI (bd) and run abacus inside a tracker directory, or set ABACUS_BD_DIR to one.
-
+how to connect: The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder together), or
+install it and put it on your PATH.
 
 
 
@@ -98,8 +98,8 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Tasks (not connected)
 
-how to connect: Install the Beads CLI (bd) and run abacus inside a tracker directory, or set ABACUS_BD_DIR to one.
-
+how to connect: The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder together), or
+install it and put it on your PATH.
 
 
 

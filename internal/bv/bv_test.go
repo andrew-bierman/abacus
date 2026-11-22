@@ -203,3 +203,29 @@ func TestAllowlistIsExact(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectReportsVersionAndWhereItWasFound(t *testing.T) {
+	f := fixtureRun(t)
+	f.resp["--version"] = "bv v0.27.0\n"
+	m := mod(f, Options{})
+	d := core.NewRegistry(m).Detect(context.Background())[0].Detection
+	if d.State != core.Ready || d.Version != "0.27.0" || d.Source != core.SourcePATH || d.Path != "/fake/bv" {
+		t.Fatalf("%+v", d)
+	}
+}
+
+func TestDoctorKeepsTheFailureReasonThatTasksDoesNotShow(t *testing.T) {
+	f := &fakeRun{resp: map[string]string{}, exit: map[string]int{}}
+	for _, mode := range modes {
+		f.resp[mode+" --format json"], f.exit[mode+" --format json"] = "", 1
+	}
+	m := mod(f, Options{})
+	m.Detect(context.Background())
+	if _, err := m.Insights(context.Background()); err == nil {
+		t.Fatal("want an error when every read fails")
+	}
+	c := m.Doctor(context.Background())
+	if len(c) != 1 || c[0].Status != core.StatusWarn || !strings.Contains(c[0].Detail, "triage: exited 1") {
+		t.Fatalf("%+v", c)
+	}
+}

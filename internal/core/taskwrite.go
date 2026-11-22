@@ -14,8 +14,6 @@ import (
 	"sync/atomic"
 	"time"
 	"unicode"
-
-	"github.com/andrew-bierman/abacus/internal/brand"
 )
 
 // TaskOp is a Tasks write verb. Delete is deliberately not offered.
@@ -25,6 +23,9 @@ const (
 	TaskCreate TaskOp = "create"
 	TaskUpdate TaskOp = "update"
 	TaskClose  TaskOp = "close"
+	// TaskInit creates the managed workspace (bd init). It is the one write that is not about
+	// an existing issue, and it goes through the same plan, confirm, single-use and audit gate.
+	TaskInit TaskOp = "init"
 )
 
 // TaskChange is what a user asked for. Before is display-only (the current values, so the
@@ -37,6 +38,7 @@ type TaskChange struct {
 	Status      string // update only; closing goes through TaskClose
 	Reason      string // close only
 	Type        string // create only
+	Dir         string // init only: the workspace directory (display; the provider owns the real one)
 	Priority    *int
 	Before      Task
 }
@@ -64,6 +66,10 @@ type TaskWriter interface {
 	RunTask(ctx context.Context, argv []string) (TaskResult, error)
 	TrackerDir() string
 }
+
+// InitDirer is implemented by a TaskWriter that can create the managed workspace, and says
+// where.
+type InitDirer interface{ InitDir() string }
 
 var (
 	ErrNotConfirmed   = errors.New("change was not confirmed")
@@ -136,6 +142,8 @@ func validate(ch TaskChange) error {
 			return fmt.Errorf("status must be one of %s (use close to close)", strings.Join(TaskStatuses, ", "))
 		}
 	case TaskClose:
+	case TaskInit:
+		return checkText("directory", ch.Dir, false)
 	default:
 		return fmt.Errorf("unsupported operation %q", ch.Op)
 	}
@@ -173,6 +181,8 @@ func describe(ch TaskChange) []string {
 		return fmt.Sprintf("%s: %q", name, nw)
 	}
 	switch ch.Op {
+	case TaskInit:
+		return []string{"create your fleet workspace", "folder: " + ch.Dir, "this creates a local task tracker (a git repository with a task database) in that folder; nothing else on this machine is changed"}
 	case TaskCreate:
 		out := []string{"create a new task", field("title", "", ch.Title)}
 		if ch.Description != "" {
@@ -240,14 +250,11 @@ func FileAudit(path string) Audit { return &fileAudit{path: path} }
 // DefaultAuditPath is $XDG_STATE_HOME/abacus/audit.jsonl (only when absolute) or
 // ~/.local/state/abacus/audit.jsonl. Without a usable home it is an error, never a relative path.
 func DefaultAuditPath() (string, error) {
-	if x := os.Getenv("XDG_STATE_HOME"); filepath.IsAbs(x) {
-		return filepath.Join(x, brand.Name, "audit.jsonl"), nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil || !filepath.IsAbs(home) {
+	d, err := xdgDir("XDG_STATE_HOME", filepath.Join(".local", "state"))
+	if err != nil {
 		return "", errors.New("audit log: no home directory to keep it in")
 	}
-	return filepath.Join(home, ".local", "state", brand.Name, "audit.jsonl"), nil
+	return filepath.Join(d, "audit.jsonl"), nil
 }
 
 type failAudit struct{ err error }
@@ -283,43 +290,26 @@ func (f *fileAudit) Record(e AuditEntry) error {
 	return err
 }
 
-// Applier is the one door to a Tasks write: it enforces the confirm step, the single-use
-// rule and the audit, then hands the argv to the provider.
+// Applier is the one door to a Tasks write: it enforces the confirm step, then hands the
+// plan to the shared gate (single use, audit) and the argv to the provider.
 type Applier struct {
-	w       TaskWriter
-	audit   Audit
-	mu      sync.Mutex
-	applied map[uint64]bool
+	w TaskWriter
+	g *gate
 }
 
-func NewApplier(w TaskWriter, a Audit) *Applier {
-	return &Applier{w: w, audit: a, applied: map[uint64]bool{}}
-}
+func NewApplier(w TaskWriter, a Audit) *Applier { return &Applier{w: w, g: newGate(a)} }
 
 func (a *Applier) Apply(ctx context.Context, p WritePlan) (TaskResult, error) {
 	if !p.confirmed {
 		return TaskResult{}, ErrNotConfirmed
 	}
-	a.mu.Lock()
-	if a.applied[p.id] {
-		a.mu.Unlock()
-		return TaskResult{}, ErrAlreadyApplied
-	}
-	a.applied[p.id] = true
-	a.mu.Unlock()
-	e := AuditEntry{Time: time.Now().UTC(), Domain: string(DomainTasks), Verb: string(p.Change.Op), Phase: "attempt", Argv: p.Argv, Tracker: a.w.TrackerDir()}
-	if err := a.audit.Record(e); err != nil {
-		return TaskResult{}, err
-	}
-	res, err := a.w.RunTask(ctx, p.Argv)
-	e.Time, e.Phase = time.Now().UTC(), "ok"
-	if err != nil {
-		e.Phase, e.Error = "error", Sanitize(err.Error())
-		if errors.Is(err, ErrOutcomeUnknown) {
-			e.Phase = "unknown"
-		}
-	}
-	_ = a.audit.Record(e) // the attempt line already exists; a failed result line must not mask the outcome
+	e := AuditEntry{Domain: string(DomainTasks), Verb: string(p.Change.Op), Argv: p.Argv, Tracker: a.w.TrackerDir()}
+	var res TaskResult
+	err := a.g.do(p.id, e, func() error {
+		var err error
+		res, err = a.w.RunTask(ctx, p.Argv)
+		return err
+	})
 	return res, err
 }
 

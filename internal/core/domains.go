@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -60,6 +61,8 @@ type Header struct {
 	Summary      string     `json:"summary,omitempty"`
 	Reason       string     `json:"reason,omitempty"`
 	HowToConnect string     `json:"how_to_connect,omitempty"`
+	// Setup is set when State is needs-setup: the guided step that fixes it. Additive.
+	Setup *Guide `json:"setup,omitempty"`
 }
 
 // TaskCounts are the compact Tasks summary (not an issue browser).
@@ -128,8 +131,10 @@ type InsightsReport struct {
 	// CriticalPathNote says why the critical path is empty when the provider skipped it (for
 	// example a dependency cycle), so an empty list is not read as "no critical path".
 	CriticalPathNote string `json:"critical_path_note,omitempty"`
-	GraphNodes       int    `json:"graph_nodes,omitempty"`
-	GraphEdges       int    `json:"graph_edges,omitempty"`
+	// Empty is set when the tracker has no tasks, so there is nothing to analyze.
+	Empty      bool `json:"empty,omitempty"`
+	GraphNodes int  `json:"graph_nodes,omitempty"`
+	GraphEdges int  `json:"graph_edges,omitempty"`
 }
 
 // TaskReader re-reads one task, so a confirm screen can check the issue has not changed since
@@ -145,7 +150,17 @@ type InsightsProvider interface {
 }
 
 // HowToConnectInsights is shown when no graph-analysis provider is available.
-const HowToConnectInsights = "Graph insights are not connected: install bv (brew install dicklesworthstone/tap/bv)."
+const HowToConnectInsights = "Graph insights need bv. It comes with the abacus download (keep the whole folder together), or install it: brew install dicklesworthstone/tap/bv."
+
+// InsightsUnavailable is the plain one-liner for a bv read that failed on a tracker that has
+// tasks. The actual reason is kept for Doctor.
+const InsightsUnavailable = "Graph insights could not be read just now. Details are in Doctor."
+
+// EmptyInsights is the Insights state of a tracker with no tasks: nothing to analyze, which is
+// not a failure and does not run bv at all.
+func EmptyInsights() InsightsReport {
+	return InsightsReport{Header: Header{Domain: DomainTasks, Title: "Insights", State: Connected, Summary: "no tasks yet"}, Empty: true}
+}
 
 // LeaseState is a lease's state; a provider may pass through an unknown one.
 type LeaseState string
@@ -248,10 +263,10 @@ type (
 // HowToConnect is the fix message shown for a domain with no usable provider. It may name
 // the provider command because it helps the user fix a provider.
 var HowToConnect = map[DomainID]string{
-	DomainBoard:  "No Board provider is available yet: the Board contract is an open decision (board-beads issue 15). For epic lanes today, open the board in b9s with o.",
-	DomainTasks:  "Install the Beads CLI (bd) and run abacus inside a tracker directory, or set ABACUS_BD_DIR to one.",
-	DomainLeases: "Install beads-lease and set BEADS_ACTOR; the hub it reads comes from its own config.",
-	DomainQueues: "Install and start the Lambe daemon with its state API on, or set ABACUS_LAMBE_STATE_DIR or pass --lambe-config.",
+	DomainBoard:  "The board is not available in abacus yet. Press o to open the full board in b9s.",
+	DomainTasks:  "The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
+	DomainLeases: "Leases need beads-lease, which comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
+	DomainQueues: "Queues need Lambe, which comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
 }
 
 func header(d DomainID) Header { return Header{Domain: d, Title: d.Title()} }
@@ -287,6 +302,17 @@ func pick[P any](entries []Entry) (p P, reason string, ok bool) {
 // finish turns a provider read into a header. A reduced source, a failed read or a Reason
 // (for example demo data, or a missing history) make the domain degraded.
 func finish(d DomainID, h Header, err error) Header {
+	if g, ok := AsNeedsSetup(err); ok {
+		out := header(d)
+		out.State, out.Reason, out.Setup = NeedsSetup, Sanitize(g.CLILine()), &g
+		return out
+	}
+	var nc *NotConnectedError
+	if errors.As(err, &nc) {
+		out := header(d)
+		out.State, out.Reason, out.HowToConnect = NotConnected, Sanitize(nc.Reason), Sanitize(nc.HowToConnect)
+		return out
+	}
 	if err != nil {
 		out := header(d)
 		out.State, out.Reason, out.HowToConnect = Degraded, Sanitize(err.Error()), HowToConnect[d]
@@ -451,11 +477,12 @@ func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport
 	switch id {
 	case DomainTasks:
 		r.readTasks(ctx, entries)
-		ins := readInsightsFrom(ctx, entries)
+		ins := readInsightsFor(ctx, entries, r.Tasks)
 		r.Tasks.Insights = &ins
 	case DomainBoard:
 		r.readBoard(ctx, entries)
-		ins := readInsightsFrom(ctx, entries)
+		p, why, _ := pick[InsightsProvider](entries)
+		ins := ReadInsights(ctx, p, why)
 		r.Board.Insights = &ins
 	case DomainLeases:
 		r.readLeases(ctx, entries)
@@ -473,12 +500,17 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	r.readLeases(ctx, entries)
 	r.readQueues(ctx, entries)
 	r.readBoard(ctx, entries)
-	ins := readInsightsFrom(ctx, entries)
+	ins := readInsightsFor(ctx, entries, r.Tasks)
 	r.Tasks.Insights, r.Board.Insights = &ins, &ins
 	return r
 }
 
-func readInsightsFrom(ctx context.Context, entries []Entry) InsightsReport {
+// readInsightsFor reads insights for a tracker already read as tasks: with no tasks it says
+// "no tasks yet" and does not run bv.
+func readInsightsFor(ctx context.Context, entries []Entry, tasks TasksReport) InsightsReport {
+	if tasks.State == Connected && tasks.Counts.Total == 0 {
+		return EmptyInsights()
+	}
 	p, why, _ := pick[InsightsProvider](entries)
 	return ReadInsights(ctx, p, why)
 }
@@ -494,7 +526,7 @@ func ReadInsights(ctx context.Context, p InsightsProvider, whyNot string) Insigh
 	}
 	body, err := p.Insights(ctx)
 	if err != nil {
-		h.State, h.Reason, h.HowToConnect = Degraded, Sanitize(err.Error()), HowToConnectInsights
+		h.State, h.Reason = Degraded, InsightsUnavailable
 		return InsightsReport{Header: h}
 	}
 	body.Header.Domain, body.Header.Title = DomainTasks, "Insights"
@@ -519,12 +551,19 @@ type Providers struct {
 	// Insights is the graph-analysis provider; nil means insights are not connected.
 	Insights    InsightsProvider
 	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
-	Missing     map[DomainID]Header
+	// Guiders are the ready providers that can say their domain needs setup.
+	Guiders map[DomainID]Guider
+	Missing map[DomainID]Header
 }
 
 // ResolveProviders maps detected modules to domains exactly as ReadDomains does.
 func ResolveProviders(entries []Entry) Providers {
-	p := Providers{Missing: map[DomainID]Header{}}
+	p := Providers{Missing: map[DomainID]Header{}, Guiders: map[DomainID]Guider{}}
+	for _, e := range ReadyOnly(entries) {
+		if g, ok := e.Module.(Guider); ok {
+			p.Guiders[g.Domain()] = g
+		}
+	}
 	var why string
 	var ok bool
 	if p.Tasks, why, ok = pick[TaskProvider](entries); !ok {
@@ -575,7 +614,7 @@ func statusFromDomains(m Module, d DomainsReport) (Status, bool) {
 	default:
 		return Status{}, false
 	}
-	if h.State == NotConnected || h.readFailed() {
+	if h.State == NotConnected || h.State == NeedsSetup || h.readFailed() {
 		return Status{Unavailable: h.Reason}, true
 	}
 	return st, true

@@ -28,10 +28,14 @@ type Deps struct {
 	Version  string
 	Build    func(Options) *core.Registry
 	RunTUI   func(entries []core.Entry) error
+	// Setup builds the first-run setup over the detected modules; nil means the real one.
+	Setup func(entries []core.Entry) *core.Setup
+	// Config is the abacus config file; the zero value means the default path.
+	Config core.ConfigStore
 }
 
 func usage(d Deps) {
-	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     the board\n  tasks     task summary; tasks create|update|close change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
+	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     the board\n  tasks     task summary; tasks create|update|close change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n\nfirst run:\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
 }
 
 // Run dispatches a command and returns the process exit code.
@@ -45,6 +49,10 @@ func Run(args []string, d Deps) int {
 	case "version", "doctor", "status", "tui":
 	case "tasks", "leases", "queues", "board":
 		return runDomain(cmd, rest, d)
+	case "setup":
+		return runSetup(rest, d)
+	case "config":
+		return runConfig(rest, d)
 	default:
 		fmt.Fprintf(d.Err, "unknown command %q\n", cmd)
 		usage(d)
@@ -107,6 +115,9 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 		}
 		return
 	}
+	if cmd == "doctor" && r.Overview != nil {
+		renderOverview(w, *r.Overview)
+	}
 	if len(r.Modules) == 0 && r.Domains == nil {
 		fmt.Fprintln(w, "no Beads tools detected")
 		return
@@ -150,3 +161,23 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 // tuiEntries is what the TUI is handed: every detected provider. Domains never disappear, so
 // with nothing ready the TUI shows each one as not connected.
 func tuiEntries(entries []core.Entry) []core.Entry { return entries }
+
+// renderOverview is how doctor leads: ready or needs attention, then each domain and tool.
+func renderOverview(w io.Writer, o core.Overview) {
+	fmt.Fprintln(w, o.Headline)
+	for _, a := range o.Attention {
+		fmt.Fprintf(w, "  - %s\n", a)
+	}
+	fmt.Fprintln(w, "\nAreas")
+	for _, d := range o.Domains {
+		fmt.Fprintf(w, "  %-7s %s\n", d.Title, d.Line)
+	}
+	fmt.Fprintln(w, "\nTools")
+	for _, t := range o.Tools {
+		fmt.Fprintf(w, "  %-12s %-8s %s\n", t.ID, t.Where, strings.TrimSpace(t.Version+"  "+t.Path))
+		if t.Note != "" {
+			fmt.Fprintf(w, "    %s\n", t.Note)
+		}
+	}
+	fmt.Fprintln(w)
+}

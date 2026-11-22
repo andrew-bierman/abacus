@@ -2,6 +2,7 @@ package bd
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -75,5 +76,90 @@ func TestRealBdWritePathAgainstAnIsolatedTemporaryTracker(t *testing.T) {
 	}
 	if au.n != 8 {
 		t.Fatalf("audit lines = %d, want 8 (attempt+result per write)", au.n)
+	}
+}
+
+// The real `bd init` through the write gate, in an isolated temp dir and HOME. Skips without bd.
+func TestRealBdInitCreatesTheManagedWorkspaceInAnIsolatedDir(t *testing.T) {
+	if _, err := exec.LookPath("bd"); err != nil {
+		t.Skip("bd is not installed")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_STATE_HOME", home+"/s")
+	t.Setenv("XDG_CONFIG_HOME", home+"/c")
+	t.Setenv("BEADS_ACTOR", "abacus-test")
+	t.Setenv("BEADS_DIR", "")
+	t.Chdir(t.TempDir()) // a cwd with no tracker
+	ws := home + "/d/abacus/workspace"
+	ref := core.NewTrackerRef("")
+	var saved string
+	m := New(Options{InitDir: ws, Ref: ref, OnInit: func(d string) error { saved = d; return nil }})
+	ctx := context.Background()
+	if d := m.Detect(ctx); d.State != core.Ready {
+		t.Fatalf("detect %+v", d)
+	}
+	if _, err := m.Tasks(ctx); err == nil {
+		t.Fatal("no tracker yet: Tasks must ask for setup")
+	}
+	plan, err := core.PlanTaskChange(m, core.TaskChange{Op: core.TaskInit, Dir: ws})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := core.NewApplier(m, &memAudit{}).Apply(ctx, plan.Confirm()); err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	if saved != ws || ref.Dir() != ws {
+		t.Fatalf("saved=%q ref=%q", saved, ref.Dir())
+	}
+	r, err := m.Tasks(ctx)
+	if err != nil || r.Counts.Total != 0 {
+		t.Fatalf("a fresh workspace reads as empty: %+v %v", r, err)
+	}
+}
+
+// A decoy BEADS_DIR pointing at another (isolated) tracker must not redirect init or reads.
+func TestRealBdIgnoresADecoyBEADS_DIR(t *testing.T) {
+	if _, err := exec.LookPath("bd"); err != nil {
+		t.Skip("bd is not installed")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_STATE_HOME", home+"/s")
+	t.Setenv("XDG_CONFIG_HOME", home+"/c")
+	t.Setenv("BEADS_ACTOR", "abacus-test")
+	decoy := t.TempDir()
+	for _, c := range [][]string{{"bd", "init", "--non-interactive", "--quiet", "--skip-agents", "--skip-hooks", "--prefix=decoy"},
+		{"bd", "create", "decoy issue", "--json"}} {
+		cmd := exec.Command(c[0], c[1:]...)
+		cmd.Dir = decoy
+		cmd.Env = append(os.Environ(), "BEADS_DIR=")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Skipf("cannot set up the decoy tracker (%v): %s", err, out)
+		}
+	}
+	t.Setenv("BEADS_DIR", decoy+"/.beads")
+	t.Setenv("BD_SOCKET", decoy+"/sock")
+	t.Chdir(t.TempDir())
+	ws := home + "/d/abacus/workspace"
+	ref := core.NewTrackerRef("")
+	m := New(Options{InitDir: ws, Ref: ref})
+	ctx := context.Background()
+	if d := m.Detect(ctx); d.State != core.Ready {
+		t.Fatalf("detect %+v", d)
+	}
+	plan, err := core.PlanTaskChange(m, core.TaskChange{Op: core.TaskInit, Dir: ws})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := core.NewApplier(m, &memAudit{}).Apply(ctx, plan.Confirm()); err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	if !core.HasOwnTracker(ws) {
+		t.Fatal("init must create the tracker in the workspace, not wherever BEADS_DIR points")
+	}
+	r, err := m.Tasks(ctx)
+	if err != nil || r.Counts.Total != 0 {
+		t.Fatalf("reads must see the workspace (empty), not the decoy with its issue: %+v %v", r, err)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -29,10 +30,15 @@ const DefaultExecTimeout = 10 * time.Second
 const waitDelay = 2 * time.Second
 
 // ExecRunner is the production Runner. A zero Timeout means DefaultExecTimeout; a non-empty
-// Dir is the working directory of the command.
+// Dir is the working directory of the command. Commands see the sidecar directories first on
+// PATH (so bv finds the bundled bd) and the variables Env returns, if set, on top of the
+// process environment.
 type ExecRunner struct {
 	Timeout time.Duration
 	Dir     string
+	Env     func() []string
+	// Scrub filters the inherited environment before Env is added (see ScrubBeadsEnv).
+	Scrub func([]string) []string
 }
 
 func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
@@ -45,6 +51,15 @@ func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byt
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Dir = r.Dir
+	setProcessGroup(cmd)
+	env := os.Environ()
+	if r.Scrub != nil {
+		env = r.Scrub(env)
+	}
+	if r.Env != nil {
+		env = append(env, r.Env()...)
+	}
+	cmd.Env = SidecarEnv(env)
 	cmd.WaitDelay = waitDelay
 	out, err := cmd.Output()
 	if ctx.Err() != nil {

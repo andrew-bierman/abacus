@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -72,6 +73,8 @@ func (s *lambeSection) fetch() tea.Cmd {
 		return lambeViewMsg{view: v, err: err}
 	}
 }
+
+func (s *lambeSection) refresh() tea.Cmd { return s.fetch() }
 
 func (s *lambeSection) Init() tea.Cmd {
 	if s.m.IsDemo() {
@@ -315,6 +318,12 @@ func (s *lambeSection) View() string {
 	switch {
 	case !s.loaded:
 		body = []string{s.th.Text(KindMuted, "loading…")}
+	case errors.Is(s.err, lambe.ErrNoDaemon):
+		// Not a failure: nothing is supervising. Say so plainly and how to start it.
+		body = []string{s.th.Header.Render("Queues") + " " + s.th.Badge(KindSkip, "not connected"), ""}
+		body = append(body, wrap(s.th.Text(KindWarn, lambe.NoDaemonReason), w)...)
+		body = append(body, "")
+		body = append(body, wrap(s.th.Text(KindAccent, "how to connect: ")+san(s.m.StartHint()), w)...)
 	case s.err != nil:
 		body = wrap(s.th.Text(KindWarn, "state unavailable: "+core.Sanitize(s.err.Error())), w)
 	default:

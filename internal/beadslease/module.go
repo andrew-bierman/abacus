@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -20,16 +22,20 @@ import (
 type Options struct {
 	Bin      string // explicit binary; empty means look it up on PATH
 	LookPath func(string) (string, error)
-	Runner   core.Runner // wrapped by the read-only allowlist whatever it is
-	Timeout  time.Duration
+	// Actor returns the actor name from abacus's config; BEADS_ACTOR in the environment wins.
+	// It is passed to a real beads-lease as BEADS_ACTOR, so setting it once is enough.
+	Actor   func() string
+	Runner  core.Runner // wrapped by the read-only allowlist whatever it is
+	Timeout time.Duration
 }
 
 // Module implements core.Module for beads-lease.
 type Module struct {
+	core.Locator
 	run      readOnly
 	lookup   func(string) (string, error)
-	bin      string
 	explicit string
+	actor    func() string
 	timeout  time.Duration
 	// hasDoctor is set by Detect when the binary reports api_version 1, which includes
 	// `doctor --json`; older binaries keep the skip check.
@@ -39,7 +45,12 @@ type Module struct {
 // New returns a beads-lease module with defaults filled in.
 func New(o Options) *Module {
 	if o.Runner == nil {
-		o.Runner = core.ExecRunner{}
+		o.Runner = core.ExecRunner{Env: func() []string {
+			if a := actorOf(o); os.Getenv(actorEnv) == "" && a != "" {
+				return []string{actorEnv + "=" + a}
+			}
+			return nil
+		}}
 	}
 	if o.LookPath == nil {
 		o.LookPath = exec.LookPath
@@ -47,8 +58,31 @@ func New(o Options) *Module {
 	if o.Timeout <= 0 {
 		o.Timeout = core.DefaultExecTimeout
 	}
-	return &Module{run: readOnly{inner: o.Runner}, lookup: o.LookPath, explicit: o.Bin, timeout: o.Timeout}
+	return &Module{run: readOnly{inner: o.Runner}, lookup: o.LookPath, explicit: o.Bin, timeout: o.Timeout, actor: o.Actor}
 }
+
+const actorEnv = "BEADS_ACTOR"
+
+func actorOf(o Options) string {
+	if o.Actor == nil {
+		return ""
+	}
+	return o.Actor()
+}
+
+// Domain and Guide make beads-lease the Leases guider: with no actor name from the
+// environment or abacus's config it asks for one.
+func (m *Module) Domain() core.DomainID { return core.DomainLeases }
+
+func (m *Module) Guide(context.Context) *core.Guide {
+	if os.Getenv(actorEnv) != "" || (m.actor != nil && m.actor() != "") {
+		return nil
+	}
+	return &actorGuide
+}
+
+var actorGuide = core.Guide{Domain: core.DomainLeases, Step: core.StepActor, Message: "Leases need an actor name", Action: "choose one",
+	Detail: "The name this machine's agents hold leases under. Change it any time with: abacus config set actor NAME"}
 
 func (m *Module) ID() string   { return "beads-lease" }
 func (m *Module) Name() string { return "beads-lease" }
@@ -66,7 +100,8 @@ type versionInfo struct {
 }
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	bin, absent := core.Locate("beads-lease", m.explicit, m.lookup)
+	f, absent := core.LocateFound("beads-lease", m.explicit, m.lookup)
+	bin := f.Bin
 	if absent != "" {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
@@ -84,7 +119,8 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 					Detail: fmt.Sprintf("api_version %d unsupported (supported: %d)", *v.APIVersion, supportedAPIVersion)}
 			}
 			if ver != "" {
-				m.bin, m.hasDoctor = bin, true
+				m.SetFound(f)
+				m.hasDoctor = true
 				return core.Detection{State: core.Ready, Version: ver, APIVersion: supportedAPIVersion}
 			}
 		}
@@ -100,7 +136,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	if match == nil {
 		return core.Detection{State: core.Incompatible, Detail: "beads-lease version: unrecognized output"}
 	}
-	m.bin = bin
+	m.SetFound(f)
 	// Legacy binary: api_version stays unknown, but it is usable for `--json list`.
 	return core.Detection{State: core.Ready, Version: match[1]}
 }
@@ -113,7 +149,7 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
-	out, exit, err := m.run.Run(ctx, m.bin, "doctor", "--json")
+	out, exit, err := m.run.Run(ctx, m.Bin(), "doctor", "--json")
 	return core.ReadDoctor("beads-lease", out, exit, err)
 }
 
@@ -128,6 +164,7 @@ type envelope struct {
 	SchemaVersion int  `json:"schemaVersion"`
 	OK            bool `json:"ok"`
 	Error         *struct {
+		Reason  string `json:"reason"`
 		Message string `json:"message"`
 	} `json:"error"`
 	Leases []lease `json:"leases"`
@@ -137,7 +174,7 @@ type envelope struct {
 func (m *Module) readLeases(ctx context.Context) ([]lease, error) {
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
-	out, exit, err := m.run.Run(ctx, m.bin, "--json", "list")
+	out, exit, err := m.run.Run(ctx, m.Bin(), "--json", "list")
 	if err != nil {
 		return nil, fmt.Errorf("beads-lease list could not run: %w", err)
 	}
@@ -149,6 +186,14 @@ func (m *Module) readLeases(ctx context.Context) ([]lease, error) {
 		return nil, errors.New("beads-lease list: unreadable output")
 	}
 	if env.Error != nil && env.Error.Message != "" {
+		switch {
+		case strings.Contains(env.Error.Message, "BEADS_ACTOR is not set"):
+			return nil, &core.NeedsSetupError{Guide: actorGuide}
+		case env.Error.Reason == "hub-failure" && strings.Contains(env.Error.Message, "no such file"):
+			return nil, &core.NotConnectedError{
+				Reason:       "Leases are shared through a coordination hub, and there is none on this machine.",
+				HowToConnect: "Point beads-lease at your hub's coord wrapper with BEADS_LEASE_COORD. Nothing else in abacus depends on Leases."}
+		}
 		return nil, errors.New("beads-lease: " + env.Error.Message)
 	}
 	if !env.OK || env.SchemaVersion != 1 {
@@ -164,6 +209,10 @@ func (m *Module) readLeases(ctx context.Context) ([]lease, error) {
 func (m *Module) Leases(ctx context.Context) (core.LeasesReport, error) {
 	ls, err := m.readLeases(ctx)
 	if err != nil {
+		var nc *core.NotConnectedError
+		if _, ok := core.AsNeedsSetup(err); ok || errors.As(err, &nc) {
+			return core.LeasesReport{}, err // typed: the front-end shows a guided state
+		}
 		return core.LeasesReport{}, errors.New(core.Sanitize(err.Error()))
 	}
 	r := core.LeasesReport{Header: core.Header{Source: core.SourceLive}, Leases: []core.Lease{}}

@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "note": "Pinned sidecar tools shipped in every release archive. Fields and which are hand-edited versus script-written are documented in scripts/lib/bundle.sh. Re-pin with scripts/update-bundled-tools.sh, never by hand.",
+  "tools": [
+    {
+      "name": "bd",
+      "repo": "steveyegge/beads",
+      "license": "MIT",
+      "version": "1.3.4",
+      "tag_template": "v{version}",
+      "asset_template": "beads_{version}_{os}_{arch}.tar.gz",
+      "checksums_asset": "checksums.txt",
+      "member": "bd",
+      "license_source": {
+        "from": "archive",
+        "member": "LICENSE"
+      },
+      "assets": {
+        "darwin-amd64": {
+          "asset": "beads_1.3.4_darwin_amd64.tar.gz",
+          "sha256": "05e713a2da8eeaba40b924184735d9a34d2da8669e4d3ac50cc716605ba10640",
+          "member": "bd"
+        },
+        "darwin-arm64": {
+          "asset": "beads_1.3.4_darwin_arm64.tar.gz",
+          "sha256": "b08a9c15bff80c42235f32946f94a6566a7d90944fe8afe45f3fd2f350596cdb",
+          "member": "bd"
+        },
+        "linux-amd64": {
+          "asset": "beads_1.3.4_linux_amd64.tar.gz",
+          "sha256": "175c26904bde3ff9168d2282ff6b56f17b17f60c22fa5acb3dacc9fb3465303a",
+          "member": "bd"
+        },
+        "linux-arm64": {
+          "asset": "beads_1.3.4_linux_arm64.tar.gz",
+          "sha256": "f4ee6eb3ec79bb2d7eb9d717c73efbcb6fa763cc70f726b4d055b72afdd68ad5",
+          "member": "bd"
+        }
+      },
+      "license_sha256": "caa2c60efbbf71e18b45ef6006a18213f8a42554b235af88883f6f1ec240b7db"
+    },
+    {
+      "name": "bv",
+      "repo": "Dicklesworthstone/beads_viewer",
+      "license": "MIT with OpenAI/Anthropic rider (shipped verbatim)",
+      "version": "0.27.0",
+      "tag_template": "v{version}",
+      "asset_template": "bv_{version}_{os}_{arch}.tar.gz",
+      "checksums_asset": "checksums.txt",
+      "member": "bv",
+      "license_source": {
+        "from": "archive",
+        "member": "LICENSE"
+      },
+      "assets": {
+        "darwin-amd64": {
+          "asset": "bv_0.27.0_darwin_amd64.tar.gz",
+          "sha256": "4a687c9776ee371a4e2d0b201b7a2523acaa1895ce10f0858c33b02fe7a91452",
+          "member": "bv"
+        },
+        "darwin-arm64": {
+          "asset": "bv_0.27.0_darwin_arm64.tar.gz",
+          "sha256": "20aa4711c23819aa15c15a333c88e1e6716c23551e080e8020c042389383b28f",
+          "member": "bv"
+        },
+        "linux-amd64": {
+          "asset": "bv_0.27.0_linux_amd64.tar.gz",
+          "sha256": "7a8f640c95cf73586e1bd6af1d6c9b782ff9768fc07ae8b5cea55adceb817bd7",
+          "member": "bv"
+        },
+        "linux-arm64": {
+          "asset": "bv_0.27.0_linux_arm64.tar.gz",
+          "sha256": "13d7f926a059e74213e0129a3bfdbf2a0a6753febb4fbad8925e63ef43f7ec47",
+          "member": "bv"
+        }
+      },
+      "license_sha256": "32a82e0a5754e72e51fae44b65a936c831c07376f21c90f5fb9e76897fcc3509"
+    },
+    {
+      "name": "lambe",
+      "repo": "andrew-bierman/lambe",
+      "license": "GPL-3.0",
+      "version": "0.10.1",
+      "tag_template": "v{version}",
+      "asset_template": "lambe_{version}_{os}_{arch}.tar.gz",
+      "checksums_asset": "checksums.txt",
+      "member": "lambe",
+      "license_source": {
+        "from": "archive",
+        "member": "LICENSE"
+      },
+      "assets": {
+        "darwin-amd64": {
+          "asset": "lambe_0.10.1_darwin_amd64.tar.gz",
+          "sha256": "6f8c20888bee6ecedcb8d9118c2d39e6bc20ccb512a2778545a0c2030da564a2",
+          "member": "lambe"
+        },
+        "darwin-arm64": {
+          "asset": "lambe_0.10.1_darwin_arm64.tar.gz",
+          "sha256": "16fc1e2ed8d91e1fbdbd52b674212bfb4974cf4fccca5b98a0abffc0ba077391",
+          "member": "lambe"
+        },
+        "linux-amd64": {
+          "asset": "lambe_0.10.1_linux_amd64.tar.gz",
+          "sha256": "2004c37558f02792b8ae24c54865085dac6bab2e65980fb1844742bfaba248df",
+          "member": "lambe"
+        },
+        "linux-arm64": {
+          "asset": "lambe_0.10.1_linux_arm64.tar.gz",
+          "sha256": "d695a2d83d47235291eaf63942e576fcc76d218b601c0584f7cbc42c3d9d7238",
+          "member": "lambe"
+        }
+      },
+      "license_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "name": "beads-lease",
+      "repo": "andrew-bierman/beads-lease",
+      "license": "MIT",
+      "version": "0.1.0",
+      "tag_template": "v{version}",
+      "asset_template": "beadle-{os}-{arch}.tar.gz",
+      "checksums_asset": "SHA256SUMS",
+      "member": "beadle-{os}-{arch}",
+      "license_source": {
+        "from": "tag",
+        "path": "LICENSE"
+      },
+      "assets": {
+        "darwin-amd64": {
+          "asset": "beadle-darwin-amd64.tar.gz",
+          "sha256": "7f4cc76ea1cb816cd90a0aa75bc39488c762617e4ba10e7e99c7f78b249de611",
+          "member": "beadle-darwin-amd64"
+        },
+        "darwin-arm64": {
+          "asset": "beadle-darwin-arm64.tar.gz",
+          "sha256": "2e0a4c96f067edd3e7ff9584d16df0b4bbfa62158223130a4cd27c0b2bf00826",
+          "member": "beadle-darwin-arm64"
+        },
+        "linux-amd64": {
+          "asset": "beadle-linux-amd64.tar.gz",
+          "sha256": "0e507f83444f9ddc0b00d342921e84f2c770e23041e5ae1ad73193eb3c67c80e",
+          "member": "beadle-linux-amd64"
+        },
+        "linux-arm64": {
+          "asset": "beadle-linux-arm64.tar.gz",
+          "sha256": "9d94e05bad0eb7e527c46376f76228ddf8edd721ed6b3f75c636a575ee20f9a1",
+          "member": "beadle-linux-arm64"
+        }
+      },
+      "license_sha256": "1e10ac301ec8ef373fde87cac16a5b2372c35dbd0cc737d8711fb23bf895ce84"
+    }
+  ]
+}

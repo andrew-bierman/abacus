@@ -4,6 +4,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -39,6 +40,7 @@ type Model struct {
 type config struct {
 	th       Theme
 	audit    core.Audit
+	setup    *core.Setup
 	fullView func(dir string) tea.Cmd
 }
 
@@ -50,6 +52,10 @@ func WithTheme(t Theme) Option { return func(c *config) { c.th = t } }
 
 // WithAudit sets where Tasks writes are audited (default: the abacus state dir).
 func WithAudit(a core.Audit) Option { return func(c *config) { c.audit = a } }
+
+// WithSetup replaces the first-run setup (tests inject one over fakes; the default is built
+// from the detected modules and the standard abacus paths).
+func WithSetup(s *core.Setup) Option { return func(c *config) { c.setup = s } }
 
 // WithFullView replaces the handoff to the full interactive view (tests inject a fake;
 // the default probes for it and runs it only on an explicit keypress).
@@ -74,6 +80,11 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	if cfg.audit == nil {
 		cfg.audit = core.DefaultAudit()
 	}
+	if cfg.setup == nil {
+		o := core.DefaultSetupOptions()
+		o.Audit = cfg.audit
+		cfg.setup = core.NewSetup(entries, o)
+	}
 	var present []core.Entry
 	for _, e := range entries {
 		if e.Detection.State != core.Absent {
@@ -81,7 +92,11 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 		}
 	}
 	for _, d := range core.DomainOrder {
-		m.tabs = append(m.tabs, tab{name: d.Title(), sec: domainSection(d, prov, handoff, cfg)})
+		sec := domainSection(d, prov, handoff, cfg)
+		if prov.Guiders[d] != nil && d != core.DomainBoard {
+			sec = newGuidedSection(d, sec, cfg.setup)
+		}
+		m.tabs = append(m.tabs, tab{name: d.Title(), sec: sec})
 	}
 	m.tabs = append(m.tabs, tab{name: "Doctor", sec: newDoctorSection(present)})
 	for _, t := range m.tabs {
@@ -127,6 +142,10 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 // leasesStatus reads the Leases domain and shapes the typed report as rows for the section.
 func leasesStatus(p core.LeaseProvider, ctx context.Context) core.Status {
 	r, err := p.Leases(ctx)
+	var nc *core.NotConnectedError
+	if errors.As(err, &nc) {
+		return core.Status{Unavailable: core.Sanitize(nc.Reason), HowToConnect: core.Sanitize(nc.HowToConnect)}
+	}
 	if err != nil {
 		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
@@ -225,6 +244,9 @@ func (m *Model) headerHeight() int {
 func (m *Model) goTo(i int) tea.Cmd {
 	if i < 0 || i >= len(m.tabs) {
 		return nil
+	}
+	if d, ok := m.tabs[m.sel].sec.(deactivator); ok && m.sel != i {
+		d.deactivate()
 	}
 	m.sel = i
 	if a, ok := m.tabs[i].sec.(activator); ok {

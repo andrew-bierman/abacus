@@ -42,6 +42,18 @@ type Detection struct {
 	Version    string `json:"version,omitempty"`
 	APIVersion int    `json:"api_version,omitempty"`
 	Detail     string `json:"detail,omitempty"`
+	// Path and Source say which binary was found and where ("bundled", "PATH", "override").
+	// Both are additive (schema_version stays 1) and filled in by the registry.
+	Path   string `json:"path,omitempty"`
+	Source Source `json:"source,omitempty"`
+	// Ignored says why a bundled copy that exists was refused when PATH was used instead.
+	Ignored string `json:"ignored,omitempty"`
+}
+
+// Located is implemented by modules that find a binary; the registry copies the answer into
+// their Detection so Doctor and status can say where each tool came from.
+type Located interface {
+	Located() Found
 }
 
 // Check is one doctor result.
@@ -81,7 +93,10 @@ type Status struct {
 	Lines       []string `json:"lines,omitempty"`
 	Rows        []Row    `json:"rows,omitempty"` // additive: typed twin of Lines
 	Unavailable string   `json:"unavailable,omitempty"`
-	Source      string   `json:"source,omitempty"`
+	// HowToConnect accompanies Unavailable when the reason is a plain "not connected" with a
+	// fix the user can act on (not an internal error). Additive.
+	HowToConnect string `json:"how_to_connect,omitempty"`
+	Source       string `json:"source,omitempty"`
 }
 
 // Module is one composable tool.
