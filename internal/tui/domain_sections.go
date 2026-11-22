@@ -103,6 +103,7 @@ type boardSection struct {
 	busy     bool
 	active   bool
 	gen      int // bumped on every (de)activation: a tick from an older visit is dropped
+	fetches  int // reads started (a test seam: a poll never starts one while another is in flight)
 	cursor   int
 	selected string // "t:<id>" or "k:<id>", so a refresh cannot move the cursor to another row
 	top      int
@@ -122,9 +123,12 @@ func newBoardSection(p core.BoardProvider) *boardSection {
 func (s *boardSection) SetTheme(t Theme) { s.th = t }
 func (s *boardSection) Capturing() bool  { return false }
 
+// canInspect: the browser handoff is offered only for a loaded, healthy board.
+func (s *boardSection) canInspect() bool { return s.inspect != nil && s.loaded && s.err == nil }
+
 func (s *boardSection) Bindings() []key.Binding {
 	out := append(moveBindings(), keyReload)
-	if s.inspect != nil {
+	if s.canInspect() {
 		out = append(out, keyBrowser)
 	}
 	return out
@@ -132,6 +136,7 @@ func (s *boardSection) Bindings() []key.Binding {
 
 func (s *boardSection) fetch() tea.Cmd {
 	s.busy = true
+	s.fetches++
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
 		defer cancel()
@@ -193,14 +198,26 @@ func threadRow(t core.BoardThread) string {
 	return fmt.Sprintf("%s  %s  %s  %s", padTo(trunc(hash+san(t.Root.ID), 8), 8), padTo(trunc(orDash(t.Root.Channel), 12), 12), padTo(trunc(orDash(t.Root.Author), 12), 12), san(firstLine(t.Root.Text)))
 }
 
+// textLines splits stored message text into screen lines, each sanitized: the data keeps its
+// line breaks, only the renderer flattens or wraps.
+func textLines(s string) []string {
+	var out []string
+	for _, l := range strings.Split(s, "\n") {
+		out = append(out, san(l))
+	}
+	return out
+}
+
 func threadBody(t core.BoardThread) []string {
-	out := []string{fmt.Sprintf(hash+"%s in %s by %s %s", san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), when(t.Root.At)), san(t.Root.Text)}
+	out := []string{fmt.Sprintf(hash+"%s in %s by %s %s", san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), when(t.Root.At))}
+	out = append(out, textLines(t.Root.Text)...)
 	if t.Replies == 0 {
 		return append(out, "no replies")
 	}
 	out = append(out, fmt.Sprintf("%d replies, latest:", t.Replies))
 	if t.Last != nil {
-		out = append(out, fmt.Sprintf(hash+"%s by %s %s", san(t.Last.ID), orDash(t.Last.Author), when(t.Last.At)), san(t.Last.Text))
+		out = append(out, fmt.Sprintf(hash+"%s by %s %s", san(t.Last.ID), orDash(t.Last.Author), when(t.Last.At)))
+		out = append(out, textLines(t.Last.Text)...)
 	}
 	return out
 }
@@ -215,7 +232,7 @@ func taskBody(t core.BoardTask) []string {
 	if t.Claimant != "" {
 		out = append(out, "held by "+san(t.Claimant)+" until "+orDash(when(t.Until)))
 	}
-	return append(out, san(t.Text))
+	return append(out, textLines(t.Text)...)
 }
 
 func (s *boardSection) reanchor() {
@@ -263,7 +280,7 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !s.busy {
 				return s, s.fetch()
 			}
-		case key.Matches(m, keyBrowser) && s.inspect != nil:
+		case key.Matches(m, keyBrowser) && s.canInspect():
 			return s, tea.ExecProcess(s.inspect(), func(err error) tea.Msg { return boardInspectDoneMsg{err} })
 		}
 		if s.cursor < len(rows) {
@@ -289,7 +306,8 @@ func (s *boardSection) lines() ([]string, int) {
 			}
 			return out, 0
 		}
-		return wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w), 0
+		out := wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w)
+		return append(append(out, ""), wrap(th.Text(KindMuted, strings.ToLower(core.HowToConnectBoardDegraded[:1])+core.HowToConnectBoardDegraded[1:]), w)...), 0
 	}
 	r := s.report
 	head := th.Header.Render("Board")
@@ -300,13 +318,20 @@ func (s *boardSection) lines() ([]string, int) {
 	if r.Reason != "" {
 		out = append(out, wrap(th.Text(KindWarn, san(r.Reason)), w)...)
 	}
+	if r.Truncated != "" {
+		out = append(out, wrap(th.Text(KindMuted, san(r.Truncated)), w)...)
+	}
 	out = append(out, "", th.Header.Render("Channels"))
 	if len(r.Channels) == 0 {
 		out = append(out, th.Text(KindMuted, "  none yet: the first post makes one"))
 	}
 	var chans []string
 	for _, c := range r.Channels {
-		chans = append(chans, san(c.Path)+th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads)))
+		name := san(c.Path)
+		if c.Threads > 0 { // a board that gives no counts shows none
+			name += th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads))
+		}
+		chans = append(chans, name)
 	}
 	if len(chans) > 0 {
 		out = append(out, wrap("  "+strings.Join(chans, " · "), w)...)
@@ -349,14 +374,21 @@ func (s *boardSection) lines() ([]string, int) {
 
 func (s *boardSection) View() string {
 	lines, cursorLine := s.lines()
-	vis, top, hidden := windowMore(lines, cursorLine, s.h, s.top)
-	s.top = top
+	return renderWindow(s.th, lines, cursorLine, s.geom, &s.top)
+}
+
+// renderWindow draws lines in the section's height, keeping cursorLine in view (top is the scroll
+// state), truncated to the width, with a "+N more" marker when clipped. Shared by the sections
+// that have a cursor.
+func renderWindow(th Theme, lines []string, cursorLine int, g geom, top *int) string {
+	vis, newTop, hidden := windowMore(lines, cursorLine, g.h, *top)
+	*top = newTop
 	body := make([]string, 0, len(vis)+1)
 	for _, l := range vis {
-		body = append(body, trunc(l, s.width()))
+		body = append(body, trunc(l, g.width()))
 	}
-	if hidden > 0 && s.h >= 2 {
-		body = append(body, s.th.moreMarker(hidden))
+	if hidden > 0 && g.h >= 2 {
+		body = append(body, th.moreMarker(hidden))
 	}
 	return strings.Join(body, "\n") + "\n"
 }
@@ -901,15 +933,5 @@ func (s *tasksSection) insightLines(w int) []string {
 
 func (s *tasksSection) View() string {
 	lines, cursorLine := s.lines()
-	h := s.h
-	var body []string
-	vis, top, hidden := windowMore(lines, cursorLine, h, s.top)
-	s.top = top
-	for _, l := range vis {
-		body = append(body, trunc(l, s.width()))
-	}
-	if hidden > 0 && h >= 2 {
-		body = append(body, s.th.moreMarker(hidden))
-	}
-	return strings.Join(body, "\n") + "\n"
+	return renderWindow(s.th, lines, cursorLine, s.geom, &s.top)
 }

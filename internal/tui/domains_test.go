@@ -468,7 +468,7 @@ func outsideAllowlist(view string) []string {
 }
 
 func TestDomainBodiesNameNoToolOutsideFixMessages(t *testing.T) {
-	banned := []string{"Lambe", "lambe", "beads-lease", "board-beads", "b9s", "Rex", "bv", "bd"}
+	banned := []string{"Lambe", "lambe", "beads-lease", "board-beads", "b9s", "Rex", "bv", "bd", "Vercel", "vb", "@vercel/", "board CLI", "npm"}
 	build := map[string]func() tea.Model{
 		"data": func() tea.Model { return load(t, asciiTheme(), nil) },
 		"none": func() tea.Model { return New(nil, WithTheme(asciiTheme()), WithFullView(noFullView)) },

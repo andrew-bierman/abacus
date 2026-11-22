@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -140,7 +141,7 @@ type boardProv struct {
 
 func fixtureBoard() core.BoardReport {
 	return core.BoardReport{Header: core.Header{Source: core.SourceLive},
-		Channels: []core.BoardChannel{{Path: "dev/web", Threads: 3}, {Path: "work", Threads: 3}, {Path: "dev", Threads: 1}},
+		Channels: []core.BoardChannel{{Path: "dev/web", Threads: 3}, {Path: "work", Threads: 3}, {Path: "dev", Threads: 1}, {Path: "ops"}},
 		Threads: []core.BoardThread{
 			{Root: core.BoardMessage{ID: "15", Channel: "dev/web", Author: "ada", At: "2026-11-22T20:12:05Z", Text: "checkout times out for carts over 40 items, started after the 14:02 deploy"}, Replies: 2,
 				Last: &core.BoardMessage{ID: "17", Channel: "dev/web", Author: "ada/claude", At: "2026-11-22T20:14:40Z", Text: "rolled back to d4e5f6; watching the error rate"}},
@@ -228,6 +229,15 @@ func scenarios() []scenario {
 		{name: "board", build: std, tab: "Board"},
 		{name: "board-detail", build: std, keys: []string{"down"}, tab: "Board"},
 		{name: "board-task", build: std, keys: []string{"down", "down"}, tab: "Board"},
+		{name: "board-absent", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+			return New(nil, WithTheme(th), WithFullView(noFullView))
+		}},
+		{name: "board-degraded", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+			b := boardFake()
+			var m tea.Model = New([]core.Entry{{Module: b, Detection: b.Det}}, WithTheme(th), WithAudit(&memAudit{}))
+			m, _ = m.Update(boardMsg{err: errors.New("could not reach the board")})
+			return m
+		}},
 		{name: "board-setup", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
 			b := boardFake()
 			b.err = &core.NotConnectedError{Reason: core.BoardNotSetUpReason, HowToConnect: core.BoardNotSetUp}

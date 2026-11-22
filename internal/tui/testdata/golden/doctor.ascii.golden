@@ -22,7 +22,7 @@ Areas
   Leases  2 held, 1 stale, 1 free
   Queues  demo data: fixtures, no live
           daemon
-  Board   3 channels, 2 recent threads,
+  Board   4 channels, 2 recent threads,
           2 open tasks
 
 Tools
@@ -62,7 +62,7 @@ Areas
   Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4 ready
   Leases  2 held, 1 stale, 1 free
   Queues  demo data: fixtures, no live daemon
-  Board   3 channels, 2 recent threads, 2 open tasks
+  Board   4 channels, 2 recent threads, 2 open tasks
 
 Tools
   board        (missing) 0.54.0
@@ -104,7 +104,7 @@ Areas
   Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4 ready
   Leases  2 held, 1 stale, 1 free
   Queues  demo data: fixtures, no live daemon
-  Board   3 channels, 2 recent threads, 2 open tasks
+  Board   4 channels, 2 recent threads, 2 open tasks
 
 Tools
   board        (missing) 0.54.0

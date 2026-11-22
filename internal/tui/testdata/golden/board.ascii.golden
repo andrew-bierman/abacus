@@ -1,9 +1,9 @@
 === 40x10 ===
  [Board]  Tasks  Leases  Queues  Doctor
-3 channels, 2 recent threads, 2 open ta…
+4 channels, 2 recent threads, 2 open ta…
 
 Channels
-  dev/web (3) · work (3) · dev (1)
+  dev/web (3) · work (3) · dev (1) · ops
 
 Recent threads
 ▸ #15       dev/web       ada          …
@@ -13,10 +13,10 @@ Recent threads
  [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────
 Board
-3 channels, 2 recent threads, 2 open ta…
+4 channels, 2 recent threads, 2 open ta…
 
 Channels
-  dev/web (3) · work (3) · dev (1)
+  dev/web (3) · work (3) · dev (1) · ops
 
 Recent threads
 ▸ #15       dev/web       ada          …
@@ -42,10 +42,10 @@ error rate
 ? help · q quit · tab/→ next tab …
 === 80x10 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
-3 channels, 2 recent threads, 2 open tasks
+4 channels, 2 recent threads, 2 open tasks
 
 Channels
-  dev/web (3) · work (3) · dev (1)
+  dev/web (3) · work (3) · dev (1) · ops
 
 Recent threads
 ▸ #15       dev/web       ada           checkout times out for carts over 40 it…
@@ -55,10 +55,10 @@ Recent threads
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Board
-3 channels, 2 recent threads, 2 open tasks
+4 channels, 2 recent threads, 2 open tasks
 
 Channels
-  dev/web (3) · work (3) · dev (1)
+  dev/web (3) · work (3) · dev (1) · ops
 
 Recent threads
 ▸ #15       dev/web       ada           checkout times out for carts over 40 it…
@@ -84,10 +84,10 @@ Selected
 ? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 120x10 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
-3 channels, 2 recent threads, 2 open tasks
+4 channels, 2 recent threads, 2 open tasks
 
 Channels
-  dev/web (3) · work (3) · dev (1)
+  dev/web (3) · work (3) · dev (1) · ops
 
 Recent threads
 ▸ #15       dev/web       ada           checkout times out for carts over 40 items, started after the 14:02 deploy
@@ -97,10 +97,10 @@ Recent threads
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Board
-3 channels, 2 recent threads, 2 open tasks
+4 channels, 2 recent threads, 2 open tasks
 
 Channels
-  dev/web (3) · work (3) · dev (1)
+  dev/web (3) · work (3) · dev (1) · ops
 
 Recent threads
 ▸ #15       dev/web       ada           checkout times out for carts over 40 items, started after the 14:02 deploy
