@@ -15,7 +15,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `tab`, `right` / `shift+tab`, `left` | next / previous selectable tab |
 | `1`-`9` | jump to tab N (ignored for a dimmed tab) |
 | `j` `k`, `down` `up` | move the run cursor (scroll in the other tabs) |
-| `enter`, `esc` | narrow layout only: open / close the run detail; `esc` also clears a filter |
+| `enter`, `esc` | narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
 | `/` | filter runs by issue, state, phase, machine or workflow; `enter` keeps it, `esc` clears it |
 | `o` | hand the selected run's machine to Rex (`rex -S <machine>`) |
 | `r` | Doctor tab: run doctor again |
@@ -42,17 +42,21 @@ While a filter is being typed, every key (including `q`, digits and `?`) goes to
 | tabs do not fit | header shrinks to the active tab and `n/m` |
 | height < 16 | the rule under the header is dropped |
 
-Header and footer are always shown. The body is cut to the remaining height and the run list
-scrolls to keep the cursor visible. Every line is truncated to the terminal width in display
+Header and footer are always shown (down to a height of 2). The body is cut to the remaining
+height and the run list scrolls to keep the cursor visible; clipped content ends in a
+`↕ +N more` row. The Needs attention block is pinned below the scrolling list (at most a third
+of the height, at least its header with the count), so a long run list cannot push it out of
+reach. Every line is truncated to the terminal width in display
 cells (wide characters and emoji count as their real width), with an ellipsis. Zero or tiny
 sizes never panic. Until the first size message arrives the shell assumes 80 columns.
 
 A tab for a module that was found but cannot be used (`broken`, `incompatible`) is dimmed and
 shows its state, for example `ghost (broken)`; it cannot be selected, and the Doctor tab says
-why. Modules that are not installed get no tab. Note: `abacus tui` currently passes only ready
-modules to the TUI, so dimmed tabs appear once the CLI passes all detected entries.
+why. Modules that are not installed get no tab. `abacus tui` hands the TUI every detected tool
+whenever at least one is ready; with none ready it shows the "No Beads tools detected" guidance.
 
-The Doctor tab runs `core.DoctorReport` the first time it is opened and on `r`; it is never
+The Doctor tab runs `core.DoctorReport` the first time it is opened and on `r` (ignored while a
+run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
 other modules every 30 seconds.
 

@@ -61,7 +61,7 @@ func Run(args []string, d Deps) int {
 		if d.RunTUI == nil {
 			return core.ExitFail
 		}
-		if err := d.RunTUI(core.ReadyOnly(entries)); err != nil {
+		if err := d.RunTUI(tuiEntries(entries)); err != nil {
 			fmt.Fprintf(d.Err, "tui: %v\n", err)
 			return core.ExitFail
 		}
@@ -124,4 +124,14 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 			}
 		}
 	}
+}
+
+// tuiEntries is what the TUI is handed: nothing when no tool is ready (it then shows its
+// guidance), otherwise every detected tool, so broken and incompatible ones appear as dimmed
+// tabs with their state instead of vanishing.
+func tuiEntries(entries []core.Entry) []core.Entry {
+	if len(core.ReadyOnly(entries)) == 0 {
+		return nil
+	}
+	return entries
 }

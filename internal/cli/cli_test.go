@@ -145,15 +145,40 @@ func TestLambeConfigFailPassesThroughAndExitsOne(t *testing.T) {
 	}
 }
 
-func TestTUICommandRunsShellWithReadyModulesOnly(t *testing.T) {
+func tuiEntries(t *testing.T, mods ...core.Module) []core.Entry {
+	t.Helper()
 	var got []core.Entry
-	absent := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Absent}}
 	var o, e bytes.Buffer
-	code := cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t",
-		Build:  func(cli.Options) *core.Registry { return core.NewRegistry(ready("a"), absent) },
+	cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t",
+		Build:  func(cli.Options) *core.Registry { return core.NewRegistry(mods...) },
 		RunTUI: func(en []core.Entry) error { got = en; return nil }})
-	if code != 0 || len(got) != 1 || got[0].Module.ID() != "a" {
-		t.Fatalf("code=%d entries=%v", code, got)
+	return got
+}
+
+func ids(en []core.Entry) string {
+	var s []string
+	for _, e := range en {
+		s = append(s, e.Module.ID()+":"+string(e.Detection.State))
+	}
+	return strings.Join(s, ",")
+}
+
+// Broken and incompatible tools are handed to the TUI so it can show them as dimmed tabs, as
+// long as at least one tool is ready; absent ones are the TUI's to skip.
+func TestTUICommandPassesAllDetectedEntriesWhenSomethingIsReady(t *testing.T) {
+	broken := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Broken}}
+	incompat := &modtest.Fake{IDStr: "c", Det: core.Detection{State: core.Incompatible}}
+	absent := &modtest.Fake{IDStr: "d", Det: core.Detection{State: core.Absent}}
+	got := ids(tuiEntries(t, ready("a"), broken, incompat, absent))
+	if got != "a:ready,b:broken,c:incompatible,d:absent" {
+		t.Fatalf("entries = %s", got)
+	}
+}
+
+func TestTUICommandWithNothingReadyKeepsTheEmptyShell(t *testing.T) {
+	broken := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Broken}}
+	if got := tuiEntries(t, broken); len(got) != 0 {
+		t.Fatalf("with no ready tool the TUI gets no entries (it shows its guidance), got %s", ids(got))
 	}
 }
 
