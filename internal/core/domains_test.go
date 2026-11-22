@@ -132,7 +132,7 @@ type countMod struct {
 
 func (m *countMod) Tasks(context.Context) (core.TasksReport, error) {
 	m.tasks++
-	return core.TasksReport{Header: core.Header{Source: core.SourceLive}}, nil
+	return core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 3}}, nil
 }
 func (m *countMod) Leases(context.Context) (core.LeasesReport, error) {
 	m.leases++
@@ -274,5 +274,42 @@ func TestFleetStatusShowsAFailedProviderReadAsUnavailable(t *testing.T) {
 	r := core.FleetStatusReport(context.Background(), "v", []core.Entry{entry(m, core.Ready, "")})
 	if st := r.Modules[0].Status; st.Unavailable != "no tracker" {
 		t.Fatalf("%+v", st)
+	}
+}
+
+type emptyTracker struct{ *modtest.Fake }
+
+func (emptyTracker) Tasks(context.Context) (core.TasksReport, error) {
+	return core.TasksReport{Header: core.Header{Source: core.SourceLive}}, nil
+}
+
+type boomInsights struct {
+	*modtest.Fake
+	called bool
+}
+
+func (b *boomInsights) Insights(context.Context) (core.InsightsReport, error) {
+	b.called = true
+	return core.InsightsReport{}, errors.New("triage: exited 1")
+}
+
+func TestAnEmptyTrackerReadsAsNoTasksYetNotAsAFailure(t *testing.T) {
+	bi := &boomInsights{Fake: &modtest.Fake{IDStr: "bv", Det: core.Detection{State: core.Ready}}}
+	entries := []core.Entry{
+		{Module: emptyTracker{&modtest.Fake{IDStr: "bd"}}, Detection: core.Detection{State: core.Ready}},
+		{Module: bi, Detection: core.Detection{State: core.Ready}},
+	}
+	d := core.ReadDomains(context.Background(), entries)
+	in := d.Tasks.Insights
+	if in == nil || in.State != core.Connected || !in.Empty || in.Summary != "no tasks yet" || bi.called {
+		t.Fatalf("%+v called=%v", in, bi.called)
+	}
+}
+
+func TestAFailedInsightsReadOnARealTrackerIsPlainAndKeepsTheReasonOut(t *testing.T) {
+	bi := &boomInsights{Fake: &modtest.Fake{IDStr: "bv"}}
+	in := core.ReadInsights(context.Background(), bi, "")
+	if in.State != core.Degraded || strings.Contains(in.Reason, "exited") || !strings.Contains(in.Reason, "Doctor") || in.HowToConnect != "" {
+		t.Fatalf("%+v", in)
 	}
 }

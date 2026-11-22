@@ -310,7 +310,7 @@ type countMod struct {
 
 func (m *countMod) Tasks(context.Context) (core.TasksReport, error) {
 	m.tasks++
-	return core.TasksReport{Header: core.Header{Source: core.SourceLive}}, nil
+	return core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 3}}, nil
 }
 func (m *countMod) Leases(context.Context) (core.LeasesReport, error) {
 	m.leases++
