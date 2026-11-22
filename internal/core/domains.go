@@ -60,6 +60,8 @@ type Header struct {
 	Summary      string     `json:"summary,omitempty"`
 	Reason       string     `json:"reason,omitempty"`
 	HowToConnect string     `json:"how_to_connect,omitempty"`
+	// Setup is set when State is needs-setup: the guided step that fixes it. Additive.
+	Setup *Guide `json:"setup,omitempty"`
 }
 
 // TaskCounts are the compact Tasks summary (not an issue browser).
@@ -287,6 +289,11 @@ func pick[P any](entries []Entry) (p P, reason string, ok bool) {
 // finish turns a provider read into a header. A reduced source, a failed read or a Reason
 // (for example demo data, or a missing history) make the domain degraded.
 func finish(d DomainID, h Header, err error) Header {
+	if g, ok := AsNeedsSetup(err); ok {
+		out := header(d)
+		out.State, out.Reason, out.Setup = NeedsSetup, Sanitize(g.Message), &g
+		return out
+	}
 	if err != nil {
 		out := header(d)
 		out.State, out.Reason, out.HowToConnect = Degraded, Sanitize(err.Error()), HowToConnect[d]
@@ -519,12 +526,19 @@ type Providers struct {
 	// Insights is the graph-analysis provider; nil means insights are not connected.
 	Insights    InsightsProvider
 	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
-	Missing     map[DomainID]Header
+	// Guiders are the ready providers that can say their domain needs setup.
+	Guiders map[DomainID]Guider
+	Missing map[DomainID]Header
 }
 
 // ResolveProviders maps detected modules to domains exactly as ReadDomains does.
 func ResolveProviders(entries []Entry) Providers {
-	p := Providers{Missing: map[DomainID]Header{}}
+	p := Providers{Missing: map[DomainID]Header{}, Guiders: map[DomainID]Guider{}}
+	for _, e := range ReadyOnly(entries) {
+		if g, ok := e.Module.(Guider); ok {
+			p.Guiders[g.Domain()] = g
+		}
+	}
 	var why string
 	var ok bool
 	if p.Tasks, why, ok = pick[TaskProvider](entries); !ok {
@@ -575,7 +589,7 @@ func statusFromDomains(m Module, d DomainsReport) (Status, bool) {
 	default:
 		return Status{}, false
 	}
-	if h.State == NotConnected || h.readFailed() {
+	if h.State == NotConnected || h.State == NeedsSetup || h.readFailed() {
 		return Status{Unavailable: h.Reason}, true
 	}
 	return st, true

@@ -1,11 +1,13 @@
 package bd
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
@@ -62,7 +64,28 @@ func flagSet(rest []string, valid func(name, val string) bool) (map[string]bool,
 	return seen, seen["--json"]
 }
 
+// initFlags are the whole `bd init` argv after the verb: every one exactly once, in any order.
+// The prefix is the product name. There is no -C (bd refuses it for a directory with no tracker
+// yet; the process runs inside the workspace instead) and no --force, --reinit-local,
+// --destroy-token, --discard-remote, --remote or --server: init can only create, never replace.
+func initAllowed(rest []string) bool {
+	want := map[string]bool{"--non-interactive": true, "--quiet": true, "--skip-agents": true, "--skip-hooks": true, "--prefix=" + brand.Name: true}
+	if len(rest) != len(want) {
+		return false
+	}
+	for _, f := range rest {
+		if !want[f] {
+			return false
+		}
+		delete(want, f)
+	}
+	return true
+}
+
 func writeAllowed(a []string, dir string) bool {
+	if len(a) > 0 && a[0] == "init" {
+		return initAllowed(a[1:])
+	}
 	a, ok := stripDir(a, dir)
 	if !ok || len(a) == 0 {
 		return false
@@ -146,13 +169,22 @@ func (m *Module) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 		if ch.Reason != "" {
 			a = append(a, "--reason="+ch.Reason)
 		}
+	case core.TaskInit:
+		if m.o.InitDir == "" || ch.Dir != m.o.InitDir {
+			return nil, errors.New("refused: bd init is only allowed in the managed workspace")
+		}
+		a = []string{"init", "--non-interactive", "--quiet", "--skip-agents", "--skip-hooks", "--prefix=" + brand.Name}
+		if !writeAllowed(a, "") {
+			return nil, fmt.Errorf("refused: %v is outside the write allowlist", a)
+		}
+		return append([]string{"bd"}, a...), nil
 	default:
 		return nil, fmt.Errorf("operation %q is not allowed", ch.Op)
 	}
-	if m.o.Dir != "" {
-		a = append([]string{"-C", m.o.Dir}, a...)
+	if d := m.TrackerDir(); d != "" {
+		a = append([]string{"-C", d}, a...)
 	}
-	if !writeAllowed(a, m.o.Dir) {
+	if !writeAllowed(a, m.TrackerDir()) {
 		return nil, fmt.Errorf("refused: %v is outside the write allowlist", a)
 	}
 	return append([]string{"bd"}, a...), nil
