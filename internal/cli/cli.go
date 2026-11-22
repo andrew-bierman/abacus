@@ -175,6 +175,9 @@ func renderOverview(w io.Writer, o core.Overview) {
 	fmt.Fprintln(w, "\nTools")
 	for _, t := range o.Tools {
 		fmt.Fprintf(w, "  %-12s %-8s %s\n", t.ID, t.Where, strings.TrimSpace(t.Version+"  "+t.Path))
+		if t.Note != "" {
+			fmt.Fprintf(w, "    %s\n", t.Note)
+		}
 	}
 	fmt.Fprintln(w)
 }

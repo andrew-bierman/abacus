@@ -2,6 +2,8 @@ package core_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -64,5 +66,44 @@ func TestOverviewBoardKeepsTheUpstreamDetailAndEmptyDomainsExplainThemselves(t *
 	}
 	if !o.Ready {
 		t.Errorf("an empty tracker is ready: %+v", o)
+	}
+}
+
+func TestOverviewSaysWhenABundledToolWasIgnoredAndWhatRanInstead(t *testing.T) {
+	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 1}}}
+	e := core.Entry{Module: bd, Detection: core.Detection{State: core.Ready, Version: "1.3.0", Source: core.SourcePATH, Path: "/usr/local/bin/bd",
+		Ignored: "world-writable (/app/bundled/bd)"}}
+	o := core.BuildOverview(context.Background(), []core.Entry{e})
+	want := "bundled bd ignored: world-writable (/app/bundled/bd); using PATH bd 1.3.0"
+	if o.Tools[0].Note != want {
+		t.Fatalf("note %q, want %q", o.Tools[0].Note, want)
+	}
+}
+
+func TestOverviewNotesAVersionThatDiffersFromThePinWithoutBlocking(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "bundled")
+	if err := os.MkdirAll(filepath.Join(root, "third_party"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "third_party", "bundled-tools.json"), []byte(`{"tools":[{"name":"bd","version":"1.3.4"}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	withSidecarDirs(t, dir)
+	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 1}}}
+	for ver, want := range map[string]string{"1.3.5": "version 1.3.5 differs from the pinned 1.3.4 (informational)", "v1.3.4": ""} {
+		o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready, Version: ver, Source: core.SourceBundled}}})
+		if o.Tools[0].Note != want || !o.Ready {
+			t.Errorf("%s: note %q ready=%v", ver, o.Tools[0].Note, o.Ready)
+		}
+	}
+}
+
+func TestOverviewHeadlineCountsOptionalThingsToSetUp(t *testing.T) {
+	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 1}}}
+	o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready}}})
+	// Leases and Queues have no provider here: two optional things, Tasks is fine.
+	if o.Headline != "Ready — 2 optional things to set up" {
+		t.Fatalf("%q", o.Headline)
 	}
 }

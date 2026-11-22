@@ -138,7 +138,7 @@ func sidecar(tool string) (path, ignored string) {
 			return p, ""
 		}
 		if why != "" && ignored == "" {
-			ignored = fmt.Sprintf("ignored %s: %s", filepath.Join(dir, tool), why)
+			ignored = fmt.Sprintf("%s (%s)", why, filepath.Join(dir, tool))
 		}
 	}
 	return "", ignored
@@ -173,7 +173,7 @@ func LocateFound(tool, explicit string, look func(string) (string, error)) (Foun
 	}
 	detail := fmt.Sprintf("%s not found on PATH", tool)
 	if ignored != "" {
-		detail += " (" + ignored + ")"
+		detail += " (bundled copy ignored: " + ignored + ")"
 	}
 	return Found{}, detail
 }

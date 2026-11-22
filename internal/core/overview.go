@@ -2,7 +2,10 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,6 +18,9 @@ type ToolLine struct {
 	Version string `json:"version,omitempty"`
 	Path    string `json:"path,omitempty"`
 	Detail  string `json:"detail,omitempty"`
+	// Note is an informational line: a bundled copy that was refused (and what ran instead), or a
+	// version that differs from the pinned one. It never blocks anything.
+	Note string `json:"note,omitempty"`
 }
 
 // DomainLine is one domain in the overview, in one plain line.
@@ -55,6 +61,7 @@ func readDomainsLite(ctx context.Context, entries []Entry) DomainsReport {
 
 func overviewFrom(entries []Entry, d DomainsReport) Overview {
 	o := Overview{Ready: true}
+	pinned := PinnedVersions()
 	var required []string
 	broken := false
 	for _, e := range entries {
@@ -63,6 +70,7 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 		if e.Detection.State == Absent {
 			t.Where = "missing"
 		}
+		t.Note = toolNote(e, t.Where, pinned)
 		if e.Detection.State == Broken {
 			broken = true
 			required = append(required, t.Name+" is installed but cannot run: "+e.Detection.Detail)
@@ -141,4 +149,52 @@ func domainLine(h Header, connected func() string) DomainLine {
 		l.Line = string(h.State)
 	}
 	return l
+}
+
+func trimV(v string) string { return strings.TrimPrefix(strings.TrimSpace(v), "v") }
+
+// toolNote explains a bundled tool that was refused and what ran in its place, and notes (only
+// informationally) a bundled version that differs from the pin in bundled-tools.json.
+func toolNote(e Entry, where string, pinned map[string]string) string {
+	d, id := e.Detection, e.Module.ID()
+	var parts []string
+	if d.Ignored != "" {
+		n := "bundled " + id + " ignored: " + d.Ignored
+		if where == "missing" {
+			n += "; no " + id + " on PATH either"
+		} else {
+			n += "; using PATH " + id + " " + d.Version
+		}
+		parts = append(parts, strings.TrimSpace(n))
+	}
+	if p := pinned[id]; where == "bundled" && p != "" && d.Version != "" && trimV(d.Version) != trimV(p) {
+		parts = append(parts, fmt.Sprintf("version %s differs from the pinned %s (informational)", trimV(d.Version), trimV(p)))
+	}
+	return strings.Join(parts, "; ")
+}
+
+// PinnedVersions reads bundled-tools.json as shipped in the archive (third_party/ next to the
+// executable or its bundled/ directory) and returns tool -> pinned version. Absent or unreadable
+// means no pins are known; this is only ever used for an informational note.
+func PinnedVersions() map[string]string {
+	out := map[string]string{}
+	for _, d := range SidecarDirs() {
+		for _, p := range []string{filepath.Join(d, "third_party", "bundled-tools.json"), filepath.Join(d, "..", "third_party", "bundled-tools.json")} {
+			b, err := os.ReadFile(p)
+			if err != nil {
+				continue
+			}
+			var m struct {
+				Tools []struct{ Name, Version string } `json:"tools"`
+			}
+			if json.Unmarshal(b, &m) != nil {
+				continue
+			}
+			for _, t := range m.Tools {
+				out[t.Name] = t.Version
+			}
+			return out
+		}
+	}
+	return out
 }

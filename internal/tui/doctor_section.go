@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -43,7 +44,7 @@ func (s *doctorSection) fetch() tea.Cmd {
 	s.pending = true
 	seq, entries := s.seq, s.entries
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), doctorTimeout)
 		defer cancel()
 		return doctorMsg{report: core.DoctorReport(ctx, "", entries), seq: seq}
 	}
@@ -142,6 +143,10 @@ func (s *doctorSection) lines() []string {
 
 func (s *doctorSection) View() string { return s.render(s.lines()) }
 
+// doctorTimeout is Doctor's own deadline: it runs every tool's doctor, which can take far longer
+// than the 8s a single section read gets.
+const doctorTimeout = 30 * time.Second
+
 // tuiLine is a domain's one-liner in front-end words: the setup key, not the CLI command.
 func tuiLine(l core.DomainLine) string {
 	if l.Guide != nil {
@@ -204,6 +209,9 @@ func (s *doctorSection) overviewLines(ov core.Overview) []string {
 			where = th.Badge(KindMuted, san(t.Where))
 		}
 		out = append(out, "  "+th.Label.Render(padTo(san(t.ID), 12))+" "+where+" "+th.Text(KindMuted, san(t.Version)))
+		if t.Note != "" {
+			out = append(out, hang("    ", th.Text(KindWarn, san(t.Note)), w)...)
+		}
 	}
 	return out
 }
