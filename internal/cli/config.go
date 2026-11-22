@@ -1,0 +1,86 @@
+package cli
+
+import (
+	"flag"
+	"fmt"
+	"strings"
+
+	"github.com/andrew-bierman/abacus/internal/core"
+)
+
+func configStore(d Deps) (core.ConfigStore, error) {
+	if d.Config.Path != "" {
+		return d.Config, nil
+	}
+	p, err := core.DefaultConfigPath()
+	return core.ConfigStore{Path: p}, err
+}
+
+// runConfig is `abacus config show|get KEY|set KEY VALUE|path`: the user's own settings file,
+// edited by an explicit command.
+func runConfig(rest []string, d Deps) int {
+	fs := flag.NewFlagSet("config", flag.ContinueOnError)
+	fs.SetOutput(d.Err)
+	asJSON := fs.Bool("json", false, "print JSON (show)")
+	if len(rest) == 0 || strings.HasPrefix(rest[0], "-") {
+		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path\nkeys: "+strings.Join(core.ConfigKeys, ", "))
+		return core.ExitUsage
+	}
+	verb, args := rest[0], rest[1:]
+	if fs.Parse(args) != nil {
+		return core.ExitUsage
+	}
+	args = fs.Args()
+	st, err := configStore(d)
+	if err != nil {
+		fmt.Fprintf(d.Err, "config: %v\n", err)
+		return core.ExitFail
+	}
+	switch {
+	case verb == "path" && len(args) == 0:
+		fmt.Fprintln(d.Out, st.Path)
+	case verb == "show" && len(args) == 0:
+		c, err := st.Load()
+		if err != nil {
+			fmt.Fprintf(d.Err, "config: %v\n", err)
+			return core.ExitFail
+		}
+		if *asJSON {
+			jsonOut(d.Out, struct {
+				Path string `json:"path"`
+				core.Config
+			}{st.Path, c})
+			return core.ExitOK
+		}
+		fmt.Fprintf(d.Out, "%s\n", st.Path)
+		for _, k := range core.ConfigKeys {
+			v, _ := c.Get(k)
+			if v == "" {
+				v = "(not set)"
+			}
+			fmt.Fprintf(d.Out, "  %-13s %s\n", k, core.Sanitize(v))
+		}
+	case verb == "get" && len(args) == 1:
+		c, err := st.Load()
+		if err != nil {
+			fmt.Fprintf(d.Err, "config: %v\n", err)
+			return core.ExitFail
+		}
+		v, err := c.Get(args[0])
+		if err != nil {
+			fmt.Fprintf(d.Err, "config: %v\n", err)
+			return core.ExitUsage
+		}
+		fmt.Fprintln(d.Out, core.Sanitize(v))
+	case verb == "set" && len(args) == 2:
+		if err := st.Update(func(c *core.Config) error { return c.Set(args[0], args[1]) }); err != nil {
+			fmt.Fprintf(d.Err, "config: %v\n", err)
+			return core.ExitUsage
+		}
+		fmt.Fprintf(d.Out, "%s set\n", args[0])
+	default:
+		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path")
+		return core.ExitUsage
+	}
+	return core.ExitOK
+}

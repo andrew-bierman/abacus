@@ -270,3 +270,6 @@ func (s *Setup) Steps(ctx context.Context) []StepInfo {
 	}
 	return out
 }
+
+// StepDomain is the domain a step belongs to.
+func StepDomain(id StepID) DomainID { return stepDomain[id] }
