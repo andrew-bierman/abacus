@@ -3,6 +3,7 @@ package core_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -149,5 +150,44 @@ func TestFileAuditAppendsJSONLinesAndFailsWhenUnwritable(t *testing.T) {
 	}
 	if err := core.FileAudit(filepath.Join(path, "x", "y")).Record(core.AuditEntry{}); err == nil {
 		t.Fatal("unwritable path must error")
+	}
+}
+
+func TestUnknownOutcomeIsAuditedAsUnknownAndStaysTyped(t *testing.T) {
+	w := &fakeWriter{fail: fmt.Errorf("bd timed out: %w", core.ErrOutcomeUnknown)}
+	a := &memAudit{}
+	_, err := core.NewApplier(w, a).Apply(context.Background(), plan(t, w, core.TaskChange{Op: core.TaskClose, ID: "t-1"}).Confirm())
+	if !errors.Is(err, core.ErrOutcomeUnknown) || a.lines[1].Phase != "unknown" {
+		t.Fatalf("%v %+v", err, a.lines)
+	}
+}
+
+func TestDefaultAuditPathIgnoresARelativeStateHomeAndFailsWithoutAHome(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_STATE_HOME", "relative/dir")
+	p, err := core.DefaultAuditPath()
+	if err != nil || !filepath.IsAbs(p) || !strings.HasPrefix(p, home) {
+		t.Fatalf("%q %v", p, err)
+	}
+	t.Setenv("XDG_STATE_HOME", filepath.Join(home, "st"))
+	if p, _ := core.DefaultAuditPath(); !strings.HasPrefix(p, filepath.Join(home, "st")) {
+		t.Fatalf("absolute XDG_STATE_HOME must win: %q", p)
+	}
+	t.Setenv("XDG_STATE_HOME", "")
+	t.Setenv("HOME", "")
+	if _, err := core.DefaultAuditPath(); err == nil {
+		t.Fatal("no home must be an error, not a relative path")
+	}
+	if err := core.DefaultAudit().Record(core.AuditEntry{}); err == nil {
+		t.Fatal("the default audit must fail closed without a path")
+	}
+}
+
+func TestFileAuditRefusesEmptyOrRelativePaths(t *testing.T) {
+	for _, p := range []string{"", "audit.jsonl", "./a/b.jsonl"} {
+		if err := core.FileAudit(p).Record(core.AuditEntry{}); err == nil {
+			t.Errorf("%q must be refused", p)
+		}
 	}
 }

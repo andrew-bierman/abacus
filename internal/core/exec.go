@@ -14,6 +14,13 @@ type Runner interface {
 	Run(ctx context.Context, name string, args ...string) (out []byte, exit int, err error)
 }
 
+// ErrTimedOut and ErrCanceled are what a Runner returns when it cut a command off. The
+// command may have run to completion first, so for a write they mean the outcome is unknown.
+var (
+	ErrTimedOut = errors.New("timed out")
+	ErrCanceled = errors.New("canceled")
+)
+
 // DefaultExecTimeout bounds every tool subprocess so a hung tool cannot hang abacus.
 const DefaultExecTimeout = 10 * time.Second
 
@@ -42,9 +49,9 @@ func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byt
 	out, err := cmd.Output()
 	if ctx.Err() != nil {
 		if parent.Err() != nil {
-			return nil, -1, fmt.Errorf("canceled: %w", parent.Err())
+			return nil, -1, fmt.Errorf("%w: %w", ErrCanceled, parent.Err())
 		}
-		return nil, -1, fmt.Errorf("timed out after %s", timeout)
+		return nil, -1, fmt.Errorf("%w after %s", ErrTimedOut, timeout)
 	}
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {

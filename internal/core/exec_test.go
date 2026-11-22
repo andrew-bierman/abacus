@@ -75,3 +75,17 @@ func TestExecRunnerRunsInTheConfiguredDir(t *testing.T) {
 		t.Fatalf("%q %d %v", out, exit, err)
 	}
 }
+
+func TestTimeoutAndCancelAreTypedErrors(t *testing.T) {
+	p := writeScript(t, "sleep 5")
+	_, _, err := core.ExecRunner{Timeout: 100 * time.Millisecond}.Run(context.Background(), p)
+	if !errors.Is(err, core.ErrTimedOut) {
+		t.Fatalf("timeout err = %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(100*time.Millisecond, cancel)
+	_, _, err = core.ExecRunner{}.Run(ctx, p)
+	if !errors.Is(err, core.ErrCanceled) {
+		t.Fatalf("cancel err = %v", err)
+	}
+}

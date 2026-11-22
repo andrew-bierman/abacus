@@ -67,6 +67,9 @@ type TaskWriter interface {
 var (
 	ErrNotConfirmed   = errors.New("change was not confirmed")
 	ErrAlreadyApplied = errors.New("this change was already applied")
+	// ErrOutcomeUnknown means the write may or may not have happened (timeout, cancel, killed).
+	// Never report it as "not applied": the user must refresh before retrying.
+	ErrOutcomeUnknown = errors.New("result unknown")
 )
 
 var planSeq atomic.Uint64
@@ -203,7 +206,7 @@ type AuditEntry struct {
 	Time    time.Time `json:"time"`
 	Domain  string    `json:"domain"`
 	Verb    string    `json:"verb"`
-	Phase   string    `json:"phase"` // attempt, ok, error
+	Phase   string    `json:"phase"` // attempt, ok, error, unknown
 	Argv    []string  `json:"argv"`
 	Tracker string    `json:"tracker,omitempty"`
 	Error   string    `json:"error,omitempty"`
@@ -220,18 +223,39 @@ type fileAudit struct {
 // FileAudit appends JSON lines to path, creating its directory.
 func FileAudit(path string) Audit { return &fileAudit{path: path} }
 
-// DefaultAuditPath is $XDG_STATE_HOME/abacus/audit.jsonl or ~/.local/state/abacus/audit.jsonl.
-func DefaultAuditPath() string {
-	if x := os.Getenv("XDG_STATE_HOME"); x != "" {
-		return filepath.Join(x, brand.Name, "audit.jsonl")
+// DefaultAuditPath is $XDG_STATE_HOME/abacus/audit.jsonl (only when absolute) or
+// ~/.local/state/abacus/audit.jsonl. Without a usable home it is an error, never a relative path.
+func DefaultAuditPath() (string, error) {
+	if x := os.Getenv("XDG_STATE_HOME"); filepath.IsAbs(x) {
+		return filepath.Join(x, brand.Name, "audit.jsonl"), nil
 	}
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".local", "state", brand.Name, "audit.jsonl")
+	home, err := os.UserHomeDir()
+	if err != nil || !filepath.IsAbs(home) {
+		return "", errors.New("audit log: no home directory to keep it in")
+	}
+	return filepath.Join(home, ".local", "state", brand.Name, "audit.jsonl"), nil
+}
+
+type failAudit struct{ err error }
+
+func (f failAudit) Record(AuditEntry) error { return f.err }
+
+// DefaultAudit is the file audit at DefaultAuditPath; if no path can be resolved every Record
+// fails, so Apply blocks the write.
+func DefaultAudit() Audit {
+	p, err := DefaultAuditPath()
+	if err != nil {
+		return failAudit{err}
+	}
+	return FileAudit(p)
 }
 
 func (f *fileAudit) Record(e AuditEntry) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if !filepath.IsAbs(f.path) {
+		return errors.New("audit log: path is empty or not absolute")
+	}
 	if err := os.MkdirAll(filepath.Dir(f.path), 0o700); err != nil {
 		return fmt.Errorf("audit log: %w", err)
 	}
@@ -277,6 +301,9 @@ func (a *Applier) Apply(ctx context.Context, p WritePlan) (TaskResult, error) {
 	e.Time, e.Phase = time.Now().UTC(), "ok"
 	if err != nil {
 		e.Phase, e.Error = "error", Sanitize(err.Error())
+		if errors.Is(err, ErrOutcomeUnknown) {
+			e.Phase = "unknown"
+		}
 	}
 	_ = a.audit.Record(e) // the attempt line already exists; a failed result line must not mask the outcome
 	return res, err

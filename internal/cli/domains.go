@@ -266,7 +266,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	}
 	au := d.Audit
 	if au == nil {
-		au = core.FileAudit(core.DefaultAuditPath())
+		au = core.DefaultAudit()
 	}
 	res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
 	if err != nil {

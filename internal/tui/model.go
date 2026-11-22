@@ -73,7 +73,7 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	m.help.ShortSeparator = " · "
 	prov := core.ResolveProviders(entries)
 	if cfg.audit == nil {
-		cfg.audit = core.FileAudit(core.DefaultAuditPath())
+		cfg.audit = core.DefaultAudit()
 	}
 	var present []core.Entry
 	for _, e := range entries {
