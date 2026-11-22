@@ -20,7 +20,10 @@ func degradedModule(t *testing.T, f *fakeRunner, o Options) *Module {
 	f.resp["version --json"] = result{out: versionOK}
 	o.StateDir = t.TempDir()
 	o.PidAlive = func(int) bool { t.Error("pid probed on a tracker-only read"); return false }
-	o.Identity = func(int) (string, error) { t.Error("identity probed on a tracker-only read"); return "", errors.New("no") }
+	o.Identity = func(int) (string, error) {
+		t.Error("identity probed on a tracker-only read")
+		return "", errors.New("no")
+	}
 	m := newModule(f, o)
 	if d := m.Detect(context.Background()); d.State != core.Ready {
 		t.Fatal(d)
@@ -210,7 +213,7 @@ func TestOnlyTheReadOnlyLambeArgvsAreAllowed(t *testing.T) {
 	}
 	bad := [][]string{
 		{}, {"version"}, {"state-dir"}, {"status"}, {"doctor"}, {"run"}, {"serve"}, {"init"}, {"daemon"},
-		{"version", "--json", "x"}, {"state-dir", "-json", "-config", "/x"}, {"status", "-json", "-config"},
+		{"version", "--json", "x"}, {"version", "-json"}, {"state-dir", "--json"}, {"status", "--json"}, {"doctor", "--json"}, {"state-dir", "-json", "-config", "/x"}, {"status", "-json", "-config"},
 		{"status", "-json", "-config", ""}, {"status", "-json", "-refresh"}, {"doctor", "-json", "-fix"},
 		{"status", "-config", "/x", "-json"}, {"-json", "status"}, {"state-dir", "-json", "x"},
 	}

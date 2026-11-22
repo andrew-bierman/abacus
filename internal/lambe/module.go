@@ -3,12 +3,16 @@
 package lambe
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -33,9 +37,40 @@ type Options struct {
 type Module struct {
 	o   Options
 	bin string
+
+	mu     sync.Mutex
+	cached string // cached `lambe state-dir -json` answer
 }
 
-// DefaultStateDir is Lambe's documented default: $XDG_STATE_HOME/lambe or ~/.local/state/lambe.
+// allowedArgv is the whole set of lambe argvs this module may run, all read-only:
+// version --json, state-dir -json, and doctor/status -json with an optional -config FILE.
+func allowedArgv(a []string) bool {
+	if len(a) < 2 {
+		return false
+	}
+	switch a[0] {
+	case "version":
+		return len(a) == 2 && a[1] == "--json"
+	case "state-dir":
+		return len(a) == 2 && a[1] == "-json"
+	case "doctor", "status":
+		return a[1] == "-json" && (len(a) == 2 || len(a) == 4 && a[2] == "-config" && a[3] != "")
+	}
+	return false
+}
+
+// readOnly rejects any argv outside allowedArgv before it reaches the real runner.
+type readOnly struct{ inner core.Runner }
+
+func (r readOnly) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
+	if !allowedArgv(args) {
+		return nil, -1, fmt.Errorf("lambe %q is not allowed: this module is read-only", args)
+	}
+	return r.inner.Run(ctx, name, args...)
+}
+
+// DefaultStateDir is Lambe's documented default, used only when `lambe state-dir -json`
+// is unavailable: $XDG_STATE_HOME/lambe or ~/.local/state/lambe.
 func DefaultStateDir() string {
 	if x := os.Getenv("XDG_STATE_HOME"); x != "" {
 		return filepath.Join(x, "lambe")
@@ -52,9 +87,7 @@ func New(o Options) *Module {
 	if o.Runner == nil {
 		o.Runner = core.ExecRunner{}
 	}
-	if o.StateDir == "" {
-		o.StateDir = DefaultStateDir()
-	}
+	o.Runner = readOnly{inner: o.Runner}
 	return &Module{o: o}
 }
 
@@ -120,8 +153,36 @@ func (m *Module) Doctor(ctx context.Context) []core.Check {
 	return raw
 }
 
+// stateDir resolves where descriptors live: an explicit option wins, then the answer from
+// `lambe state-dir -json` (cached once it succeeds), then the documented default. The
+// command runs only for a detected binary.
+func (m *Module) stateDir(ctx context.Context) string {
+	if m.o.StateDir != "" {
+		return m.o.StateDir
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.cached != "" {
+		return m.cached
+	}
+	if m.bin != "" {
+		var out struct {
+			StateDir string `json:"state_dir"`
+		}
+		b, exit, err := m.o.Runner.Run(ctx, m.bin, "state-dir", "-json")
+		if err == nil && exit == 0 && json.Unmarshal(b, &out) == nil &&
+			filepath.IsAbs(out.StateDir) && core.Sanitize(out.StateDir) == out.StateDir {
+			m.cached = out.StateDir
+			return m.cached
+		}
+	}
+	return DefaultStateDir()
+}
+
 // Read fetches the live view. A failure is an error: ErrNoDaemon and ErrAmbiguous are
-// sentinels callers can match with errors.Is. Decoded text is sanitized.
+// sentinels callers can match with errors.Is. When no daemon is live it tries the
+// tracker-only `lambe status -json` and returns a View labelled SourceTracker; if that also
+// fails the original ErrNoDaemon is returned. Decoded text is sanitized.
 func (m *Module) Read(ctx context.Context) (View, error) {
 	if m.o.Demo {
 		v, err := demoView()
@@ -131,7 +192,12 @@ func (m *Module) Read(ctx context.Context) (View, error) {
 		sanitizeView(&v)
 		return v, nil
 	}
-	d, err := Discover(DiscoverOptions{StateDir: m.o.StateDir, Selector: m.o.Selector, Identity: m.o.Identity, PidAlive: m.o.PidAlive})
+	d, err := Discover(DiscoverOptions{StateDir: m.stateDir(ctx), Selector: m.o.Selector, Identity: m.o.Identity, PidAlive: m.o.PidAlive})
+	if errors.Is(err, ErrNoDaemon) {
+		if v, ok := m.readTracker(ctx); ok {
+			return v, nil
+		}
+	}
 	if err != nil {
 		return View{}, err
 	}
@@ -147,6 +213,31 @@ func (m *Module) Read(ctx context.Context) (View, error) {
 	return v, nil
 }
 
+// readTracker reads `lambe status -json`: a documented subset (in-progress claims as runs,
+// no phase, no queue, no daemon, pid 0). Any failure, wrong schema or trailing data means
+// no view; nothing is inferred.
+func (m *Module) readTracker(ctx context.Context) (View, bool) {
+	if m.bin == "" {
+		return View{}, false
+	}
+	args := []string{"status", "-json"}
+	if m.o.ConfigPath != "" {
+		args = append(args, "-config", m.o.ConfigPath)
+	}
+	out, exit, err := m.o.Runner.Run(ctx, m.bin, args...)
+	if err != nil || exit != 0 {
+		return View{}, false
+	}
+	var s Snapshot
+	dec := json.NewDecoder(bytes.NewReader(out))
+	if dec.Decode(&s) != nil || s.SchemaVersion != 1 || dec.Decode(&struct{}{}) != io.EOF {
+		return View{}, false
+	}
+	v := View{Snapshot: s, Source: SourceTracker}
+	sanitizeView(&v)
+	return v, true
+}
+
 func (m *Module) Status(ctx context.Context) core.Status {
 	v, err := m.Read(ctx)
 	if err != nil {
@@ -154,6 +245,10 @@ func (m *Module) Status(ctx context.Context) core.Status {
 	}
 	st := core.Status{Summary: fmt.Sprintf("%d runs, %d queued, %d need attention",
 		len(v.Snapshot.Runs), len(v.Queue.Rows), len(v.Snapshot.NeedsHuman))}
+	if v.Source == SourceTracker {
+		st.Source = SourceTracker
+		st.Summary = fmt.Sprintf("%d runs, %d need attention (%s, no live daemon)", len(v.Snapshot.Runs), len(v.Snapshot.NeedsHuman), SourceTracker)
+	}
 	for _, r := range v.Snapshot.Runs {
 		st.Lines = append(st.Lines, r.Line())
 	}

@@ -103,8 +103,13 @@ type Descriptor struct {
 	StartedAt     string `json:"started_at"`
 }
 
-// View is everything the status and TUI surfaces read in one poll.
+// SourceTracker labels a View read from the tracker with no daemon (`lambe status -json`).
+const SourceTracker = "tracker subset"
+
+// View is everything the status and TUI surfaces read in one poll. Source is empty for a
+// live state-API read; SourceTracker marks the degraded subset, which has no queue.
 type View struct {
 	Snapshot Snapshot
 	Queue    Queue
+	Source   string
 }

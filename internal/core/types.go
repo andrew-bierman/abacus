@@ -53,11 +53,14 @@ type Check struct {
 }
 
 // Status is a module's state summary. Unavailable carries the reason a ready tool
-// has no readable state (API disabled, no live daemon, ambiguous daemon).
+// has no readable state (API disabled, no live daemon, ambiguous daemon). Source is empty
+// for a live read and names the reduced source when state came from a degraded one (for
+// example "tracker subset"); it is additive, so schema_version is unchanged.
 type Status struct {
 	Summary     string   `json:"summary,omitempty"`
 	Lines       []string `json:"lines,omitempty"`
 	Unavailable string   `json:"unavailable,omitempty"`
+	Source      string   `json:"source,omitempty"`
 }
 
 // Module is one composable tool.
