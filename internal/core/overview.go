@@ -65,6 +65,9 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 	var required []string
 	broken := false
 	for _, e := range entries {
+		if q, ok := e.Module.(interface{ Quiet() bool }); ok && q.Quiet() {
+			continue
+		}
 		t := ToolLine{ID: e.Module.ID(), Name: e.Module.Name(), State: e.Detection.State, Where: string(e.Detection.Source),
 			Version: e.Detection.Version, Path: e.Detection.Path, Detail: e.Detection.Detail}
 		if e.Detection.State == Absent {

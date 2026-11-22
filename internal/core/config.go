@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -73,8 +74,18 @@ func (c Config) Get(key string) (string, error) {
 // ConfigStore reads and writes the config file at Path.
 type ConfigStore struct{ Path string }
 
-// Load reads the config; a missing file is an empty config, an unreadable one an error (abacus
-// does not guess around a file it cannot parse, and Update never overwrites one).
+// errCorrupt is a config file that exists but is not valid JSON.
+type errCorrupt struct {
+	path string
+	err  error
+}
+
+func (e *errCorrupt) Error() string {
+	return fmt.Sprintf("config %s is not valid JSON: %v", e.path, e.err)
+}
+func (e *errCorrupt) Unwrap() error { return e.err }
+
+// Load reads the config; a missing file is an empty config and an unreadable one an error.
 func (s ConfigStore) Load() (Config, error) {
 	var c Config
 	if s.Path == "" {
@@ -88,49 +99,108 @@ func (s ConfigStore) Load() (Config, error) {
 		return c, fmt.Errorf("config: %w", err)
 	}
 	if err := json.Unmarshal(b, &c); err != nil {
-		return Config{}, fmt.Errorf("config %s is not valid JSON: %w", s.Path, err)
+		return Config{}, &errCorrupt{s.Path, err}
 	}
 	return c, nil
 }
 
-// Update loads the config, applies fn and writes it back atomically (temp file in the same
-// directory, then rename). If fn fails nothing is written.
+// Update is UpdateNote without the note.
 func (s ConfigStore) Update(fn func(*Config) error) error {
+	_, err := s.UpdateNote(fn)
+	return err
+}
+
+// UpdateNote loads the config under a lock, applies fn and writes it back atomically (temp file in
+// the same directory, fsynced, then renamed, then the directory is fsynced). If fn fails nothing
+// is written. A file that is not valid JSON is kept as config.json.corrupt (mode 0600) and the
+// change starts from an empty config; the note says so, for the step result.
+func (s ConfigStore) UpdateNote(fn func(*Config) error) (note string, err error) {
 	if !filepath.IsAbs(s.Path) {
-		return errors.New("config: no usable path (no home directory?)")
-	}
-	c, err := s.Load()
-	if err != nil {
-		return err
-	}
-	if err := fn(&c); err != nil {
-		return err
+		return "", errors.New("config: no usable path (no home directory?)")
 	}
 	dir := filepath.Dir(s.Path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("config: %w", err)
+		return "", fmt.Errorf("config: %w", err)
+	}
+	unlock, err := lockConfig(s.Path)
+	if err != nil {
+		return "", fmt.Errorf("config: %w", err)
+	}
+	defer unlock()
+	c, err := s.Load()
+	var corrupt *errCorrupt
+	isCorrupt := errors.As(err, &corrupt)
+	switch {
+	case isCorrupt:
+		c = Config{}
+	case err != nil:
+		return "", err
+	}
+	if err := fn(&c); err != nil {
+		return "", err
+	}
+	if isCorrupt {
+		kept := s.Path + ".corrupt"
+		if err := os.Rename(s.Path, kept); err != nil {
+			return "", fmt.Errorf("config: could not set the unreadable file aside: %w", err)
+		}
+		_ = os.Chmod(kept, 0o600)
+		note = "the old config file was not valid JSON; kept as " + kept + " and started from empty"
 	}
 	tmp, err := os.CreateTemp(dir, "config.json.tmp*")
 	if err != nil {
-		return fmt.Errorf("config: %w", err)
+		return note, fmt.Errorf("config: %w", err)
 	}
 	defer os.Remove(tmp.Name())
 	b, _ := json.MarshalIndent(c, "", "  ")
 	if _, err := tmp.Write(append(b, '\n')); err != nil {
 		tmp.Close()
-		return fmt.Errorf("config: %w", err)
+		return note, fmt.Errorf("config: %w", err)
 	}
 	if err := tmp.Chmod(0o600); err != nil {
 		tmp.Close()
-		return fmt.Errorf("config: %w", err)
+		return note, fmt.Errorf("config: %w", err)
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return note, fmt.Errorf("config: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("config: %w", err)
+		return note, fmt.Errorf("config: %w", err)
 	}
 	if err := os.Rename(tmp.Name(), s.Path); err != nil {
-		return fmt.Errorf("config: %w", err)
+		return note, fmt.Errorf("config: %w", err)
 	}
-	return nil
+	if d, err := os.Open(dir); err == nil { // make the rename itself durable
+		_ = d.Sync()
+		d.Close()
+	}
+	return note, nil
+}
+
+// ConfigCheck is a module that only exists to put the config file's health in Doctor.
+type ConfigCheck struct{ store ConfigStore }
+
+func NewConfigCheck(s ConfigStore) *ConfigCheck { return &ConfigCheck{store: s} }
+
+func (*ConfigCheck) ID() string                       { return "config" }
+func (*ConfigCheck) Name() string                     { return brand.Name + " config" }
+func (*ConfigCheck) Detect(context.Context) Detection { return Detection{State: Ready} }
+func (*ConfigCheck) Status(context.Context) Status    { return Status{} }
+
+// Quiet marks a module the overview and `version` leave out of the tool list.
+func (*ConfigCheck) Quiet() bool { return true }
+
+func (m *ConfigCheck) Doctor(context.Context) []Check {
+	if _, err := m.store.Load(); err != nil {
+		fix := "fix or delete " + m.store.Path
+		var c *errCorrupt
+		if errors.As(err, &c) {
+			fix += " (the next setup step keeps a copy as " + filepath.Base(m.store.Path) + ".corrupt and starts clean)"
+		}
+		return []Check{{Name: "settings", Status: StatusWarn, Detail: Sanitize(err.Error()), Fix: Sanitize(fix)}}
+	}
+	return []Check{{Name: "settings", Status: StatusOK, Detail: m.store.Path}}
 }
 
 // xdgDir is $<env>/abacus when env is an absolute path, else $HOME/<fallback>/abacus.

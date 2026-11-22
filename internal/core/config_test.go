@@ -1,10 +1,13 @@
 package core_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -77,5 +80,94 @@ func TestDefaultPathsFollowXDGAndNeverRelative(t *testing.T) {
 	}
 	if p, _ := core.DefaultWorkspaceDir(); p != "/h/.local/share/abacus/workspace" {
 		t.Errorf("workspace %q", p)
+	}
+}
+
+func TestUpdateKeepsACorruptFileAsDotCorruptAndStartsFromEmpty(t *testing.T) {
+	dir := t.TempDir()
+	st := core.ConfigStore{Path: filepath.Join(dir, "config.json")}
+	bad := []byte("{not json, and precious")
+	if err := os.WriteFile(st.Path, bad, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.Load(); err == nil {
+		t.Fatal("Load must report the corrupt file")
+	}
+	note, err := st.UpdateNote(func(c *core.Config) error { return c.Set("actor", "me-1") })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(note, "config.json.corrupt") {
+		t.Fatalf("the step result must say where the old file went: %q", note)
+	}
+	kept, err := os.ReadFile(st.Path + ".corrupt")
+	if err != nil || string(kept) != string(bad) {
+		t.Fatalf("the unreadable bytes must be preserved: %q %v", kept, err)
+	}
+	if fi, _ := os.Stat(st.Path + ".corrupt"); fi.Mode().Perm() != 0o600 {
+		t.Fatalf("mode %v", fi.Mode().Perm())
+	}
+	if c, err := st.Load(); err != nil || c.Actor != "me-1" {
+		t.Fatalf("%+v %v", c, err)
+	}
+}
+
+func TestAFailedUpdateOfACorruptFileLeavesItWhereItIs(t *testing.T) {
+	st := core.ConfigStore{Path: filepath.Join(t.TempDir(), "config.json")}
+	if err := os.WriteFile(st.Path, []byte("{oops"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Update(func(c *core.Config) error { return c.Set("actor", "bad name") }); err == nil {
+		t.Fatal("want the validation error")
+	}
+	if b, _ := os.ReadFile(st.Path); string(b) != "{oops" {
+		t.Fatalf("a refused change must not touch the file: %q", b)
+	}
+}
+
+func TestConcurrentUpdatesDoNotLoseEachOther(t *testing.T) {
+	st := core.ConfigStore{Path: filepath.Join(t.TempDir(), "config.json")}
+	var wg sync.WaitGroup
+	for _, kv := range [][2]string{{"actor", "me-1"}, {"tracker_dir", "/t/ws"}, {"lambe_config", "/t/l.yaml"}} {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := st.Update(func(c *core.Config) error {
+				time.Sleep(30 * time.Millisecond) // a wide read-modify-write window
+				return c.Set(kv[0], kv[1])
+			}); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+	c, err := st.Load()
+	if err != nil || c.Actor != "me-1" || c.TrackerDir != "/t/ws" || c.LambeConfig != "/t/l.yaml" {
+		t.Fatalf("an update was lost: %+v %v", c, err)
+	}
+}
+
+func TestSettingAPathToEmptyClearsIt(t *testing.T) {
+	c := core.Config{TrackerDir: "/x", LambeConfig: "/y"}
+	if err := c.Set("tracker_dir", ""); err != nil || c.TrackerDir != "" || c.LambeConfig != "/y" {
+		t.Fatalf("%+v %v", c, err)
+	}
+	if err := c.Set("actor", ""); err == nil {
+		t.Fatal("an empty actor is still invalid")
+	}
+}
+
+func TestConfigCheckModuleReportsAnUnreadableFileInDoctor(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "config.json")
+	m := core.NewConfigCheck(core.ConfigStore{Path: p})
+	if c := m.Doctor(context.Background()); c[0].Status != core.StatusOK {
+		t.Fatalf("%+v", c)
+	}
+	if err := os.WriteFile(p, []byte("{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := m.Doctor(context.Background())
+	if c[0].Status != core.StatusWarn || !strings.Contains(c[0].Detail, "not valid JSON") || !strings.Contains(c[0].Fix, ".corrupt") {
+		t.Fatalf("%+v", c)
 	}
 }

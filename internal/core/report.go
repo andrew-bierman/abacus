@@ -76,6 +76,9 @@ func present(entries []Entry) []Entry {
 func VersionReport(version string, entries []Entry) Report {
 	r := newReport(version)
 	for _, e := range entries {
+		if q, ok := e.Module.(interface{ Quiet() bool }); ok && q.Quiet() {
+			continue
+		}
 		r.Modules = append(r.Modules, base(e))
 	}
 	return r
