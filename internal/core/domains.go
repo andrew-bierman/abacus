@@ -48,6 +48,7 @@ const (
 	SourceLive     = "live"
 	SourceTracker  = "tracker subset"
 	SourceSnapshot = "snapshot"
+	SourceGraph    = "graph analysis"
 )
 
 // Header is common to every domain report.
@@ -85,9 +86,60 @@ type Task struct {
 
 type TasksReport struct {
 	Header
-	Counts TaskCounts `json:"counts"`
-	Recent []Task     `json:"recent,omitempty"`
+	Counts   TaskCounts      `json:"counts"`
+	Recent   []Task          `json:"recent,omitempty"`
+	Insights *InsightsReport `json:"insights,omitempty"`
 }
+
+// Ranked is an issue with a metric value (bottleneck, critical path).
+type Ranked struct {
+	ID    string  `json:"id"`
+	Value float64 `json:"value"`
+}
+
+// Pick is a recommended next task or a blocker worth clearing.
+type Pick struct {
+	ID       string   `json:"id"`
+	Title    string   `json:"title,omitempty"`
+	Score    float64  `json:"score,omitempty"`
+	Reasons  []string `json:"reasons,omitempty"`
+	Unblocks int      `json:"unblocks,omitempty"`
+}
+
+// Track is a group of actionable work that can proceed independently.
+type Track struct {
+	ID    string   `json:"id"`
+	Items []string `json:"items,omitempty"`
+}
+
+// InsightsReport is provider-neutral graph analysis of the task dependency graph: what to
+// work on next, what blocks the most, the critical path and dependency cycles. Any section a
+// provider cannot supply is simply empty; Header.Reason says which were unavailable.
+type InsightsReport struct {
+	Header
+	TopPicks        []Pick     `json:"top_picks,omitempty"`
+	Blockers        []Pick     `json:"blockers,omitempty"`
+	CriticalPath    []Ranked   `json:"critical_path,omitempty"`
+	Bottlenecks     []Ranked   `json:"bottlenecks,omitempty"`
+	Cycles          [][]string `json:"cycles,omitempty"`
+	Tracks          []Track    `json:"tracks,omitempty"`
+	TotalActionable int        `json:"total_actionable,omitempty"`
+	TotalBlocked    int        `json:"total_blocked,omitempty"`
+	// CriticalPathNote says why the critical path is empty when the provider skipped it (for
+	// example a dependency cycle), so an empty list is not read as "no critical path".
+	CriticalPathNote string `json:"critical_path_note,omitempty"`
+	GraphNodes       int    `json:"graph_nodes,omitempty"`
+	GraphEdges       int    `json:"graph_edges,omitempty"`
+}
+
+// InsightsProvider supplies graph analysis for the Tasks and Board domains. It is a separate
+// provider because it reads a different surface than the task counts do.
+type InsightsProvider interface {
+	Insights(context.Context) (InsightsReport, error)
+}
+
+// HowToConnectInsights is shown when no graph-analysis provider is available.
+const HowToConnectInsights = "Graph insights are not connected: install bv (brew install dicklesworthstone/tap/bv)."
 
 // LeaseState is a lease's state; a provider may pass through an unknown one.
 type LeaseState string
@@ -157,7 +209,8 @@ type BoardColumn struct {
 
 type BoardReport struct {
 	Header
-	Columns []BoardColumn `json:"columns,omitempty"`
+	Columns  []BoardColumn   `json:"columns,omitempty"`
+	Insights *InsightsReport `json:"insights,omitempty"`
 }
 
 // DomainsReport is the additive `domains` section of `status --json`.
@@ -304,18 +357,46 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	} else {
 		r.Board.Header = notConnected(DomainBoard, why)
 	}
+	ins := readInsights(ctx, entries)
+	r.Tasks.Insights, r.Board.Insights = &ins, &ins
 	return r
+}
+
+// insightsHeader builds the insights header: connected on a full read, degraded on a partial
+// one or a failed read, not-connected when no provider is usable.
+func readInsights(ctx context.Context, entries []Entry) InsightsReport {
+	h := Header{Domain: DomainTasks, Title: "Insights"}
+	p, why, ok := pick[InsightsProvider](entries)
+	if !ok {
+		h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(why), HowToConnectInsights
+		return InsightsReport{Header: h}
+	}
+	body, err := p.Insights(ctx)
+	if err != nil {
+		h.State, h.Reason, h.HowToConnect = Degraded, Sanitize(err.Error()), HowToConnectInsights
+		return InsightsReport{Header: h}
+	}
+	body.Header.Domain, body.Header.Title = DomainTasks, "Insights"
+	body.Header.Source, body.Header.Reason = Sanitize(body.Header.Source), Sanitize(body.Header.Reason)
+	body.Header.State = Connected
+	if body.Header.Reason != "" {
+		body.Header.State = Degraded
+	}
+	body.Header.Summary = fmt.Sprintf("%d actionable, %d blocked, %d cycles", body.TotalActionable, body.TotalBlocked, len(body.Cycles))
+	return body
 }
 
 // Providers is what a front-end needs to drive each domain lazily: the provider for each
 // domain (nil when none is usable) and, for the others, the not-connected header to show.
 type Providers struct {
-	Tasks   TaskProvider
-	Leases  LeaseProvider
-	Queues  QueueProvider
-	Board   BoardProvider
-	Writer  TaskWriter // the module that can write tasks, if any
-	Missing map[DomainID]Header
+	Tasks  TaskProvider
+	Leases LeaseProvider
+	Queues QueueProvider
+	Board  BoardProvider
+	Writer TaskWriter // the module that can write tasks, if any
+	// Insights is the graph-analysis provider; nil means insights are not connected.
+	Insights InsightsProvider
+	Missing  map[DomainID]Header
 }
 
 // ResolveProviders maps detected modules to domains exactly as ReadDomains does.
@@ -336,5 +417,6 @@ func ResolveProviders(entries []Entry) Providers {
 		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
 	}
 	p.Writer, _, _ = pick[TaskWriter](entries)
+	p.Insights, _, _ = pick[InsightsProvider](entries)
 	return p
 }

@@ -67,3 +67,11 @@ func TestExecRunnerReportsParentCancellationNotATimeout(t *testing.T) {
 		t.Fatalf("a cancelled run must not read as a timeout: %v", err)
 	}
 }
+
+func TestExecRunnerRunsInTheConfiguredDir(t *testing.T) {
+	dir := t.TempDir()
+	out, exit, err := core.ExecRunner{Dir: dir}.Run(context.Background(), "pwd")
+	if err != nil || exit != 0 || !strings.HasSuffix(strings.TrimSpace(string(out)), filepath.Base(dir)) {
+		t.Fatalf("%q %d %v", out, exit, err)
+	}
+}

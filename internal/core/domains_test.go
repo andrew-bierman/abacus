@@ -90,3 +90,37 @@ func TestStatusReportDomainsAreAdditiveAndOmittedWhenUnset(t *testing.T) {
 		t.Fatalf("%s", b)
 	}
 }
+
+type insMod struct {
+	*modtest.Fake
+	rep core.InsightsReport
+	err error
+}
+
+func (m insMod) Insights(context.Context) (core.InsightsReport, error) { return m.rep, m.err }
+
+func TestInsightsNotConnectedNamesHowToInstallAndDoesNotHideTheDomain(t *testing.T) {
+	d := core.ReadDomains(context.Background(), nil)
+	for _, in := range []*core.InsightsReport{d.Tasks.Insights, d.Board.Insights} {
+		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "brew install") {
+			t.Fatalf("%+v", in)
+		}
+	}
+}
+
+func TestInsightsConnectedPartialAndFailed(t *testing.T) {
+	ok := insMod{Fake: &modtest.Fake{IDStr: "g"}, rep: core.InsightsReport{Header: core.Header{Source: core.SourceGraph}, TotalActionable: 2, Cycles: [][]string{{"a", "b", "a"}}}}
+	in := core.ReadDomains(context.Background(), []core.Entry{entry(ok, core.Ready, "")}).Tasks.Insights
+	if in.State != core.Connected || in.Source != "graph analysis" || !strings.Contains(in.Summary, "1 cycles") {
+		t.Fatalf("%+v", in.Header)
+	}
+	ok.rep.Reason = "plan unavailable"
+	if in := core.ReadDomains(context.Background(), []core.Entry{entry(ok, core.Ready, "")}).Tasks.Insights; in.State != core.Degraded {
+		t.Fatalf("partial must be degraded: %+v", in.Header)
+	}
+	bad := insMod{Fake: &modtest.Fake{IDStr: "g"}, err: errors.New("exit 2\x1b[2J")}
+	in = core.ReadDomains(context.Background(), []core.Entry{entry(bad, core.Ready, "")}).Tasks.Insights
+	if in.State != core.Degraded || strings.ContainsRune(in.Reason, 0x1b) {
+		t.Fatalf("%+v", in.Header)
+	}
+}

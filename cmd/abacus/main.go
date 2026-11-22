@@ -6,6 +6,7 @@ import (
 
 	"github.com/andrew-bierman/abacus/internal/bd"
 	"github.com/andrew-bierman/abacus/internal/beadslease"
+	"github.com/andrew-bierman/abacus/internal/bv"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/lambe"
@@ -32,6 +33,7 @@ func build(o cli.Options) *core.Registry {
 		}),
 		beadslease.New(beadslease.Options{Bin: os.Getenv("ABACUS_BEADSLEASE_BIN")}),
 		bd.New(bd.Options{Bin: os.Getenv("ABACUS_BD_BIN"), Dir: os.Getenv("ABACUS_BD_DIR")}),
+		bv.New(bv.Options{Bin: os.Getenv("ABACUS_BV_BIN"), Dir: os.Getenv("ABACUS_BD_DIR")}),
 	)
 }
 

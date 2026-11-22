@@ -21,8 +21,12 @@ const DefaultExecTimeout = 10 * time.Second
 // cannot block the caller after the kill.
 const waitDelay = 2 * time.Second
 
-// ExecRunner is the production Runner. A zero Timeout means DefaultExecTimeout.
-type ExecRunner struct{ Timeout time.Duration }
+// ExecRunner is the production Runner. A zero Timeout means DefaultExecTimeout; a non-empty
+// Dir is the working directory of the command.
+type ExecRunner struct {
+	Timeout time.Duration
+	Dir     string
+}
 
 func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
 	timeout := r.Timeout
@@ -33,6 +37,7 @@ func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byt
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Dir = r.Dir
 	cmd.WaitDelay = waitDelay
 	out, err := cmd.Output()
 	if ctx.Err() != nil {

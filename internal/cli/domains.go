@@ -42,6 +42,28 @@ func head(w io.Writer, h core.Header) {
 	}
 }
 
+func renderInsights(w io.Writer, in *core.InsightsReport) {
+	if in == nil {
+		return
+	}
+	head(w, in.Header)
+	for _, p := range in.TopPicks {
+		fmt.Fprintf(w, "    next %s  %s  (unblocks %d)\n", p.ID, p.Title, p.Unblocks)
+	}
+	for _, p := range in.Blockers {
+		fmt.Fprintf(w, "    blocker %s  %s  (unblocks %d)\n", p.ID, p.Title, p.Unblocks)
+	}
+	for _, c := range in.CriticalPath {
+		fmt.Fprintf(w, "    critical path %s  %g\n", c.ID, c.Value)
+	}
+	if in.CriticalPathNote != "" {
+		fmt.Fprintf(w, "    %s\n", in.CriticalPathNote)
+	}
+	for _, c := range in.Cycles {
+		fmt.Fprintf(w, "    cycle %s\n", strings.Join(c, " -> "))
+	}
+}
+
 func renderTasks(w io.Writer, r core.TasksReport) {
 	head(w, r.Header)
 	if len(r.Recent) > 0 {
@@ -50,6 +72,7 @@ func renderTasks(w io.Writer, r core.TasksReport) {
 	for _, t := range r.Recent {
 		fmt.Fprintf(w, "    %-10s %-11s P%d  %s\n", t.ID, t.Status, t.Priority, t.Title)
 	}
+	renderInsights(w, r.Insights)
 }
 
 func renderLeases(w io.Writer, r core.LeasesReport) {
@@ -105,6 +128,7 @@ func renderBoard(w io.Writer, r core.BoardReport) {
 			fmt.Fprintf(w, "      %s  %s\n", k.ID, k.Title)
 		}
 	}
+	renderInsights(w, r.Insights)
 }
 
 func renderDomains(w io.Writer, d core.DomainsReport) {

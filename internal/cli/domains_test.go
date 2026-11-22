@@ -162,3 +162,23 @@ func TestFailedWriteExitsOneAndShowsTheError(t *testing.T) {
 		t.Fatalf("code=%d err=%q", code, errOut)
 	}
 }
+
+type insMod struct{ *modtest.Fake }
+
+func (insMod) Insights(context.Context) (core.InsightsReport, error) {
+	return core.InsightsReport{Header: core.Header{Source: core.SourceGraph},
+		TopPicks: []core.Pick{{ID: "fx-1", Title: "base", Unblocks: 1}}, Cycles: [][]string{{"a", "b", "a"}}, TotalActionable: 1}, nil
+}
+
+func TestTasksShowsInsightsOrHowToInstall(t *testing.T) {
+	_, out, _, _ := runIn(t, "", []core.Module{newTaskMod(), insMod{&modtest.Fake{IDStr: "g", Det: core.Detection{State: core.Ready}}}}, "tasks")
+	for _, want := range []string{"graph analysis", "next fx-1", "cycle a -> b -> a"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	_, out, _, _ = runIn(t, "", []core.Module{newTaskMod()}, "tasks")
+	if !strings.Contains(out, "brew install dicklesworthstone/tap/bv") {
+		t.Errorf("no install hint:\n%s", out)
+	}
+}
