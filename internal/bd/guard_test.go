@@ -8,6 +8,8 @@ func TestReadAllowlistIsExact(t *testing.T) {
 		{"--readonly", "status", "--json", "--no-activity"},
 		{"--readonly", "list", "--json", "--brief", "--all", "--sort", "updated", "--flat", "-n", "8"},
 		{"-C", "/trk", "--readonly", "version", "--json"},
+		{"--readonly", "show", "tt-1", "--json"},
+		{"-C", "/trk", "--readonly", "show", "tt-1.2", "--json"},
 	}
 	for _, a := range ok {
 		if !readAllowed(a, "/trk") {
@@ -21,6 +23,10 @@ func TestReadAllowlistIsExact(t *testing.T) {
 		{"-C", "/other", "--readonly", "version", "--json"},
 		{"-C", "/trk", "-C", "/trk", "--readonly", "version", "--json"},
 		{"--readonly", "sync"},
+		{"--readonly", "show", "--force", "--json"},
+		{"--readonly", "show", "tt-1"},
+		{"--readonly", "show", "tt-1", "tt-2", "--json"},
+		{"show", "tt-1", "--json"},
 		{},
 	}
 	for _, a := range bad {

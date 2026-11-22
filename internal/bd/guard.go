@@ -32,7 +32,13 @@ var (
 
 func readAllowed(a []string, dir string) bool {
 	a, ok := stripDir(a, dir)
-	return ok && (slices.Equal(a, readVersion) || slices.Equal(a, readStatus) || slices.Equal(a, readList))
+	if !ok {
+		return false
+	}
+	if len(a) == 4 && a[0] == "--readonly" && a[1] == "show" && a[3] == "--json" && core.TaskIDRE.MatchString(a[2]) {
+		return true
+	}
+	return slices.Equal(a, readVersion) || slices.Equal(a, readStatus) || slices.Equal(a, readList)
 }
 
 var prioRE = regexp.MustCompile(`^--priority=[0-4]$`)

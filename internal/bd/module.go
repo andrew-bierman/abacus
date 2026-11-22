@@ -251,3 +251,24 @@ func requestedID(a []string, dir string) string {
 	}
 	return ""
 }
+
+// ReadTask re-reads one issue (`bd --readonly show ID --json`) so a confirm screen can show
+// what is there now. The id must match the one asked for.
+func (m *Module) ReadTask(ctx context.Context, id string) (core.Task, error) {
+	if !core.TaskIDRE.MatchString(id) {
+		return core.Task{}, fmt.Errorf("invalid issue id %q", id)
+	}
+	out, exit, err := m.read(ctx, []string{"--readonly", "show", id, "--json"})
+	if err != nil {
+		return core.Task{}, fmt.Errorf("bd show could not run: %s", core.Sanitize(err.Error()))
+	}
+	if exit != 0 {
+		return core.Task{}, fmt.Errorf("bd show exited %d: issue not found?", exit)
+	}
+	i, _ := decodeIssue(out)
+	if i.ID != id {
+		return core.Task{}, errors.New("bd show returned a different issue")
+	}
+	return core.Task{ID: core.Sanitize(i.ID), Title: core.Sanitize(i.Title), Status: core.Sanitize(i.Status),
+		Priority: i.Priority, Type: core.Sanitize(i.Type), Assignee: core.Sanitize(i.Assignee), UpdatedAt: core.Sanitize(i.UpdatedAt)}, nil
+}

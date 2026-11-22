@@ -161,3 +161,27 @@ func TestTasksFailuresAreDistinguishedAndOnlyANonZeroExitIsNoTracker(t *testing.
 		}
 	}
 }
+
+func TestReadTaskReadsOneIssueReadonlyAndChecksTheID(t *testing.T) {
+	f := newFake()
+	f.resp["--readonly show tt-1 --json"] = `[{"id":"tt-1","title":"t\u001b","status":"open","priority":2,"issue_type":"task"}]`
+	m := mod(f, Options{})
+	m.Detect(context.Background())
+	got, err := m.ReadTask(context.Background(), "tt-1")
+	if err != nil || got.ID != "tt-1" || got.Status != "open" || got.Priority != 2 || strings.ContainsRune(got.Title, 0x1b) {
+		t.Fatalf("%+v %v", got, err)
+	}
+	f.resp["--readonly show tt-1 --json"] = `[{"id":"tt-9","title":"other"}]`
+	if _, err := m.ReadTask(context.Background(), "tt-1"); err == nil {
+		t.Fatal("a different issue is an error")
+	}
+	f.resp["--readonly show tt-1 --json"] = ``
+	f.exit = map[string]int{"--readonly show tt-1 --json": 1}
+	if _, err := m.ReadTask(context.Background(), "tt-1"); err == nil {
+		t.Fatal("not found is an error")
+	}
+	if _, err := m.ReadTask(context.Background(), "--force"); err == nil {
+		t.Fatal("a flag-like id is refused before any process")
+	}
+	var _ core.TaskReader = m
+}

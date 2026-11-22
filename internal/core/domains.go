@@ -132,6 +132,12 @@ type InsightsReport struct {
 	GraphEdges       int    `json:"graph_edges,omitempty"`
 }
 
+// TaskReader re-reads one task, so a confirm screen can check the issue has not changed since
+// the user opened it.
+type TaskReader interface {
+	ReadTask(ctx context.Context, id string) (Task, error)
+}
+
 // InsightsProvider supplies graph analysis for the Tasks and Board domains. It is a separate
 // provider because it reads a different surface than the task counts do.
 type InsightsProvider interface {
@@ -509,6 +515,7 @@ type Providers struct {
 	Queues QueueProvider
 	Board  BoardProvider
 	Writer TaskWriter // the module that can write tasks, if any
+	Reader TaskReader // re-reads one task before a write is confirmed
 	// Insights is the graph-analysis provider; nil means insights are not connected.
 	Insights    InsightsProvider
 	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
@@ -533,6 +540,7 @@ func ResolveProviders(entries []Entry) Providers {
 		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
 	}
 	p.Writer, _, _ = pick[TaskWriter](entries)
+	p.Reader, _, _ = pick[TaskReader](entries)
 	p.Insights, p.InsightsWhy, _ = pick[InsightsProvider](entries)
 	return p
 }
