@@ -307,13 +307,17 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tasksMsg:
 		s.report, s.err, s.loaded, s.tasksBusy = m.report, m.err, true, false
 		s.reanchor()
-		if s.wantIns && s.err == nil {
-			s.wantIns = false
-			if s.report.Counts.Total == 0 { // nothing to analyze: not a failure, and bv is not run
+		if s.err == nil {
+			wasEmpty := s.insights != nil && s.insights.Empty
+			switch {
+			case s.report.Counts.Total == 0: // nothing to analyze: not a failure, and bv is not run
 				e := core.EmptyInsights()
-				s.insights = &e
-			} else if !s.insBusy {
-				return s, s.fetchInsights()
+				s.insights, s.wantIns = &e, false
+			case s.wantIns || wasEmpty: // first read, a refresh, or the first task just appeared
+				s.wantIns = false
+				if !s.insBusy {
+					return s, s.fetchInsights()
+				}
 			}
 		}
 	case insightsMsg:

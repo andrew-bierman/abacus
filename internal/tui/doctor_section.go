@@ -52,11 +52,11 @@ func (s *doctorSection) fetch() tea.Cmd {
 func (s *doctorSection) Init() tea.Cmd { return nil }
 
 func (s *doctorSection) activate() tea.Cmd {
-	if s.asked || s.loaded {
+	if s.pending { // a run is already in flight
 		return nil
 	}
 	s.asked = true
-	return s.fetch()
+	return s.fetch() // every visit re-runs doctor: what you set up elsewhere shows up here
 }
 
 func (s *doctorSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
