@@ -67,7 +67,7 @@ func (m *Module) Status(ctx context.Context) core.Status {
 	if err != nil {
 		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
-	return core.Status{Summary: fmt.Sprintf("%d actionable, %d blocked, %d cycles", r.TotalActionable, r.TotalBlocked, len(r.Cycles)), Source: core.SourceGraph}
+	return core.Status{Summary: r.Summarize(), Source: core.SourceGraph}
 }
 
 var modes = []string{"--robot-triage", "--robot-plan", "--robot-insights", "--robot-graph"}

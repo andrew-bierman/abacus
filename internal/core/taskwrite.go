@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -96,29 +97,20 @@ func checkText(label, s string, multiline bool) error {
 	return nil
 }
 
-func inSet(v string, set []string) bool {
-	for _, s := range set {
-		if s == v {
-			return true
-		}
-	}
-	return false
-}
-
 func validate(ch TaskChange) error {
 	switch ch.Op {
 	case TaskCreate:
 		if strings.TrimSpace(ch.Title) == "" {
 			return errors.New("a title is required")
 		}
-		if ch.Type != "" && !inSet(ch.Type, TaskTypes) {
+		if ch.Type != "" && !slices.Contains(TaskTypes, ch.Type) {
 			return fmt.Errorf("unknown type %q", ch.Type)
 		}
 	case TaskUpdate:
 		if ch.Title == "" && ch.Description == "" && ch.Status == "" && ch.Priority == nil {
 			return errors.New("nothing to change")
 		}
-		if ch.Status != "" && !inSet(ch.Status, TaskStatuses) {
+		if ch.Status != "" && !slices.Contains(TaskStatuses, ch.Status) {
 			return fmt.Errorf("status must be one of %s (use close to close)", strings.Join(TaskStatuses, ", "))
 		}
 	case TaskClose:

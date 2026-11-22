@@ -137,8 +137,7 @@ func (m *Module) Status(ctx context.Context) core.Status {
 	if err != nil {
 		return core.Status{Unavailable: core.Sanitize(err.Error())}
 	}
-	c := r.Counts
-	return core.Status{Summary: fmt.Sprintf("%d tasks: %d open, %d in progress, %d blocked, %d ready", c.Total, c.Open, c.InProgress, c.Blocked, c.Ready)}
+	return core.Status{Summary: r.Summarize()}
 }
 
 // Tasks is the compact Tasks read: counts plus the most recently changed issues. It is

@@ -278,7 +278,8 @@ func pick[P any](entries []Entry) (p P, reason string, ok bool) {
 	return p, reason, false
 }
 
-// finish turns a provider read into a header: reduced sources and failed reads are degraded.
+// finish turns a provider read into a header. A reduced source, a failed read or a Reason
+// (for example demo data, or a missing history) make the domain degraded.
 func finish(d DomainID, h Header, err error) Header {
 	if err != nil {
 		out := header(d)
@@ -287,88 +288,202 @@ func finish(d DomainID, h Header, err error) Header {
 	}
 	h.Domain, h.Title, h.State = d, d.Title(), Connected
 	h.Source, h.Reason = Sanitize(h.Source), Sanitize(h.Reason)
-	if h.Source != "" && h.Source != SourceLive && h.Source != SourceSnapshot {
+	if (h.Source != "" && h.Source != SourceLive && h.Source != SourceSnapshot) || h.Reason != "" {
 		h.State = Degraded
 	}
 	return h
+}
+
+// readDomain is the one read for every domain: find the provider, call it, shape the header.
+// With no usable provider the body is empty and the header says not-connected.
+func readDomain[P, B any](ctx context.Context, entries []Entry, d DomainID, call func(P, context.Context) (B, error), hdr func(*B) *Header, sum func(B) string) B {
+	var body B
+	p, why, ok := pick[P](entries)
+	if !ok {
+		*hdr(&body) = notConnected(d, why)
+		return body
+	}
+	body, err := call(p, ctx)
+	if err != nil {
+		var empty B
+		*hdr(&empty) = finish(d, Header{}, err)
+		return empty
+	}
+	h := hdr(&body)
+	*h = finish(d, *h, nil)
+	h.Summary = sum(body)
+	return body
+}
+
+func (r TasksReport) Summarize() string {
+	c := r.Counts
+	return fmt.Sprintf("%d tasks: %d open, %d in progress, %d blocked, %d ready", c.Total, c.Open, c.InProgress, c.Blocked, c.Ready)
+}
+
+func (r LeasesReport) Summarize() string {
+	held, stale, free := r.counts()
+	return fmt.Sprintf("%d held, %d stale, %d free", held, stale, free)
+}
+
+func (r QueuesReport) Summarize() string {
+	if r.Source == SourceTracker { // the tracker subset has no queue to count
+		return fmt.Sprintf("%d runs, %d need attention (%s, no live daemon)", len(r.Runs), len(r.Attention), SourceTracker)
+	}
+	return fmt.Sprintf("%d runs, %d queued, %d need attention", len(r.Runs), len(r.Queue), len(r.Attention))
+}
+
+func (r BoardReport) Summarize() string { return fmt.Sprintf("%d columns", len(r.Columns)) }
+
+func (r InsightsReport) Summarize() string {
+	return fmt.Sprintf("%d actionable, %d blocked, %d cycles", r.TotalActionable, r.TotalBlocked, len(r.Cycles))
+}
+
+// Line is the one-line run summary every front-end shows.
+func (r QueueRun) Line() string {
+	orQ := func(s string) string {
+		if s == "" {
+			return "?"
+		}
+		return s
+	}
+	s := fmt.Sprintf("%s  %s  %s", r.Issue, orQ(r.State), orQ(r.Phase))
+	if r.Stalled {
+		s += "  (stalled)"
+	}
+	return s
+}
+
+func (r LeasesReport) counts() (held, stale, free int) {
+	for _, l := range r.Leases {
+		switch l.State {
+		case LeaseHeld:
+			held++
+		case LeaseStale:
+			stale++
+		case LeaseFree:
+			free++
+		}
+	}
+	return
+}
+
+// Detail is the lease's one-line description, shared by every front-end.
+func (l Lease) Detail() string {
+	switch l.State {
+	case LeaseHeld:
+		exp := l.ExpiresAt
+		if exp == "" {
+			exp = "?"
+		}
+		return "by " + l.Holder + " (expires " + exp + ")"
+	case LeaseStale:
+		return "(last holder " + l.Holder + ")"
+	}
+	return ""
+}
+
+// Tone is the lease's severity.
+func (l Lease) Tone() Tone {
+	switch l.State {
+	case LeaseHeld:
+		return ToneInfo
+	case LeaseStale:
+		return ToneWarn
+	case LeaseFree:
+		return ToneOK
+	}
+	return ToneMuted
+}
+
+// Status shapes the report as a module Status: summary, typed rows and the plain lines. A live
+// source is not a badge, so Source is set only for a reduced one.
+func (r LeasesReport) Status() Status {
+	st := Status{Summary: r.Summarize()}
+	if r.Source != "" && r.Source != SourceLive {
+		st.Source = r.Source
+	}
+	for _, l := range r.Leases {
+		row := Row{Resource: l.Resource, State: string(l.State), Tone: l.Tone(), Detail: l.Detail()}
+		line := row.Resource + "  " + row.State
+		if row.Detail != "" {
+			line += " " + row.Detail
+		}
+		st.Lines, st.Rows = append(st.Lines, line), append(st.Rows, row)
+	}
+	return st
+}
+
+func tasksHdr(b *TasksReport) *Header   { return &b.Header }
+func leasesHdr(b *LeasesReport) *Header { return &b.Header }
+func queuesHdr(b *QueuesReport) *Header { return &b.Header }
+func boardHdr(b *BoardReport) *Header   { return &b.Header }
+
+func (r *DomainsReport) readTasks(ctx context.Context, entries []Entry) {
+	r.Tasks = readDomain(ctx, entries, DomainTasks, func(p TaskProvider, c context.Context) (TasksReport, error) { return p.Tasks(c) }, tasksHdr, TasksReport.Summarize)
+}
+
+func (r *DomainsReport) readLeases(ctx context.Context, entries []Entry) {
+	r.Leases = readDomain(ctx, entries, DomainLeases, func(p LeaseProvider, c context.Context) (LeasesReport, error) { return p.Leases(c) }, leasesHdr, LeasesReport.Summarize)
+	if r.Leases.Leases == nil { // [] not null, whatever the state
+		r.Leases.Leases = []Lease{}
+	}
+}
+
+func (r *DomainsReport) readQueues(ctx context.Context, entries []Entry) {
+	r.Queues = readDomain(ctx, entries, DomainQueues, func(p QueueProvider, c context.Context) (QueuesReport, error) { return p.Queues(c) }, queuesHdr, QueuesReport.Summarize)
+}
+
+func (r *DomainsReport) readBoard(ctx context.Context, entries []Entry) {
+	r.Board = readDomain(ctx, entries, DomainBoard, func(p BoardProvider, c context.Context) (BoardReport, error) { return p.Board(c) }, boardHdr, BoardReport.Summarize)
+}
+
+// ReadDomain reads one domain only (and its insights, for Tasks and Board): a single-domain
+// command must not run the other providers. The other domains are left empty.
+func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport {
+	var r DomainsReport
+	r.Leases.Leases = []Lease{}
+	switch id {
+	case DomainTasks:
+		r.readTasks(ctx, entries)
+		ins := readInsightsFrom(ctx, entries)
+		r.Tasks.Insights = &ins
+	case DomainBoard:
+		r.readBoard(ctx, entries)
+		ins := readInsightsFrom(ctx, entries)
+		r.Board.Insights = &ins
+	case DomainLeases:
+		r.readLeases(ctx, entries)
+	case DomainQueues:
+		r.readQueues(ctx, entries)
+	}
+	return r
 }
 
 // ReadDomains reads every domain from the detected modules. A domain nobody provides is
 // returned as not-connected with how to connect; it never disappears.
 func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	var r DomainsReport
-	if p, why, ok := pick[TaskProvider](entries); ok {
-		body, err := p.Tasks(ctx)
-		r.Tasks = body
-		r.Tasks.Header = finish(DomainTasks, body.Header, err)
-		if err == nil {
-			c := body.Counts
-			r.Tasks.Summary = fmt.Sprintf("%d tasks: %d open, %d in progress, %d blocked, %d ready", c.Total, c.Open, c.InProgress, c.Blocked, c.Ready)
-		} else {
-			r.Tasks = TasksReport{Header: r.Tasks.Header}
-		}
-	} else {
-		r.Tasks.Header = notConnected(DomainTasks, why)
-	}
-	if p, why, ok := pick[LeaseProvider](entries); ok {
-		body, err := p.Leases(ctx)
-		r.Leases = body
-		r.Leases.Header = finish(DomainLeases, body.Header, err)
-		if err == nil {
-			held, stale, free := 0, 0, 0
-			for _, l := range body.Leases {
-				switch l.State {
-				case LeaseHeld:
-					held++
-				case LeaseStale:
-					stale++
-				case LeaseFree:
-					free++
-				}
-			}
-			r.Leases.Summary = fmt.Sprintf("%d held, %d stale, %d free", held, stale, free)
-		} else {
-			r.Leases = LeasesReport{Header: r.Leases.Header}
-		}
-	} else {
-		r.Leases.Header = notConnected(DomainLeases, why)
-	}
-	if p, why, ok := pick[QueueProvider](entries); ok {
-		body, err := p.Queues(ctx)
-		r.Queues = body
-		r.Queues.Header = finish(DomainQueues, body.Header, err)
-		if err == nil {
-			r.Queues.Summary = fmt.Sprintf("%d runs, %d queued, %d need attention", len(body.Runs), len(body.Queue), len(body.Attention))
-		} else {
-			r.Queues = QueuesReport{Header: r.Queues.Header}
-		}
-	} else {
-		r.Queues.Header = notConnected(DomainQueues, why)
-	}
-	if p, why, ok := pick[BoardProvider](entries); ok {
-		body, err := p.Board(ctx)
-		r.Board = body
-		r.Board.Header = finish(DomainBoard, body.Header, err)
-		if err == nil {
-			r.Board.Summary = fmt.Sprintf("%d columns", len(body.Columns))
-		} else {
-			r.Board = BoardReport{Header: r.Board.Header}
-		}
-	} else {
-		r.Board.Header = notConnected(DomainBoard, why)
-	}
-	ins := readInsights(ctx, entries)
+	r.readTasks(ctx, entries)
+	r.readLeases(ctx, entries)
+	r.readQueues(ctx, entries)
+	r.readBoard(ctx, entries)
+	ins := readInsightsFrom(ctx, entries)
 	r.Tasks.Insights, r.Board.Insights = &ins, &ins
 	return r
 }
 
-// insightsHeader builds the insights header: connected on a full read, degraded on a partial
-// one or a failed read, not-connected when no provider is usable.
-func readInsights(ctx context.Context, entries []Entry) InsightsReport {
+func readInsightsFrom(ctx context.Context, entries []Entry) InsightsReport {
+	p, why, _ := pick[InsightsProvider](entries)
+	return ReadInsights(ctx, p, why)
+}
+
+// ReadInsights reads graph insights from p. A nil p is "not connected" (whyNot says why the
+// provider is unusable, if it was found). A failed read is degraded; a partial one (Reason set)
+// is degraded too; the header is always the Insights one so every front-end shows it the same.
+func ReadInsights(ctx context.Context, p InsightsProvider, whyNot string) InsightsReport {
 	h := Header{Domain: DomainTasks, Title: "Insights"}
-	p, why, ok := pick[InsightsProvider](entries)
-	if !ok {
-		h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(why), HowToConnectInsights
+	if p == nil {
+		h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(whyNot), HowToConnectInsights
 		return InsightsReport{Header: h}
 	}
 	body, err := p.Insights(ctx)
@@ -382,7 +497,7 @@ func readInsights(ctx context.Context, entries []Entry) InsightsReport {
 	if body.Header.Reason != "" {
 		body.Header.State = Degraded
 	}
-	body.Header.Summary = fmt.Sprintf("%d actionable, %d blocked, %d cycles", body.TotalActionable, body.TotalBlocked, len(body.Cycles))
+	body.Header.Summary = body.Summarize()
 	return body
 }
 
@@ -395,8 +510,9 @@ type Providers struct {
 	Board  BoardProvider
 	Writer TaskWriter // the module that can write tasks, if any
 	// Insights is the graph-analysis provider; nil means insights are not connected.
-	Insights InsightsProvider
-	Missing  map[DomainID]Header
+	Insights    InsightsProvider
+	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
+	Missing     map[DomainID]Header
 }
 
 // ResolveProviders maps detected modules to domains exactly as ReadDomains does.
@@ -417,6 +533,6 @@ func ResolveProviders(entries []Entry) Providers {
 		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
 	}
 	p.Writer, _, _ = pick[TaskWriter](entries)
-	p.Insights, _, _ = pick[InsightsProvider](entries)
+	p.Insights, p.InsightsWhy, _ = pick[InsightsProvider](entries)
 	return p
 }

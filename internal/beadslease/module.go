@@ -178,38 +178,11 @@ func (m *Module) Leases(ctx context.Context) (core.LeasesReport, error) {
 }
 
 func (m *Module) Status(ctx context.Context) core.Status {
-	ls, err := m.readLeases(ctx)
+	r, err := m.Leases(ctx)
 	if err != nil {
 		return unavailable(err.Error())
 	}
-	held, stale, free := 0, 0, 0
-	st := core.Status{}
-	for _, l := range ls {
-		res, holder := core.Sanitize(l.Resource), core.Sanitize(l.Holder)
-		row := core.Row{Resource: res, State: core.Sanitize(l.State), Tone: core.ToneMuted}
-		switch l.State {
-		case "held":
-			held++
-			exp := "?"
-			if l.ExpiresAt != nil {
-				exp = l.ExpiresAt.UTC().Format(time.RFC3339)
-			}
-			row.Tone, row.Detail = core.ToneInfo, fmt.Sprintf("by %s (expires %s)", holder, exp)
-		case "stale":
-			stale++
-			row.Tone, row.Detail = core.ToneWarn, fmt.Sprintf("(last holder %s)", holder)
-		case "free":
-			free++
-			row.Tone = core.ToneOK
-		}
-		line := res + "  " + row.State
-		if row.Detail != "" {
-			line += " " + row.Detail
-		}
-		st.Lines, st.Rows = append(st.Lines, line), append(st.Rows, row)
-	}
-	st.Summary = fmt.Sprintf("%d held, %d stale, %d free", held, stale, free)
-	return st
+	return r.Status()
 }
 
 func unavailable(reason string) core.Status {

@@ -112,5 +112,7 @@ type View struct {
 	Snapshot Snapshot
 	Queue    Queue
 	History  History // best effort: empty when the history route is unavailable
-	Source   string
+	// HistoryErr is why the history could not be read ("" when it was); sanitized with the rest.
+	HistoryErr string
+	Source     string
 }
