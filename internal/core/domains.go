@@ -172,10 +172,18 @@ type DomainsReport struct {
 // the body and Header.Source, core fills the rest of the Header. A future provider (for
 // example a graph-insights one) plugs in the same way.
 type (
-	TaskProvider  interface{ Tasks(context.Context) (TasksReport, error) }
-	LeaseProvider interface{ Leases(context.Context) (LeasesReport, error) }
-	QueueProvider interface{ Queues(context.Context) (QueuesReport, error) }
-	BoardProvider interface{ Board(context.Context) (BoardReport, error) }
+	TaskProvider interface {
+		Tasks(context.Context) (TasksReport, error)
+	}
+	LeaseProvider interface {
+		Leases(context.Context) (LeasesReport, error)
+	}
+	QueueProvider interface {
+		Queues(context.Context) (QueuesReport, error)
+	}
+	BoardProvider interface {
+		Board(context.Context) (BoardReport, error)
+	}
 )
 
 // HowToConnect is the fix message shown for a domain with no usable provider. It may name

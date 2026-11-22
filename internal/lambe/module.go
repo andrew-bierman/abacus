@@ -206,6 +206,8 @@ func (m *Module) Read(ctx context.Context) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
+	// History is best effort: an older daemon without the route still shows runs and queue.
+	v.History, _ = c.History(ctx)
 	sanitizeView(&v)
 	return v, nil
 }
@@ -286,3 +288,37 @@ func (m *Module) IsDemo() bool { return m.o.Demo }
 // RexArgv is the command that hands a machine to Rex. A front-end decides how to run it,
 // and only in response to an explicit user action.
 func (m *Module) RexArgv(machine string) []string { return []string{"rex", "-S", machine} }
+
+// Queues is the Queues domain read. The Source is provider-neutral: a demo is a snapshot,
+// the tracker-only fallback is labelled as such, a live daemon read is live.
+func (m *Module) Queues(ctx context.Context) (core.QueuesReport, error) {
+	v, err := m.Read(ctx)
+	if err != nil {
+		return core.QueuesReport{}, errors.New(core.Sanitize(err.Error()))
+	}
+	return queuesReport(v, m.o.Demo), nil
+}
+
+func queuesReport(v View, demo bool) core.QueuesReport {
+	src := core.SourceLive
+	switch {
+	case demo:
+		src = core.SourceSnapshot
+	case v.Source == SourceTracker:
+		src = core.SourceTracker
+	}
+	r := core.QueuesReport{Header: core.Header{Source: src}}
+	for _, x := range v.Snapshot.Runs {
+		r.Runs = append(r.Runs, core.QueueRun{Issue: x.Issue, State: x.State, Phase: x.Phase, Machine: x.Machine, Stalled: x.Stalled})
+	}
+	for _, x := range v.Queue.Rows {
+		r.Queue = append(r.Queue, core.QueueItem{ID: x.ID, Title: x.Title, Blocked: x.Blocked})
+	}
+	for _, x := range v.Snapshot.NeedsHuman {
+		r.Attention = append(r.Attention, core.Attention{Issue: x.Issue, Reason: x.Reason, Detail: x.Detail})
+	}
+	for _, x := range v.History.Runs {
+		r.History = append(r.History, core.HistoryItem{Issue: x.Issue, Title: x.Title, Outcome: x.Outcome, UpdatedAt: x.UpdatedAt})
+	}
+	return r
+}

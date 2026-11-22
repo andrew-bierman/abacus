@@ -6,6 +6,7 @@ package beadslease
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -132,32 +133,58 @@ type envelope struct {
 	Leases []lease `json:"leases"`
 }
 
-func (m *Module) Status(ctx context.Context) core.Status {
+// readLeases is the one read of `--json list`, shared by Status and the Leases domain.
+func (m *Module) readLeases(ctx context.Context) ([]lease, error) {
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
 	out, exit, err := m.run.Run(ctx, m.bin, "--json", "list")
 	if err != nil {
-		return unavailable("beads-lease list could not run: " + err.Error())
+		return nil, fmt.Errorf("beads-lease list could not run: %w", err)
 	}
 	var env envelope
 	if json.Unmarshal(out, &env) != nil {
 		if exit != 0 {
-			return unavailable(fmt.Sprintf("beads-lease list exited %d", exit))
+			return nil, fmt.Errorf("beads-lease list exited %d", exit)
 		}
-		return unavailable("beads-lease list: unreadable output")
+		return nil, errors.New("beads-lease list: unreadable output")
 	}
 	if env.Error != nil && env.Error.Message != "" {
-		return unavailable("beads-lease: " + env.Error.Message)
+		return nil, errors.New("beads-lease: " + env.Error.Message)
 	}
 	if !env.OK || env.SchemaVersion != 1 {
-		return unavailable(fmt.Sprintf("unsupported beads-lease list output (schemaVersion %d)", env.SchemaVersion))
+		return nil, fmt.Errorf("unsupported beads-lease list output (schemaVersion %d)", env.SchemaVersion)
 	}
 	if exit != 0 {
-		return unavailable(fmt.Sprintf("beads-lease list exited %d", exit))
+		return nil, fmt.Errorf("beads-lease list exited %d", exit)
+	}
+	return env.Leases, nil
+}
+
+// Leases is the Leases domain read: typed, sanitized, live.
+func (m *Module) Leases(ctx context.Context) (core.LeasesReport, error) {
+	ls, err := m.readLeases(ctx)
+	if err != nil {
+		return core.LeasesReport{}, errors.New(core.Sanitize(err.Error()))
+	}
+	r := core.LeasesReport{Header: core.Header{Source: core.SourceLive}, Leases: []core.Lease{}}
+	for _, l := range ls {
+		cl := core.Lease{Resource: core.Sanitize(l.Resource), State: core.LeaseState(core.Sanitize(l.State)), Holder: core.Sanitize(l.Holder)}
+		if l.ExpiresAt != nil {
+			cl.ExpiresAt = l.ExpiresAt.UTC().Format(time.RFC3339)
+		}
+		r.Leases = append(r.Leases, cl)
+	}
+	return r, nil
+}
+
+func (m *Module) Status(ctx context.Context) core.Status {
+	ls, err := m.readLeases(ctx)
+	if err != nil {
+		return unavailable(err.Error())
 	}
 	held, stale, free := 0, 0, 0
 	st := core.Status{}
-	for _, l := range env.Leases {
+	for _, l := range ls {
 		res, holder := core.Sanitize(l.Resource), core.Sanitize(l.Holder)
 		row := core.Row{Resource: res, State: core.Sanitize(l.State), Tone: core.ToneMuted}
 		switch l.State {

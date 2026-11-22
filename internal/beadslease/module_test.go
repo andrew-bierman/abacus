@@ -448,3 +448,26 @@ func TestStatusCarriesTypedRowsMatchingTheTextLines(t *testing.T) {
 		t.Errorf("text line must stay unchanged: %q", st.Lines[0])
 	}
 }
+
+func TestLeasesAreTheTypedDomainReadAndSourceIsLive(t *testing.T) {
+	f := &fake{resp: map[string]result{"version": {out: versionLine}, "--json list": {out: fixture(t, "list.json")}}}
+	m := newMod(f, Options{})
+	m.Detect(context.Background())
+	r, err := m.Leases(context.Background())
+	if err != nil || r.Source != core.SourceLive || len(r.Leases) != 3 {
+		t.Fatalf("%+v %v", r, err)
+	}
+	if l := r.Leases[0]; l.State != core.LeaseHeld || l.Holder != "glm-andrew-bierman" || l.ExpiresAt != "2026-11-21T20:15:00Z" {
+		t.Fatalf("held lease = %+v", l)
+	}
+	var _ core.LeaseProvider = m
+}
+
+func TestLeasesReturnsAnErrorWhenTheListIsUnavailable(t *testing.T) {
+	f := &fake{resp: map[string]result{"version": {out: versionLine}, "--json list": {out: "", exit: 2}}}
+	m := newMod(f, Options{})
+	m.Detect(context.Background())
+	if _, err := m.Leases(context.Background()); err == nil {
+		t.Fatal("want an error")
+	}
+}
