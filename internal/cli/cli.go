@@ -115,6 +115,9 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 		}
 		return
 	}
+	if cmd == "doctor" && r.Overview != nil {
+		renderOverview(w, *r.Overview)
+	}
 	if len(r.Modules) == 0 && r.Domains == nil {
 		fmt.Fprintln(w, "no Beads tools detected")
 		return
@@ -158,3 +161,20 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 // tuiEntries is what the TUI is handed: every detected provider. Domains never disappear, so
 // with nothing ready the TUI shows each one as not connected.
 func tuiEntries(entries []core.Entry) []core.Entry { return entries }
+
+// renderOverview is how doctor leads: ready or needs attention, then each domain and tool.
+func renderOverview(w io.Writer, o core.Overview) {
+	fmt.Fprintln(w, o.Headline)
+	for _, a := range o.Attention {
+		fmt.Fprintf(w, "  - %s\n", a)
+	}
+	fmt.Fprintln(w, "\nAreas")
+	for _, d := range o.Domains {
+		fmt.Fprintf(w, "  %-7s %s\n", d.Title, d.Line)
+	}
+	fmt.Fprintln(w, "\nTools")
+	for _, t := range o.Tools {
+		fmt.Fprintf(w, "  %-12s %-8s %s\n", t.ID, t.Where, strings.TrimSpace(t.Version+"  "+t.Path))
+	}
+	fmt.Fprintln(w)
+}

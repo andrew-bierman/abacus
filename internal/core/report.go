@@ -26,6 +26,9 @@ type Report struct {
 	Modules       []ModuleReport `json:"modules"`
 	// Domains is the fleet-domain view; additive, so schema_version stays 1. Set by `status`.
 	Domains *DomainsReport `json:"domains,omitempty"`
+	// Overview leads `doctor`: ready or needs attention, each domain and tool in one line.
+	// Additive, so schema_version stays 1.
+	Overview *Overview `json:"overview,omitempty"`
 }
 
 func newReport(version string) Report {
@@ -81,6 +84,8 @@ func VersionReport(version string, entries []Entry) Report {
 // check; an incompatible tool is a warn.
 func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 	r := newReport(version)
+	ov := BuildOverview(ctx, entries)
+	r.Overview = &ov
 	for _, e := range present(entries) {
 		m := base(e)
 		switch e.Detection.State {
