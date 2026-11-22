@@ -191,3 +191,27 @@ func TestFileAuditRefusesEmptyOrRelativePaths(t *testing.T) {
 		}
 	}
 }
+
+func TestUnknownOutcomeWordingNeverSaysNotApplied(t *testing.T) {
+	e := core.UnknownOutcome("bd timed out; refresh before retrying")
+	got := core.DescribeWriteError(e)
+	if !errors.Is(e, core.ErrOutcomeUnknown) || got != "result unknown: bd timed out; refresh before retrying" || strings.Contains(got, "not applied") {
+		t.Fatalf("%q", got)
+	}
+	if got := core.DescribeWriteError(errors.New("bd: boom\x1b")); got != "not applied: bd: boom" {
+		t.Fatalf("%q", got)
+	}
+}
+
+func TestUpdateRejectsBlankTitleAndDescriptionLikeCreate(t *testing.T) {
+	w := &fakeWriter{}
+	for _, ch := range []core.TaskChange{
+		{Op: core.TaskUpdate, ID: "t-1", Title: " "},
+		{Op: core.TaskUpdate, ID: "t-1", Title: "\t"},
+		{Op: core.TaskUpdate, ID: "t-1", Description: "  \n"},
+	} {
+		if _, err := core.PlanTaskChange(w, ch); err == nil {
+			t.Errorf("%+v must be refused", ch)
+		}
+	}
+}

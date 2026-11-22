@@ -251,3 +251,28 @@ func TestLeaseHelpersShapeRowsOnce(t *testing.T) {
 		t.Error("a live source is not a badge")
 	}
 }
+
+func TestFleetStatusReadsEachProviderOnce(t *testing.T) {
+	m := &countMod{Fake: &modtest.Fake{IDStr: "c", Stat: core.Status{Summary: "own"}}}
+	r := core.FleetStatusReport(context.Background(), "v", []core.Entry{entry(m, core.Ready, "")})
+	if [5]int{m.tasks, m.leases, m.queues, m.board, m.insights} != [5]int{1, 1, 1, 1, 1} {
+		t.Fatalf("a provider read more than once: %+v", m)
+	}
+	if r.Domains == nil || r.SchemaVersion != 1 || len(r.Modules) != 1 || r.Modules[0].Status == nil || r.Modules[0].Status.Summary == "" {
+		t.Fatalf("%+v", r)
+	}
+	// A module that provides no domain keeps its own Status.
+	plain := &modtest.Fake{IDStr: "p", Stat: core.Status{Summary: "own"}}
+	r = core.FleetStatusReport(context.Background(), "v", []core.Entry{entry(plain, core.Ready, "")})
+	if r.Modules[0].Status.Summary != "own" {
+		t.Fatalf("%+v", r.Modules[0].Status)
+	}
+}
+
+func TestFleetStatusShowsAFailedProviderReadAsUnavailable(t *testing.T) {
+	m := provMod{Fake: &modtest.Fake{IDStr: "x"}, tasks: func() (core.TasksReport, error) { return core.TasksReport{}, errors.New("no tracker") }}
+	r := core.FleetStatusReport(context.Background(), "v", []core.Entry{entry(m, core.Ready, "")})
+	if st := r.Modules[0].Status; st.Unavailable != "no tracker" {
+		t.Fatalf("%+v", st)
+	}
+}

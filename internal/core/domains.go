@@ -536,3 +536,59 @@ func ResolveProviders(entries []Entry) Providers {
 	p.Insights, p.InsightsWhy, _ = pick[InsightsProvider](entries)
 	return p
 }
+
+// readFailed reports a header from a failed provider read (empty body, how-to-connect set), as
+// opposed to a degraded read that still has data.
+func (h Header) readFailed() bool { return h.State == Degraded && h.HowToConnect != "" }
+
+// statusFromDomains is a provider module's Status taken from an already-read domain, so one
+// `status` run reads each provider once. ok is false for a module that provides no domain.
+func statusFromDomains(m Module, d DomainsReport) (Status, bool) {
+	var h Header
+	var st Status
+	switch m.(type) {
+	case TaskProvider:
+		h, st = d.Tasks.Header, Status{Summary: d.Tasks.Summary}
+	case LeaseProvider:
+		h, st = d.Leases.Header, d.Leases.Status()
+	case QueueProvider:
+		h, st = d.Queues.Header, Status{Summary: d.Queues.Summary}
+		for _, x := range d.Queues.Runs {
+			st.Lines = append(st.Lines, x.Line())
+		}
+		if d.Queues.Source == SourceTracker {
+			st.Source = SourceTracker
+		}
+	case InsightsProvider:
+		if d.Tasks.Insights == nil {
+			return Status{}, false
+		}
+		h, st = d.Tasks.Insights.Header, Status{Summary: d.Tasks.Insights.Summary, Source: SourceGraph}
+	default:
+		return Status{}, false
+	}
+	if h.State == NotConnected || h.readFailed() {
+		return Status{Unavailable: h.Reason}, true
+	}
+	return st, true
+}
+
+// FleetStatusReport is the `status` report: the fleet domains, read once, plus each ready
+// module's status taken from them (a module that provides no domain keeps its own Status).
+func FleetStatusReport(ctx context.Context, version string, entries []Entry) Report {
+	r := newReport(version)
+	dom := ReadDomains(ctx, entries)
+	r.Domains = &dom
+	for _, e := range present(entries) {
+		m := base(e)
+		if e.Detection.State == Ready {
+			st, ok := statusFromDomains(e.Module, dom)
+			if !ok {
+				st = e.Module.Status(ctx)
+			}
+			m.Status = &st
+		}
+		r.Modules = append(r.Modules, m)
+	}
+	return r
+}

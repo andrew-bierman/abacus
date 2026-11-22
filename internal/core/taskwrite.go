@@ -73,6 +73,23 @@ var (
 	ErrOutcomeUnknown = errors.New("result unknown")
 )
 
+type unknownOutcomeError struct{ msg string }
+
+func (e unknownOutcomeError) Error() string        { return "result unknown: " + e.msg }
+func (e unknownOutcomeError) Is(target error) bool { return target == ErrOutcomeUnknown }
+
+// UnknownOutcome is the error for a write that may or may not have happened.
+func UnknownOutcome(msg string) error { return unknownOutcomeError{msg} }
+
+// DescribeWriteError is the one wording every front-end shows for a failed write: an unknown
+// outcome is never called "not applied".
+func DescribeWriteError(err error) string {
+	if errors.Is(err, ErrOutcomeUnknown) {
+		return Sanitize(err.Error())
+	}
+	return "not applied: " + Sanitize(err.Error())
+}
+
 var planSeq atomic.Uint64
 
 // WritePlan is a validated change with its exact argv and a human-readable description.
@@ -107,6 +124,11 @@ func validate(ch TaskChange) error {
 			return fmt.Errorf("unknown type %q", ch.Type)
 		}
 	case TaskUpdate:
+		for label, v := range map[string]string{"title": ch.Title, "description": ch.Description} {
+			if v != "" && strings.TrimSpace(v) == "" {
+				return fmt.Errorf("%s must not be blank", label)
+			}
+		}
 		if ch.Title == "" && ch.Description == "" && ch.Status == "" && ch.Priority == nil {
 			return errors.New("nothing to change")
 		}

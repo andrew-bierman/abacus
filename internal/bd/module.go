@@ -220,7 +220,7 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 }
 
 func unknownOutcome() error {
-	return fmt.Errorf("bd timed out or was cut off, so the result is unknown; refresh before retrying: %w", core.ErrOutcomeUnknown)
+	return core.UnknownOutcome("bd timed out; refresh before retrying")
 }
 
 // decodeIssue reads bd's `--json` answer: a bare issue, a one-element array, or an error
