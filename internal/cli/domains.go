@@ -82,14 +82,11 @@ func renderTasks(w io.Writer, r core.TasksReport) {
 func renderLeases(w io.Writer, r core.LeasesReport) {
 	head(w, r.Header)
 	for _, l := range r.Leases {
-		extra := ""
-		switch l.State {
-		case core.LeaseHeld:
-			extra = " by " + l.Holder + " (expires " + l.ExpiresAt + ")"
-		case core.LeaseStale:
-			extra = " (last holder " + l.Holder + ")"
+		line := fmt.Sprintf("    %s  %s", l.Resource, l.State)
+		if d := l.Detail(); d != "" {
+			line += " " + d
 		}
-		fmt.Fprintf(w, "    %s  %s%s\n", l.Resource, l.State, extra)
+		fmt.Fprintln(w, line)
 	}
 }
 

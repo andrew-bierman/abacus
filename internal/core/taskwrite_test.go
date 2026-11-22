@@ -118,6 +118,7 @@ func TestPlanValidation(t *testing.T) {
 		"update":      {Op: core.TaskUpdate, ID: "tt-ioo", Status: "in_progress"},
 		"close":       {Op: core.TaskClose, ID: "tt-ioo", Reason: "done"},
 		"close dotid": {Op: core.TaskClose, ID: "tt-ioo.1"},
+		"underscore":  {Op: core.TaskClose, ID: "my_proj-yzs"}, // bd accepts underscores in a prefix (verified in an isolated tracker)
 	}
 	for name, ch := range ok {
 		if _, err := core.PlanTaskChange(w, ch); err != nil {

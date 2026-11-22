@@ -370,3 +370,19 @@ func TestStatusReadsEachProviderOnce(t *testing.T) {
 		t.Fatalf("%v %s", err, out)
 	}
 }
+
+type leaseMod struct{ *modtest.Fake }
+
+func (leaseMod) Leases(context.Context) (core.LeasesReport, error) {
+	return core.LeasesReport{Header: core.Header{Source: core.SourceLive}, Leases: []core.Lease{
+		{Resource: "a", State: core.LeaseHeld, Holder: "h", ExpiresAt: "T"}, {Resource: "b", State: core.LeaseStale, Holder: "old"}, {Resource: "c", State: core.LeaseFree}}}, nil
+}
+
+func TestLeasesTextUsesTheSharedLeaseDetail(t *testing.T) {
+	_, out, _, _ := runIn(t, "", []core.Module{leaseMod{&modtest.Fake{IDStr: "l", Det: core.Detection{State: core.Ready}}}}, "leases")
+	for _, want := range []string{"1 held, 1 stale, 1 free", "a  held by h (expires T)", "b  stale (last holder old)", "c  free\n"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+}
