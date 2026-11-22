@@ -9,6 +9,7 @@ import (
 
 	"github.com/andrew-bierman/abacus/internal/bd"
 	"github.com/andrew-bierman/abacus/internal/beadslease"
+	"github.com/andrew-bierman/abacus/internal/board"
 	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/bv"
 	"github.com/andrew-bierman/abacus/internal/cli"
@@ -43,6 +44,21 @@ func saveTracker(store core.ConfigStore) func(string) error {
 			return c.Set("tracker_dir", dir)
 		})
 	}
+}
+
+// boardURL is the board the CLI is pointed at: ABACUS_BOARD_URL, else the saved board_url, else
+// "" (the CLI's own default: BOARD_URL, a linked Vercel project, or the login's team board). An
+// invalid value is an error, never a silent fall back to the default board.
+func boardURL(e Env, cfg core.Config) (string, string) {
+	for _, u := range []string{e.Getenv("ABACUS_BOARD_URL"), cfg.BoardURL} {
+		if u != "" {
+			if err := core.ValidateBoardURL(u); err != nil {
+				return "", err.Error()
+			}
+			return u, ""
+		}
+	}
+	return "", ""
 }
 
 // Build constructs the registry. Binary precedence is each module's own: an ABACUS_*_BIN
@@ -83,6 +99,12 @@ func Build(o cli.Options, e Env) *core.Registry {
 			OnInit: saveTracker(e.Config),
 		}),
 		bv.New(bv.Options{Bin: e.Getenv("ABACUS_BV_BIN"), Ref: ref}),
+		board.New(boardOptions(e, cfg)),
 		core.NewConfigCheck(e.Config),
 	)
+}
+
+func boardOptions(e Env, cfg core.Config) board.Options {
+	u, bad := boardURL(e, cfg)
+	return board.Options{Bin: e.Getenv("ABACUS_BOARD_BIN"), URL: u, URLErr: bad, Getenv: e.Getenv}
 }
