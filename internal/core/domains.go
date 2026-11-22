@@ -306,3 +306,35 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	}
 	return r
 }
+
+// Providers is what a front-end needs to drive each domain lazily: the provider for each
+// domain (nil when none is usable) and, for the others, the not-connected header to show.
+type Providers struct {
+	Tasks   TaskProvider
+	Leases  LeaseProvider
+	Queues  QueueProvider
+	Board   BoardProvider
+	Writer  TaskWriter // the module that can write tasks, if any
+	Missing map[DomainID]Header
+}
+
+// ResolveProviders maps detected modules to domains exactly as ReadDomains does.
+func ResolveProviders(entries []Entry) Providers {
+	p := Providers{Missing: map[DomainID]Header{}}
+	var why string
+	var ok bool
+	if p.Tasks, why, ok = pick[TaskProvider](entries); !ok {
+		p.Missing[DomainTasks] = notConnected(DomainTasks, why)
+	}
+	if p.Leases, why, ok = pick[LeaseProvider](entries); !ok {
+		p.Missing[DomainLeases] = notConnected(DomainLeases, why)
+	}
+	if p.Queues, why, ok = pick[QueueProvider](entries); !ok {
+		p.Missing[DomainQueues] = notConnected(DomainQueues, why)
+	}
+	if p.Board, why, ok = pick[BoardProvider](entries); !ok {
+		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
+	}
+	p.Writer, _, _ = pick[TaskWriter](entries)
+	return p
+}
