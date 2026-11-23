@@ -155,3 +155,47 @@ func TestFitColumnsFillsBoundedColumnsInPriorityOrder(t *testing.T) {
 		t.Fatalf("the rest spills to the next column: %v", ws)
 	}
 }
+
+// Short content neither wastes width nor forces a drop: columns shrink to their widest cell.
+func TestFitRowsShrinksColumnsToTheirContent(t *testing.T) {
+	tb := table{cols: []column{{min: 6, max: 14, prio: 0}, {min: 8, max: 10, prio: 1}, {min: 4, prio: 2}}, gap: 2}
+	rows := [][]string{{"T-1", "run", "title one"}, {"T-22", "fail", "t"}}
+	ws := tb.fitRows(60, rows)
+	if ws[0] != 4 || ws[1] != 4 {
+		t.Fatalf("bounded columns take only what the content needs: %v", ws)
+	}
+	if ws[2] != 60-4-4-2*2 {
+		t.Fatalf("the unbounded column keeps the slack: %v", ws)
+	}
+	// With the minimums taken from the content, a narrow table keeps a column that fixed minimums
+	// would have dropped (4+4+4 plus two gaps of 2 is 16).
+	if ws = tb.fitRows(16, rows); kept(ws) != 3 {
+		t.Fatalf("content-sized minimums keep all three columns at 16: %v", ws)
+	}
+	if ws = tb.fit(16); kept(ws) == 3 {
+		t.Fatalf("fixed minimums could not keep all three at 16 (the case fitRows improves): %v", ws)
+	}
+}
+
+func TestFitRowsMeasuresStyledAndWideCells(t *testing.T) {
+	tb := table{cols: []column{{min: 1, max: 20, prio: 0}}, gap: 1}
+	rows := [][]string{{"\x1b[31m日本\x1b[0m"}}
+	if ws := tb.fitRows(30, rows); ws[0] != 4 {
+		t.Fatalf("width counts cells, not bytes or escapes: %v", ws)
+	}
+}
+
+// A table that is down to one column still grows it into the slack; it is squeezed only when even
+// its minimum does not fit.
+func TestFitColumnsSingleColumnGrowsAndSqueezes(t *testing.T) {
+	one := table{cols: []column{{min: 4, max: 10}}, gap: 1}
+	for w, want := range map[int]int{3: 3, 4: 4, 7: 7, 10: 10, 40: 10} {
+		if ws := one.fit(w); ws[0] != want {
+			t.Errorf("w=%d: width %d, want %d", w, ws[0], want)
+		}
+	}
+	open := table{cols: []column{{min: 4}}, gap: 1}
+	if ws := open.fit(40); ws[0] != 40 {
+		t.Errorf("an unbounded single column takes everything: %v", ws)
+	}
+}

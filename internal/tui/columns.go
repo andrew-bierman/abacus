@@ -53,9 +53,8 @@ func (t table) fit(w int) []int {
 	for n > 1 && need() > w {
 		n--
 	}
-	if n == 1 {
-		i := order[0]
-		out[i] = min(mins[i], w)
+	if n == 1 && mins[order[0]] > w { // even the most important column does not fit: squeeze it
+		out[order[0]] = w
 		return out
 	}
 	extra := w - need()
@@ -108,4 +107,24 @@ func (t table) row(widths []int, cells []string) string {
 		parts = append(parts, cell)
 	}
 	return strings.Join(parts, strings.Repeat(" ", max(gap, 0)))
+}
+
+// fitRows is fit for a table whose rows are known: a column never gets more room than its widest
+// cell, and its minimum shrinks to that, so short content neither wastes width nor forces a column
+// to be dropped. Unbounded columns still take the slack.
+func (t table) fitRows(w int, rows [][]string) []int {
+	cols := append([]column(nil), t.cols...)
+	for i := range cols {
+		widest := 1
+		for _, r := range rows {
+			if i < len(r) {
+				widest = max(widest, lipgloss.Width(r[i]))
+			}
+		}
+		cols[i].min = min(max(cols[i].min, 1), widest)
+		if cols[i].max > 0 {
+			cols[i].max = max(min(cols[i].max, widest), cols[i].min)
+		}
+	}
+	return table{cols: cols, gap: t.gap}.fit(w)
 }

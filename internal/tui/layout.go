@@ -67,55 +67,6 @@ func window(lines []string, cursor, h, top int) ([]string, int) {
 
 func isStacked(w int) bool { return w < bpWide }
 
-// paneWidths is the list and detail content widths for a body w cells wide.
-func paneWidths(w int) (list, detail int) {
-	if isStacked(w) {
-		return w, w
-	}
-	list = max(w*2/5, 30)
-	return list, w - list - 3 // " │ " between the panes
-}
-
-// panes lays list and detail out for a body of w x h cells (h <= 0: as tall as needed).
-// Wide bodies show both side by side; narrow ones show one pane, the detail once drilled in.
-func panes(th Theme, w, h int, list, detail []string, drilled bool) []string {
-	if w <= 0 {
-		w = defaultWidth
-	}
-	lw, dw := paneWidths(w)
-	if isStacked(w) {
-		one := list
-		if drilled {
-			one = detail
-		}
-		if h > 0 && len(one) > h {
-			one = one[:h]
-		}
-		out := make([]string, len(one))
-		for i, l := range one {
-			out[i] = trunc(l, lw)
-		}
-		return out
-	}
-	rows := max(len(list), len(detail))
-	if h > 0 {
-		rows = min(rows, h)
-	}
-	div := th.Divider.Render("│")
-	out := make([]string, rows)
-	for i := range out {
-		var l, d string
-		if i < len(list) {
-			l = list[i]
-		}
-		if i < len(detail) {
-			d = detail[i]
-		}
-		out[i] = padTo(trunc(l, lw), lw) + " " + div + " " + trunc(d, dw)
-	}
-	return out
-}
-
 // windowMore is window plus room for a "+N more" marker: when lines do not fit it shows h-1
 // lines around the cursor and reports how many lines are hidden (the caller draws the marker).
 func windowMore(lines []string, cursor, h, top int) (vis []string, newTop, hidden int) {
