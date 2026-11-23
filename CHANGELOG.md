@@ -8,6 +8,15 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Release notices: `THIRD_PARTY_NOTICES.md` now says the bundled tools ship unmodified and run as
+  subprocesses, and that the `abacus` binary also statically links parts of bv's Go packages (bv
+  v0.27.0 `pkg/analysis` and dependencies) under bv's license (`third_party/bv/LICENSE`, verbatim).
+  It ends with every Go module linked into the binary and its license text, generated offline by
+  `scripts/lib/golicenses.sh` from `go list -deps`.
+- The library engine reports a stale export (older than `.beads/*.db` or the dolt directory) as a
+  degraded insights header and a Doctor warning, shows the export's age otherwise, never reads an
+  export above the tracker directory or through a symlink that leaves it, reports an export over
+  64 MiB as `export larger than 64 MiB`, and switches off bv's `BV_DEBUG` stderr logger.
 - An opt-in in-process graph engine for the Tasks insights: set `ABACUS_GRAPH_ENGINE=library` and
   abacus runs bv's analysis package inside its own process (new `internal/graph`) over the
   tracker's `.beads/issues.jsonl` export, with no `bv` binary and no subprocess. The default is

@@ -234,9 +234,12 @@ Differences from what the bv subprocess adapter already reports, worth designing
   path. abacus's `InsightsReport.CriticalPath` is a ranked list, which is the same shape bv's
   `Keystones` produces, so this maps cleanly; a cycle makes every score zero, which matches the
   subprocess behavior of `critical path skipped`.
-- A closed issue still contributes to scores of its dependents (a is closed and still scores 3).
-  The subprocess adapter reports whatever the same function reports, so parity holds, but a library
-  adapter should decide whether closed issues belong in the input.
+- A closed issue still contributes to scores of its dependents in bv's raw, unscoped analysis (a
+  is closed and still scores 3). The ranked keystone and bottleneck lists exclude closed issues
+  (the scoped insights `bv --robot-insights` uses), while the triage pick scores come from bv's
+  triage over all issues, closed ones included. A library adapter must decide whether closed
+  issues belong in the input; the prototype keeps them, so a closed blocker satisfies its
+  dependents.
 - "Actionable" counts only issues whose status allows work and whose blockers are all closed; an
   in-progress issue behind an open blocker counts as blocked. v0.21.0 of bv deliberately changed the
   triage counts (`open_count` is now exactly status `open`; the legacy meaning moved to
