@@ -46,12 +46,13 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 | Domain | What you see | What you can change today |
 | --- | --- | --- |
 | Board | channels, recent threads and messages, open tasks (a message board for agents, not a kanban) | post a thread or reply from the command line (`abacus board post\|reply`, with a confirm step) |
-| Tasks | counts by state, ready work, recent changes, graph insights (next pick, blockers, critical path, cycles) | create, update, close (with a confirm step); first run: create the fleet workspace |
+| Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; graph insights (next pick, blockers, critical path, cycles) in a second view | create, update, close (with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
-`abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders.
+`abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders, and
+`abacus tasks list|show` print the task list and one task in full (`--query`, `--sort`, `--json`).
 
 ## First run
 
@@ -173,7 +174,8 @@ import no UI library.
 Providers are invisible in navigation and appear only here, in Doctor and in "how to connect"
 or error messages that help you fix one.
 
-- **Beads (`bd`)**: Tasks reads and writes. Reads always run `--readonly`; writes go through a
+- **Beads (`bd`)**: Tasks reads and writes. Reads always run `--readonly` (the task list is one
+  `bd --readonly export` of the tracker, a fixed argv); writes go through a
   separate allowlist (create, update, close, and the fixed `init` of the first-run workspace) and
   the confirm step.
 - **beads-lease**: Leases (read only).
@@ -183,8 +185,9 @@ or error messages that help you fix one.
   not a graph), computed in this process with bv's analysis package over the tracker's
   `.beads/issues.jsonl`. It is not a tool and has no switch: there is no bv program to bundle,
   find or run.
-- **b9s**: works with b9s for the full tree and graph view: press `o` on Tasks to open it in the
-  tracker directory (probes for it first). It is optional: without it `o` says what b9s adds and where to get it.
+- **b9s**: an optional extra for its full tree and graph view: press `o` on Tasks to open it in the
+  tracker directory (probes for it first). abacus's own Tasks list and detail do not need it: without
+  it `o` says what b9s adds and where to get it.
 - **Board** (optional, not bundled): composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`, same CLI),
   run as a subprocess only: bounded `channels list`, `read` and `tasks` reads with `--json`,
   `--limit` and a deadline, behind an argv allowlist and a scrubbed environment (only `HOME`,

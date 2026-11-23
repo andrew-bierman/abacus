@@ -1,9 +1,10 @@
 # abacus TUI
 
 The TUI renders core's typed domain reports and holds no logic of its own. It is the fleet
-cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. abacus deliberately has
-no issue browser, kanban or dependency graph; Tasks shows a compact summary and hands off to a
-full view (`o`) for the rich tree and graph. The Board is a message board for agents: channels,
+cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. Tasks is abacus's own work
+browser: every task listed, sorted and filtered, with a detail pane (see "Tasks" below); the
+kanban, graph and tree views are planned in `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`.
+The `o` handoff to the full b9s view stays as an optional extra. The Board is a message board for agents: channels,
 recent threads and open tasks, with the selected thread or task shown in full below the list. Providers (the tools behind each domain)
 are named only in Doctor and in "how to connect" or error messages, never in navigation.
 
@@ -23,14 +24,15 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | --- | --- |
 | `tab`, `right` / `shift+tab`, `left` | next / previous domain |
 | `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
-| `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task |
+| `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task; on a Tasks detail they scroll it |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
 | `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice saying b9s is optional and where to get it if it is not there). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
 | `w` | Leases, Tasks: go to the selected row's workspace session (see "Workspace" below). Offered only when the row has a placement or an ambiguity |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
-| `enter`, `esc` | Queues, narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
-| `/` | Queues: filter runs by issue, state, phase, machine or workflow |
+| `enter`, `esc` | Queues and Tasks, narrow layout only: open the detail; `esc` closes it, a second `esc` clears the filter. Tasks, wide layout: `enter` focuses the detail to scroll it, `esc` leaves |
+| `/` | Queues: filter runs by issue, state, phase, machine or workflow. Tasks: the query (below); `enter` keeps it, `esc` clears it |
+| `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Insights) |
 | `?` | full help overlay; `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
@@ -39,13 +41,63 @@ goes to it. Nothing writes except `y` on the confirm screen.
 
 ## Tasks
 
-Counts by state, ready work and the most recent changes (an aligned table with a cursor, for `e` and
-`x`) in a framed list panel, and the graph insights in a panel of their own: the next pick, the
-issues that block the most, the critical path and dependency cycles. From 100 columns the insights
-sit beside the list; below that they sit under it (the list keeps two thirds of the rows). Insights
-are read on start and on `r`, not on a timer, because each read analyzes the whole tracker. Without an
-insights provider the panel says it is not connected and what is wrong with abacus's own bd (a
-release: damaged or moved, re-extract; a dev build: run `scripts/dev-bundle.sh`).
+Every task in the tracker, read as one snapshot (`bd --readonly export`, a fixed read that never
+writes) and derived in `internal/taskview`: the list, the detail and the counts all come from that
+one read, so they cannot disagree about what is blocked or ready.
+
+```
+ [List] Insights                                                     14 tasks · 3 ready   view strip, then counts
+ [open] /label:ui                                          3 of 14 · sort: priority ↑   quick filter, query, matches
+╭─ ▸ Tasks · fleet ───────────────────╮ ╭─ ac-12 ──────────────╮
+│   id    title            st P  dep ...│ │ detail of the task   │
+```
+
+- **List.** A full-row cursor over every task: `id`, title, status mark (`○` open, `◐` in progress,
+  `●` blocked, `✓` closed, `◇` deferred), priority, `dep`, type, age, assignee, and from 140 columns
+  the labels. `dep` reads `⊘N` held by N unfinished tasks and `→N` holds N tasks back. Columns drop
+  by importance as the width shrinks (40 columns keep `id`, title, status, priority and `dep`). The
+  title carries `done/total` for an epic. The tracker's directory name is in the panel title; a read
+  older than two polls adds `stale 3m`, and a snapshot that may have lost records says so under the
+  panel.
+- **Detail.** Beside the list from 100 columns, otherwise `enter` opens it full width and `esc`
+  returns. It shows the task, its status, labels and parent, what blocks it and what it blocks
+  (finished ones are listed too, marked `✓`), the children of an epic with a progress bar, the
+  description, design, notes and acceptance text as wrapped text with light markdown (headings,
+  bullets, fenced and inline code, bold; not a markdown renderer), the close reason and the comment
+  thread. Everything from the tracker is sanitized before it is measured or drawn. Long details
+  scroll with `j` `k`.
+- **Sort.** `s` cycles priority, created, updated, title, status, type, deps and deferred, each in its
+  natural direction (newest first for times); `S` reverses. Ties always break by id, ascending, so a
+  refresh never shuffles equal rows.
+- **Quick filters.** `f` cycles open (not closed, the default), ready, blocked, closed and all. Ready
+  is open, not deferred and with no unfinished blocker; it matches `bd ready` on the captured
+  fixtures. Blocked is held by an unfinished dependency *or* stored as blocked: the stored status
+  stays what a card move would write, and the derived state is the `⊘N` mark and `blocked:true`.
+- **Query.** `/` edits a query that filters as you type; `enter` keeps it and `esc` clears it. Free
+  words match the id, title and labels (every word must; a word of up to four characters matches as a
+  subsequence, a longer one as contiguous text; `"quoted phrase"` is contiguous). Predicates narrow
+  one field: `status:open`, `priority:<=1`, `priority:p0`, `type:bug`, `assignee:ada`,
+  `assignee:none`, `label:ui`, `label:none`, `parent:ID`, `id:ac-4` (prefix), `title:text`,
+  `blocked:true`, `ready:true`, `is:ready`, `has:comments` (also `description`, `labels`, `parent`,
+  `children`, `assignee`), `updated>7d`, `created<2026-11-01`. Different fields AND, repeated values
+  for one field OR (`status:open status:blocked` or `status:open,blocked`); `!` or `-` excludes. A
+  duration is that long ago, so `updated>7d` is "touched in the last week" and `updated<7d` is
+  "untouched for a week". A mistake keeps the last good filter and says what is wrong and where
+  (`unknown field "foo" (col 25)`). The grammar is `internal/query`, shared with every later search.
+- **Insights.** `v` switches to the graph insights panel: the counts bar, the next pick, the issues
+  that block the most, the critical path and dependency cycles. Insights are read on start and on
+  `r`, not on a timer, because each read analyzes the whole tracker. Without an insights provider the panel says it is not connected and what is
+  wrong with abacus's own bv (a release: damaged or moved, re-extract; a dev build: run
+  `scripts/dev-bundle.sh`).
+- **Fallbacks.** A provider that cannot read the whole tracker, or a read that failed before the
+  first snapshot, lists the summary's recent changes (`recent only` in the panel title) with the
+  reason. A read that fails after a good one keeps the last list and says `refresh failed`.
+- **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e` and `x` forms and
+  the confirm gate below are unchanged and now act on the task under the cursor.
+
+`abacus tasks list [--query Q] [--sort KEY] [--reverse] [--preset P] [--json]` and
+`abacus tasks show ID [--json]` print the same typed reports (`schema_version` 1, additive keys
+only) the TUI renders.
 
 The new and edit forms, the "Checking the current state…" screen, the confirm screen and its
 "applying…" state are each one framed panel with the title in the border. The form is a table: a
@@ -132,7 +184,7 @@ the cursor, the scroll offset, the selected row's identity and the drill state. 
 one stable id per selectable row (a lease resource, a run key, "t:"/"k:" plus a message id, a task
 ID). When the selected row disappears on a refresh, Leases and Queues keep the selection pinned to
 it (it is selected again if the row comes back) and Board and Tasks select the clamped row now
-under the cursor. Tasks has no detail panel to drill into.
+under the cursor. Tasks drills into its detail below 100 columns, like the Board.
 
 Not-connected and unavailable states (and the first-run setup prompt) are one framed panel with the
 domain in the border; the "how to connect:" text is a block of its own, set off by blank rows, which
@@ -201,7 +253,7 @@ where the selected item lives. Nothing changes anywhere without workspace data.
 - **Detail.** The selected run, lease or task gets a `where` block: the session, its machine, the
   match (`exact`, `by label`, `machine not configured`), `ambiguous: N claim it` with the
   candidates, or `not placed`. A cached read, a truncated read and a degraded workspace are marked.
-  Tasks has no detail panel, so its block sits under the table.
+  On Tasks the block is the last section of the detail pane.
 - **Where column.** At 140 columns and wider the lists get an aligned `where` column as the last,
   first-dropped column; it appears only if no other column is dropped and the identifying columns
   (id, state) keep their width.
