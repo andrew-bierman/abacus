@@ -314,3 +314,32 @@ func TestBoardDetailTitleFollowsTheSelectedRowKind(t *testing.T) {
 	}
 	rowWith(t, v, "▸", "#16")
 }
+
+// The write outcome is never lost: a timed-out write says "result unknown" even when the read that
+// follows it also fails, and so does any other notice shown while the tasks cannot be read.
+func TestTasksNoticeSurvivesAFailedRead(t *testing.T) {
+	for name, msg := range map[string]tea.Msg{
+		"unknown outcome": taskAppliedMsg{err: fmt.Errorf("bd timed out: %w", core.ErrOutcomeUnknown), op: core.TaskClose},
+		"applied":         taskAppliedMsg{res: core.TaskResult{ID: "ac-12", Title: "done"}, op: core.TaskClose},
+	} {
+		r := newTasksRig(t)
+		m, _ := r.m.Update(msg)
+		m, _ = m.Update(tasksMsg{err: fmt.Errorf("tracker down")})
+		v := m.View()
+		if !strings.Contains(v, "state unavailable: tracker down") {
+			t.Fatalf("%s: the read failure shows:\n%s", name, v)
+		}
+		want := map[string]string{"unknown outcome": "result unknown", "applied": "closed"}[name]
+		if !strings.Contains(v, want) {
+			t.Errorf("%s: the write outcome %q must still be on screen:\n%s", name, want, v)
+		}
+	}
+}
+
+func TestBoardDrillEndsWhenARefreshEmptiesTheRows(t *testing.T) {
+	m := press(boardAt(80, 40, demo.BoardReport()), "enter")
+	m, _ = m.Update(boardMsg{report: core.BoardReport{Header: core.Header{Source: core.SourceLive}}})
+	if v := m.View(); strings.Contains(v, "▸ Message") || strings.Contains(v, "nothing selected") {
+		t.Fatalf("an empty board shows its list, not an empty detail:\n%s", v)
+	}
+}

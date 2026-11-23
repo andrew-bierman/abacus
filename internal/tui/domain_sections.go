@@ -171,17 +171,16 @@ func (s *boardSection) deactivate() { s.active = false; s.gen++ }
 // row is one selectable line: a thread or a task.
 type boardRow struct {
 	id   string
-	text string // the list line
 	body []string
 }
 
 func (s *boardSection) rows() []boardRow {
 	var out []boardRow
 	for _, t := range s.report.Threads {
-		out = append(out, boardRow{id: "t:" + t.Root.ID, text: threadRow(t), body: threadBody(t)})
+		out = append(out, boardRow{id: "t:" + t.Root.ID, body: threadBody(t)})
 	}
 	for _, t := range s.report.Tasks {
-		out = append(out, boardRow{id: "k:" + t.ID, text: taskRow(t), body: taskBody(t)})
+		out = append(out, boardRow{id: "k:" + t.ID, body: taskBody(t)})
 	}
 	return out
 }
@@ -196,10 +195,6 @@ func when(iso string) string {
 		return t.UTC().Format("Jan 2 15:04")
 	}
 	return ""
-}
-
-func threadRow(t core.BoardThread) string {
-	return fmt.Sprintf("%s  %s  %s  %s", padTo(trunc(hash+san(t.Root.ID), 8), 8), padTo(trunc(orDash(t.Root.Channel), 12), 12), padTo(trunc(orDash(t.Root.Author), 12), 12), san(firstLine(t.Root.Text)))
 }
 
 // textLines splits stored message text into screen lines, each sanitized: the data keeps its
@@ -224,11 +219,6 @@ func threadBody(t core.BoardThread) []string {
 		out = append(out, textLines(t.Last.Text)...)
 	}
 	return out
-}
-
-func taskRow(t core.BoardTask) string {
-	who := t.Claimant
-	return fmt.Sprintf("%s  %s  %s  %s", padTo(trunc(hash+san(t.ID), 8), 8), padTo(trunc(orDash(t.State), 10), 10), padTo(trunc(orDash(who), 12), 12), san(firstLine(t.Text)))
 }
 
 func taskBody(t core.BoardTask) []string {
@@ -258,6 +248,7 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case boardMsg:
 		s.report, s.err, s.loaded, s.busy = m.report, m.err, true, false
 		s.reanchor()
+		s.drilled = s.drilled && len(s.rows()) > 0
 	case boardTickMsg:
 		if !s.active || m.gen != s.gen { // not visible, or a tick of an earlier visit
 			return s, nil
@@ -341,18 +332,11 @@ var (
 func (s *boardSection) connectedView() string {
 	th, w := s.th, s.width()
 	r := s.report
-	h := s.h
-	if s.notice != "" && h > 0 {
-		h = max(1, h-1)
-	}
-	g := duoLayout(w, h)
+	g := duoLayout(w, s.bodyH(s.notice))
 	iw := g.listInner()
 	rows := s.rows()
 
-	title := "Board"
-	if src := r.Source; src != "" && src != core.SourceLive {
-		title += " · " + san(src)
-	}
+	title := titled("Board", r.Source)
 	lines := wrap(r.Summarize(), iw)
 	if r.Reason != "" {
 		lines = append(lines, wrap(th.Text(KindWarn, san(r.Reason)), iw)...)
@@ -376,7 +360,6 @@ func (s *boardSection) connectedView() string {
 		lines = append(lines, wrap(strings.Join(chans, " · "), iw)...)
 	}
 
-	cursorLine := len(lines)
 	lines = append(lines, "", th.Header.Render("Recent threads"))
 	if len(r.Threads) == 0 {
 		lines = append(lines, th.Text(KindMuted, "no threads yet"))
@@ -397,6 +380,7 @@ func (s *boardSection) connectedView() string {
 	}
 	// the cursor runs over threads then tasks: draw the task rows with the cursor shifted past the threads
 	lines = append(lines, renderRows(th, taskCols, iw, krows, krows, s.cursor-len(r.Threads))...)
+	var cursorLine int
 	if s.cursor < len(r.Threads) {
 		cursorLine = first + s.cursor
 	} else {
@@ -416,9 +400,9 @@ func (s *boardSection) connectedView() string {
 		}
 	}
 	list := windowLines(th, lines, cursorLine, g.inner, &s.top)
-	body := g.draw(th, h, title, list, detailTitle, clipLines(th, detail, g.inner), s.drilled)
+	body := g.draw(th, title, list, detailTitle, clipLines(th, detail, g.inner), s.drilled)
 	if s.notice != "" {
-		body = append(body, trunc(th.Text(KindWarn, san(s.notice)), w))
+		body = append(body, noticeLine(th, w, s.notice)...)
 	}
 	return joinLines(body)
 }
@@ -890,7 +874,11 @@ func (s *tasksSection) lines() ([]string, int) {
 	if !s.loaded {
 		return []string{th.Text(KindMuted, "loading…")}, 0
 	}
-	return wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w), 0
+	out := wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w)
+	if s.notice != "" { // a write outcome, or why a key did nothing, is never lost to a failed read
+		out = append(out, "", th.Text(KindWarn, san(s.notice)))
+	}
+	return out, 0
 }
 
 func (s *tasksSection) insightParts(iw int) (string, []string) {
@@ -946,10 +934,7 @@ var taskTable = table{cols: []column{{min: 12, max: 12, prio: 0}, {min: 11, max:
 // The forms and the confirm screen are not drawn here.
 func (s *tasksSection) panelView() string {
 	th, w := s.th, s.width()
-	h := s.h
-	if s.notice != "" && h > 0 {
-		h = max(1, h-1)
-	}
+	h := s.bodyH(s.notice)
 	g := duoLayout(w, h)
 	iw := g.listInner()
 	insW := max(w-panelChromeW, 1)
@@ -957,10 +942,7 @@ func (s *tasksSection) panelView() string {
 		insW = max(g.detail-panelChromeW, 1)
 	}
 
-	title := "Tasks"
-	if src := s.report.Source; src != "" && src != core.SourceLive {
-		title += " · " + san(src)
-	}
+	title := titled("Tasks", s.report.Source)
 	c := s.report.Counts
 	lines := wrap(fmt.Sprintf("%d tasks: %d open · %d in progress · %d blocked · %d deferred · %d closed", c.Total, c.Open, c.InProgress, c.Blocked, c.Deferred, c.Closed), iw)
 	lines = append(lines, "ready "+th.Text(KindOK, fmt.Sprint(c.Ready)), "", th.Header.Render("Recent changes"))
@@ -986,13 +968,13 @@ func (s *tasksSection) panelView() string {
 	}
 	var body []string
 	if g.wide {
-		body = g.draw(th, h, title, windowLines(th, lines, cursorLine, g.inner, &s.top), insTitle, clipLines(th, ins, g.inner), false)
+		body = g.draw(th, title, windowLines(th, lines, cursorLine, g.inner, &s.top), insTitle, clipLines(th, ins, g.inner), false)
 	} else {
 		topRows, botRows := stackRows(h, len(lines), len(ins))
 		body = stackPanels(th, w, title, windowLines(th, lines, cursorLine, topRows, &s.top), topRows, insTitle, clipLines(th, ins, botRows), botRows)
 	}
 	if s.notice != "" {
-		body = append(body, trunc(th.Text(KindWarn, san(s.notice)), w))
+		body = append(body, noticeLine(th, w, s.notice)...)
 	}
 	return joinLines(body)
 }
