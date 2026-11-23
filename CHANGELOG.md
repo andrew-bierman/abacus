@@ -67,6 +67,11 @@ may change behavior, and patch versions are fixes and small additions.
   two hues it can tell apart. Each color is also carried by a glyph or word, so nothing depends on color:
   the bar uses a different glyph per state and the dot is a character. Selected rows stay plain on
   the highlight. In `--demo`, Doctor now lists the demo tools as demo instead of missing.
+- Internal: Leases, Queues, Board and Tasks share one list-navigation piece (`listNav`: cursor,
+  scroll, selected row identity, drill), with direct tests. Selection and key behavior are unchanged
+  (Leases and Queues still pin the selection when its row disappears; Board and Tasks follow the
+  clamped row). The Tasks section moved to its own file, and the Board builds only the selected
+  row's detail text instead of one per row on every render. No output changed.
 - Tasks and Board are drawn in framed panels with aligned columns. Tasks shows the counts and an
   aligned task table in a list panel and the graph insights in their own panel, beside the list from
   100 columns and under it below that. Board shows the summary, channels and aligned thread and task
