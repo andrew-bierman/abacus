@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/lambe"
@@ -308,5 +309,156 @@ func TestStaleLeaseDetailSaysLastHolderAndExpiryMatchesTheTable(t *testing.T) {
 	rowWith(t, held, "expires", "?")
 	if strings.Contains(held, "expires  -") {
 		t.Fatalf("a held lease with no expiry reads ? in the table and the detail alike:\n%s", held)
+	}
+}
+
+// ---- coverage the first pass missed: hostile text, the pinned attention cap, wrapping, tones ----
+
+func hostileOK(t *testing.T, name, v string, w int) {
+	t.Helper()
+	for _, r := range v {
+		if r < 0x20 && r != '\n' || r == 0x7f || r >= 0x200b && r <= 0x200f || r >= 0x202a && r <= 0x202e || r == 0xfeff {
+			t.Errorf("%s: forbidden rune %U reached the screen", name, r)
+			return
+		}
+	}
+	for _, l := range strings.Split(v, "\n") {
+		if lipgloss.Width(l) > w {
+			t.Errorf("%s: %q is %d wide, over %d", name, l, lipgloss.Width(l), w)
+			return
+		}
+	}
+}
+
+func TestHostileTextNeverReachesTheLeasesDetailOrDoctorOverviewPanels(t *testing.T) {
+	bad := "x\x1b[2J\u202etxt\u200b\u200d\ufeff\x07y\x00日本語"
+	ls := core.Lease{Resource: bad, State: core.LeaseHeld, Holder: bad, ExpiresAt: bad}
+	for _, w := range []int{40, 120} {
+		m := leasesAt(w, 30, ls)
+		hostileOK(t, fmt.Sprintf("leases %d", w), m.View(), w)
+		hostileOK(t, fmt.Sprintf("leases drilled %d", w), press(m, "enter").View(), w)
+
+		ov := &core.Overview{
+			Domains: []core.DomainLine{{Domain: core.DomainTasks, Title: bad, State: core.Connected, Line: bad}},
+			Tools:   []core.ToolLine{{ID: bad, Name: bad, State: core.Ready, Where: bad, Version: bad, Note: bad}},
+		}
+		d := newDoctorSection(nil)
+		d.SetTheme(asciiTheme())
+		var dm tea.Model = d
+		dm, _ = dm.Update(doctorMsg{report: core.Report{Overview: ov, Modules: []core.ModuleReport{{Name: bad,
+			Detection: core.Detection{State: core.Ready, Version: bad}, Checks: []core.Check{{Name: bad, Status: core.StatusWarn, Detail: bad, Fix: bad}}}}}})
+		hostileOK(t, fmt.Sprintf("doctor %d", w), sized(dm, w, 60).View(), w)
+	}
+}
+
+// With more attention entries than a third of the panel, the block is cut to that third and says
+// how many entries it hides; the run list keeps its own marker.
+func TestQueuesPinnedAttentionIsCappedAtAThirdAndSaysWhatItHides(t *testing.T) {
+	v := manyRuns(25)
+	for i := 0; i < 4; i++ {
+		v.Snapshot.NeedsHuman = append(v.Snapshot.NeedsHuman, lambe.NeedsHuman{Issue: fmt.Sprintf("R-%02d", 10+i), Reason: "gate_failed", Detail: "d"})
+	}
+	for _, h := range []int{12, 14} {
+		out := lambeAt(80, h, v).View()
+		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+		inner := h - panelChromeH
+		start := -1
+		for i, l := range lines {
+			if strings.Contains(l, "Needs attention 5") {
+				start = i
+			}
+		}
+		if start < 0 {
+			t.Fatalf("h=%d: the attention header must stay visible:\n%s", h, out)
+		}
+		block := len(lines) - 1 - start // rows from the header to just above the closing border
+		if want := max(1, inner/3); block != want {
+			t.Errorf("h=%d: attention block is %d rows, want %d:\n%s", h, block, want, out)
+		}
+		if !strings.Contains(out, "more") || !strings.Contains(out, "+") {
+			t.Errorf("h=%d: a cut block says how many it hides:\n%s", h, out)
+		}
+		if !strings.Contains(strings.Join(lines[:start], "\n"), "↕") {
+			t.Errorf("h=%d: the clipped run list keeps its own marker:\n%s", h, out)
+		}
+	}
+}
+
+func TestDoctorToolNoteWrapsUnderItsLine(t *testing.T) {
+	note := "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu"
+	ov := &core.Overview{Tools: []core.ToolLine{{ID: "bd", Name: "Beads", State: core.Ready, Where: "bundled", Version: "1", Note: note}}}
+	d := newDoctorSection(nil)
+	d.SetTheme(asciiTheme())
+	var m tea.Model = d
+	m, _ = m.Update(doctorMsg{report: core.Report{Overview: ov}})
+	v := sized(m, 40, 60).View()
+	for _, word := range strings.Fields(note) {
+		if !strings.Contains(v, word) {
+			t.Errorf("note word %q was cut at 40 columns:\n%s", word, v)
+		}
+	}
+}
+
+func TestLeasesDetailBadgeUsesTheLeaseTone(t *testing.T) {
+	th := NewTheme(rendererFor(termenv.TrueColor, true))
+	r := leasesReport(sampleLeases[0])
+	s := leasesWith(&r)
+	s.SetTheme(th)
+	var m tea.Model = s
+	m, _ = m.Update(leasesMsg{read: r})
+	v := sized(m, 120, 30).View()
+	want := th.Badge(KindAccent, "held") // held leases are the info tone
+	if strings.Count(v, want) != 2 {
+		t.Fatalf("the list row and the detail header both carry the held badge (%d found):\n%s", strings.Count(v, want), v)
+	}
+}
+
+func TestLeasesFooterKeysFollowTheLayout(t *testing.T) {
+	enabled := func(s *leasesSection, h string) bool {
+		for _, b := range s.Bindings() {
+			if b.Help().Key == h || b.Help().Desc == h {
+				return b.Enabled()
+			}
+		}
+		return false
+	}
+	r := leasesReport(sampleLeases...)
+	s := leasesWith(&r)
+	s.SetTheme(asciiTheme())
+	var m tea.Model = s
+	m, _ = m.Update(leasesMsg{read: r})
+	m = sized(m, 80, 30)
+	if !enabled(s, "details") || enabled(s, "back") {
+		t.Fatal("stacked and not drilled: enter is offered, esc is not")
+	}
+	m = press(m, "enter")
+	if enabled(s, "details") || !enabled(s, "back") {
+		t.Fatal("drilled: esc is offered, enter is not")
+	}
+	m = sized(m, 120, 30)
+	if enabled(s, "details") || enabled(s, "back") {
+		t.Fatal("wide: the detail is already visible, so neither key is offered")
+	}
+}
+
+func TestLeasesDrilledAndLongListNeverOverflowAnySize(t *testing.T) {
+	var ls []core.Lease
+	for i := 0; i < 40; i++ {
+		ls = append(ls, core.Lease{Resource: fmt.Sprintf("L%02d-%s", i, strings.Repeat("x", i%30)), State: core.LeaseHeld, Holder: strings.Repeat("h", i%40), ExpiresAt: "1m"})
+	}
+	for _, w := range gridWidths {
+		for _, h := range gridHeights {
+			m := leasesAt(w, h, ls...)
+			for _, v := range []string{m.View(), press(press(m, "enter"), "j").View()} {
+				if h > 0 && len(strings.Split(strings.TrimRight(v, "\n"), "\n")) > h {
+					t.Fatalf("%dx%d: taller than the body", w, h)
+				}
+				for _, l := range strings.Split(v, "\n") {
+					if lipgloss.Width(l) > w {
+						t.Fatalf("%dx%d: %q is %d wide", w, h, l, lipgloss.Width(l))
+					}
+				}
+			}
+		}
 	}
 }

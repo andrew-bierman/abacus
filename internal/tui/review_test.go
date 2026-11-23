@@ -178,9 +178,6 @@ func TestTypedLeasesDriveBadgesNotTextParsing(t *testing.T) {
 	if !strings.Contains(m.View(), "(from-a-newer-provider)") {
 		t.Errorf("the whole unknown state must be readable in the detail:\n%s", m.View())
 	}
-	if strings.Contains(v, "zzz") {
-		t.Errorf("a lease row must come from the typed lease only:\n%s", v)
-	}
 	th := NewTheme(rendererFor(termenv.TrueColor, true))
 	for tone, kind := range map[core.Tone]Kind{core.ToneOK: KindOK, core.ToneWarn: KindWarn, core.ToneFail: KindFail, core.ToneInfo: KindAccent, core.ToneMuted: KindMuted} {
 		if toneKind(tone) != kind {

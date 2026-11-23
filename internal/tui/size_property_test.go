@@ -32,7 +32,7 @@ func TestEveryTabRendersWithinEverySize(t *testing.T) {
 
 func TestEveryTabRendersWithinEverySizeWithColor(t *testing.T) {
 	th := NewTheme(rendererFor(termenv.TrueColor, true))
-	for _, sc := range scenarios()[:4] {
+	for _, sc := range scenarios() {
 		for _, w := range []int{1, 39, 40, 60, 100, 140, 300} {
 			for _, h := range []int{1, 3, 11, 12, 24, 100} {
 				out := render(t, sc, th, w, h)
