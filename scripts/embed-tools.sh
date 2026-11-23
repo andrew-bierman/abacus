@@ -137,7 +137,7 @@ if [ -f "$out/THIRD_PARTY_NOTICES.md" ]; then
   [ -z "$(stale_tools "$out")" ] || pending=1 # the rebuild below drops tools the manifest no longer lists
   for tool in "${tools[@]}"; do verified "$tool" "$out" >/dev/null || pending=1; done
   if [ "$pending" = 0 ]; then
-    echo "Tools: ${#tools[@]} of ${#tools[@]} already verified in $out (nothing to build)"
+    echo "Tools: ${#tools[@]} of ${#tools[@]} already verified in $out (nothing to do)"
     built=1
   fi
 fi

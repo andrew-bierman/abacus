@@ -96,7 +96,7 @@ func TestADamagedBuiltInSaysDownloadItAgain(t *testing.T) {
 func TestADevelopmentBuildSaysSoOnlyInTheSummaryLine(t *testing.T) {
 	asBuild(t, false)
 	es := builtIn(core.SourcePATH)
-	es[idx("lambe")] = absentEntry("lambe", "lambe not found on PATH")
+	es[idx("lambe")] = absentEntry("lambe", "lambe was not found")
 	o := core.BuildOverview(context.Background(), es)
 	if o.Bundled.Line != core.DevBuildLine || !strings.Contains(core.DevBuildLine, "tools are not built in; build with make build") {
 		t.Fatalf("%q", o.Bundled.Line)

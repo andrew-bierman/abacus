@@ -26,11 +26,11 @@ func TestLocateResolvesAToolTheWayAUserWouldExpect(t *testing.T) {
 		wantAbsent     string // substring of the absent detail; "" means found
 	}{
 		{"no override uses PATH", "", found, "/on/path/tool", ""},
-		{"no override and not on PATH", "", missing, "", "tool not found on PATH"},
+		{"no override and not on PATH", "", missing, "", "tool was not found"},
 		{"an explicit path is checked on disk", exe, missing, exe, ""},
 		{"an explicit path that does not exist", "/nonexistent/tool", found, "", "tool not found at /nonexistent/tool"},
 		{"a bare name is resolved on PATH, not the cwd", "tool", found, "/on/path/tool", ""},
-		{"a bare name that is not on PATH", "tool", missing, "", "tool not found on PATH"},
+		{"a bare name that is not on PATH", "tool", missing, "", "tool was not found"},
 	}
 	for _, c := range cases {
 		bin, detail := core.Locate("tool", c.explicit, c.look)
@@ -162,7 +162,7 @@ func TestLocateNeverUsesAnUnsafeSidecar(t *testing.T) {
 		fakeTool(t, dir, "bd", c.mode)
 		withSidecarDirs(t, dir)
 		f, detail := core.LocateFound("bd", "", noPath)
-		if f.Bin != "" || !strings.Contains(detail, "bd not found") || !strings.Contains(detail, "ignored") || !strings.Contains(detail, c.why) {
+		if f.Bin != "" || !strings.Contains(detail, "bd was not found") || !strings.Contains(detail, "ignored") || !strings.Contains(detail, c.why) {
 			t.Errorf("%s: (%+v, %q)", name, f, detail)
 		}
 	}

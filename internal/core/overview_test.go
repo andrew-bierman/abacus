@@ -23,7 +23,7 @@ func TestOverviewLeadsWithReadyAndListsWhereEachToolCameFrom(t *testing.T) {
 	entries := []core.Entry{
 		{Module: bd, Detection: core.Detection{State: core.Ready, Version: "1.3.4", Source: core.SourceBundled, Path: "/app/bundled/bd"}},
 		{Module: &modtest.Fake{IDStr: "beads-lease"}, Detection: core.Detection{State: core.Ready, Version: "0.1.0", Source: core.SourcePATH, Path: "/opt/beads-lease"}},
-		{Module: &modtest.Fake{IDStr: "lambe"}, Detection: core.Detection{State: core.Absent, Detail: "lambe not found on PATH"}},
+		{Module: &modtest.Fake{IDStr: "lambe"}, Detection: core.Detection{State: core.Absent, Detail: "lambe was not found"}},
 	}
 	o := core.BuildOverview(context.Background(), entries)
 	// abacus's own lambe is unavailable: that is abacus's problem, so it is not Ready.
