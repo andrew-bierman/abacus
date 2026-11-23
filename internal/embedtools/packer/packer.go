@@ -100,25 +100,31 @@ func Pack(in Input) (err error) {
 	}
 	sort.Strings(names)
 	for _, n := range names {
-		b, e := readRegular(filepath.Join(in.Licenses, n, "LICENSE"))
+		files, e := os.ReadDir(filepath.Join(in.Licenses, n))
 		if e != nil {
 			return e
 		}
-		rel := "licenses/" + n + "/LICENSE"
 		if e := os.MkdirAll(filepath.Join(in.Out, "licenses", n), 0o755); e != nil {
 			return e
 		}
-		if e := os.WriteFile(filepath.Join(in.Out, rel), b, 0o644); e != nil {
-			return e
-		}
-		isTool := false
-		for i := range m.Tools {
-			if m.Tools[i].Name == n {
-				m.Tools[i].LicenseFile, isTool = rel, true
+		for _, f := range files { // LICENSE, and any further texts the tool's build collected
+			b, e := readRegular(filepath.Join(in.Licenses, n, f.Name()))
+			if e != nil {
+				return e
 			}
-		}
-		if !isTool {
-			m.Licenses = append(m.Licenses, rel)
+			rel := "licenses/" + n + "/" + f.Name()
+			if e := os.WriteFile(filepath.Join(in.Out, rel), b, 0o644); e != nil {
+				return e
+			}
+			isLicense := false
+			for k := range m.Tools {
+				if m.Tools[k].Name == n && f.Name() == "LICENSE" {
+					m.Tools[k].LicenseFile, isLicense = rel, true
+				}
+			}
+			if !isLicense {
+				m.Licenses = append(m.Licenses, rel)
+			}
 		}
 	}
 	nb, e := readRegular(in.Notices)
