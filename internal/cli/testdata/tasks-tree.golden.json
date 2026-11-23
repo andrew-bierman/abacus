@@ -1,0 +1,249 @@
+{
+  "domain": "tasks",
+  "matched": 14,
+  "preset": "all",
+  "read_at": "2026-11-23T04:20:00Z",
+  "ready": 9,
+  "rows": [
+    {
+      "id": "tr-09k",
+      "title": "Tasks workspace",
+      "status": "open",
+      "priority": 1,
+      "type": "epic",
+      "assignee": "mei",
+      "labels": [
+        "tasks"
+      ],
+      "created_at": "2026-11-23T05:08:56Z",
+      "updated_at": "2026-11-23T05:08:56Z",
+      "ready": true,
+      "child_done": 1,
+      "child_total": 3,
+      "depth": 0,
+      "has_children": true
+    },
+    {
+      "id": "tr-09k.1",
+      "title": "Tree view of epics",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "assignee": "ada",
+      "labels": [
+        "tasks",
+        "ui"
+      ],
+      "created_at": "2026-11-23T05:08:57Z",
+      "updated_at": "2026-11-23T05:08:57Z",
+      "blocks": 1,
+      "ready": true,
+      "parent": "tr-09k",
+      "depth": 1
+    },
+    {
+      "id": "tr-09k.2",
+      "title": "Kanban cards show blockers",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "labels": [
+        "tasks"
+      ],
+      "created_at": "2026-11-23T05:08:58Z",
+      "updated_at": "2026-11-23T05:08:58Z",
+      "blocked_by": 1,
+      "blocked": true,
+      "parent": "tr-09k",
+      "depth": 1
+    },
+    {
+      "id": "tr-09k.3",
+      "title": "Document the write gate",
+      "status": "closed",
+      "priority": 3,
+      "type": "chore",
+      "labels": [
+        "tasks"
+      ],
+      "created_at": "2026-11-23T05:08:59Z",
+      "updated_at": "2026-11-23T05:09:02Z",
+      "parent": "tr-09k",
+      "depth": 1
+    },
+    {
+      "id": "tr-jbt",
+      "title": "Fleet workspace",
+      "status": "open",
+      "priority": 1,
+      "type": "epic",
+      "assignee": "mei",
+      "labels": [
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:48Z",
+      "updated_at": "2026-11-23T05:08:48Z",
+      "ready": true,
+      "child_total": 3,
+      "depth": 0,
+      "has_children": true
+    },
+    {
+      "id": "tr-jbt.1",
+      "title": "Leases surface",
+      "status": "open",
+      "priority": 1,
+      "type": "epic",
+      "assignee": "ada",
+      "labels": [
+        "leases",
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:49Z",
+      "updated_at": "2026-11-23T05:08:49Z",
+      "ready": true,
+      "parent": "tr-jbt",
+      "child_total": 3,
+      "depth": 1,
+      "has_children": true
+    },
+    {
+      "id": "tr-jbt.1.1",
+      "title": "Wire the lease heartbeat",
+      "status": "open",
+      "priority": 0,
+      "type": "bug",
+      "assignee": "ada",
+      "labels": [
+        "core",
+        "leases",
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:50Z",
+      "updated_at": "2026-11-23T05:08:50Z",
+      "blocks": 1,
+      "ready": true,
+      "parent": "tr-jbt.1",
+      "depth": 2
+    },
+    {
+      "id": "tr-jbt.1.3",
+      "title": "Lease holder column",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "assignee": "mei",
+      "labels": [
+        "leases",
+        "ui",
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:52Z",
+      "updated_at": "2026-11-23T05:08:52Z",
+      "blocks": 1,
+      "ready": true,
+      "parent": "tr-jbt.1",
+      "depth": 2
+    },
+    {
+      "id": "tr-jbt.1.2",
+      "title": "Stale lease warning",
+      "status": "open",
+      "priority": 2,
+      "type": "task",
+      "labels": [
+        "leases",
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:51Z",
+      "updated_at": "2026-11-23T05:08:51Z",
+      "blocked_by": 1,
+      "blocked": true,
+      "parent": "tr-jbt.1",
+      "depth": 2
+    },
+    {
+      "id": "tr-jbt.2",
+      "title": "Queues surface",
+      "status": "open",
+      "priority": 2,
+      "type": "epic",
+      "labels": [
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:53Z",
+      "updated_at": "2026-11-23T05:08:53Z",
+      "ready": true,
+      "parent": "tr-jbt",
+      "child_done": 1,
+      "child_total": 2,
+      "depth": 1,
+      "has_children": true
+    },
+    {
+      "id": "tr-jbt.2.2",
+      "title": "Queue filter ignores machine",
+      "status": "closed",
+      "priority": 1,
+      "type": "bug",
+      "labels": [
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:55Z",
+      "updated_at": "2026-11-23T05:09:03Z",
+      "parent": "tr-jbt.2",
+      "depth": 2
+    },
+    {
+      "id": "tr-jbt.2.1",
+      "title": "Queue attention digest",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "labels": [
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:54Z",
+      "updated_at": "2026-11-23T05:08:54Z",
+      "blocked_by": 1,
+      "blocked": true,
+      "parent": "tr-jbt.2",
+      "depth": 2
+    },
+    {
+      "id": "tr-jbt.3",
+      "title": "Doctor stale export warning",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "assignee": "ada",
+      "labels": [
+        "workspace"
+      ],
+      "created_at": "2026-11-23T05:08:56Z",
+      "updated_at": "2026-11-23T05:08:56Z",
+      "ready": true,
+      "parent": "tr-jbt",
+      "depth": 1
+    },
+    {
+      "id": "tr-u40",
+      "title": "Standalone: verify tool flags",
+      "status": "open",
+      "priority": 3,
+      "type": "chore",
+      "created_at": "2026-11-23T05:09:00Z",
+      "updated_at": "2026-11-23T05:09:00Z",
+      "ready": true,
+      "depth": 0
+    }
+  ],
+  "schema_version": 1,
+  "shown": 14,
+  "sort": "priority",
+  "source": "live",
+  "state": "connected",
+  "title": "Task tree",
+  "total": 14,
+  "tracker": "tracker"
+}

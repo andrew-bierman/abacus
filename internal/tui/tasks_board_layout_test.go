@@ -199,7 +199,7 @@ func TestTasksRowsAlignIntoColumns(t *testing.T) {
 func TestTasksKeepTheCountsAndRowsVisible(t *testing.T) {
 	for _, w := range []int{60, 80, 120} {
 		v := sized(newTasksRig(t).m, w, 50).View()
-		if !strings.Contains(v, "14 tasks · 3 ready") || !strings.Contains(v, "of 14") || !strings.Contains(v, "ac-12") {
+		if !strings.Contains(v, "14 tasks · 3 ready") || !strings.Contains(v, "of 14") || !strings.Contains(v, "ac-15") {
 			t.Errorf("w=%d: the counts and rows stay visible:\n%s", w, v)
 		}
 		for _, l := range strings.Split(v, "\n") {
@@ -222,9 +222,9 @@ func TestTasksEmptyStateIsAWordsLineInsideThePanel(t *testing.T) {
 func TestTasksSelectionAndWriteKeysStillWork(t *testing.T) {
 	r := newTasksRig(t)
 	m := press(sized(r.m, 120, 50), "j")
-	rowWith(t, m.View(), "▸", "ac-01") // down moves the cursor (priority order: ac-12, then ac-01)
+	rowWith(t, m.View(), "▸", "ac-15") // down moves the cursor (the selection stayed on ac-12 across the tree; its next sibling is ac-15)
 	m = pressRun(t, m, "x")            // close the selected task: the confirm screen, never straight to a write
-	if v := m.View(); !strings.Contains(v, "Confirm this change") || !strings.Contains(v, "ac-01") {
+	if v := m.View(); !strings.Contains(v, "Confirm this change") || !strings.Contains(v, "ac-15") {
 		t.Fatalf("x on the selected task opens the confirm screen:\n%s", v)
 	}
 	if len(*r.prov.ran) != 0 {

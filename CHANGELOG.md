@@ -40,6 +40,15 @@ may change behavior, and patch versions are fixes and small additions.
   additive `workflow` field. `expires` durations point ahead (`expires>2h` is more than two hours from now);
   `search_history` is a new config key (`off` keeps no query history).
 
+- Tasks tree (U2 of the same plan): when a tracker has parent-child links the Tasks list opens as a
+  foldable tree of epics and children (`T` switches to the flat list; `h` `l` fold and unfold, `+`
+  `-` expand and fold all), with branch lines, a progress bar of closed children on each epic row, the
+  ancestors of a filter match kept visible and dimmed, and the selection kept on the same task through
+  refreshes, filters and resizes. Fold choices are kept per tracker in abacus's state directory, never
+  in the tracker. `abacus tasks list --tree` prints the same typed report (`--json`, `schema_version` 1).
+  Orphans, cycles of parent links, duplicate ids and deep nesting are handled and tested; fixtures
+  come from a real `bd` 1.3.4 tracker with nested epics. Read only.
+
 ### Changed
 
 - abacus no longer says it has no issue browser: the Tasks tab is its own list and detail view. The

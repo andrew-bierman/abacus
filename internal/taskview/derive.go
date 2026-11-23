@@ -55,7 +55,10 @@ func Build(snap core.TaskSnapshot, now time.Time) *View {
 	for i, it := range snap.Issues {
 		v.byID[it.ID] = i
 	}
-	for _, it := range snap.Issues {
+	for i, it := range snap.Issues {
+		if v.byID[it.ID] != i { // a duplicate id: only the record that is shown contributes links
+			continue
+		}
 		for _, d := range it.Deps {
 			switch {
 			case blocking(d.Type):

@@ -18,13 +18,22 @@ import (
 	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
-// listAt is a Tasks section over the demo tracker, w x h, in the ascii theme.
-func listAt(w, h int) *tasksSection {
+// treeAt is a Tasks section over the demo tracker, w x h, in the ascii theme, in the view a
+// tracker with epics opens in: the tree.
+func treeAt(w, h int) *tasksSection {
 	s := newTasksSection(core.Providers{}, &config{})
 	s.SetTheme(asciiTheme())
 	s.Update(tea.WindowSizeMsg{Width: w, Height: h})
 	s.Update(tasksMsg{report: demo.TasksReport()})
 	s.Update(taskSnapshotMsg{snap: fixtureSnapshot()})
+	return s
+}
+
+// listAt is the same over the flat list (T switches the tree off), which is what the list's own
+// tests exercise; tasks_tree_test.go covers the tree.
+func listAt(w, h int) *tasksSection {
+	s := treeAt(w, h)
+	send(s, "T")
 	return s
 }
 

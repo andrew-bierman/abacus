@@ -50,6 +50,7 @@ type config struct {
 	fullViewSet bool // WithFullView was given, so a demo session leaves it alone
 	history     core.SearchHistory
 	historySet  bool
+	treeState   *core.TreeState // where the Tasks tree keeps its folds; nil keeps them for the session only
 }
 
 // Option customises the shell.
@@ -60,6 +61,10 @@ func WithTheme(t Theme) Option { return func(c *config) { c.th = t } }
 
 // WithAudit sets where Tasks writes are audited (default: the abacus state dir).
 func WithAudit(a core.Audit) Option { return func(c *config) { c.audit = a } }
+
+// WithTreeState sets where the Tasks tree keeps its fold choices (default: the abacus state dir; a
+// demo session keeps them for the session only).
+func WithTreeState(t *core.TreeState) Option { return func(c *config) { c.treeState = t } }
 
 // WithSetup replaces the first-run setup (tests inject one over fakes; the default is built
 // from the detected modules and the standard abacus paths).
@@ -98,6 +103,9 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	}
 	if cfg.audit == nil {
 		cfg.audit = auditFor(entries)
+	}
+	if cfg.treeState == nil && !isDemo(entries) {
+		cfg.treeState = core.DefaultTreeState()
 	}
 	if cfg.setup == nil {
 		o := core.DefaultSetupOptions()

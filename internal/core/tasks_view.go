@@ -57,6 +57,9 @@ type TaskSnapshot struct {
 	Issues  []TaskIssue
 	ReadAt  time.Time
 	Tracker string // display name of the tracker (its directory name), "" when unknown
+	// Root is the absolute directory that holds the tracker, "" when unknown. Per-tracker state
+	// (the tree's folds) is keyed on it: two projects can share a Tracker name, never a Root.
+	Root string
 	// Warnings say why the snapshot may be incomplete (a record that lost its dependencies,
 	// an unreadable time); empty for a clean read.
 	Warnings []string
@@ -149,4 +152,44 @@ type TaskDetailReport struct {
 	BlockedBy   []TaskRef         `json:"blocked_by,omitempty"`
 	Blocks      []TaskRef         `json:"blocks,omitempty"`
 	Children    []TaskRef         `json:"children,omitempty"`
+}
+
+// TaskTreeRow is one visible task of the tree: its row plus where it sits. Context marks a task
+// shown only because a task below it matches the filter (it does not match itself); Folded marks
+// an expanded-or-not parent whose children are hidden, and Hidden counts those children and
+// everything under them. Guide is the drawing prefix (branch lines and the fold mark); it is a
+// render hint and not part of the JSON.
+type TaskTreeRow struct {
+	TaskRow
+	Depth       int    `json:"depth"`
+	HasChildren bool   `json:"has_children,omitempty"`
+	Folded      bool   `json:"folded,omitempty"`
+	Hidden      int    `json:"hidden,omitempty"`
+	Context     bool   `json:"context,omitempty"`
+	Guide       string `json:"-"`
+}
+
+// TaskTreeReport is the tree of epics and children under the same preset, query and sort as the
+// list. Matched is how many tasks match (context rows are not counted), Total the whole tracker,
+// Shown the rows in Rows. Orphans are tasks whose parent is not in this tracker (shown as roots);
+// ParentCycles lists one task per cycle of parent links, where the cycle was cut and shown as a root.
+// FoldsPaused is set while a query is active: matches are never hidden inside a folded parent.
+type TaskTreeReport struct {
+	Header
+	Query        string        `json:"query,omitempty"`
+	Preset       string        `json:"preset"`
+	Sort         string        `json:"sort"`
+	Descending   bool          `json:"descending,omitempty"`
+	Rows         []TaskTreeRow `json:"rows"`
+	Matched      int           `json:"matched"`
+	Total        int           `json:"total"`
+	Shown        int           `json:"shown"`
+	Ready        int           `json:"ready"`
+	Folded       int           `json:"folded,omitempty"`
+	FoldsPaused  bool          `json:"folds_paused,omitempty"`
+	Orphans      int           `json:"orphans,omitempty"`
+	ParentCycles []string      `json:"parent_cycles,omitempty"`
+	Tracker      string        `json:"tracker,omitempty"`
+	ReadAt       string        `json:"read_at,omitempty"`
+	Warnings     []string      `json:"warnings,omitempty"`
 }

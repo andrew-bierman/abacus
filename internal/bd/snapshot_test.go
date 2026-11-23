@@ -121,11 +121,16 @@ func TestSnapshotNamesTheDirectoryThatHoldsTheTracker(t *testing.T) {
 	if err != nil || snap.Tracker != "fleet-proj" {
 		t.Fatalf("tracker %q err %v, want fleet-proj", snap.Tracker, err)
 	}
+	if snap.Root != proj { // per-project state is keyed on the absolute root, never the folder name
+		t.Errorf("root %q, want %q", snap.Root, proj)
+	}
 	t.Chdir(deep) // no configured directory: bd resolves it from the working directory
 	f2 := &fakeRun{resp: map[string]string{"--readonly version --json": verJSON, "--readonly export": fx}}
 	m2 := mod(f2, Options{})
 	m2.Detect(context.Background())
 	if snap, err := m2.Snapshot(context.Background()); err != nil || snap.Tracker != "fleet-proj" {
 		t.Fatalf("from the working directory: %q %v", snap.Tracker, err)
+	} else if !filepath.IsAbs(snap.Root) || filepath.Base(snap.Root) != "fleet-proj" {
+		t.Errorf("root from the working directory: %q", snap.Root)
 	}
 }

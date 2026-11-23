@@ -289,13 +289,16 @@ func (m *Module) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
 	}
 	// Name the directory that holds the tracker, as bd finds it from the configured or working
 	// directory, so the header says which project the list and a write really use.
-	name := ""
-	if root := core.TrackerRoot(m.TrackerDir()); root != "" {
+	name, root := "", core.TrackerRoot(m.TrackerDir())
+	if root != "" {
 		name = filepath.Base(root)
 	} else if d := m.TrackerDir(); d != "" {
 		name = filepath.Base(d)
+		root, _ = filepath.Abs(d)
 	}
-	return taskview.Parse(bytes.NewReader(out), time.Now(), name)
+	snap, err := taskview.Parse(bytes.NewReader(out), time.Now(), name)
+	snap.Root = root // the absolute project directory: what per-project state is keyed on
+	return snap, err
 }
 
 // RunTask runs a planned write. It re-checks the write allowlist, so nothing but a built

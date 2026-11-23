@@ -61,3 +61,19 @@ with "would create a cycle", with or without `--no-cycle-check`), a self-depende
 fails with "cannot add self-dependency"), and a dependency on a task that is not in the tracker
 (`bd delete` removes the links of the task it deletes, so a dangling one cannot be made). `bd sql`
 is "not yet supported in embedded mode", so there was no other way to write them.
+
+## Epics and children (third tracker, for the tree)
+
+`export-tree.jsonl` and `ready-tree.json` come from a third throwaway tracker (same tool, version and
+isolation, prefix `tr`) built with the real `bd`: two epics, one of them with two sub-epics (so
+three levels: epic, sub-epic, task), `--parent` children, two `blocks` edges that cross branches,
+two closed tasks (one under each epic) and one standalone task. Commands: `bd export` as above for
+`export-tree.jsonl`, `bd --readonly ready --json` for `ready-tree.json` (used by the tree parity
+test). What bd 1.3.4 did:
+
+| Observation | Detail |
+|---|---|
+| Parent link | a child's `dependencies` holds `{depends_on_id: <parent>, type: "parent-child"}`; the parent carries nothing |
+| Ids | children of a parent get dotted ids (`tr-jbt.1.2` is the second child of `tr-jbt.1`); the id does not decide the tree, the link does |
+| Order | line order is map order, not tree order: a child can precede its parent |
+| Redaction | `created_by` was rewritten from the local user name to `ada` (the same name the other fixtures use); nothing else was edited |

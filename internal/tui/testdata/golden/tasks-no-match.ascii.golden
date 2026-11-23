@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                                                                14 tasks · 3 ready
@@ -98,7 +98,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back · f quick filter · g graph · ↑/↓ move · n ne…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · esc back · T tree/flat · +/- all …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back · f quick filter · g graph · ↑/↓ move · n ne…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · esc back · T tree/flat · +/- all …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort …
+? help · q quit · tab/→ next tab · / filter · h/l fold …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back · f quick filter …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · esc back · T tree/flat…

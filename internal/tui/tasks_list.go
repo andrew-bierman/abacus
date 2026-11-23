@@ -56,6 +56,7 @@ type tasksList struct {
 	detailFocus bool // wide layout: j/k scroll the detail pane
 	dOff        int
 	cur         taskViewID
+	tree        taskTree // the tree mode of this view (tasks_tree.go)
 }
 
 func newTasksList() tasksList {
@@ -67,6 +68,7 @@ func newTasksList() tasksList {
 func (s *tasksSection) setSnapshot(snap core.TaskSnapshot) {
 	l := &s.list
 	l.view = taskview.Build(snap, nowFn())
+	s.loadTree(snap)
 	l.readAt, l.fallback, l.depsUnknown, l.warnings = snap.ReadAt, snap.DepsUnknown, snap.DepsUnknown, snap.Warnings
 	if !l.presetSet { // until the user picks one: all for a recent-changes list, else open
 		l.preset = taskview.DefaultPreset(snap)
@@ -82,6 +84,8 @@ func (s *tasksSection) recompute() {
 		return
 	}
 	l.rep = l.view.List(taskview.ListOptions{Query: l.q, Preset: l.preset, Sort: l.sort})
+	s.recomputeTree()
+	s.climbToListed()
 	s.reanchor(s.ids(), true)
 	s.settle(len(l.rep.Rows))
 	if len(l.rep.Rows) == 0 {
@@ -94,7 +98,12 @@ func rowTask(r core.TaskRow) core.Task {
 	return core.Task{ID: r.ID, Title: r.Title, Status: r.Status, Priority: r.Priority, Type: r.Type, Assignee: r.Assignee, UpdatedAt: r.UpdatedAt}
 }
 
-func (s *tasksSection) rows() []core.TaskRow { return s.list.rep.Rows }
+func (s *tasksSection) rows() []core.TaskRow {
+	if s.treeOn() {
+		return s.list.tree.rows
+	}
+	return s.list.rep.Rows
+}
 
 // detail is the selected task's detail report.
 func (s *tasksSection) detail() (core.TaskDetailReport, bool) {
@@ -147,6 +156,8 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		return nil, false
 	}
 	switch {
+	case key.Matches(k, keyTree) || (s.treeOn() && key.Matches(k, keyFold, keyFoldAll)):
+		s.treeKey(k.String())
 	case key.Matches(k, keyFilter):
 		l.typing = true
 	case key.Matches(k, keySort):
@@ -274,7 +285,10 @@ func (s *tasksSection) listBindings() []key.Binding {
 	}
 	// The filter, sort and view keys lead: a narrow footer is cut from the right, and these are
 	// the ones a new user has to find.
-	return []key.Binding{keyFilter, keySort, keyView, enter, back, keyPreset, keyGraph, moveBindings()[0]}
+	bs := append([]key.Binding{keyFilter}, s.treeLead()...)
+	bs = append(bs, keySort, keyView, enter, back)
+	bs = append(bs, s.treeBindings()...)
+	return append(bs, keyPreset, keyGraph, moveBindings()[0])
 }
 
 // ---- drawing ----
@@ -360,6 +374,9 @@ func (s *tasksSection) listLines(iw int) ([]string, int) {
 		for i := range styled { // the labels cell is only shown from bpUltra columns
 			styled[i], plain[i] = styled[i][:len(listHeader)], plain[i][:len(listHeader)]
 		}
+	}
+	if s.treeOn() {
+		tb, hdr, styled, plain = s.treeColumns(iw, tb, hdr, styled, plain)
 	}
 	if s.ws.has() && len(rows) > 0 {
 		cells, plainCells := make([]string, len(rows)), make([]string, len(rows))
@@ -498,6 +515,9 @@ func (s *tasksSection) legend(iw, rows int) []string {
 	status := trunc(th.Text(KindMuted, "○ open ◐ active ● blocked ✓ closed ◇ deferred"), iw)
 	if s.list.depsUnknown {
 		return []string{status}
+	}
+	if s.treeOn() && s.treeLegendWanted(rows) {
+		return []string{s.treeLegend(iw), trunc(th.Text(KindMuted, "⊘N held by N · →N holds N · ⊘↑ held by parent"), iw), status}
 	}
 	return []string{trunc(th.Text(KindMuted, "⊘N held by N · →N holds N · ⊘↑ held by parent"), iw), status}
 }
