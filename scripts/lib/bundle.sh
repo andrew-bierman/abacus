@@ -115,8 +115,8 @@ notices_header() {
   echo "# Third-party notices"
   echo
   echo "This archive ships these tools unmodified, as separate programs in \`bundled/\`. abacus runs"
-  echo "them as subprocesses and does not link or import their code. Each tool's own license is in"
-  echo "\`third_party/<tool>/LICENSE\`, copied verbatim from the pinned release."
+  echo "them as subprocesses. Each tool's own license is in \`third_party/<tool>/LICENSE\`, copied"
+  echo "verbatim from the pinned release."
   echo
 }
 

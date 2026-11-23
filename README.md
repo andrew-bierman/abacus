@@ -86,7 +86,11 @@ The release archive is built by `scripts/package-release.sh VERSION` from the pi
 the sha256 of its license. The script downloads each asset with `gh`, checks the sha256 against
 the pin (any mismatch fails the build), extracts only the one executable into `bundled/`, copies
 each tool's license verbatim into `third_party/<tool>/LICENSE` and writes
-`THIRD_PARTY_NOTICES.md`. It publishes nothing.
+`THIRD_PARTY_NOTICES.md`. It publishes nothing. The tools run as separate programs, unmodified;
+separately, the `abacus` binary statically links parts of bv's Go packages (bv v0.27.0
+`pkg/analysis` and dependencies) for the optional in-process graph engine, under bv's license
+(`third_party/bv/LICENSE`). The notices say so and end with every Go module linked into the
+binary and its license text, generated offline from `go list -deps` (`scripts/lib/golicenses.sh`).
 
 | Tool | Version | License |
 | --- | --- | --- |
@@ -208,6 +212,11 @@ or error messages that help you fix one.
   tools tests run are `bd` and `bv`, against temp projects with an isolated `HOME`, and they skip when absent.
   Sidecar tests use fake binaries in temp dirs.
 - Use a private `GOCACHE` for builds.
+- Building needs Go 1.26.11 or newer (`go.mod` names it, because the optional in-process graph
+  engine links bv's analysis package). Go's default `GOTOOLCHAIN=auto` downloads that
+  toolchain for you the first time you build (it needs network access); offline, or with
+  `GOTOOLCHAIN=local`, install it first: `mise use go@1.26.11`. CI and
+  the release workflow read the version from `go.mod`.
 
 ### Building from source
 

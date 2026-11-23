@@ -3,9 +3,26 @@ title: Graph Core - Assessment of bv and b9s as Go packages
 type: assessment
 date: 2026-11-22
 execution: none
+status: prototype built
 ---
 
 # Graph Core - Assessment of bv and b9s as Go packages
+
+**Status: prototype built.** The owner cleared the Go directive bump (`go 1.26.11`), accepted the
+license rider and chose to use bv as a package. The opt-in library engine is `internal/graph`
+(selected with `ABACUS_GRAPH_ENGINE=library`; the bv subprocess stays the default; see "Graph
+engine" in `docs/tool-contract.md`). Final measured numbers, release flags, `CGO_ENABLED=0`:
+
+| Measure | Probe (this assessment) | Prototype as built |
+|---|---|---|
+| linux/amd64 binary | 8,388,770 to 9,404,578 (+1.0 MB) | 8,388,770 to 10,186,914 (+1,798,144 bytes, +21 percent) |
+| linux/arm64, darwin/arm64, darwin/amd64, windows/amd64 | 8.7 to 9.8 MB | 9,502,882, 9,651,538, 10,392,160, 10,576,896 (all build) |
+| `go vet`, `go test ./...` | pass | pass, every TUI golden, theme and color test unchanged |
+| 200-issue graph, whole analysis | n/a | about 5 ms |
+
+The growth is larger than the probe because the prototype calls the full insights, plan and triage
+paths. It is still well inside the 6 MB budget. The text below is the original assessment and is
+left as written.
 
 **Decision: STOP at the assessment. No prototype was built. One budget item tripped: the Go
 directive bump.** Everything else measured inside budget. This is a "yes, with one toolchain step"
@@ -217,9 +234,12 @@ Differences from what the bv subprocess adapter already reports, worth designing
   path. abacus's `InsightsReport.CriticalPath` is a ranked list, which is the same shape bv's
   `Keystones` produces, so this maps cleanly; a cycle makes every score zero, which matches the
   subprocess behavior of `critical path skipped`.
-- A closed issue still contributes to scores of its dependents (a is closed and still scores 3).
-  The subprocess adapter reports whatever the same function reports, so parity holds, but a library
-  adapter should decide whether closed issues belong in the input.
+- A closed issue still contributes to scores of its dependents in bv's raw, unscoped analysis (a
+  is closed and still scores 3). The ranked keystone and bottleneck lists exclude closed issues
+  (the scoped insights `bv --robot-insights` uses), while the triage pick scores come from bv's
+  triage over all issues, closed ones included. A library adapter must decide whether closed
+  issues belong in the input; the prototype keeps them, so a closed blocker satisfies its
+  dependents.
 - "Actionable" counts only issues whose status allows work and whose blockers are all closed; an
   in-progress issue behind an open blocker counts as blocked. v0.21.0 of bv deliberately changed the
   triage counts (`open_count` is now exactly status `open`; the legacy meaning moved to

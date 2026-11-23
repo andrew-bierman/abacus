@@ -26,6 +26,8 @@ out="$root/dist"
 platforms="darwin-amd64 darwin-arm64 linux-amd64 linux-arm64"
 # shellcheck source=lib/bundle.sh
 source "$root/scripts/lib/bundle.sh"
+# shellcheck source=lib/golicenses.sh
+source "$root/scripts/lib/golicenses.sh"
 
 [ $# -ge 1 ] || die "usage: $0 VERSION [--platforms \"darwin-arm64 ...\"] [--out DIR]"
 version="${1#v}"; shift
@@ -38,7 +40,7 @@ while [ $# -gt 0 ]; do
 done
 [[ "$version" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]] || die "bad version '$version'"
 need jq
-[ -n "${ABACUS_PACKAGE_PREBUILT_BIN:-}" ] || need go
+need go
 
 mkdir -p "$out"
 rm -f "$out/SHA256SUMS" # a stale checksum file must never describe a different build
@@ -76,6 +78,10 @@ for p in $platforms; do
     f="$stage/bundled/$tool"
     [ -f "$f" ] && [ ! -L "$f" ] && [ -s "$f" ] && [ -x "$f" ] || die "$tool is missing from bundled/ in $name"
   done
+
+  # The Go code linked into the binary (bv's analysis packages and every other module).
+  go_licenses_section "$root" "$os" "$arch" >>"$notices" \
+    || die "cannot list the Go modules linked into abacus (run go mod download first)"
 
   cp "$root/LICENSE" "$root/README.md" "$stage/"
   cp "$manifest" "$stage/third_party/bundled-tools.json"

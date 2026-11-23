@@ -1,0 +1,87 @@
+{
+ "triage": {
+  "triage": {
+   "quick_ref": {
+    "top_picks": [
+     {
+      "id": "dm-1",
+      "title": "Diamond root",
+      "score": 0.4,
+      "reasons": [
+       "Unblocks 2 item(s)"
+      ],
+      "unblocks": 2
+     }
+    ]
+   },
+   "blockers_to_clear": [
+    {
+     "id": "dm-1",
+     "title": "Diamond root",
+     "unblocks_count": 2,
+     "unblocks_ids": [
+      "dm-2",
+      "dm-3"
+     ],
+     "actionable": true
+    }
+   ]
+  }
+ },
+ "plan": {
+  "plan": {
+   "tracks": [
+    {
+     "track_id": "track-A",
+     "items": [
+      {
+       "id": "dm-1"
+      }
+     ]
+    }
+   ],
+   "total_actionable": 1,
+   "total_blocked": 3
+  }
+ },
+ "insights": {
+  "Bottlenecks": [
+   {
+    "ID": "dm-2",
+    "Value": 0.5
+   },
+   {
+    "ID": "dm-3",
+    "Value": 0.5
+   }
+  ],
+  "Keystones": [
+   {
+    "ID": "dm-1",
+    "Value": 3
+   },
+   {
+    "ID": "dm-2",
+    "Value": 2
+   },
+   {
+    "ID": "dm-3",
+    "Value": 2
+   },
+   {
+    "ID": "dm-4",
+    "Value": 1
+   }
+  ],
+  "Cycles": [],
+  "status": {
+   "Critical": {
+    "state": "computed"
+   }
+  }
+ },
+ "graph": {
+  "nodes": 4,
+  "edges": 4
+ }
+}
