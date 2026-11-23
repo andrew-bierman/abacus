@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"hash/fnv"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -38,6 +40,16 @@ var (
 	colOnBadge = pal("#ffffff", "231", "15", "#0d1117", "233", "0")
 	colSelBG   = pal("#ddf4ff", "153", "7", "#1f2a37", "236", "0")
 )
+
+// colTint are the colors names are tinted with: none of them is a semantic color, so a name is never
+// mistaken for a state (red means failed, green means ok).
+var colTint = []lipgloss.CompleteAdaptiveColor{
+	pal("#8250df", "98", "5", "#d2a8ff", "183", "13"),  // purple
+	pal("#1b7c83", "30", "6", "#76e3ea", "117", "14"),  // teal
+	pal("#bc4c00", "166", "3", "#ffa657", "215", "11"), // orange
+	pal("#bf3989", "169", "5", "#ff9bce", "211", "13"), // pink
+	pal("#0550ae", "25", "4", "#79c0ff", "111", "12"),  // sky
+}
 
 func colorFor(k Kind) lipgloss.TerminalColor {
 	switch k {
@@ -102,6 +114,22 @@ func (t Theme) Text(k Kind, s string) string {
 		return t.muted().Render(s)
 	}
 	return t.r.NewStyle().Foreground(colorFor(k)).Render(s)
+}
+
+// Tint colors s by key, so one name (an agent, a channel, a machine) has one color on every tab.
+// Without color it is s unchanged.
+func (t Theme) Tint(key, s string) string {
+	if t.plain {
+		return s
+	}
+	h := fnv.New32a()
+	h.Write([]byte(key))
+	return t.r.NewStyle().Foreground(colTint[h.Sum32()%uint32(len(colTint))]).Render(s)
+}
+
+// Section is a heading inside a panel: bold and accent colored.
+func (t Theme) Section(s string) string {
+	return t.r.NewStyle().Bold(true).Foreground(colAccent).Render(s)
 }
 
 // Badge is a filled pill; without color it is "(text)" so it stays distinguishable.

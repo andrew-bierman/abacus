@@ -140,3 +140,43 @@ func TestBorderStylesUseOnlyBasicEscapesOnSixteenColors(t *testing.T) {
 		}
 	}
 }
+
+// An agent keeps one color wherever its name appears: the tint depends on the name alone.
+func TestTintIsStableDistinctAndDegradesWithTheProfile(t *testing.T) {
+	th := NewTheme(rendererFor(termenv.TrueColor, true))
+	if th.Tint("ada", "ada") != th.Tint("ada", "ada") {
+		t.Fatal("the same name must always get the same color")
+	}
+	if th.Tint("ada", "x") == th.Tint("ada", "y") {
+		t.Fatal("the tint must apply to the given text")
+	}
+	seen := map[string]bool{}
+	for _, k := range []string{"ada", "bob", "codex", "claude-mac", "glm-scheduler-01", "ops", "dev/web", "work", "amy", "zed", "mia", "kai"} {
+		seen[th.Tint(k, "x")] = true
+	}
+	if len(seen) < 3 {
+		t.Fatalf("twelve names should spread over several colors, got %d", len(seen))
+	}
+	if s := NewTheme(rendererFor(termenv.Ascii, true)).Tint("ada", "ada"); s != "ada" {
+		t.Fatalf("no color, no escapes: %q", s)
+	}
+	for k := range map[string]bool{"ada": true, "bob": true, "codex": true, "zed": true} {
+		s := NewTheme(rendererFor(termenv.ANSI, true)).Tint(k, "x")
+		if strings.Contains(s, "38;2;") || strings.Contains(s, "38;5;") {
+			t.Errorf("%s used extended colors on a 16-color terminal: %q", k, s)
+		}
+	}
+	if th.Tint("a", "x") == th.Text(KindFail, "x") {
+		t.Fatal("a name tint must not borrow a semantic color: red means failed")
+	}
+}
+
+func TestSectionHeadingIsBoldAccentAndPlainWithoutColor(t *testing.T) {
+	if s := NewTheme(rendererFor(termenv.Ascii, true)).Section("Channels"); s != "Channels" {
+		t.Fatalf("plain = %q", s)
+	}
+	s := NewTheme(rendererFor(termenv.TrueColor, true)).Section("Channels")
+	if !strings.Contains(s, "\x1b[1;") && !strings.Contains(s, "\x1b[1m") || !strings.Contains(s, "38;2;") {
+		t.Fatalf("a section heading is bold and colored: %q", s)
+	}
+}
