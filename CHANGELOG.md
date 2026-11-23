@@ -8,6 +8,10 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Assessment of bv and b9s as importable Go packages for the Tasks graph insights
+  (`docs/plans/2026-11-22-graph-core-assessment.md`): measurements, a decision and the bv license
+  rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
+  dependency change.
 - `abacus tui --demo` shows every tab with invented data: Board, Tasks (with graph insights and the
   confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
   only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,
