@@ -189,6 +189,10 @@ or error messages that help you fix one.
   tools tests run are `bd` and `bv`, against temp projects with an isolated `HOME`, and they skip when absent.
   Sidecar tests use fake binaries in temp dirs.
 - Use a private `GOCACHE` for builds.
+- Building needs Go 1.26.11 or newer (`go.mod` names it, because the optional in-process graph
+  engine links bv's analysis package). With network access `go build` fetches that toolchain by
+  itself; offline, or with `GOTOOLCHAIN=local`, install it first: `mise use go@1.26.11`. CI and
+  the release workflow read the version from `go.mod`.
 
 Note: the two `signalZero` bodies under `internal/lambe` are kept separate on purpose; they port
 Lambe's own process-liveness logic per platform, and merging them would drift from it.
