@@ -223,6 +223,8 @@ type QueueRun struct {
 	Phase   string   `json:"phase,omitempty"`
 	Machine string   `json:"machine,omitempty"`
 	Stalled bool     `json:"stalled,omitempty"`
+	// Workflow names what the run is doing (additive; global search matches it).
+	Workflow string `json:"workflow,omitempty"`
 }
 
 type QueueItem struct {
