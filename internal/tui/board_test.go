@@ -146,7 +146,13 @@ func TestBoardDetailKeepsALineBreakAndFlattensTheListRow(t *testing.T) {
 			t.Fatalf("the list row shows the first line only: %q", l)
 		}
 	}
-	if !strings.Contains(v, "\n  second line") {
+	broken := false
+	for _, l := range rows {
+		if strings.Contains(l, "second line") && !strings.Contains(l, "first line") {
+			broken = true // the detail panel puts each stored line on its own row
+		}
+	}
+	if !broken {
 		t.Fatalf("the detail pane breaks the lines: %s", v)
 	}
 }

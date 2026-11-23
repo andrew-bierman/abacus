@@ -9,7 +9,7 @@ Keys
   q             quit
 
   ↑/↓           move
-  r             refresh
+  enter         details
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  [Board]  Tasks  Leases  Queues  Doctor
@@ -22,11 +22,11 @@ Keys
 │ q             quit                   │
 │                                      │
 │ ↑/↓           move                   │
+│ enter         details                │
 │ r             refresh                │
 │                                      │
 │ ? or esc closes                      │
 ╰──────────────────────────────────────╯
-
 
 
 
@@ -53,8 +53,8 @@ Keys
   q             quit
 
   ↑/↓           move
-  r             refresh
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+  enter         details
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · r refresh
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -66,6 +66,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ q             quit                                                           │
 │                                                                              │
 │ ↑/↓           move                                                           │
+│ enter         details                                                        │
 │ r             refresh                                                        │
 │                                                                              │
 │ ? or esc closes                                                              │
@@ -84,8 +85,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 
 
-
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · r refresh
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 Keys

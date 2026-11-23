@@ -107,6 +107,7 @@ type boardSection struct {
 	cursor   int
 	selected string // "t:<id>" or "k:<id>", so a refresh cannot move the cursor to another row
 	top      int
+	drilled  bool // stacked layout only: showing the detail panel
 	notice   string
 	th       Theme
 	geom
@@ -127,7 +128,10 @@ func (s *boardSection) Capturing() bool  { return false }
 func (s *boardSection) canInspect() bool { return s.inspect != nil && s.loaded && s.err == nil }
 
 func (s *boardSection) Bindings() []key.Binding {
-	out := append(moveBindings(), keyReload)
+	enter, back := keyEnter, keyBack
+	enter.SetEnabled(isStacked(s.width()) && !s.drilled && len(s.rows()) > 0)
+	back.SetEnabled(s.drilled)
+	out := append(moveBindings(), enter, back, keyReload)
 	if s.canInspect() {
 		out = append(out, keyBrowser)
 	}
@@ -167,17 +171,16 @@ func (s *boardSection) deactivate() { s.active = false; s.gen++ }
 // row is one selectable line: a thread or a task.
 type boardRow struct {
 	id   string
-	text string // the list line
 	body []string
 }
 
 func (s *boardSection) rows() []boardRow {
 	var out []boardRow
 	for _, t := range s.report.Threads {
-		out = append(out, boardRow{id: "t:" + t.Root.ID, text: threadRow(t), body: threadBody(t)})
+		out = append(out, boardRow{id: "t:" + t.Root.ID, body: threadBody(t)})
 	}
 	for _, t := range s.report.Tasks {
-		out = append(out, boardRow{id: "k:" + t.ID, text: taskRow(t), body: taskBody(t)})
+		out = append(out, boardRow{id: "k:" + t.ID, body: taskBody(t)})
 	}
 	return out
 }
@@ -192,10 +195,6 @@ func when(iso string) string {
 		return t.UTC().Format("Jan 2 15:04")
 	}
 	return ""
-}
-
-func threadRow(t core.BoardThread) string {
-	return fmt.Sprintf("%s  %s  %s  %s", padTo(trunc(hash+san(t.Root.ID), 8), 8), padTo(trunc(orDash(t.Root.Channel), 12), 12), padTo(trunc(orDash(t.Root.Author), 12), 12), san(firstLine(t.Root.Text)))
 }
 
 // textLines splits stored message text into screen lines, each sanitized: the data keeps its
@@ -220,11 +219,6 @@ func threadBody(t core.BoardThread) []string {
 		out = append(out, textLines(t.Last.Text)...)
 	}
 	return out
-}
-
-func taskRow(t core.BoardTask) string {
-	who := t.Claimant
-	return fmt.Sprintf("%s  %s  %s  %s", padTo(trunc(hash+san(t.ID), 8), 8), padTo(trunc(orDash(t.State), 10), 10), padTo(trunc(orDash(who), 12), 12), san(firstLine(t.Text)))
 }
 
 func taskBody(t core.BoardTask) []string {
@@ -254,6 +248,7 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case boardMsg:
 		s.report, s.err, s.loaded, s.busy = m.report, m.err, true, false
 		s.reanchor()
+		s.drilled = s.drilled && len(s.rows()) > 0
 	case boardTickMsg:
 		if !s.active || m.gen != s.gen { // not visible, or a tick of an earlier visit
 			return s, nil
@@ -268,6 +263,7 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
+		s.drilled = s.drilled && isStacked(s.width())
 	case tea.KeyMsg:
 		s.notice = ""
 		rows := s.rows()
@@ -276,6 +272,10 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.cursor = max(0, s.cursor-1)
 		case key.Matches(m, keyDown):
 			s.cursor = min(max(0, len(rows)-1), s.cursor+1)
+		case key.Matches(m, keyEnter):
+			s.drilled = isStacked(s.width()) && len(rows) > 0
+		case key.Matches(m, keyBack):
+			s.drilled = false
 		case key.Matches(m, keyReload):
 			if !s.busy {
 				return s, s.fetch()
@@ -309,21 +309,44 @@ func (s *boardSection) lines() ([]string, int) {
 		out := wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w)
 		return append(append(out, ""), wrap(th.Text(KindMuted, strings.ToLower(core.HowToConnectBoardDegraded[:1])+core.HowToConnectBoardDegraded[1:]), w)...), 0
 	}
-	r := s.report
-	head := th.Header.Render("Board")
-	if src := r.Source; src != "" && src != core.SourceLive {
-		head += " " + th.Badge(KindWarn, san(src))
+	return nil, 0 // connected: View draws the panels instead
+}
+
+func (s *boardSection) View() string {
+	if s.loaded && s.err == nil {
+		return s.connectedView()
 	}
-	out := []string{head, r.Summarize()}
+	lines, cursorLine := s.lines()
+	return renderWindow(s.th, lines, cursorLine, s.geom, &s.top)
+}
+
+// threadCols and taskCols are the board tables: the id and the text always stay, the channel,
+// author and claimant drop first as the panel narrows.
+var (
+	threadCols = table{cols: []column{{min: 8, max: 8, prio: 0}, {min: 6, max: 14, prio: 2}, {min: 6, max: 14, prio: 3}, {min: 8, prio: 1}}, gap: 2}
+	taskCols   = table{cols: []column{{min: 8, max: 8, prio: 0}, {min: 5, max: 10, prio: 0}, {min: 6, max: 16, prio: 3}, {min: 8, prio: 1}}, gap: 2}
+)
+
+// connectedView is the board as a framed list (channels, threads, tasks) with the selected message
+// or task in a detail panel beside it from bpWide columns, or after Enter below that.
+func (s *boardSection) connectedView() string {
+	th, w := s.th, s.width()
+	r := s.report
+	g := duoLayout(w, s.bodyH(s.notice))
+	iw := g.listInner()
+	rows := s.rows()
+
+	title := titled("Board", r.Source)
+	lines := wrap(r.Summarize(), iw)
 	if r.Reason != "" {
-		out = append(out, wrap(th.Text(KindWarn, san(r.Reason)), w)...)
+		lines = append(lines, wrap(th.Text(KindWarn, san(r.Reason)), iw)...)
 	}
 	if r.Truncated != "" {
-		out = append(out, wrap(th.Text(KindMuted, san(r.Truncated)), w)...)
+		lines = append(lines, wrap(th.Text(KindMuted, san(r.Truncated)), iw)...)
 	}
-	out = append(out, "", th.Header.Render("Channels"))
+	lines = append(lines, "", th.Header.Render("Channels"))
 	if len(r.Channels) == 0 {
-		out = append(out, th.Text(KindMuted, "  none yet: the first post makes one"))
+		lines = append(lines, th.Text(KindMuted, "none yet: the first post makes one"))
 	}
 	var chans []string
 	for _, c := range r.Channels {
@@ -334,47 +357,54 @@ func (s *boardSection) lines() ([]string, int) {
 		chans = append(chans, name)
 	}
 	if len(chans) > 0 {
-		out = append(out, wrap("  "+strings.Join(chans, " · "), w)...)
+		lines = append(lines, wrap(strings.Join(chans, " · "), iw)...)
 	}
-	rows := s.rows()
-	cursorLine := len(out)
-	section := func(title string, n int, empty string) {
-		out = append(out, "", th.Header.Render(title))
-		if n == 0 {
-			out = append(out, th.Text(KindMuted, "  "+empty))
-		}
-	}
-	line := func(i int, text string) {
-		if i == s.cursor {
-			cursorLine = len(out)
-			out = append(out, th.Selected.Render(padTo(trunc("▸ "+text, w), w)))
-		} else {
-			out = append(out, "  "+text)
-		}
-	}
-	section("Recent threads", len(r.Threads), "no threads yet")
-	for i := range r.Threads {
-		line(i, rows[i].text)
-	}
-	section("Tasks", len(r.Tasks), "no open tasks")
-	for i := range r.Tasks {
-		line(len(r.Threads)+i, rows[len(r.Threads)+i].text)
-	}
-	if s.cursor < len(rows) {
-		out = append(out, "", th.Header.Render("Selected"))
-		for _, b := range rows[s.cursor].body {
-			out = append(out, wrap("  "+b, w)...)
-		}
-	}
-	if s.notice != "" {
-		out = append(out, "", th.Text(KindWarn, san(s.notice)))
-	}
-	return out, cursorLine
-}
 
-func (s *boardSection) View() string {
-	lines, cursorLine := s.lines()
-	return renderWindow(s.th, lines, cursorLine, s.geom, &s.top)
+	lines = append(lines, "", th.Header.Render("Recent threads"))
+	if len(r.Threads) == 0 {
+		lines = append(lines, th.Text(KindMuted, "no threads yet"))
+	}
+	var trows [][]string
+	for _, t := range r.Threads {
+		trows = append(trows, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), san(firstLine(t.Root.Text))})
+	}
+	first := len(lines)
+	lines = append(lines, renderRows(th, threadCols, iw, trows, trows, s.cursor)...)
+	lines = append(lines, "", th.Header.Render("Tasks"))
+	if len(r.Tasks) == 0 {
+		lines = append(lines, th.Text(KindMuted, "no open tasks"))
+	}
+	var krows [][]string
+	for _, t := range r.Tasks {
+		krows = append(krows, []string{hash + san(t.ID), orDash(t.State), orDash(t.Claimant), san(firstLine(t.Text))})
+	}
+	// the cursor runs over threads then tasks: draw the task rows with the cursor shifted past the threads
+	lines = append(lines, renderRows(th, taskCols, iw, krows, krows, s.cursor-len(r.Threads))...)
+	var cursorLine int
+	if s.cursor < len(r.Threads) {
+		cursorLine = first + s.cursor
+	} else {
+		cursorLine = len(lines) - len(krows) + (s.cursor - len(r.Threads))
+	}
+
+	detailTitle, detail := "Message", []string{th.Text(KindMuted, "nothing selected")}
+	if s.cursor < len(rows) {
+		if strings.HasPrefix(rows[s.cursor].id, "k:") {
+			detailTitle = "Task"
+		} else {
+			detailTitle = "Thread"
+		}
+		detail = nil
+		for _, b := range rows[s.cursor].body {
+			detail = append(detail, wrap(b, g.detail-panelChromeW)...)
+		}
+	}
+	list := windowLines(th, lines, cursorLine, g.inner, &s.top)
+	body := g.draw(th, title, list, detailTitle, clipLines(th, detail, g.inner), s.drilled)
+	if s.notice != "" {
+		body = append(body, noticeLine(th, w, s.notice)...)
+	}
+	return joinLines(body)
 }
 
 // renderWindow draws lines in the section's height, keeping cursorLine in view (top is the scroll
@@ -844,94 +874,115 @@ func (s *tasksSection) lines() ([]string, int) {
 	if !s.loaded {
 		return []string{th.Text(KindMuted, "loading…")}, 0
 	}
-	var out []string
-	if s.err != nil {
-		out = wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w)
-	} else {
-		head := th.Header.Render("Tasks")
-		if src := s.report.Source; src != "" && src != core.SourceLive {
-			head += " " + th.Badge(KindWarn, san(src))
-		}
-		c := s.report.Counts
-		out = append(out, head,
-			fmt.Sprintf("%d tasks: %d open · %d in progress · %d blocked · %d deferred · %d closed", c.Total, c.Open, c.InProgress, c.Blocked, c.Deferred, c.Closed),
-			"ready "+th.Text(KindOK, fmt.Sprint(c.Ready)), "")
-	}
-	cursorLine := len(out)
-	if s.err == nil {
-		out = append(out, th.Header.Render("Recent changes"))
-		cursorLine = len(out)
-		if len(s.recent()) == 0 {
-			if s.report.Counts.Total == 0 {
-				out = append(out, th.Text(KindMuted, "  no tasks yet — press n to add the first one"))
-			} else {
-				out = append(out, th.Text(KindMuted, "  none"))
-			}
-		}
-		for i, t := range s.recent() {
-			row := fmt.Sprintf("%s  %s  P%d  %s", padTo(trunc(san(t.ID), 12), 12), orDash(t.Status), t.Priority, san(t.Title))
-			if i == s.cursor {
-				out = append(out, th.Selected.Render(padTo(trunc("▸ "+row, w), w)))
-			} else {
-				out = append(out, "  "+row)
-			}
-		}
-	}
-	out = append(out, "")
-	out = append(out, s.insightLines(w)...)
-	if s.notice != "" {
+	out := wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w)
+	if s.notice != "" { // a write outcome, or why a key did nothing, is never lost to a failed read
 		out = append(out, "", th.Text(KindWarn, san(s.notice)))
 	}
-	return out, cursorLine + s.cursor
+	return out, 0
 }
 
-func (s *tasksSection) insightLines(w int) []string {
+func (s *tasksSection) insightParts(iw int) (string, []string) {
 	th := s.th
 	in := s.insights
-	head := th.Header.Render("Insights")
 	switch {
 	case in == nil && s.err != nil:
-		return nil
+		return "", nil
 	case in == nil:
-		return []string{head, th.Text(KindMuted, "  loading…")}
+		return "", []string{th.Text(KindMuted, "loading…")}
 	case in.Empty:
-		return []string{head + " " + th.Badge(KindMuted, "no tasks yet"), th.Text(KindMuted, "  next picks, blockers and the critical path appear once there are tasks")}
+		return "no tasks yet", wrap(th.Text(KindMuted, "next picks, blockers and the critical path appear once there are tasks"), iw)
 	case in.State == core.NotConnected:
-		return append([]string{head + " " + th.Badge(KindSkip, "not connected")}, wrap(san(in.HowToConnect), w)...)
+		return "not connected", wrap(san(in.HowToConnect), iw)
 	case in.State == core.Degraded && in.Reason != "" && len(in.TopPicks) == 0 && len(in.Cycles) == 0 && in.TotalActionable == 0:
-		return append([]string{head + " " + th.Badge(KindWarn, "unavailable")}, wrap(san(in.Reason), w)...)
+		return "unavailable", wrap(san(in.Reason), iw)
 	}
-	out := []string{head + " " + th.Badge(KindMuted, san(in.Source))}
-	out = append(out, fmt.Sprintf("  %d actionable · %d blocked · %d cycles", in.TotalActionable, in.TotalBlocked, len(in.Cycles)))
+	out := []string{fmt.Sprintf("%d actionable · %d blocked · %d cycles", in.TotalActionable, in.TotalBlocked, len(in.Cycles))}
 	for _, p := range in.TopPicks {
-		out = append(out, "  next     "+san(p.ID)+"  "+san(p.Title)+th.Text(KindMuted, fmt.Sprintf("  (unblocks %d)", p.Unblocks)))
+		out = append(out, hang("next     ", san(p.ID)+"  "+san(p.Title)+th.Text(KindMuted, fmt.Sprintf("  (unblocks %d)", p.Unblocks)), iw)...)
 	}
 	for _, p := range in.Blockers {
-		out = append(out, "  blocker  "+san(p.ID)+"  "+san(p.Title)+th.Text(KindMuted, fmt.Sprintf("  (unblocks %d)", p.Unblocks)))
+		out = append(out, hang("blocker  ", san(p.ID)+"  "+san(p.Title)+th.Text(KindMuted, fmt.Sprintf("  (unblocks %d)", p.Unblocks)), iw)...)
 	}
 	if len(in.CriticalPath) > 0 {
 		var ids []string
 		for _, r := range in.CriticalPath {
 			ids = append(ids, san(r.ID))
 		}
-		out = append(out, "  critical path  "+strings.Join(ids, " > "))
+		out = append(out, hang("critical path  ", strings.Join(ids, " > "), iw)...)
 	} else if in.CriticalPathNote != "" {
-		out = append(out, "  "+th.Text(KindMuted, san(in.CriticalPathNote)))
+		out = append(out, wrap(th.Text(KindMuted, san(in.CriticalPathNote)), iw)...)
 	}
 	for _, c := range in.Cycles {
 		var ids []string
 		for _, id := range c {
 			ids = append(ids, san(id))
 		}
-		out = append(out, "  "+th.Text(KindWarn, "cycle")+"  "+strings.Join(ids, " -> "))
+		out = append(out, hang(th.Text(KindWarn, "cycle")+"  ", strings.Join(ids, " -> "), iw)...)
 	}
 	if in.Reason != "" {
-		out = append(out, "  "+th.Text(KindWarn, san(in.Reason)))
+		out = append(out, wrap(th.Text(KindWarn, san(in.Reason)), iw)...)
 	}
-	return out
+	return san(in.Source), out
+}
+
+// taskCols are the task table's columns: id, status, priority, title. The id and status stay; the
+// title takes the slack and is cut last.
+var taskTable = table{cols: []column{{min: 12, max: 12, prio: 0}, {min: 11, max: 11, prio: 0}, {min: 2, max: 3, prio: 1}, {min: 8, prio: 1}}, gap: 2}
+
+// panelView is the Tasks list: the counts and a table of recent changes in a framed list panel and
+// the graph insights in a panel of their own, beside it from bpWide columns and below it under that.
+// The forms and the confirm screen are not drawn here.
+func (s *tasksSection) panelView() string {
+	th, w := s.th, s.width()
+	h := s.bodyH(s.notice)
+	g := duoLayout(w, h)
+	iw := g.listInner()
+	insW := max(w-panelChromeW, 1)
+	if g.wide {
+		insW = max(g.detail-panelChromeW, 1)
+	}
+
+	title := titled("Tasks", s.report.Source)
+	c := s.report.Counts
+	lines := wrap(fmt.Sprintf("%d tasks: %d open · %d in progress · %d blocked · %d deferred · %d closed", c.Total, c.Open, c.InProgress, c.Blocked, c.Deferred, c.Closed), iw)
+	lines = append(lines, "ready "+th.Text(KindOK, fmt.Sprint(c.Ready)), "", th.Header.Render("Recent changes"))
+	cursorLine := len(lines)
+	if len(s.recent()) == 0 {
+		if c.Total == 0 {
+			lines = append(lines, th.Text(KindMuted, "no tasks yet — press n to add the first one"))
+		} else {
+			lines = append(lines, th.Text(KindMuted, "none"))
+		}
+	}
+	var rows [][]string
+	for _, t := range s.recent() {
+		rows = append(rows, []string{san(t.ID), orDash(t.Status), fmt.Sprintf("P%d", t.Priority), san(t.Title)})
+	}
+	lines = append(lines, renderRows(th, taskTable, iw, rows, rows, s.cursor)...)
+	cursorLine += s.cursor
+
+	sub, ins := s.insightParts(insW)
+	insTitle := "Insights"
+	if sub != "" {
+		insTitle += " · " + sub
+	}
+	var body []string
+	if g.wide {
+		body = g.draw(th, title, windowLines(th, lines, cursorLine, g.inner, &s.top), insTitle, clipLines(th, ins, g.inner), false)
+	} else {
+		topRows, botRows := stackRows(h, len(lines), len(ins))
+		body = stackPanels(th, w, title, windowLines(th, lines, cursorLine, topRows, &s.top), topRows, insTitle, clipLines(th, ins, botRows), botRows)
+	}
+	if s.notice != "" {
+		body = append(body, noticeLine(th, w, s.notice)...)
+	}
+	return joinLines(body)
 }
 
 func (s *tasksSection) View() string {
+	if s.mode == modeList && s.loaded && s.err == nil {
+		return s.panelView()
+	}
 	lines, cursorLine := s.lines()
 	return renderWindow(s.th, lines, cursorLine, s.geom, &s.top)
 }

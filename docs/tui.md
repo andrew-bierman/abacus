@@ -38,10 +38,21 @@ goes to it. Nothing writes except `y` on the confirm screen.
 
 ## Tasks
 
-Counts by state, ready work, the most recent changes (a short list with a cursor, for `e` and `x`)
-and graph insights: the next pick, the issues that block the most, the critical path and dependency
-cycles. Insights are read on start and on `r`, not on a timer, because they run several processes.
-Without an insights provider the block says it is not connected and how to install one.
+Counts by state, ready work and the most recent changes (an aligned table with a cursor, for `e` and
+`x`) in a framed list panel, and the graph insights in a panel of their own: the next pick, the
+issues that block the most, the critical path and dependency cycles. From 100 columns the insights
+sit beside the list; below that they sit under it (the list keeps two thirds of the rows). Insights
+are read on start and on `r`, not on a timer, because they run several processes. Without an
+insights provider the panel says it is not connected and how to install one. The forms and the
+confirm screen are drawn as before and are not framed yet.
+
+## Board
+
+A framed list panel with the summary, the channels and two aligned tables (recent threads and open
+tasks), and the selected message or task in a detail panel beside it from 100 columns; below that
+`enter` drills into the detail and `esc` comes back. The channel, author and claimant columns drop
+first as the panel narrows; ids and text stay. Selection follows the thread or task, not its row,
+across refreshes.
 
 ## Layout
 

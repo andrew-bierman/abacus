@@ -1,40 +1,40 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-Tasks
-14 tasks: 6 open · 3 in progress · 2 bl…
-ready 4
-
-Recent changes
-▸ ac-12         in_progress  P1  wire t…
-  ac-09         open  P2  queue attenti…
-  ac-03         closed  P3  retire the …
-
-  ↕ +6 more
+╭─ ▸ Tasks ────────────────────────────╮
+│                                      │
+│ Recent changes                       │
+│ ▸ ac-12  in_progress  P1  wire the … │
+│   ↕ +5 more                          │
+╰──────────────────────────────────────╯
+╭─ Insights · graph analysis ──────────╮
+│ 4 actionable · 2 blocked · 1 cycles  │
+│   ↕ +6 more                          │
+╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-Tasks
-14 tasks: 6 open · 3 in progress · 2 bl…
-ready 4
-
-Recent changes
-▸ ac-12         in_progress  P1  wire t…
-  ac-09         open  P2  queue attenti…
-  ac-03         closed  P3  retire the …
-
-Insights (graph analysis)
-  4 actionable · 2 blocked · 1 cycles
-  next     ac-12  wire the lease heartb…
-  blocker  ac-12  wire the lease heartb…
-  critical path  ac-12 > ac-09
-  cycle  ac-20 -> ac-21 -> ac-20
-
-
-
-
-
-
+╭─ ▸ Tasks ────────────────────────────╮
+│ 14 tasks: 6 open · 3 in progress · 2 │
+│ blocked · 1 deferred · 2 closed      │
+│ ready 4                              │
+│                                      │
+│ Recent changes                       │
+│ ▸ ac-12  in_progress  P1  wire the … │
+│   ac-09  open         P2  queue att… │
+│   ac-03  closed       P3  retire th… │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+╭─ Insights · graph analysis ──────────╮
+│ 4 actionable · 2 blocked · 1 cycles  │
+│ next     ac-12  wire the lease       │
+│          heartbeat  (unblocks 2)     │
+│ blocker  ac-12  wire the lease       │
+│          heartbeat  (unblocks 2)     │
+│ critical path  ac-12 > ac-09         │
+│ cycle  ac-20 -> ac-21 -> ac-20       │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,39 +44,39 @@ Insights (graph analysis)
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Tasks
-14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed
-ready 4
-
-Recent changes
-▸ ac-12         in_progress  P1  wire the lease heartbeat
-  ac-09         open  P2  queue attention digest
-  ac-03         closed  P3  retire the old poller
-
-  ↕ +6 more
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│ Recent changes                                                               │
+│ ▸ ac-12  in_progress  P1  wire the lease heartbeat                           │
+│   ↕ +4 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Insights · graph analysis ──────────────────────────────────────────────────╮
+│ 4 actionable · 2 blocked · 1 cycles                                          │
+│   ↕ +4 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · ↑/↓ move · n new · e edit · x close task …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Tasks
-14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed
-ready 4
-
-Recent changes
-▸ ac-12         in_progress  P1  wire the lease heartbeat
-  ac-09         open  P2  queue attention digest
-  ac-03         closed  P3  retire the old poller
-
-Insights (graph analysis)
-  4 actionable · 2 blocked · 1 cycles
-  next     ac-12  wire the lease heartbeat  (unblocks 2)
-  blocker  ac-12  wire the lease heartbeat  (unblocks 2)
-  critical path  ac-12 > ac-09
-  cycle  ac-20 -> ac-21 -> ac-20
-
-
-
-
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ ready 4                                                                      │
+│                                                                              │
+│ Recent changes                                                               │
+│ ▸ ac-12  in_progress  P1  wire the lease heartbeat                           │
+│   ac-09  open         P2  queue attention digest                             │
+│   ac-03  closed       P3  retire the old poller                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Insights · graph analysis ──────────────────────────────────────────────────╮
+│ 4 actionable · 2 blocked · 1 cycles                                          │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)                       │
+│ blocker  ac-12  wire the lease heartbeat  (unblocks 2)                       │
+│ critical path  ac-12 > ac-09                                                 │
+│ cycle  ac-20 -> ac-21 -> ac-20                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,35 +88,35 @@ Insights (graph analysis)
 ? help · q quit · tab/→ next tab · ↑/↓ move · n new · e edit · x close task …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Tasks
-14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed
-ready 4
-
-Recent changes
-▸ ac-12         in_progress  P1  wire the lease heartbeat
-  ac-09         open  P2  queue attention digest
-  ac-03         closed  P3  retire the old poller
-
-  ↕ +6 more
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────╮ ╭─ Insights · graph analysis ─────────────────╮
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed │ │ 4 actionable · 2 blocked · 1 cycles         │
+│ ready 4                                                              │ │ next     ac-12  wire the lease heartbeat    │
+│                                                                      │ │          (unblocks 2)                       │
+│ Recent changes                                                       │ │ blocker  ac-12  wire the lease heartbeat    │
+│ ▸ ac-12  in_progress  P1  wire the lease heartbeat                   │ │          (unblocks 2)                       │
+│   ac-09  open         P2  queue attention digest                     │ │ critical path  ac-12 > ac-09                │
+│   ac-03  closed       P3  retire the old poller                      │ │ cycle  ac-20 -> ac-21 -> ac-20              │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · ↑/↓ move · n new · e edit · x close task · o full view · r refresh
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Tasks
-14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed
-ready 4
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────╮ ╭─ Insights · graph analysis ─────────────────╮
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed │ │ 4 actionable · 2 blocked · 1 cycles         │
+│ ready 4                                                              │ │ next     ac-12  wire the lease heartbeat    │
+│                                                                      │ │          (unblocks 2)                       │
+│ Recent changes                                                       │ │ blocker  ac-12  wire the lease heartbeat    │
+│ ▸ ac-12  in_progress  P1  wire the lease heartbeat                   │ │          (unblocks 2)                       │
+│   ac-09  open         P2  queue attention digest                     │ │ critical path  ac-12 > ac-09                │
+│   ac-03  closed       P3  retire the old poller                      │ │ cycle  ac-20 -> ac-21 -> ac-20              │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 
-Recent changes
-▸ ac-12         in_progress  P1  wire the lease heartbeat
-  ac-09         open  P2  queue attention digest
-  ac-03         closed  P3  retire the old poller
 
-Insights (graph analysis)
-  4 actionable · 2 blocked · 1 cycles
-  next     ac-12  wire the lease heartbeat  (unblocks 2)
-  blocker  ac-12  wire the lease heartbeat  (unblocks 2)
-  critical path  ac-12 > ac-09
-  cycle  ac-20 -> ac-21 -> ac-20
+
 
 
 

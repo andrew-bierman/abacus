@@ -201,6 +201,7 @@ func scenarios() []scenario {
 		{name: "leases", build: std, keys: []string{"3"}, tab: "Leases"},
 		{name: "board", build: std, tab: "Board"},
 		{name: "board-detail", build: std, keys: []string{"down"}, tab: "Board"},
+		{name: "board-drilled", build: std, keys: []string{"1", "enter"}, tab: "Board"},
 		{name: "board-task", build: std, keys: []string{"down", "down"}, tab: "Board"},
 		{name: "board-absent", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
 			return New(nil, WithTheme(th), WithFullView(noFullView))
@@ -387,7 +388,13 @@ func TestReadmeSampleMatchesTheGolden(t *testing.T) {
 	for len(ls) > 0 && ls[len(ls)-1] == "" {
 		ls = ls[:len(ls)-1]
 	}
-	want := strings.Join(append(ls[:17:17], foot), "\n")
+	end := 17 // through the last panel border: a sample that stops inside a box looks broken
+	for i, l := range ls[:len(ls)-1] {
+		if strings.HasPrefix(l, "╰") {
+			end = i + 1
+		}
+	}
+	want := strings.Join(append(ls[:end:end], foot), "\n")
 	path := filepath.Join("..", "..", "README.md")
 	raw, err := os.ReadFile(path)
 	if err != nil {

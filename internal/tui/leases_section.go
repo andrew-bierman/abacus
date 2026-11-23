@@ -148,21 +148,10 @@ var leaseCols = table{cols: []column{
 	{min: 6, max: 10, prio: 3, right: true},
 }, gap: 2}
 
-func (s *leasesSection) expiry(l core.Lease) string {
-	if l.ExpiresAt == "" && l.State == core.LeaseHeld {
-		return "?"
-	}
-	return san(l.ExpiresAt)
-}
-
 // listTitle is the list panel's title: the counts and, for a reduced source, where it came from.
 func (s *leasesSection) listTitle() string {
 	r := s.got.report
-	title := "Leases · " + san(r.Summarize())
-	if r.Source != "" && r.Source != core.SourceLive {
-		title += " · " + san(string(r.Source))
-	}
-	return title
+	return titled("Leases · "+san(r.Summarize()), string(r.Source))
 }
 
 func (s *leasesSection) listLines(g duoGeom) []string {
@@ -177,7 +166,7 @@ func (s *leasesSection) listLines(g duoGeom) []string {
 		if i == s.cursor {
 			resource = th.Header.Render(resource)
 		}
-		rows[i] = []string{th.Badge(toneKind(l.Tone()), san(string(l.State))), resource, san(l.Holder), s.expiry(l)}
+		rows[i] = []string{th.Badge(toneKind(l.Tone()), san(string(l.State))), resource, san(l.Holder), san(l.Expiry())}
 	}
 	widths := leaseCols.fitRows(max(g.listInner()-2, 1), rows) // two cells for the selection marker
 	lines := make([]string, len(rows))
@@ -188,12 +177,7 @@ func (s *leasesSection) listLines(g duoGeom) []string {
 		}
 		lines[i] = marker + leaseCols.row(widths, r)
 	}
-	vis, top, hidden := windowMore(lines, s.cursor, g.inner, s.top)
-	s.top = top
-	if hidden > 0 && g.inner >= 2 {
-		vis = append(append([]string(nil), vis...), th.moreMarker(hidden))
-	}
-	return vis
+	return windowLines(th, lines, s.cursor, g.inner, &s.top)
 }
 
 func (s *leasesSection) detailLines() []string {
@@ -210,7 +194,7 @@ func (s *leasesSection) detailLines() []string {
 	}
 	return []string{
 		th.Header.Render(orDash(l.Resource)) + " " + th.Badge(toneKind(l.Tone()), san(string(l.State))), "",
-		field(holder, l.Holder), field("expires", s.expiry(l)),
+		field(holder, l.Holder), field("expires", san(l.Expiry())),
 	}
 }
 
@@ -231,5 +215,5 @@ func (s *leasesSection) View() string {
 	}
 	g := duoLayout(w, s.h)
 	list := s.listLines(g)
-	return joinLines(g.draw(th, s.h, s.listTitle(), list, "Lease", s.detailLines(), s.drilled))
+	return joinLines(g.draw(th, s.listTitle(), list, "Lease", s.detailLines(), s.drilled))
 }

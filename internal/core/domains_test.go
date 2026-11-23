@@ -353,3 +353,23 @@ func TestRunStateTone(t *testing.T) {
 		t.Errorf("json = %s", b)
 	}
 }
+
+func TestLeaseExpiryIsTheHubsTimeOrAQuestionMarkForAHeldLeaseWithNone(t *testing.T) {
+	for _, tc := range []struct {
+		l    core.Lease
+		want string
+	}{
+		{core.Lease{State: core.LeaseHeld, ExpiresAt: "12m"}, "12m"},
+		{core.Lease{State: core.LeaseHeld}, "?"},
+		{core.Lease{State: core.LeaseStale}, ""},
+		{core.Lease{State: core.LeaseFree}, ""},
+	} {
+		if got := tc.l.Expiry(); got != tc.want {
+			t.Errorf("%+v: Expiry() = %q, want %q", tc.l, got, tc.want)
+		}
+	}
+	// Detail keeps saying the same thing through the shared rule.
+	if got := (core.Lease{State: core.LeaseHeld, Holder: "amy"}).Detail(); got != "by amy (expires ?)" {
+		t.Errorf("Detail() = %q", got)
+	}
+}

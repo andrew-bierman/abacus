@@ -480,15 +480,19 @@ func (r LeasesReport) counts() (held, stale, free int) {
 	return
 }
 
+// Expiry is when a lease expires: the hub's time, or "?" for a held lease it gave no time for.
+func (l Lease) Expiry() string {
+	if l.ExpiresAt == "" && l.State == LeaseHeld {
+		return "?"
+	}
+	return l.ExpiresAt
+}
+
 // Detail is the lease's one-line description, shared by every front-end.
 func (l Lease) Detail() string {
 	switch l.State {
 	case LeaseHeld:
-		exp := l.ExpiresAt
-		if exp == "" {
-			exp = "?"
-		}
-		return "by " + l.Holder + " (expires " + exp + ")"
+		return "by " + l.Holder + " (expires " + l.Expiry() + ")"
 	case LeaseStale:
 		return "(last holder " + l.Holder + ")"
 	}

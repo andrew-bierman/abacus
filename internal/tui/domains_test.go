@@ -126,7 +126,7 @@ func typeText(m tea.Model, s string) tea.Model {
 
 func TestTasksShowsCompactSummaryAndInsights(t *testing.T) {
 	v := newTasksRig(t).m.View()
-	for _, want := range []string{"14 tasks", "ready 4", "Recent changes", "ac-12", "Insights (graph analysis)", "next", "critical path", "cycle"} {
+	for _, want := range []string{"14 tasks", "ready 4", "Recent changes", "ac-12", "Insights · graph analysis", "next", "critical path", "cycle"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("missing %q:\n%s", want, v)
 		}
@@ -136,7 +136,7 @@ func TestTasksShowsCompactSummaryAndInsights(t *testing.T) {
 func TestInsightsNotConnectedShowsHowToInstall(t *testing.T) {
 	r := newTasksRig(t)
 	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights}}})
-	if v := m.View(); !strings.Contains(v, "brew install dicklesworthstone/tap/bv") || !strings.Contains(v, "not connected") {
+	if v := m.View(); !strings.Contains(v, "brew install") || !strings.Contains(v, "tap/bv") || !strings.Contains(v, "not connected") {
 		t.Fatalf("%s", v)
 	}
 }
