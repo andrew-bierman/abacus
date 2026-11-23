@@ -6,7 +6,7 @@ running doctor…
 
 ╭─ Areas ──────────────────────────────╮
 │ Tasks   14 tasks: 6 open, 3 in       │
-│         progress, 2 blocked, 4 ready │
+│         progress, 2 blocked, 3 ready │
 │ Leases  2 held, 1 stale, 1 free      │
 │ Queues  demo data: fixtures, no live │
   ↕ +37 more
@@ -20,7 +20,7 @@ running doctor…
 
 ╭─ Areas ──────────────────────────────╮
 │ Tasks   14 tasks: 6 open, 3 in       │
-│         progress, 2 blocked, 4 ready │
+│         progress, 2 blocked, 3 ready │
 │ Leases  2 held, 1 stale, 1 free      │
 │ Queues  demo data: fixtures, no live │
 │         daemon                       │
@@ -49,7 +49,7 @@ running doctor…
 (Needs attention) 2 to set up, see below
 
 ╭─ Areas ──────────────────────────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4 ready                  │
+│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready                  │
 │ Leases  2 held, 1 stale, 1 free                                              │
 │ Queues  demo data: fixtures, no live daemon                                  │
 │ Board   4 channels, 2 recent threads, 2 open tasks                           │
@@ -63,7 +63,7 @@ running doctor…
 (Needs attention) 2 to set up, see below
 
 ╭─ Areas ──────────────────────────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4 ready                  │
+│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready                  │
 │ Leases  2 held, 1 stale, 1 free                                              │
 │ Queues  demo data: fixtures, no live daemon                                  │
 │ Board   4 channels, 2 recent threads, 2 open tasks                           │
@@ -93,7 +93,7 @@ running doctor…
 (Needs attention) 2 to set up, see below
 
 ╭─ Areas ─────────────────────────────────────────────────╮ ╭─ Tools ──────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4   │ │ Bundled tools: 0 of 3 verified; 2 using your own copy    │
+│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3   │ │ Bundled tools: 0 of 3 verified; 2 using your own copy    │
 │         ready                                           │ │ (beads-lease, bd)                                        │
 │ Leases  2 held, 1 stale, 1 free                         │ │ board        (found) 0.54.0                              │
 │ Queues  demo data: fixtures, no live daemon             │ │ lambe        (demo)                                      │
@@ -107,7 +107,7 @@ running doctor…
 (Needs attention) 2 to set up, see below
 
 ╭─ Areas ─────────────────────────────────────────────────╮ ╭─ Tools ──────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4   │ │ Bundled tools: 0 of 3 verified; 2 using your own copy    │
+│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3   │ │ Bundled tools: 0 of 3 verified; 2 using your own copy    │
 │         ready                                           │ │ (beads-lease, bd)                                        │
 │ Leases  2 held, 1 stale, 1 free                         │ │ board        (found) 0.54.0                              │
 │ Queues  demo data: fixtures, no live daemon             │ │ lambe        (demo)                                      │

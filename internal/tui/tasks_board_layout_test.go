@@ -144,28 +144,35 @@ func TestHostileTextNeverReachesTheBoardPanels(t *testing.T) {
 
 // ---- Tasks ----
 
-func TestTasksInsightsSitBesideAtOneHundredAndBelowTheListUnder(t *testing.T) {
+func TestTasksDetailSitsBesideTheListAtOneHundredAndIsOneStepAwayUnder(t *testing.T) {
 	both := func(v string) bool {
 		for _, l := range strings.Split(v, "\n") {
-			if strings.Contains(l, "▸ Tasks") && strings.Contains(l, "─ Insights") {
+			if strings.Contains(l, "▸ Tasks") && strings.Contains(l, "─ ac-12") {
 				return true
 			}
 		}
 		return false
 	}
 	narrow := sized(newTasksRig(t).m, 99, 50).View()
-	if both(narrow) || !strings.Contains(narrow, "─ Insights") || !strings.Contains(narrow, "critical path") {
-		t.Fatalf("99 columns stacks the insights under the list:\n%s", narrow)
+	if both(narrow) || strings.Contains(narrow, "─ ac-12") || !strings.Contains(narrow, "▸ Tasks") {
+		t.Fatalf("99 columns shows the list alone:\n%s", narrow)
+	}
+	drilled := press(sized(newTasksRig(t).m, 99, 50), "enter").View()
+	if !strings.Contains(drilled, "╭─ ▸ ac-12") || strings.Contains(drilled, "▸ Tasks") || !strings.Contains(drilled, "Comments (2)") {
+		t.Fatalf("enter opens the detail full width, esc returns:\n%s", drilled)
+	}
+	if back := press(press(sized(newTasksRig(t).m, 99, 50), "enter"), "esc").View(); !strings.Contains(back, "▸ Tasks") {
+		t.Fatalf("esc returns to the list:\n%s", back)
 	}
 	wide := sized(newTasksRig(t).m, 100, 50).View()
-	if !both(wide) || !strings.Contains(wide, "critical path") {
-		t.Fatalf("100 columns puts the insights beside the list:\n%s", wide)
+	if !both(wide) || !strings.Contains(wide, "Comments (2)") {
+		t.Fatalf("100 columns puts the detail beside the list:\n%s", wide)
 	}
 }
 
 func TestTasksListIsTheFocusedPanel(t *testing.T) {
-	if v := sized(newTasksRig(t).m, 120, 50).View(); !strings.Contains(v, "╭─ ▸ Tasks") || strings.Contains(v, "▸ Insights") {
-		t.Fatalf("the task list is focused, the insights are read-only:\n%s", v)
+	if v := sized(newTasksRig(t).m, 120, 50).View(); !strings.Contains(v, "╭─ ▸ Tasks") || strings.Contains(v, "─ ▸ ac-12") {
+		t.Fatalf("the task list is focused, the detail is read-only:\n%s", v)
 	}
 }
 
@@ -189,11 +196,11 @@ func TestTasksRowsAlignIntoColumns(t *testing.T) {
 	}
 }
 
-func TestTasksKeepTheSummaryAndTheCountsInThePanel(t *testing.T) {
-	for _, w := range []int{40, 80, 120} {
+func TestTasksKeepTheCountsAndRowsVisible(t *testing.T) {
+	for _, w := range []int{60, 80, 120} {
 		v := sized(newTasksRig(t).m, w, 50).View()
-		if !strings.Contains(v, "14 tasks") || !strings.Contains(v, "ready") || !strings.Contains(v, "ac-12") {
-			t.Errorf("w=%d: the summary and rows stay visible:\n%s", w, v)
+		if !strings.Contains(v, "14 tasks · 3 ready") || !strings.Contains(v, "of 14") || !strings.Contains(v, "ac-12") {
+			t.Errorf("w=%d: the counts and rows stay visible:\n%s", w, v)
 		}
 		for _, l := range strings.Split(v, "\n") {
 			if lipgloss.Width(l) > w {
@@ -205,7 +212,7 @@ func TestTasksKeepTheSummaryAndTheCountsInThePanel(t *testing.T) {
 
 func TestTasksEmptyStateIsAWordsLineInsideThePanel(t *testing.T) {
 	r := newTasksRig(t)
-	m, _ := r.m.Update(tasksMsg{report: core.TasksReport{Header: core.Header{Source: core.SourceLive}}})
+	m := withTasks(r.m, core.TasksReport{Header: core.Header{Source: core.SourceLive}})
 	v := m.View()
 	if !strings.Contains(v, "no tasks yet — press n to add the first one") || !strings.Contains(v, "╭") {
 		t.Fatalf("an empty tracker says what to do, inside the panel:\n%s", v)
@@ -215,9 +222,9 @@ func TestTasksEmptyStateIsAWordsLineInsideThePanel(t *testing.T) {
 func TestTasksSelectionAndWriteKeysStillWork(t *testing.T) {
 	r := newTasksRig(t)
 	m := press(sized(r.m, 120, 50), "j")
-	rowWith(t, m.View(), "▸", "ac-09") // down moves the cursor
+	rowWith(t, m.View(), "▸", "ac-01") // down moves the cursor (priority order: ac-12, then ac-01)
 	m = pressRun(t, m, "x")            // close the selected task: the confirm screen, never straight to a write
-	if v := m.View(); !strings.Contains(v, "Confirm this change") || !strings.Contains(v, "ac-09") {
+	if v := m.View(); !strings.Contains(v, "Confirm this change") || !strings.Contains(v, "ac-01") {
 		t.Fatalf("x on the selected task opens the confirm screen:\n%s", v)
 	}
 	if len(*r.prov.ran) != 0 {
@@ -234,16 +241,17 @@ func TestHostileTextNeverReachesTheTasksPanels(t *testing.T) {
 		TopPicks: []core.Pick{{ID: bad, Title: bad}}, Blockers: []core.Pick{{ID: bad, Title: bad}},
 		CriticalPath: []core.Ranked{{ID: bad, Value: 1}}, Cycles: [][]string{{bad, bad}}, Header: core.Header{Source: bad, State: core.Connected, Reason: bad}}
 	for _, w := range []int{40, 120} {
-		m := sized(r.m, w, 50)
-		m, _ = m.Update(tasksMsg{report: rep})
+		m := withTasks(sized(r.m, w, 50), rep)
 		m, _ = m.Update(insightsMsg{report: ins})
 		hostileOK(t, fmt.Sprintf("tasks %d", w), m.View(), w)
+		hostileOK(t, fmt.Sprintf("tasks detail %d", w), press(m, "enter").View(), w)
+		hostileOK(t, fmt.Sprintf("tasks insights %d", w), press(m, "v").View(), w)
 	}
 }
 
 func TestTasksAndBoardPanelsAreCompactInATallTerminal(t *testing.T) {
 	for name, v := range map[string]string{
-		"tasks": sized(newTasksRig(t).m, 120, 60).View(),
+		"tasks": withTasks(sized(newTasksRig(t).m, 120, 60), demo.TasksReport()).View(),
 		"board": boardAt(120, 60, demo.BoardReport()).View(),
 	} {
 		last := 0 // the row of the last panel border; the shell pads below it down to the footer
@@ -268,36 +276,26 @@ func TestBoardSummaryWrapsInsteadOfBeingCut(t *testing.T) {
 	}
 }
 
-// Stacked, the Tasks list and the insights share the body: both frames stay whole, the insights
-// take no more than a third of the rows, and nothing is taller than the body.
-func TestTasksStackedPanelsBothFitTheBody(t *testing.T) {
-	for _, h := range []int{14, 20, 30} {
-		v := sized(newTasksRig(t).m, 80, h).View()
-		out := strings.Split(strings.TrimRight(v, "\n"), "\n")
-		if len(out) > h {
-			t.Fatalf("h=%d: %d rows", h, len(out))
-		}
-		if strings.Count(v, "╭") < 2 || strings.Count(v, "╰") < 2 {
-			t.Errorf("h=%d: both frames must close:\n%s", h, v)
-		}
-		ins := -1
-		for i, l := range out {
-			if strings.Contains(l, "─ Insights") {
-				ins = i
+// Every Tasks view fits the body at small heights: nothing is taller than the body and every
+// frame that opens closes.
+func TestTasksViewsFitTheBodyAtSmallHeights(t *testing.T) {
+	for _, w := range []int{60, 80, 120} {
+		for _, h := range []int{12, 14, 20, 30} {
+			m := sized(newTasksRig(t).m, w, h)
+			for name, v := range map[string]string{"list": m.View(), "detail": press(m, "enter").View(), "insights": press(m, "v").View()} {
+				out := strings.Split(strings.TrimRight(v, "\n"), "\n")
+				if len(out) > h {
+					t.Fatalf("%dx%d %s: %d rows", w, h, name, len(out))
+				}
+				if strings.Count(v, "╭") != strings.Count(v, "╰") && !strings.Contains(v, "more") {
+					t.Errorf("%dx%d %s: frames must close:\n%s", w, h, name, v)
+				}
+				for _, l := range out {
+					if lipgloss.Width(l) > w {
+						t.Fatalf("%dx%d %s: %q is %d wide", w, h, name, l, lipgloss.Width(l))
+					}
+				}
 			}
-		}
-		if ins < 0 {
-			t.Fatalf("h=%d: the insights panel is missing:\n%s", h, v)
-		}
-		bodyRows := h - 3 // header, rule and footer
-		panelRows := 0
-		for _, l := range out[ins:] {
-			if strings.HasPrefix(l, "│") {
-				panelRows++
-			}
-		}
-		if panelRows > max(2, (bodyRows-2*panelChromeH)/3) {
-			t.Errorf("h=%d: the insights take %d rows, more than a third of the body:\n%s", h, panelRows, v)
 		}
 	}
 }
@@ -394,8 +392,7 @@ func TestLongBoardKeepsTheCursorVisibleWithAMoreMarkerAtEverySize(t *testing.T) 
 func TestLongTasksKeepTheCursorVisibleWideAndStacked(t *testing.T) {
 	for _, w := range []int{60, 99, 100, 140} {
 		for _, h := range []int{14, 20, 30, 50} {
-			m := sized(newTasksRig(t).m, w, h)
-			m, _ = m.Update(tasksMsg{report: longTasks(70)})
+			m := withTasks(sized(newTasksRig(t).m, w, h), longTasks(70))
 			if v := m.View(); !strings.Contains(v, "more") {
 				t.Errorf("%dx%d: a long task list is clipped with a marker:\n%s", w, h, v)
 			}

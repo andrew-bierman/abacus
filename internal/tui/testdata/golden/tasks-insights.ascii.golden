@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+ List [Insights]      14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████▓▓▓▓▓▓░░░····· │
+│ 14 tasks: 6 open · 3 in progress · 2 │
+│ blocked · 1 deferred · 2 closed      │
+│ ready 3                              │
+│                                      │
+│ 3 actionable · 4 blocked · 1 cycles  │
+│   ↕ +6 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+ List [Insights]      14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████▓▓▓▓▓▓░░░····· │
+│ 14 tasks: 6 open · 3 in progress · 2 │
+│ blocked · 1 deferred · 2 closed      │
+│ ready 3                              │
+│                                      │
+│ 3 actionable · 4 blocked · 1 cycles  │
+│ next     ac-12  wire the lease       │
+│          heartbeat  (unblocks 2)     │
+│ blocker  ac-12  wire the lease       │
+│          heartbeat  (unblocks 2)     │
+│ critical path  ac-12 > ac-09         │
+│ cycle  ac-20 -> ac-21 -> ac-20       │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List [Insights]                                              14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ ready 3                                                                      │
+│                                                                              │
+│ 3 actionable · 4 blocked · 1 cycles                                          │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)                       │
+│   ↕ +3 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · v view · n new · e edit · x close task …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Insights]                                              14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ ready 3                                                                      │
+│                                                                              │
+│ 3 actionable · 4 blocked · 1 cycles                                          │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)                       │
+│ blocker  ac-12  wire the lease heartbeat  (unblocks 2)                       │
+│ critical path  ac-12 > ac-09                                                 │
+│ cycle  ac-20 -> ac-21 -> ac-20                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · v view · n new · e edit · x close task …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List [Insights]                                                                                      14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ ready 3                                                                                                              │
+│                                                                                                                      │
+│ 3 actionable · 4 blocked · 1 cycles                                                                                  │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)                                                               │
+│   ↕ +3 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · v view · n new · e edit · x close task · o full view · r refresh
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Insights]                                                                                      14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ ready 3                                                                                                              │
+│                                                                                                                      │
+│ 3 actionable · 4 blocked · 1 cycles                                                                                  │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)                                                               │
+│ blocker  ac-12  wire the lease heartbeat  (unblocks 2)                                                               │
+│ critical path  ac-12 > ac-09                                                                                         │
+│ cycle  ac-20 -> ac-21 -> ac-20                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · v view · n new · e edit · x close task · o full view · r refresh
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Insights]                          14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                 │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1         │
+│ deferred · 2 closed                                      │
+│ ready 3                                                  │
+│                                                          │
+│ 3 actionable · 4 blocked · 1 cycles                      │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)   │
+│ blocker  ac-12  wire the lease heartbeat  (unblocks 2)   │
+│ critical path  ac-12 > ac-09                             │
+│ cycle  ac-20 -> ac-21 -> ac-20                           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · v view · n new · e edit …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Insights]                                                                  14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                         │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                             │
+│ ready 3                                                                                          │
+│                                                                                                  │
+│ 3 actionable · 4 blocked · 1 cycles                                                              │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)                                           │
+│ blocker  ac-12  wire the lease heartbeat  (unblocks 2)                                           │
+│ critical path  ac-12 > ac-09                                                                     │
+│ cycle  ac-20 -> ac-21 -> ac-20                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · v view · n new · e edit · x close task · o full view · r refresh

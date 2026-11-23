@@ -6,7 +6,7 @@
 │   Description (blank: keep)          │
 │                                      │
 │   Priority 0-4                       │
-│   1                                  │
+│   0                                  │
 │   Status (blank: keep)               │
 │                                      │
 ╰──────────────────────────────────────╯
@@ -20,7 +20,7 @@ enter next/review · esc back · q quit …
 │   Description (blank: keep)          │
 │                                      │
 │   Priority 0-4                       │
-│   1                                  │
+│   0                                  │
 │   Status (blank: keep)               │
 │                                      │
 ╰──────────────────────────────────────╯
@@ -47,7 +47,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────────────────────────╮
 │ ▸ Title                      wire the lease heartbeat▏                       │
 │   Description (blank: keep)                                                  │
-│   Priority 0-4               1                                               │
+│   Priority 0-4               0                                               │
 │   Status (blank: keep)                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -61,7 +61,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────────────────────────╮
 │ ▸ Title                      wire the lease heartbeat▏                       │
 │   Description (blank: keep)                                                  │
-│   Priority 0-4               1                                               │
+│   Priority 0-4               0                                               │
 │   Status (blank: keep)                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -91,7 +91,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Title                      wire the lease heartbeat▏                                                               │
 │   Description (blank: keep)                                                                                          │
-│   Priority 0-4               1                                                                                       │
+│   Priority 0-4               0                                                                                       │
 │   Status (blank: keep)                                                                                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -105,7 +105,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Title                      wire the lease heartbeat▏                                                               │
 │   Description (blank: keep)                                                                                          │
-│   Priority 0-4               1                                                                                       │
+│   Priority 0-4               0                                                                                       │
 │   Status (blank: keep)                                                                                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -136,7 +136,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────╮
 │ ▸ Title                      wire the lease heartbeat▏   │
 │   Description (blank: keep)                              │
-│   Priority 0-4               1                           │
+│   Priority 0-4               0                           │
 │   Status (blank: keep)                                   │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -161,7 +161,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Title                      wire the lease heartbeat▏                                           │
 │   Description (blank: keep)                                                                      │
-│   Priority 0-4               1                                                                   │
+│   Priority 0-4               0                                                                   │
 │   Status (blank: keep)                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 

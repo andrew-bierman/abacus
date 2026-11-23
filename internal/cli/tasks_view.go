@@ -65,7 +65,7 @@ func runTaskView(verb string, rest []string, d Deps) int {
 			opts.Sort = taskview.DefaultSort()
 		}
 		if reverse {
-			opts.Sort = opts.Sort.Reverse()
+			opts.Sort = opts.Sort.Flip()
 		}
 		if preset != "" {
 			opts.Preset = taskview.Preset(strings.ToLower(preset))

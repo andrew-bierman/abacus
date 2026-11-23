@@ -12,16 +12,16 @@ import (
 
 // TasksReport is the demo Tasks summary.
 func TasksReport() core.TasksReport {
-	return core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 14, Open: 6, InProgress: 3, Blocked: 2, Deferred: 1, Closed: 2, Ready: 4},
+	return core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 14, Open: 6, InProgress: 3, Blocked: 2, Deferred: 1, Closed: 2, Ready: 3},
 		Recent: []core.Task{
-			{ID: "ac-12", Title: "wire the lease heartbeat", Status: "in_progress", Priority: 1},
+			{ID: "ac-12", Title: "wire the lease heartbeat", Status: "in_progress", Priority: 0},
 			{ID: "ac-09", Title: "queue attention digest", Status: "open", Priority: 2},
 			{ID: "ac-03", Title: "retire the old poller", Status: "closed", Priority: 3}}}
 }
 
 // InsightsReport is the demo graph analysis for Tasks.
 func InsightsReport() core.InsightsReport {
-	return core.InsightsReport{Header: core.Header{Source: core.SourceGraph, State: core.Connected}, TotalActionable: 4, TotalBlocked: 2,
+	return core.InsightsReport{Header: core.Header{Source: core.SourceGraph, State: core.Connected}, TotalActionable: 3, TotalBlocked: 4,
 		TopPicks:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
 		Blockers:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
 		CriticalPath: []core.Ranked{{ID: "ac-12", Value: 3}, {ID: "ac-09", Value: 2}},

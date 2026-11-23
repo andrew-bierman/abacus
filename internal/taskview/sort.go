@@ -60,8 +60,8 @@ func (s Sort) Next() Sort {
 	return DefaultSort()
 }
 
-// Reverse flips the direction.
-func (s Sort) Reverse() Sort { return Sort{Key: s.Key, Desc: !s.Desc} }
+// Flip reverses the direction.
+func (s Sort) Flip() Sort { return Sort{Key: s.Key, Desc: !s.Desc} }
 
 // statusRank orders the known statuses by how far along they are; an unknown status goes last.
 func statusRank(s string) int {

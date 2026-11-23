@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -47,6 +48,15 @@ type scenario struct {
 	// extra sizes (width, height) rendered into the golden after the standard grid: the
 	// breakpoints the converted screens are checked at.
 	extra [][2]int
+}
+
+// typed is a string as the key presses that type it.
+func typed(s string) []string {
+	var out []string
+	for _, r := range s {
+		out = append(out, string(r))
+	}
+	return out
 }
 
 // framedSizes are the extra golden sizes for the screens drawn as one framed panel: a mid-width
@@ -91,7 +101,16 @@ type taskProv struct {
 func fixtureTasks() core.TasksReport       { return demo.TasksReport() }
 func fixtureInsights() core.InsightsReport { return demo.InsightsReport() }
 
+// goldenNow is the fixed clock of every Tasks render, so ages and staleness never change a golden.
+var goldenNow = time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC)
+
+func init() { nowFn = func() time.Time { return goldenNow } }
+
 func (taskProv) Tasks(context.Context) (core.TasksReport, error) { return fixtureTasks(), nil }
+func fixtureSnapshot() core.TaskSnapshot                         { return demo.TaskSnapshot(goldenNow) }
+func (taskProv) Snapshot(context.Context) (core.TaskSnapshot, error) {
+	return fixtureSnapshot(), nil
+}
 func (taskProv) Insights(context.Context) (core.InsightsReport, error) {
 	return fixtureInsights(), nil
 }
@@ -193,6 +212,7 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 	m, _ = m.Update(boardMsg{report: fixtureBoard()})
 	m, _ = m.Update(leasesMsg{read: readLeases(context.Background(), lease)})
 	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
+	m, _ = m.Update(taskSnapshotMsg{snap: fixtureSnapshot()})
 	m, _ = m.Update(insightsMsg{report: fixtureInsights()})
 	m, _ = m.Update(doctorMsg{report: core.DoctorReport(context.Background(), "", en)})
 	return m
@@ -207,7 +227,27 @@ func scenarios() []scenario {
 		{name: "queues-tracker", keys: []string{"4"}, tab: "Queues", build: func(t *testing.T, th Theme) tea.Model {
 			return load(t, th, func(v lambe.View) lambe.View { v.Source, v.Queue = lambe.SourceTracker, lambe.Queue{}; return v })
 		}},
-		{name: "tasks", build: std, keys: []string{"2"}, tab: "Tasks"},
+		{name: "tasks", build: std, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-detail", build: std, keys: []string{"2", "enter"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-sort", build: std, keys: []string{"2", "s", "S"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-ready", build: std, keys: []string{"2", "f"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-filter", build: std, keys: append(append([]string{"2", "/"}, typed("label:ui !status:blocked")...), "enter"), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-filter-typing", build: std, keys: append([]string{"2", "/"}, typed("pri")...), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-query-error", build: std, keys: append([]string{"2", "/"}, typed("lease foo:x")...), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-no-match", build: std, keys: append(append([]string{"2", "/"}, typed("zzzzzz")...), "enter"), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-insights", build: std, keys: []string{"2", "v"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-empty", tab: "Tasks", extra: framedSizes, keys: []string{"2"}, build: func(t *testing.T, th Theme) tea.Model {
+			m := load(t, th, nil)
+			m, _ = m.Update(tasksMsg{report: core.TasksReport{Header: core.Header{Source: core.SourceLive}}})
+			m, _ = m.Update(taskSnapshotMsg{snap: core.TaskSnapshot{ReadAt: goldenNow, Tracker: "fleet"}})
+			return m
+		}},
+		{name: "tasks-recent-only", tab: "Tasks", extra: framedSizes, keys: []string{"2"}, build: func(t *testing.T, th Theme) tea.Model {
+			p := tasksFake()
+			var m tea.Model = New([]core.Entry{{Module: p, Detection: p.Det}}, WithTheme(th), WithAudit(&memAudit{}), WithFullView(noFullView))
+			m, _ = m.Update(tasksMsg{report: fixtureTasks()})
+			return m
+		}},
 		{name: "tasks-new", build: std, keys: []string{"2", "n", "h", "i"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-edit", build: std, keys: []string{"2", "e"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-verify", build: std, keys: []string{"2", "x"}, tab: "Tasks", extra: framedSizes},

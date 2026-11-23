@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights       14 tasks · 3 ready
+[open] /labe… 3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────╮
+│   id    title              st P  dep │
+│ ▸ ac-15 lease holder colu… ○  P1 →1  │
+│   ac-30 saved filters      ○  P3     │
+│   ac-33 help overlay per … ◐  P3     │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+[List] Insights       14 tasks · 3 ready
+[open] /labe… 3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────╮
+│   id    title              st P  dep │
+│ ▸ ac-15 lease holder colu… ○  P1 →1  │
+│   ac-30 saved filters      ○  P3     │
+│   ac-33 help overlay per … ◐  P3     │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights                                               14 tasks · 3 ready
+[open] /label:ui !status:blocked                      3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│   id    title                                         st P  dep type age who │
+│ ▸ ac-15 lease holder column                           ○  P1 →1  feat 6d  mei │
+│   ac-30 saved filters                                 ○  P3     feat 2d  -   │
+│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                               14 tasks · 3 ready
+[open] /label:ui !status:blocked                      3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│   id    title                                         st P  dep type age who │
+│ ▸ ac-15 lease holder column                           ○  P1 →1  feat 6d  mei │
+│   ac-30 saved filters                                 ○  P3     feat 2d  -   │
+│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights                                                                                       14 tasks · 3 ready
+[open] /label:ui !status:blocked                                                              3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-15 ─────────────────────────────────────╮
+│   id    title                                 st P  dep type age who │ │ ac-15  feature                              │
+│ ▸ ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ lease holder column                         │
+│   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ○ open  P1  mei  6d                         │
+│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ready                                       │
+│                                                                      │ │ labels  leases, ui                          │
+│                                                                      │ │   ↕ +4 more                                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · esc back · f quick filter · ↑/↓ move …
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                                                                       14 tasks · 3 ready
+[open] /label:ui !status:blocked                                                              3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-15 ─────────────────────────────────────╮
+│   id    title                                 st P  dep type age who │ │ ac-15  feature                              │
+│ ▸ ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ lease holder column                         │
+│   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ○ open  P1  mei  6d                         │
+│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ready                                       │
+│                                                                      │ │ labels  leases, ui                          │
+│                                                                      │ │ parent  ○ ac-01 Fleet workspace             │
+│                                                                      │ │                                             │
+│                                                                      │ │ Blocks (1)                                  │
+│                                                                      │ │   ○ ac-16 stale lease warning               │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · esc back · f quick filter · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+[List] Insights                           14 tasks · 3 ready
+[open] /label:ui !status:blocked  3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
+│   id    title                     st P  dep type age who │
+│ ▸ ac-15 lease holder column       ○  P1 →1  feat 6d  mei │
+│   ac-30 saved filters             ○  P3     feat 2d  -   │
+│   ac-33 help overlay per view     ◐  P3     task 1d  mei │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · / filter · s/S sort …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                                                   14 tasks · 3 ready
+[open] /label:ui !status:blocked                                          3 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-15 ─────────────────────────────╮
+│   id    title                     st P  dep type age who │ │ ac-15  feature                      │
+│ ▸ ac-15 lease holder column       ○  P1 →1  feat 6d  mei │ │ lease holder column                 │
+│   ac-30 saved filters             ○  P3     feat 2d  -   │ │ ○ open  P1  mei  6d                 │
+│   ac-33 help overlay per view     ◐  P3     task 1d  mei │ │ ready                               │
+│                                                          │ │ labels  leases, ui                  │
+│                                                          │ │ parent  ○ ac-01 Fleet workspace     │
+│                                                          │ │                                     │
+│                                                          │ │ Blocks (1)                          │
+│                                                          │ │   ○ ac-16 stale lease warning       │
+│                                                          │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · esc back …

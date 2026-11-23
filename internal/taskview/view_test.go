@@ -233,8 +233,8 @@ func TestSortCycleAndReverse(t *testing.T) {
 	if len(seen) != 8 || s.Key != SortPriority {
 		t.Errorf("the cycle visits all eight keys and comes back: %v %v", seen, s)
 	}
-	if r := s.Reverse(); r.Key != s.Key || r.Desc == s.Desc {
-		t.Errorf("reverse: %+v", r)
+	if r := s.Flip(); r.Key != s.Key || r.Desc == s.Desc {
+		t.Errorf("flip: %+v", r)
 	}
 	if (Sort{Key: "nope"}).Next() != DefaultSort() || SortKey("nope").Valid() || !SortTitle.Valid() {
 		t.Error("an unknown key falls back to the default")
