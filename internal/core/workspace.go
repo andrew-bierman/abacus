@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -69,6 +70,9 @@ type Placement struct {
 	Tab     string         `json:"tab,omitempty"`
 	Label   string         `json:"label,omitempty"`
 	Match   PlacementMatch `json:"match,omitempty"`
+	// Open is how to get to this placement, built by the provider's Open and cleaned by core. It
+	// is data for a front-end to run on an explicit keypress, never something core runs.
+	Open *OpenPlan `json:"open,omitempty"`
 }
 
 // Ambiguity is an item that more than one place claims. Core never picks one: the front-end
@@ -96,9 +100,9 @@ type WorkspaceReport struct {
 }
 
 // Empty reports whether the report has nothing worth putting in JSON: no placements, nothing
-// ambiguous and no degraded read. A provider that is merely not connected is empty.
+// ambiguous, nothing cut and no degraded read. A provider that is merely not connected is empty.
 func (r WorkspaceReport) Empty() bool {
-	return len(r.Placements) == 0 && len(r.Ambiguous) == 0 && r.State != Degraded
+	return len(r.Placements) == 0 && len(r.Ambiguous) == 0 && r.State != Degraded && !r.Truncated
 }
 
 // For returns the placement of an item, or the candidates when it is ambiguous. Neither is set
@@ -117,8 +121,8 @@ func (r WorkspaceReport) For(it WorkspaceItem) (p *Placement, candidates []Place
 	return nil, nil
 }
 
-// OpenRung is one way to open a placement: an argv and a stable name, so a front-end can say
-// which rung worked and a later rung is a new value, not a new type.
+// OpenRung is one way to open a placement: an argv and a stable, neutral name, so a front-end
+// can say which rung worked and a later rung is a new value, not a new type.
 type OpenRung struct {
 	Name string   `json:"name"`
 	Argv []string `json:"argv"`
@@ -129,11 +133,32 @@ type OpenRung struct {
 
 // OpenPlan is how to get to a placement. Rungs are tried in order, only on an explicit keypress
 // and never by core; if none works (or the front-end cannot run one) Copy is the command to
-// show for the user to paste. Note says why there is no rung, when there is none.
+// show for the user to paste. Note says why there is no rung, or what to do next. In JSON Rungs
+// is always a list, never null.
 type OpenPlan struct {
 	Rungs []OpenRung `json:"rungs"`
 	Copy  string     `json:"copy,omitempty"`
 	Note  string     `json:"note,omitempty"`
+}
+
+// MarshalJSON makes Rungs (and each Argv) a list even when a provider left it nil.
+func (p OpenPlan) MarshalJSON() ([]byte, error) {
+	type plain OpenPlan
+	q := plain(p)
+	if q.Rungs == nil {
+		q.Rungs = []OpenRung{}
+	}
+	return json.Marshal(q)
+}
+
+// MarshalJSON makes Argv a list even when nil.
+func (r OpenRung) MarshalJSON() ([]byte, error) {
+	type plain OpenRung
+	q := plain(r)
+	if q.Argv == nil {
+		q.Argv = []string{}
+	}
+	return json.Marshal(q)
 }
 
 // WorkspaceProvider is the optional capability a module implements. Workspace reads where the
@@ -149,7 +174,15 @@ const (
 	maxWorkspaceItems = 200
 	maxPlacements     = 500
 	maxCandidates     = 8
-	workspaceReadTime = 5 * time.Second
+	// workspaceReadTime is the whole budget for a workspace read, however many hosts: the layer is
+	// optional, so a slow one must not hold up the cockpit.
+	workspaceReadTime = time.Second
+	maxReasonRunes    = 300
+	maxHowRunes       = 200
+	maxArgRunes       = 256
+	maxCopyRunes      = 512
+	maxNoteRunes      = 300
+	maxRungs          = 8
 	// MaxLabelRunes bounds a session or tab label; MaxIDRunes bounds an id or host.
 	MaxLabelRunes = 64
 	MaxIDRunes    = 128
@@ -162,13 +195,15 @@ const (
 // label becomes a short one). Invalid UTF-8 is replaced first.
 func ClipRunes(s string, n int) string {
 	if !utf8.ValidString(s) {
-		s = strings.ToValidUTF8(s, "�")
+		s = strings.ToValidUTF8(s, "\uFFFD")
 	}
-	if utf8.RuneCountInString(s) <= n {
-		return s
+	for i := range s {
+		if n == 0 {
+			return s[:i]
+		}
+		n--
 	}
-	r := []rune(s)
-	return string(r[:n])
+	return s
 }
 
 // PlacementID derives the stable id of an item in a place.
@@ -177,43 +212,108 @@ func PlacementID(it WorkspaceItem, host, session string) string {
 	return "pl-" + hex.EncodeToString(h[:6])
 }
 
-func cleanItem(it WorkspaceItem) WorkspaceItem {
-	return WorkspaceItem{Kind: WorkspaceKind(ClipRunes(Sanitize(string(it.Kind)), MaxIDRunes)),
-		ID: ClipRunes(Sanitize(it.ID), MaxIDRunes), Host: ClipRunes(Sanitize(it.Host), MaxIDRunes)}
+// cleanHost passes a machine name through only if it needs no change: a name that sanitizing
+// alters, or that is too long, is rejected rather than clipped, because clipping can turn one
+// host into another.
+func cleanHost(h string) (string, bool) {
+	if Sanitize(h) != h || utf8.RuneCountInString(h) > MaxHostRunes {
+		return "", false
+	}
+	return h, true
 }
 
-func cleanPlacement(p Placement) Placement {
+func cleanItem(it WorkspaceItem) (WorkspaceItem, bool) {
+	host, ok := cleanHost(it.Host)
+	return WorkspaceItem{Kind: WorkspaceKind(ClipRunes(Sanitize(string(it.Kind)), MaxIDRunes)),
+		ID: ClipRunes(Sanitize(it.ID), MaxIDRunes), Host: host}, ok
+}
+
+// cleanPlacement sanitizes and bounds a placement. The second result is false when its machine
+// name is not safe, in which case the placement must be dropped. A provider's own Open is ignored:
+// core builds it from the cleaned placement.
+func cleanPlacement(p Placement) (Placement, bool) {
+	item, ok1 := cleanItem(p.Item)
+	host, ok2 := cleanHost(p.Host)
 	return Placement{
 		ID:      ClipRunes(Sanitize(p.ID), MaxIDRunes),
-		Item:    cleanItem(p.Item),
-		Host:    ClipRunes(Sanitize(p.Host), MaxIDRunes),
+		Item:    item,
+		Host:    host,
 		Session: ClipRunes(Sanitize(p.Session), MaxIDRunes),
 		Tab:     ClipRunes(Sanitize(p.Tab), MaxLabelRunes),
 		Label:   ClipRunes(Sanitize(p.Label), MaxLabelRunes),
 		Match:   PlacementMatch(ClipRunes(Sanitize(string(p.Match)), MaxIDRunes)),
-	}
+	}, ok1 && ok2
 }
 
-// cleanWorkspace makes a provider's report safe and bounded. Unknown kinds and match values are
-// kept (only sanitized), never dropped or rewritten.
-func cleanWorkspace(r WorkspaceReport) WorkspaceReport {
-	out := WorkspaceReport{State: r.State, Reason: Sanitize(r.Reason), HowToConnect: Sanitize(r.HowToConnect)}
+// cleanPlan makes an open plan safe to show and to run. A rung whose argv would change when
+// sanitized, or that has an over-long word or no words, is dropped, never altered: a changed
+// argv is a different command. The same goes for Copy.
+func cleanPlan(p OpenPlan) OpenPlan {
+	out := OpenPlan{Rungs: []OpenRung{}, Note: ClipRunes(Sanitize(p.Note), maxNoteRunes)}
+	if c := Sanitize(p.Copy); c == p.Copy && utf8.RuneCountInString(c) <= maxCopyRunes {
+		out.Copy = c
+	}
+rungs:
+	for _, r := range p.Rungs {
+		if len(out.Rungs) >= maxRungs || len(r.Argv) == 0 {
+			continue
+		}
+		for _, a := range r.Argv {
+			if Sanitize(a) != a || utf8.RuneCountInString(a) > maxArgRunes {
+				continue rungs
+			}
+		}
+		out.Rungs = append(out.Rungs, OpenRung{Name: ClipRunes(Sanitize(r.Name), MaxIDRunes), Argv: append([]string{}, r.Argv...), Interactive: r.Interactive})
+	}
+	return out
+}
+
+// cleanWorkspace makes a provider's report safe and bounded and attaches each placement's open
+// plan (from open, which may be nil). Unknown kinds and match values are kept (only sanitized),
+// never dropped or rewritten. Whatever is cut or dropped sets Truncated.
+func cleanWorkspace(r WorkspaceReport, open func(Placement) OpenPlan) WorkspaceReport {
+	out := WorkspaceReport{State: r.State, Reason: ClipRunes(Sanitize(r.Reason), maxReasonRunes), HowToConnect: ClipRunes(Sanitize(r.HowToConnect), maxHowRunes),
+		Stale: r.Stale, Truncated: r.Truncated}
+	clean := func(p Placement) (Placement, bool) {
+		c, ok := cleanPlacement(p)
+		if ok && open != nil {
+			plan := cleanPlan(open(c))
+			c.Open = &plan
+		}
+		return c, ok
+	}
 	for _, p := range r.Placements {
 		if len(out.Placements) >= maxPlacements {
+			out.Truncated = true
 			break
 		}
-		out.Placements = append(out.Placements, cleanPlacement(p))
+		if c, ok := clean(p); ok {
+			out.Placements = append(out.Placements, c)
+		} else {
+			out.Truncated = true
+		}
 	}
 	for _, a := range r.Ambiguous {
 		if len(out.Ambiguous) >= maxPlacements {
+			out.Truncated = true
 			break
 		}
-		c := Ambiguity{Item: cleanItem(a.Item)}
+		item, ok := cleanItem(a.Item)
+		if !ok {
+			out.Truncated = true
+			continue
+		}
+		c := Ambiguity{Item: item, Truncated: a.Truncated}
 		for _, p := range a.Candidates {
 			if len(c.Candidates) >= maxCandidates {
+				c.Truncated = true
 				break
 			}
-			c.Candidates = append(c.Candidates, cleanPlacement(p))
+			if cc, ok := clean(p); ok {
+				c.Candidates = append(c.Candidates, cc)
+			} else {
+				c.Truncated = true
+			}
 		}
 		out.Ambiguous = append(out.Ambiguous, c)
 	}
@@ -245,7 +345,7 @@ func ReadWorkspaceFrom(ctx context.Context, p WorkspaceProvider, items []Workspa
 	if err != nil {
 		return WorkspaceReport{State: Degraded, Reason: ClipRunes(Sanitize(err.Error()), 200)}
 	}
-	return cleanWorkspace(rep)
+	return cleanWorkspace(rep, p.Open)
 }
 
 // WorkspaceItems lists the rows of the domains a placement can be asked for: runs (with the
@@ -276,14 +376,25 @@ func WorkspaceItems(d DomainsReport) []WorkspaceItem {
 	return items
 }
 
-func (r *DomainsReport) readWorkspace(ctx context.Context, entries []Entry) {
-	if rep := ReadWorkspace(ctx, entries, WorkspaceItems(*r)); !rep.Empty() {
-		r.Workspace = &rep
+// startWorkspaceRead begins the workspace read for items already known and returns a function
+// that waits for it and gives the report (nil when there is nothing to report). The caller runs
+// its other reads in between, so the optional layer overlaps them instead of adding to them; the
+// read is bounded by workspaceReadTime however slow the provider is. Caching across reads in one
+// process belongs to the provider (the Rex adapter keeps per-host results for a few seconds).
+func startWorkspaceRead(ctx context.Context, entries []Entry, items []WorkspaceItem) func() *WorkspaceReport {
+	done := make(chan WorkspaceReport, 1)
+	go func() { done <- ReadWorkspace(ctx, entries, items) }()
+	return func() *WorkspaceReport {
+		if rep := <-done; !rep.Empty() {
+			return &rep
+		}
+		return nil
 	}
 }
 
 // ShellJoin renders an argv as one command a user can paste into a POSIX shell: words made only
-// of safe characters stay bare, anything else is single-quoted.
+// of safe characters stay bare, anything else is single-quoted. "=" and "%" are not safe: a first
+// word "A=b" would be an assignment, a leading "=" expands in zsh and "%1" is a job.
 func ShellJoin(argv []string) string {
 	parts := make([]string, len(argv))
 	for i, a := range argv {
@@ -294,7 +405,7 @@ func ShellJoin(argv []string) string {
 
 func shellWord(s string) string {
 	if s != "" && strings.IndexFunc(s, func(r rune) bool {
-		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("@%+=:,./-_", r))
+		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("@+:,./-_", r))
 	}) < 0 {
 		return s
 	}

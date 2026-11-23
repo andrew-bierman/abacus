@@ -584,10 +584,11 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	r.readTasks(ctx, entries)
 	r.readLeases(ctx, entries)
 	r.readQueues(ctx, entries)
+	waitWorkspace := startWorkspaceRead(ctx, entries, WorkspaceItems(r)) // overlaps the reads below
 	r.readBoard(ctx, entries)
 	ins := readInsightsFor(ctx, entries, r.Tasks)
 	r.Tasks.Insights = &ins
-	r.readWorkspace(ctx, entries)
+	r.Workspace = waitWorkspace()
 	return r
 }
 
