@@ -25,6 +25,9 @@ var (
 // treeBarW is the width of the progress bar of an epic row.
 const treeBarW = 4
 
+// treeIDMax is the widest an id column grows for the dotted ids of nested children.
+const treeIDMax = 18
+
 // taskTree is the tree mode's state: the fold choices of the open tracker (kept in abacus's state
 // directory, never in the tracker), the user's tree-or-flat choice, and the tree of the current
 // snapshot, query and sort.
@@ -194,11 +197,20 @@ func (s *tasksSection) treeKey(k string) {
 	}
 }
 
-// treeBindings are the tree keys shown in the footer and the help.
+// treeLead is the fold key: it comes right after the filter key in the footer, because a narrow
+// footer is cut from the right and h/l is what tells a tree from a list.
+func (s *tasksSection) treeLead() []key.Binding {
+	if s.treeOn() {
+		return []key.Binding{keyFold}
+	}
+	return nil
+}
+
+// treeBindings are the other tree keys shown in the footer and the help.
 func (s *tasksSection) treeBindings() []key.Binding {
 	switch {
 	case s.treeOn():
-		return []key.Binding{keyFold, keyTree, keyFoldAll}
+		return []key.Binding{keyTree, keyFoldAll}
 	case s.list.tree.hier && s.list.view != nil && !s.list.depsUnknown:
 		return []key.Binding{keyTree}
 	}
@@ -208,7 +220,7 @@ func (s *tasksSection) treeBindings() []key.Binding {
 // treeColumns turns the list's cells into the tree's: the branch lines and fold mark before each
 // title, context rows dimmed, and a progress bar column after the title (dropped first when narrow;
 // the count stays in the title).
-func (s *tasksSection) treeColumns(tb table, hdr []string, styled, plain [][]string) (table, []string, [][]string, [][]string) {
+func (s *tasksSection) treeColumns(iw int, tb table, hdr []string, styled, plain [][]string) (table, []string, [][]string, [][]string) {
 	th := s.th
 	rows := s.list.tree.rep.Rows
 	guide, idw := 0, 0 // the title keeps room beside the widest branch lines; an id is never cut short of itself
@@ -238,10 +250,27 @@ func (s *tasksSection) treeColumns(tb table, hdr []string, styled, plain [][]str
 		plain[i] = slices.Insert(plain[i], 2, barPlain)
 	}
 	cols := slices.Clone(tb.cols)
-	cols[0].min = max(cols[0].min, min(idw, cols[0].max))
-	cols[1].min += guide
+	// Reserve room for the branch lines beside the title and for a whole id, but only as far as the
+	// width allows: asking for more than fits would drop the title, the one column that must stay.
+	avail, fixed := max(iw-2, 1), 2+2+3 // the status and priority cells and the gaps between four columns
+	titleMin, idMin := cols[1].min+guide, min(idw, treeIDMax)
+	if idMin+titleMin+fixed <= avail {
+		cols[0].max = max(cols[0].max, idMin) // dotted child ids run long
+		cols[0].min = max(cols[0].min, idMin)
+	}
+	if cols[0].min+titleMin+fixed <= avail {
+		cols[1].min = titleMin
+	}
 	cols = slices.Insert(cols, 2, column{min: treeBarW, max: treeBarW, prio: 2})
 	return table{cols: cols, gap: tb.gap}, slices.Insert(slices.Clone(hdr), 2, "done"), styled, plain
+}
+
+// treeLegendWanted is whether the legend spends a row on the tree's own marks: always when the rows
+// are not all matches (dim context rows and paused folds need their words, since a dim row means
+// nothing without color), otherwise only when the panel is tall enough to spare it.
+func (s *tasksSection) treeLegendWanted(rows int) bool {
+	t := s.list.tree
+	return t.rep.FoldsPaused || t.rep.Shown > t.rep.Matched || rows >= 18
 }
 
 // treeLegend explains the marks only the tree has.

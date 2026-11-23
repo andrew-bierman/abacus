@@ -3,11 +3,11 @@
 [List] Insights      15 tasks · 15 ready
 [open] / to… 15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────╮
-│   h00 ▾ ]0;ownedepic evil 0/1        │
-│   h01 └─▾ level 1 [2J漢字漢字漢字漢… │
-│   h02   └─▾ plain xxxxxxxxxxxxxxxxx… │
-│   h03     └─▾ level 3 [2J漢字漢字漢… │
-│ ▸ h04       └─▾ plain xxxxxxxxxxxxx… │
+│   h00 ▾ ]0;ownedepic… ▱▱▱▱ ○  P1     │
+│   h01 └─▾ level 1 [2… ▱▱▱▱ ○  P1     │
+│   h02   └─▾ plain xx… ▱▱▱▱ ○  P1     │
+│   h03     └─▾ level … ▱▱▱▱ ○  P1     │
+│ ▸ h04       └─▾ plai… ▱▱▱▱ ○  P1     │
 │   ↕ +11 more                         │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
@@ -17,22 +17,22 @@
 [List] Insights      15 tasks · 15 ready
 [open] / to… 15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────╮
-│   id  title                          │
-│   c1  ▾ cycle one 0/1                │
-│   c2  └── cycle two 0/1              │
-│   h00 ▾ ]0;ownedepic evil 0/1        │
-│   h01 └─▾ level 1 [2J漢字漢字漢字漢… │
-│   h02   └─▾ plain xxxxxxxxxxxxxxxxx… │
-│   h03     └─▾ level 3 [2J漢字漢字漢… │
-│ ▸ h04       └─▾ plain xxxxxxxxxxxxx… │
-│   h05         └─▾ level 5 [2J漢字漢… │
-│   h06           └─▾ plain xxxxxxxxx… │
-│   h07 …           └─▾ level 7 [2J漢… │
-│   h08 …           └─▾ plain xxxxxxx… │
-│   h09 …           └─▾ level 9 [2J漢… │
-│   h10 …           └─▾ plain xxxxxxx… │
-│   h11 …           └── level 11 [2J…  │
-│   or    orphan                       │
+│   id  title           done st P  dep │
+│   c1  ▾ cycle one 0/1 ▱▱▱▱ ○  P1     │
+│   c2  └── cycle two … ▱▱▱▱ ○  P1     │
+│   h00 ▾ ]0;ownedepic… ▱▱▱▱ ○  P1     │
+│   h01 └─▾ level 1 [2… ▱▱▱▱ ○  P1     │
+│   h02   └─▾ plain xx… ▱▱▱▱ ○  P1     │
+│   h03     └─▾ level … ▱▱▱▱ ○  P1     │
+│ ▸ h04       └─▾ plai… ▱▱▱▱ ○  P1     │
+│   h05         └─▾ le… ▱▱▱▱ ○  P1     │
+│   h06           └─▾ … ▱▱▱▱ ○  P1     │
+│   h07 …           └─… ▱▱▱▱ ○  P1     │
+│   h08 …           └─… ▱▱▱▱ ○  P1     │
+│   h09 …           └─… ▱▱▱▱ ○  P1     │
+│   h10 …           └─… ▱▱▱▱ ○  P1     │
+│   h11 …           └─…      ○  P1     │
+│   or    orphan             ○  P1     │
 │                                      │
 │                                      │
 │                                      │
@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ▸ h04       └─▾ plain xxxxxxxxxxxxxxxxxxxxxxxxx… ▱▱▱▱ ○  P1     task 22d -   │
 │   ↕ +11 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Insights                                                                                      15 tasks · 15 ready
@@ -98,7 +98,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ▸ h04       └─▾ plain xxxxxxxxxxxxxxxxx… ▱▱▱▱ ○  P1     task 22d -   │ │ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │
 │   ↕ +11 more                                                         │ │   ↕ +41 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · h/l fold · T tree/flat · +/- all …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │         字漢字漢字漢字漢字漢字漢字漢字漢字  │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +24 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · h/l fold · T tree/flat · +/- all …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -149,12 +149,12 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   h07 …           └─▾ level 7 [2J漢… ▱▱▱▱ ○  P1     task │
 │   h08 …           └─▾ plain xxxxxxx… ▱▱▱▱ ○  P1     task │
 │   h09 …           └─▾ level 9 [2J漢… ▱▱▱▱ ○  P1     task │
-│   ↕ +3 more                                              │
-│ ▾ open ▹ folded                                          │
+│   h10 …           └─▾ plain xxxxxxx… ▱▱▱▱ ○  P1     task │
+│   ↕ +2 more                                              │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort …
+? help · q quit · tab/→ next tab · / filter · h/l fold …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,7 +187,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │         漢字漢字漢字漢字漢字漢字漢  │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +30 more                        │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · h/l fold …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details …
 === 140x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -220,4 +220,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                    │ │                                                     │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                    │ │   ↕ +17 more                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · h/l fold · T tree/flat · +/- all · f quick filter …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all · f quick filter …

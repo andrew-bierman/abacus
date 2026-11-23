@@ -312,6 +312,9 @@ func TestTheProgressBarIsOnlyOnParentsAndDropsBeforeTheDependencyMarks(t *testin
 		if w >= 60 && bars == 0 {
 			t.Errorf("w=%d: epics show a bar:\n%s", w, v)
 		}
+		if !strings.Contains(v, "Tasks w") && !strings.Contains(v, "Tasks…") {
+			t.Errorf("w=%d: the title column must never be the one dropped:\n%s", w, v)
+		}
 		if w == 40 && bars != 0 {
 			t.Errorf("w=%d: narrow lists drop the bar and keep the marks:\n%s", w, v)
 		}
@@ -455,5 +458,33 @@ func TestFoldsSurviveARefreshWithoutAnyStoredState(t *testing.T) {
 	}
 	if got := strings.Join(ids(s), " "); got != "tr-09k tr-09k.1 tr-09k.2 tr-jbt tr-u40" || s.selected != "tr-jbt" {
 		t.Errorf("a refresh must not unfold: %q selected %q", got, s.selected)
+	}
+}
+
+// bd names the children of a child by appending to its id, so nested trackers have long ids. Asking
+// the table for a whole id and the branch lines must never push the title out at a narrow width.
+func TestLongDottedIdsNeverCostTheTitle(t *testing.T) {
+	snap := core.TaskSnapshot{ReadAt: goldenNow, Tracker: "dots"}
+	id := "tr-abcd"
+	for i := 0; i < 6; i++ {
+		it := core.TaskIssue{ID: id, Title: fmt.Sprintf("Title at level %d", i), Status: "open", Priority: 1}
+		if i > 0 {
+			it.Deps = []core.TaskDep{{DependsOn: id[:strings.LastIndex(id, ".")], Type: "parent-child"}}
+		}
+		snap.Issues = append(snap.Issues, it)
+		id += ".1"
+	}
+	for _, w := range []int{40, 50, 60, 80, 100, 140} {
+		s := treeSection(t, snap, nil)
+		s.Update(tea.WindowSizeMsg{Width: w, Height: 32})
+		v := s.View()
+		if !strings.Contains(v, "Title") {
+			t.Errorf("w=%d: no title in the list:\n%s", w, v)
+		}
+		for _, l := range strings.Split(v, "\n") {
+			if lipgloss.Width(l) > w {
+				t.Errorf("w=%d: %q is %d wide", w, l, lipgloss.Width(l))
+			}
+		}
 	}
 }

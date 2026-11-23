@@ -284,7 +284,8 @@ func (s *tasksSection) listBindings() []key.Binding {
 	}
 	// The filter, sort and view keys lead: a narrow footer is cut from the right, and these are
 	// the ones a new user has to find.
-	bs := []key.Binding{keyFilter, keySort, keyView, enter, back}
+	bs := append([]key.Binding{keyFilter}, s.treeLead()...)
+	bs = append(bs, keySort, keyView, enter, back)
 	bs = append(bs, s.treeBindings()...)
 	return append(bs, keyPreset, keyGraph, moveBindings()[0])
 }
@@ -374,7 +375,7 @@ func (s *tasksSection) listLines(iw int) ([]string, int) {
 		}
 	}
 	if s.treeOn() {
-		tb, hdr, styled, plain = s.treeColumns(tb, hdr, styled, plain)
+		tb, hdr, styled, plain = s.treeColumns(iw, tb, hdr, styled, plain)
 	}
 	if s.ws.has() && len(rows) > 0 {
 		cells, plainCells := make([]string, len(rows)), make([]string, len(rows))
@@ -514,7 +515,7 @@ func (s *tasksSection) legend(iw, rows int) []string {
 	if s.list.depsUnknown {
 		return []string{status}
 	}
-	if s.treeOn() {
+	if s.treeOn() && s.treeLegendWanted(rows) {
 		return []string{s.treeLegend(iw), trunc(th.Text(KindMuted, "⊘N held by N · →N holds N · ⊘↑ held by parent"), iw), status}
 	}
 	return []string{trunc(th.Text(KindMuted, "⊘N held by N · →N holds N · ⊘↑ held by parent"), iw), status}
