@@ -291,7 +291,9 @@ func TestHugeDurationsAreRejected(t *testing.T) {
 
 // On expires a duration points ahead; on every other time field it points back.
 func TestExpiresDurationsPointAhead(t *testing.T) {
-	mk := func(d time.Duration) doc { return doc{vals: map[string]Value{"expires": {Time: now.Add(d), HasTime: true}}} }
+	mk := func(d time.Duration) doc {
+		return doc{vals: map[string]Value{"expires": {Time: now.Add(d), HasTime: true}}}
+	}
 	for _, tc := range []struct {
 		q    string
 		in   time.Duration

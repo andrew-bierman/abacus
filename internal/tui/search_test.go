@@ -899,4 +899,11 @@ func TestSearchViewNeverRebuildsTheIndexAndPollsRefreshOneDomain(t *testing.T) {
 	if o.ix != ix {
 		t.Error("the index must be kept and one domain replaced, not rebuilt")
 	}
+	// drawing alone never refreshes: new data is picked up by Update, not View
+	before := o.stamps[tabLeases]
+	secAt(m, tabLeases).(*leasesSection).readAt = goldenNow.Add(time.Hour)
+	m.View()
+	if o.stamps[tabLeases] != before {
+		t.Error("View refreshed the overlay")
+	}
 }
