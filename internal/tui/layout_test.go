@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 func TestTruncUsesDisplayWidthNotBytes(t *testing.T) {
@@ -112,5 +114,34 @@ func TestDuoPanelsAreCompactAndEqualHeight(t *testing.T) {
 	}
 	if g := duoLayout(120, 0); g.inner != 0 {
 		t.Fatalf("an unknown height must stay unknown, inner=%d", g.inner)
+	}
+}
+
+func TestTitledNamesAReducedSourceAndNeverTheLiveOne(t *testing.T) {
+	for _, tc := range []struct{ source, want string }{
+		{"", "Board"}, {core.SourceLive, "Board"}, {"tracker subset", "Board · tracker subset"}, {"x\x1b[2Jy", "Board · x[2Jy"},
+	} {
+		if got := titled("Board", tc.source); got != tc.want {
+			t.Errorf("titled(Board, %q) = %q, want %q", tc.source, got, tc.want)
+		}
+	}
+}
+
+func TestNoticeLineIsOneSanitizedRowCutToTheWidth(t *testing.T) {
+	out := noticeLine(asciiTheme(), 20, "boom\x1b[2J "+strings.Repeat("long ", 20))
+	if len(out) != 1 || lipgloss.Width(out[0]) > 20 || strings.ContainsRune(out[0], 0x1b) {
+		t.Fatalf("noticeLine = %q", out)
+	}
+}
+
+func TestBodyHReservesOneRowForANoticeButNeverBelowOne(t *testing.T) {
+	for _, tc := range []struct {
+		h      int
+		notice string
+		want   int
+	}{{30, "", 30}, {30, "x", 29}, {1, "x", 1}, {0, "x", 0}} {
+		if got := (geom{h: tc.h}).bodyH(tc.notice); got != tc.want {
+			t.Errorf("bodyH(h=%d, %q) = %d, want %d", tc.h, tc.notice, got, tc.want)
+		}
 	}
 }
