@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -38,6 +39,11 @@ type graphState struct {
 	gv     core.GraphView
 	have   bool
 	at     graphKey
+	// insStart is when the last insights read began and insAt when its report arrived: the report
+	// describes the tracker as of insStart, so it can mark a snapshot only if it began after it.
+	insStart, insAt time.Time
+	maxID           int // widest id in the tracker, so boxes are sized to show an id whole
+	undrawn         int // links the box layout left out, beyond those the view counted
 }
 
 type graphKey struct {
@@ -55,13 +61,15 @@ const (
 	boxMaxW     = 28
 	boxGap      = 2
 	boxRows     = 3
-	maxBusRows  = 4
 	graphMinCap = 2
 	graphMaxCap = 5
 )
 
 // boxCap is how many boxes fit in a row of inner width iw.
-func boxCap(iw int) int { return min(max((iw+boxGap)/(boxMinW+boxGap), graphMinCap), graphMaxCap) }
+func boxCap(iw, idW int) int {
+	minW := max(boxMinW, min(idW, 24)+9) // border, padding, glyph and room for the flags: an id is never cut
+	return min(max((iw+boxGap)/(minW+boxGap), graphMinCap), graphMaxCap)
+}
 
 // graphBoxes is whether the neighborhood is drawn as boxes at this width.
 func graphBoxes(w int, whole bool) bool { return w >= bpWide && !whole }
@@ -96,6 +104,43 @@ func (s *tasksSection) graphFocus() string {
 	return ""
 }
 
+// graphInsightsStale is whether the insights report on hand predates the snapshot on screen.
+func (s *tasksSection) graphInsightsStale() bool {
+	if s.insights == nil {
+		return false
+	}
+	at := s.graph.insStart
+	if at.IsZero() {
+		at = s.graph.insAt
+	}
+	return at.Before(s.list.readAt)
+}
+
+// graphRefresh reads the insights again when the one on hand predates the snapshot, so the marks
+// describe what is on screen.
+func (s *tasksSection) graphRefresh() tea.Cmd {
+	if s.ins != nil && !s.insBusy && s.graphInsightsStale() {
+		return s.fetchInsights()
+	}
+	return nil
+}
+
+// graphInsights is the report whose marks may be drawn: none when it is stale.
+func (s *tasksSection) graphInsights() *core.InsightsReport {
+	if s.graphInsightsStale() {
+		return nil
+	}
+	return s.insights
+}
+
+// refetchSnapshotIf is the follow-up snapshot read a write that landed mid-read asks for.
+func (s *tasksSection) refetchSnapshotIf(dirty bool) tea.Cmd {
+	if dirty {
+		return s.fetchSnapshot()
+	}
+	return nil
+}
+
 // graphModel lays the graph out for the current state and width, reusing the last layout while
 // nothing it depends on changed.
 func (s *tasksSection) graphModel() core.GraphView {
@@ -106,13 +151,14 @@ func (s *tasksSection) graphModel() core.GraphView {
 	}
 	if gs.idxFor != v {
 		gs.idx, gs.idxFor, gs.have = taskview.NewGraphIndex(v), v, false
+		gs.maxID = gs.idx.MaxIDWidth()
 	}
 	w := s.width()
 	capN := 0
 	if graphBoxes(w, gs.whole) {
-		capN = boxCap(graphGeom(w, 0).listInner())
+		capN = boxCap(graphGeom(w, 0).listInner(), gs.maxID)
 	}
-	k := graphKey{v, s.insights, s.graphFocus(), gs.depth, gs.whole, capN}
+	k := graphKey{v, s.graphInsights(), s.graphFocus(), gs.depth, gs.whole, capN}
 	if !gs.have || gs.at != k {
 		gs.gv = gs.idx.View(taskview.GraphOptions{Focus: k.focus, Depth: k.depth, Whole: k.whole, MaxPerLayer: k.cap, Insights: k.ins})
 		gs.at, gs.have = k, true
@@ -367,6 +413,9 @@ func (s *tasksSection) graphView() string {
 	if gv.Focus != "" && gv.Mode == core.GraphNeighborhood {
 		title += " · " + san(gv.Focus)
 	}
+	if !s.list.readAt.IsZero() && !taskview.Fresh(s.list.readAt, nowFn(), tasksPollEvery) {
+		title += " · " + th.Text(KindWarn, "stale "+taskview.Age(s.list.readAt, nowFn()))
+	}
 	var list, info []string
 	switch {
 	case s.list.depsUnknown:
@@ -391,7 +440,7 @@ func (s *tasksSection) graphView() string {
 		list = windowLines(th, list, cur, rows, &gs.top)
 	}
 	if g.wide {
-		info = s.graphInfo(gv, g.detail-panelChromeW)
+		info = clipLines(th, s.graphInfo(gv, g.detail-panelChromeW), rows)
 		body = append(body, g.draw(th, title, list, "Chain", info, false)...)
 	} else {
 		body = append(body, panel(th, title, padRows(list, rows), g.list, max(panelH, 0), true)...)
@@ -499,8 +548,8 @@ func (s *tasksSection) graphInfo(gv core.GraphView, w int) []string {
 	if gv.Hidden > 0 {
 		lines = append(lines, th.Text(KindMuted, fmt.Sprintf("+%d more not drawn", gv.Hidden)))
 	}
-	if gv.CrossLinks > 0 {
-		lines = append(lines, th.Text(KindMuted, fmt.Sprintf("+%d links not drawn", gv.CrossLinks)))
+	if n := gv.CrossLinks + s.graph.undrawn; n > 0 {
+		lines = append(lines, th.Text(KindMuted, fmt.Sprintf("+%d links not drawn", n)))
 	}
 	lines = append(lines, "", th.Text(KindMuted, "○ open ◐ active ● blocked"), th.Text(KindMuted, "✓ closed ◇ deferred"), th.Text(KindMuted, "* longest chain · ~ cycle"), th.Text(KindMuted, "^ bottleneck · ! self-dep"), th.Text(KindMuted, "? blocker not in tracker"))
 	if gv.Mode == core.GraphNeighborhood {
@@ -509,47 +558,72 @@ func (s *tasksSection) graphInfo(gv core.GraphView, w int) []string {
 	return lines
 }
 
-// nodeText is a node's one line: glyph, id, title, with the dependency marks and flags at the end
-// when they fit. It returns the styled and the plain text, both exactly w cells or less.
+// nodeText is a node's one line in w cells: glyph and id, the title, and at the end the dependency
+// marks and flags. The flags are the marks that matter most (chain, cycle, bottleneck, self,
+// missing), so their width is reserved before the title is cut, and the id is cut before they are;
+// the dependency marks only appear when the title keeps six cells.
 func (s *tasksSection) nodeText(n core.GraphNode, w int, deps bool) (styled, plain string) {
 	th := s.th
-	right := graphFlags(n)
+	w = max(w, 1)
+	flags := graphFlags(n)
+	fw := lipgloss.Width(flags)
+	reserve := fw
+	if fw > 0 {
+		reserve++
+	}
+	id := trunc(taskGlyph(n.Status)+" "+san(n.ID), max(w-reserve, 1))
+	room := w - lipgloss.Width(id) - 1 - reserve // the title and its leading space
+	d := ""
 	if deps {
-		if d := graphDeps(n); d != "" {
-			right = d + " " + right
+		d = graphDeps(n)
+	}
+	if d != "" && room-lipgloss.Width(d)-1 >= 6 {
+		room -= lipgloss.Width(d) + 1
+	} else {
+		d = ""
+	}
+	title := ""
+	if room >= 2 {
+		title = trunc(san(n.Title), room)
+	}
+	right := strings.TrimSpace(d + " " + flags)
+	left := id
+	if title != "" {
+		left += " " + title
+	}
+	gap := 0
+	if right != "" {
+		gap = 1
+	}
+	pad := max(w-lipgloss.Width(left)-lipgloss.Width(right)-gap, 0)
+	plain = trunc(left+strings.Repeat(" ", pad)+strings.Repeat(" ", gap)+right, w)
+	styledTitle := title
+	if n.Status == "closed" {
+		styledTitle = th.Text(KindMuted, title)
+	}
+	styledLeft := s.glyph(n.Status) + id[len(taskGlyph(n.Status)):]
+	if lipgloss.Width(id) < lipgloss.Width(taskGlyph(n.Status)+" "+san(n.ID)) { // cut id: no styling games
+		styledLeft = id
+	}
+	if title != "" {
+		styledLeft += " " + styledTitle
+	}
+	fl := ""
+	if d != "" {
+		fl = th.Text(KindMuted, d)
+		if flags != "" {
+			fl += " "
 		}
 	}
-	right = strings.TrimSpace(right)
-	left := taskGlyph(n.Status) + " " + san(n.ID) + " "
-	room := w - lipgloss.Width(left)
-	rw := 0
-	if right != "" {
-		rw = lipgloss.Width(right) + 1
-	}
-	if room-rw < 4 { // no space for the title and the marks: the title wins
-		right, rw = "", 0
-	}
-	title := trunc(san(n.Title), max(room-rw, 0))
-	plain = padTo(left+title, w-rw) + strings.Repeat(" ", min(rw, 1)) + right
-	plain = trunc(plain, w)
-	gl := s.glyph(n.Status)
-	t := title
-	if n.Status == "closed" {
-		t = th.Text(KindMuted, title)
-	}
-	fl := right
 	switch {
 	case n.InCycle:
-		fl = th.Text(KindFail, right)
+		fl += th.Text(KindFail, flags)
 	case n.OnChain:
-		fl = th.Text(KindAccent, right)
-	case right != "":
-		fl = th.Text(KindMuted, right)
+		fl += th.Text(KindAccent, flags)
+	case flags != "":
+		fl += th.Text(KindMuted, flags)
 	}
-	styled = gl + " " + san(n.ID) + " " + t
-	if right != "" {
-		styled = padTo(styled, w-rw) + " " + fl
-	}
+	styled = trunc(styledLeft+strings.Repeat(" ", pad+gap)+fl, w)
 	return styled, plain
 }
 
@@ -575,13 +649,10 @@ func (s *tasksSection) wholeLines(gv core.GraphView, iw int) ([]string, int) {
 	}
 	cur := 0
 	for _, l := range gv.Layers {
-		what := "waits for an earlier layer"
-		if l.Layer == 0 {
-			what = "nothing blocks these"
-		}
+		what := ""
 		for _, id := range l.Nodes {
 			if byID[id].InCycle {
-				what = "includes a cycle (~)"
+				what = " · includes a cycle (~)"
 				break
 			}
 		}
@@ -590,7 +661,7 @@ func (s *tasksSection) wholeLines(gv core.GraphView, iw int) ([]string, int) {
 		if n == 1 {
 			noun = "task"
 		}
-		lines = append(lines, th.Text(KindMuted, trunc(fmt.Sprintf("── layer %d · %d %s · %s", l.Layer, n, noun, what), iw)))
+		lines = append(lines, th.Text(KindMuted, trunc(fmt.Sprintf("── layer %d · %d %s%s", l.Layer, n, noun, what), iw)))
 		for _, id := range l.Nodes {
 			if id == s.graph.sel {
 				cur = len(lines)
@@ -608,20 +679,11 @@ func (s *tasksSection) wholeLines(gv core.GraphView, iw int) ([]string, int) {
 // above the focus, dependents nested below it, then the chain and the cycles.
 func (s *tasksSection) outlineLines(gv core.GraphView, iw int) ([]string, int) {
 	th := s.th
-	byID := map[string]core.GraphNode{}
-	for _, n := range gv.Nodes {
-		byID[n.ID] = n
-	}
-	// the outline can reach deeper than the box layers: the missing nodes read from the snapshot
-	node := func(id string) core.GraphNode {
-		if n, ok := byID[id]; ok {
-			return n
+	node := func(r core.OutlineRow) core.GraphNode {
+		if r.Node != nil {
+			return *r.Node
 		}
-		n := core.GraphNode{ID: id, Status: "open"}
-		if d, ok := s.list.view.Detail(id); ok {
-			n = core.GraphNode{ID: id, Title: d.Row.Title, Status: d.Row.Status, BlockedBy: d.Row.BlockedBy, Blocks: d.Row.Blocks}
-		}
-		return n
+		return core.GraphNode{ID: r.ID, Status: "open"}
 	}
 	var lines []string
 	cur := 0
@@ -650,7 +712,7 @@ func (s *tasksSection) outlineLines(gv core.GraphView, iw int) ([]string, int) {
 			if r.ID == s.graph.sel {
 				cur = len(lines)
 			}
-			lines = append(lines, s.graphRow(node(r.ID), 2*(r.Depth-1), iw, true))
+			lines = append(lines, s.graphRow(node(r), 2*(r.Depth-1), iw, true))
 		}
 	}
 	up, down := rowsOf(core.OutlineUp), rowsOf(core.OutlineDown)
@@ -659,7 +721,12 @@ func (s *tasksSection) outlineLines(gv core.GraphView, iw int) ([]string, int) {
 		emit(r)
 	}
 	lines = append(lines, "")
-	f := node(gv.Focus)
+	var f core.GraphNode
+	for _, r := range gv.Outline {
+		if r.Side == core.OutlineFocus {
+			f = node(r)
+		}
+	}
 	if gv.Focus == s.graph.sel {
 		cur = len(lines)
 	}
@@ -785,6 +852,19 @@ type boxPos struct {
 // boxLines draws the neighborhood as boxes and connectors on a character canvas. It returns the
 // lines and the rows of the selected box, so the caller can keep it in view.
 func (s *tasksSection) boxLines(gv core.GraphView, iw int) ([]string, int, int) {
+	bl := s.layoutBoxes(gv, iw)
+	return s.renderCanvas(bl.c), bl.selTop, bl.selBot
+}
+
+// boxLayout is the box canvas with where everything was put, so a test can read the connectors back.
+type boxLayout struct {
+	c              *gcanvas
+	pos            map[string]boxPos
+	layerY, bottom []int // each layer's first row, and the first row under it
+	selTop, selBot int
+}
+
+func (s *tasksSection) layoutBoxes(gv core.GraphView, iw int) boxLayout {
 	nodes := map[string]core.GraphNode{}
 	for _, n := range gv.Nodes {
 		nodes[n.ID] = n
@@ -805,9 +885,7 @@ func (s *tasksSection) boxLines(gv core.GraphView, iw int) ([]string, int, int) 
 			layerIdx[id] = i
 		}
 	}
-	y := 0
-	for i, l := range gv.Layers {
-		layerY[i] = y
+	for i, l := range gv.Layers { // columns first: the connector groups need every layer's x
 		n := max(len(l.Nodes), 1)
 		// a layer with fewer boxes gets wider ones, so a lone focus keeps more of its title
 		bw := max(min(boxMaxW, (iw+boxGap)/n-boxGap), 7)
@@ -816,7 +894,16 @@ func (s *tasksSection) boxLines(gv core.GraphView, iw int) ([]string, int, int) 
 		x0 := max((iw-total)/2, 0)
 		for j, id := range l.Nodes {
 			x := x0 + j*(bw+boxGap)
-			pos[id] = boxPos{x: x, y: y, cx: x + bw/2, w: bw, layer: i}
+			pos[id] = boxPos{x: x, cx: x + bw/2, w: bw, layer: i}
+		}
+	}
+	y := 0
+	for i, l := range gv.Layers {
+		layerY[i] = y
+		for _, id := range l.Nodes {
+			p := pos[id]
+			p.y = y
+			pos[id] = p
 		}
 		y += boxRows
 		if l.More > 0 {
@@ -825,9 +912,9 @@ func (s *tasksSection) boxLines(gv core.GraphView, iw int) ([]string, int, int) 
 		layerBottom[i] = y
 		gap := 1
 		if i+1 < len(gv.Layers) {
-			comps[i] = pairComponents(gv, layerIdx, i, pos)
+			comps[i] = nonOverlapping(pairComponents(gv, layerIdx, i, pos), pos)
 			if len(comps[i]) > 0 {
-				gap = min(len(comps[i]), maxBusRows) + 1
+				gap = 2 // one bus row, then the row above the child boxes
 			}
 		}
 		if i+1 < len(gv.Layers) {
@@ -840,20 +927,19 @@ func (s *tasksSection) boxLines(gv core.GraphView, iw int) ([]string, int, int) 
 		if len(groups) == 0 {
 			continue
 		}
-		nb := min(len(groups), maxBusRows)
-		which := map[string]int{}
-		for gi, g := range groups {
+		kept := map[string]bool{}
+		for _, g := range groups {
 			for _, id := range g {
-				which[id] = min(gi, nb-1)
+				kept[id] = true
 			}
 		}
 		y0 := layerBottom[i]
 		for _, e := range gv.Edges {
-			if !e.Drawn || layerIdx[e.From] != i || layerIdx[e.To] != i+1 {
+			if !e.Drawn || layerIdx[e.From] != i || layerIdx[e.To] != i+1 || !kept[e.From] {
 				continue
 			}
 			u, v := pos[e.From], pos[e.To]
-			c.path(u.cx, y0, y0+which[e.From], v.cx, layerY[i+1]-1)
+			c.path(u.cx, layerY[i]+boxRows, y0, v.cx, layerY[i+1]-1) // the stem runs through the "+N more" row
 		}
 	}
 	for y := range c.runes {
@@ -874,7 +960,7 @@ func (s *tasksSection) boxLines(gv core.GraphView, iw int) ([]string, int, int) 
 		}
 		if l.More > 0 {
 			t := trunc(fmt.Sprintf("+%d more", l.More), iw)
-			x0 := max((iw-lipgloss.Width(t))/2, 0)
+			x0 := max(iw-lipgloss.Width(t), 0) // far right: clear of every box's center stem
 			c.segs[layerY[i]+boxRows][x0] = gseg{x0, lipgloss.Width(t), t, ckMuted}
 		}
 	}
@@ -887,7 +973,40 @@ func (s *tasksSection) boxLines(gv core.GraphView, iw int) ([]string, int, int) 
 		c.runes[u.y+boxRows-1][u.cx] = borderFor(nodes[e.From], gv.Focus, s.graph.sel).down
 		c.runes[v.y][v.cx] = borderFor(nodes[e.To], gv.Focus, s.graph.sel).up
 	}
-	return s.renderCanvas(c), selTop, selBot
+	s.graph.undrawn = 0 // links the layout dropped because their bus would cross another's
+	for _, e := range gv.Edges {
+		i, ok := layerIdx[e.From]
+		if !e.Drawn || !ok || layerIdx[e.To] != i+1 || i >= len(comps) {
+			continue
+		}
+		in := false
+		for _, g := range comps[i] {
+			for _, id := range g {
+				in = in || id == e.From
+			}
+		}
+		if !in {
+			s.graph.undrawn++
+		}
+	}
+	return boxLayout{c, pos, layerY, layerBottom, selTop, selBot}
+}
+
+// nonOverlapping keeps the groups, left to right, whose horizontal extents do not meet: with one bus
+// row for the layer pair, two overlapping groups would run into each other and read as one.
+func nonOverlapping(groups [][]string, pos map[string]boxPos) [][]string {
+	var kept [][]string
+	last := -1
+	for _, g := range groups {
+		lo, hi := 1<<30, -1
+		for _, id := range g {
+			lo, hi = min(lo, pos[id].cx), max(hi, pos[id].cx)
+		}
+		if lo > last {
+			kept, last = append(kept, g), hi
+		}
+	}
+	return kept
 }
 
 func borderFor(n core.GraphNode, focus, sel string) borderSet {
@@ -927,15 +1046,12 @@ func (s *tasksSection) drawBox(c *gcanvas, n core.GraphNode, p boxPos) {
 	put(p.y+2, p.x+bw-1, b.br)
 	put(p.y+1, p.x, b.v)
 	put(p.y+1, p.x+bw-1, b.v)
-	_, plain := s.nodeText(n, bw-4, false)
-	k := ckPlain
-	if n.Status == "closed" {
-		k = ckMuted
+	styled, plain := s.nodeText(n, bw-4, false)
+	k := ckPlain // the text carries its own styling (muted title when closed, accented chain flag)
+	text := " " + styled + " "
+	if n.ID == s.graph.sel { // the selected box is one block of the selection style
+		k, text = ckSelected, " "+plain+" "
 	}
-	if n.ID == s.graph.sel {
-		k = ckSelected
-	}
-	text := " " + plain + " "
 	for x := p.x + 1; x < p.x+bw-1; x++ {
 		c.runes[p.y+1][x], c.kind[p.y+1][x] = ' ', k
 	}

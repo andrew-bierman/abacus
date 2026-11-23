@@ -212,6 +212,7 @@ func (s *tasksSection) useFallback() {
 // fetchInsights runs only at start and on refresh: it can run several subprocesses.
 func (s *tasksSection) fetchInsights() tea.Cmd {
 	s.insBusy = true
+	s.graph.insStart = nowFn()
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*fetchTimeout)
 		defer cancel()
@@ -277,7 +278,10 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		s.list.slow, s.list.slowUntil = false, time.Time{}
 		s.setSnapshot(m.snap)
-		s.list.behind = dirty // a write landed during this read: it may not show it, so read again now
+		s.list.behind = dirty                                                                // a write landed during this read: it may not show it, so read again now
+		if s.list.cur == viewGraph && s.graphInsightsStale() && s.ins != nil && !s.insBusy { // marks must describe this snapshot
+			return s, tea.Batch(s.ws.fetch(s.wsItems()), s.fetchInsights(), s.refetchSnapshotIf(dirty))
+		}
 		if dirty {
 			return s, tea.Batch(s.ws.fetch(s.wsItems()), s.fetchSnapshot())
 		}
@@ -289,7 +293,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.ws.note = []string{"The workspace did not open: " + core.Sanitize(m.err.Error())}
 		}
 	case insightsMsg:
-		s.insights, s.insBusy = &m.report, false
+		s.insights, s.insBusy, s.graph.insAt = &m.report, false, nowFn()
 	case taskVerifiedMsg:
 		if s.mode != modeVerify || m.id != s.pending.ID { // cancelled, or an answer for another issue
 			return s, nil

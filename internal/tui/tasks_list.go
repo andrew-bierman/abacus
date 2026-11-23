@@ -127,6 +127,10 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		}
 		l.cur = taskViewID((int(l.cur) + d) % n)
 		s.drilled, l.detailFocus = false, false
+		if l.cur == viewGraph { // the graph is about the task selected now, not the one it last showed
+			s.openGraph()
+			return s.graphRefresh(), true
+		}
 		return nil, true
 	}
 	if l.cur == viewGraph {
@@ -155,6 +159,7 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		s.moved()
 	case key.Matches(k, keyGraph):
 		s.openGraph()
+		return s.graphRefresh(), true
 	case key.Matches(k, keyPreset):
 		l.preset, l.presetSet = l.preset.Next(l.depsUnknown), true
 		if l.depsUnknown {
