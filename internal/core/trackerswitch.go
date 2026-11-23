@@ -102,7 +102,7 @@ func (s *Switcher) Plan(dir string) (SwitchPlan, error) {
 		"At the next start, ABACUS_BD_DIR or a tracker at or above the working directory still wins.",
 	}
 	return SwitchPlan{id: switchSeq.Add(1), Dir: dir, From: from, Lines: lines,
-		Argv: []string{"abacus", "config", "set", "tracker_dir", dir}}, nil
+		Argv: []string{brand.Name, "config", "set", "tracker_dir", dir}}, nil
 }
 
 // Apply runs a confirmed plan once: audit the attempt (a failed audit blocks it), save tracker_dir,
