@@ -126,9 +126,20 @@ if [ -n "$outfile" ]; then cp "$src" "$outfile"; else cp "$src" "$outdir/$name";
 `), 0o755))
 	r.env = append(os.Environ(),
 		"PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"),
-		"HOME="+r.root, "FAKE_GH_REMOTE="+r.remote, "FAKE_GH_LOG="+filepath.Join(r.root, "gh.log"),
+		"HOME="+r.root, "GOMODCACHE="+goEnv(t, "GOMODCACHE"), "GOCACHE="+goEnv(t, "GOCACHE"),
+		"GOFLAGS=-mod=mod", "FAKE_GH_REMOTE="+r.remote, "FAKE_GH_LOG="+filepath.Join(r.root, "gh.log"),
 		"ABACUS_BUNDLE_MANIFEST="+r.manifest, "ABACUS_BUNDLE_CACHE="+r.cache, "ABACUS_PACKAGE_PREBUILT_BIN="+prebuilt)
 	return r
+}
+
+// goEnv reads a Go setting from the process running the tests, so the packaging script (which
+// lists linked modules) reuses the real module cache instead of building a read-only one under
+// the test's temporary HOME, which TempDir cleanup cannot remove.
+func goEnv(t *testing.T, key string) string {
+	t.Helper()
+	out, err := exec.Command("go", "env", key).Output()
+	must(t, err)
+	return strings.TrimSpace(string(out))
 }
 
 func must(t *testing.T, err error) {
