@@ -506,7 +506,7 @@ func (d *SearchDoc) Label() string {
 	return Sanitize(d.Ref)
 }
 
-// snippetAround is about 60 characters of body around the first occurrence of word, on one line.
+// snippetAround is about 48 characters of body around the first occurrence of word, on one line.
 func snippetAround(body, word string) string {
 	flat := strings.Join(strings.Fields(Sanitize(body)), " ")
 	r := []rune(flat)
@@ -515,8 +515,8 @@ func snippetAround(body, word string) string {
 	if i >= 0 {
 		at = len([]rune(flat[:i]))
 	}
-	start := max(0, at-20)
-	end := min(len(r), start+60)
+	start := max(0, at-16)
+	end := min(len(r), start+48)
 	s := string(r[start:end])
 	if start > 0 {
 		s = "…" + s

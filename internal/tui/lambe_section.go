@@ -39,6 +39,7 @@ type lambeSection struct {
 	view   lambe.View
 	err    error
 	loaded bool
+	readAt time.Time // when the last read arrived (global search marks a stale one)
 	// listNav's selected is the identity of the chosen run (runKey), so a poll refresh that
 	// reorders or removes rows cannot move the selection (and the Rex handoff) onto a different run.
 	listNav
@@ -118,7 +119,7 @@ func (s *lambeSection) runs() []lambe.Run {
 func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case lambeViewMsg:
-		s.view, s.err, s.loaded = msg.view, msg.err, true
+		s.view, s.err, s.loaded, s.readAt = msg.view, msg.err, true, nowFn()
 		s.reanchor(s.ids(), false)
 		return s, s.ws.fetch(s.wsItems())
 	case workspaceMsg:

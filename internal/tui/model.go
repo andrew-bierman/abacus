@@ -35,6 +35,10 @@ type Model struct {
 	th       Theme
 	help     help.Model
 	showHelp bool
+
+	search     *searchOverlay // global search (ctrl+k) while it is open
+	searchHist core.SearchHistory
+	note       string // one footer line after a jump that needed saying something
 }
 
 // config is what Options set before the sections are built.
@@ -44,6 +48,8 @@ type config struct {
 	setup       *core.Setup
 	fullView    func(dir string) tea.Cmd
 	fullViewSet bool // WithFullView was given, so a demo session leaves it alone
+	history     core.SearchHistory
+	historySet  bool
 }
 
 // Option customises the shell.
@@ -76,7 +82,13 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	for _, o := range opts {
 		o(cfg)
 	}
-	m := &Model{th: cfg.th}
+	if !cfg.historySet { // a demo session keeps no history; any other uses the state dir
+		cfg.history = core.DefaultSearchHistory()
+		if isDemo(entries) {
+			cfg.history = core.SearchHistory{}
+		}
+	}
+	m := &Model{th: cfg.th, searchHist: cfg.history}
 	m.help = help.New()
 	m.help.Styles = m.th.HelpStyles()
 	m.help.ShortSeparator = " · "
@@ -264,6 +276,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, c
 	}
 	// Async results and ticks go to every section; each ignores message types it does not own.
+	if m.search != nil {
+		m.search.dirty = true
+	}
 	return m, m.broadcast(msg)
 }
 
@@ -278,10 +293,14 @@ func (m *Model) broadcast(msg tea.Msg) tea.Cmd {
 
 func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	sec := m.active()
-	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !sec.Capturing()) {
+	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !(sec.Capturing() || m.search != nil)) {
 		return m, tea.Quit
 	}
 	hidden := tooSmall(m.width(), m.h) // the section is not drawn, so it must not act on keys
+	m.note = ""
+	if m.search != nil {
+		return m.searchKey(k, hidden)
+	}
 	if sec.Capturing() {
 		if hidden {
 			return m, nil
@@ -298,6 +317,8 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(k, keyHelp):
 		m.showHelp = true
+	case key.Matches(k, keySearch) && !hidden:
+		return m, m.openSearch()
 	case key.Matches(k, keyNext):
 		return m, m.goTo(m.step(m.sel, 1))
 	case key.Matches(k, keyPrev):
@@ -319,6 +340,9 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 // While the section captures keys (a form, a confirm screen) its own keys come first: the decision
 // on the screen outranks the way around the app, so a narrow footer keeps "y apply" and "n cancel".
 func (m *Model) ShortHelp() []key.Binding {
+	if m.search != nil {
+		return searchBindings()
+	}
 	if sec := m.active(); sec.Capturing() {
 		return append(append([]key.Binding(nil), sec.Bindings()...), keyQuit, keyHelp, keyNext)
 	}
@@ -326,7 +350,7 @@ func (m *Model) ShortHelp() []key.Binding {
 }
 
 func (m *Model) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{keyNext, keyPrev, keyJump, keyHelp, keyQuit}, m.active().Bindings()}
+	return [][]key.Binding{{keyNext, keyPrev, keyJump, keySearch, keyHelp, keyQuit}, m.active().Bindings()}
 }
 
 // headerLines is the tab bar (and a rule under it when tall enough). When the tabs do not
@@ -397,6 +421,8 @@ func (m *Model) View() string {
 	switch {
 	case tooSmall(w, m.h):
 		body = tooSmallLines(m.th, w, m.h)
+	case m.search != nil:
+		body = m.search.view(m, w, bh)
 	case m.showHelp:
 		body = m.overlayLines(w, bh)
 	default:
@@ -407,6 +433,9 @@ func (m *Model) View() string {
 	}
 	m.help.Width = w
 	foot := m.help.ShortHelpView(m.ShortHelp())
+	if m.note != "" {
+		foot = m.th.Text(KindWarn, san(m.note))
+	}
 	all := append(append([]string{}, head...), body...)
 	if m.h > 0 {
 		// Pad so the footer sits on the last row.
