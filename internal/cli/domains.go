@@ -3,7 +3,6 @@ package cli
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -15,16 +14,11 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// jsonOut prints v with schema_version first, so every standalone command is versioned
+// jsonOut prints v with schema_version added (core.ReportJSON), so every standalone command is versioned
 // the same way as the reports. The embedded report is flattened by encoding/json.
 func jsonOut(w io.Writer, v any) {
-	b, _ := json.Marshal(v)
-	var m map[string]json.RawMessage
-	_ = json.Unmarshal(b, &m)
-	m["schema_version"] = json.RawMessage(strconv.Itoa(core.SchemaVersion))
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	_ = enc.Encode(m)
+	b, _ := core.ReportJSON(v)
+	_, _ = w.Write(b)
 }
 
 // cliTimeout bounds a whole command, so a stuck provider cannot hang it.

@@ -21,6 +21,7 @@ package query
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -412,4 +413,24 @@ func (q Query) String() string {
 		parts = append(parts, s)
 	}
 	return strings.Join(parts, " ")
+}
+
+// Fields lists the canonical field names, sorted, for completion in a prompt.
+func Fields() []string {
+	out := make([]string, 0, len(fields))
+	for f := range fields {
+		out = append(out, f)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// Values lists the allowed values of a member field (in, is, has) in their declared order; nil for
+// any other field.
+func Values(field string) []string {
+	f, ok := canon(field)
+	if !ok || fields[f].kind != kMember {
+		return nil
+	}
+	return append([]string(nil), fields[f].set...)
 }
