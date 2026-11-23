@@ -185,3 +185,23 @@ func TestABACUS_REX_HOSTSIsTheOnlyWayToContactAnotherMachine(t *testing.T) {
 		}
 	}
 }
+
+// ABACUS_REX_PASS_ENV is the only way a variable outside the scrubbed set reaches rex.
+func TestABACUS_REX_PASS_ENVOptsInToExtraVariables(t *testing.T) {
+	t.Setenv("SSH_AUTH_SOCK", "/tmp/agent.sock")
+	for pass, want := range map[string]bool{"": false, "HTTPS_PROXY": false, "SSH_AUTH_SOCK": true} {
+		dir := t.TempDir()
+		out := filepath.Join(dir, "env.txt")
+		stub := filepath.Join(dir, "stub-not-rex")
+		body := "#!/bin/sh\n/usr/bin/env > '" + out + "'\ncase \"$*\" in *version*) echo '{\"api_revision\":13}';; *) echo '{\"sessions\":[]}';; esac\n"
+		if err := os.WriteFile(stub, []byte(body), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		e := env(t, map[string]string{"ABACUS_REX_BIN": stub, "ABACUS_REX_PASS_ENV": pass})
+		Build(cli.Options{}, e).Detect(context.Background())
+		b, _ := os.ReadFile(out)
+		if got := strings.Contains(string(b), "SSH_AUTH_SOCK=/tmp/agent.sock"); got != want {
+			t.Errorf("pass %q: SSH_AUTH_SOCK reached rex = %v, want %v", pass, got, want)
+		}
+	}
+}
