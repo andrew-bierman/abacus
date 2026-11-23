@@ -8,6 +8,26 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- `scripts/dev-bundle.sh` (`make bundle`, `make dev`): a locally built binary gets abacus's own
+  pinned, sha256-verified copies of bd, bv, lambe and beads-lease in `bin/bundled/`, so Doctor shows
+  every tool as `bundled` and tabs are no longer "not connected" on a dev machine. It fails closed
+  on any hash mismatch, builds in a temp directory and moves it into place, is idempotent and has a
+  `--check` mode. `package-release.sh` now also verifies every manifest tool landed in `bundled/`,
+  and a test fails when a tool in `bundled-tools.json` lacks an asset for a release platform.
+- `abacus doctor` and `abacus version` report "Bundled tools: 4 of 4 verified" (or what is wrong);
+  JSON gains `bundled` (version) and `overview.bundled` (doctor) and tool lines gain `bundled_tool`
+  and `optional`, all additive (schema_version stays 1). Doctor's header says `Ready` only when all
+  four bundled tools are usable.
+
+### Changed
+
+- A bundled tool abacus cannot use is never "missing" or "install X" to the user. In a release the
+  text says abacus's own copy is damaged or was moved, gives the refusal reason when a copy was
+  refused, and says to re-extract the archive and keep the folder together; in a dev build
+  (`version` is `dev`) it says to run `scripts/dev-bundle.sh`. Optional tools that abacus does not
+  ship (Vercel Board CLI, b9s) say they are optional and what they add. Doctor's tool badge reads
+  `unavailable` or `optional` instead of `missing`; the raw `where: "missing"` in JSON is unchanged.
+
 - `abacus tui --demo` shows every tab with invented data: Board, Tasks (with graph insights and the
   confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
   only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,
