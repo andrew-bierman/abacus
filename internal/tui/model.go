@@ -39,6 +39,12 @@ type Model struct {
 	search     *searchOverlay // global search (ctrl+k) while it is open
 	searchHist core.SearchHistory
 	note       string // one footer line after a jump that needed saying something
+
+	prompt      *prompt // the `:` command prompt while it is open (prompt.go)
+	promptHist  []string
+	over        *viewer // the describe or JSON panel while it is open (describe.go)
+	helpOff     int     // scroll of the help overlay
+	boardTarget string  // where the Board writes to, for the header context (never a credential)
 }
 
 // config is what Options set before the sections are built.
@@ -98,6 +104,9 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	m.help.Styles = m.th.HelpStyles()
 	m.help.ShortSeparator = " · "
 	prov := core.ResolveProviders(entries)
+	if prov.BoardWriter != nil {
+		m.boardTarget = prov.BoardWriter.Target()
+	}
 	if isDemo(entries) && !cfg.fullViewSet {
 		cfg.fullView = demoFullView
 	}
@@ -302,13 +311,19 @@ func (m *Model) broadcast(msg tea.Msg) tea.Cmd {
 
 func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	sec := m.active()
-	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !(sec.Capturing() || m.search != nil)) {
+	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !(sec.Capturing() || m.search != nil || m.prompt != nil || m.over != nil)) {
 		return m, tea.Quit
 	}
 	hidden := tooSmall(m.width(), m.h) // the section is not drawn, so it must not act on keys
 	m.note = ""
 	if m.search != nil {
 		return m.searchKey(k, hidden)
+	}
+	if m.prompt != nil {
+		return m.promptKey(k, hidden)
+	}
+	if m.over != nil {
+		return m.viewerKey(k, hidden)
 	}
 	if sec.Capturing() {
 		if hidden {
@@ -318,16 +333,25 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	if m.showHelp {
-		if key.Matches(k, keyHelp) || key.Matches(k, keyBack) {
+		switch {
+		case key.Matches(k, keyHelp) || key.Matches(k, keyBack):
 			m.showHelp = false
+		case k.Type == tea.KeyUp || k.String() == "k":
+			m.helpOff--
+		case k.Type == tea.KeyDown || k.String() == "j":
+			m.helpOff++
 		}
 		return m, nil
 	}
 	switch {
 	case key.Matches(k, keyHelp):
-		m.showHelp = true
+		m.showHelp, m.helpOff = true, 0
 	case key.Matches(k, keySearch) && !hidden:
 		return m, m.openSearch()
+	case key.Matches(k, keyPrompt) && !hidden:
+		m.openPrompt()
+	case key.Matches(k, keyDescribe, keyJSON) && !hidden && m.describes():
+		m.openViewer(key.Matches(k, keyJSON))
 	case key.Matches(k, keyNext):
 		return m, m.goTo(m.step(m.sel, 1))
 	case key.Matches(k, keyPrev):
@@ -352,14 +376,29 @@ func (m *Model) ShortHelp() []key.Binding {
 	if m.search != nil {
 		return searchBindings()
 	}
+	if m.over != nil {
+		return viewerBindings()
+	}
 	if sec := m.active(); sec.Capturing() {
 		return append(append([]key.Binding(nil), sec.Bindings()...), keyQuit, keyHelp, keyNext)
 	}
-	return append([]key.Binding{keyHelp, keyQuit, keyNext}, m.active().Bindings()...)
+	return append(append([]key.Binding{keyHelp, keyQuit, keyNext, keyPrompt}, m.active().Bindings()...), m.describeKeys()...)
+}
+
+// describes is whether the active section has an item to describe.
+func (m *Model) describes() bool { _, ok := inner(m.active()).(describable); return ok }
+
+// describeKeys are the keys the shell owns on a tab with something to describe: last in the footer,
+// where the section's own keys come first, and in the help overlay.
+func (m *Model) describeKeys() []key.Binding {
+	if m.describes() {
+		return []key.Binding{keyDescribe, keyJSON}
+	}
+	return nil
 }
 
 func (m *Model) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{keyNext, keyPrev, keyJump, keySearch, keyHelp, keyQuit}, m.active().Bindings()}
+	return [][]key.Binding{{keyNext, keyPrev, keyJump, keySearch, keyPrompt, keyHelp, keyQuit}, append(append([]key.Binding(nil), m.active().Bindings()...), m.describeKeys()...)}
 }
 
 // headerLines is the tab bar (and a rule under it when tall enough). When the tabs do not
@@ -381,6 +420,8 @@ func (m *Model) headerLines(w int) []string {
 	if lipgloss.Width(line) > w {
 		pos := m.th.Text(KindMuted, " "+strconv.Itoa(m.sel+1)+"/"+strconv.Itoa(len(m.tabs)))
 		line = m.th.ActiveTab(m.tabs[m.sel].name) + pos
+	} else {
+		line = m.withContext(line, w)
 	}
 	out := []string{trunc(line, w)}
 	if m.headerHeight() == 2 {
@@ -408,6 +449,8 @@ func (m *Model) overlayLines(w, h int) []string {
 			}
 		}
 	}
+	rows = append(append(rows, ""), m.th.Section("Commands (after :, tab completes)"))
+	rows = append(rows, m.commandHelpRows(widths)...)
 	hint := m.th.Text(KindMuted, "? or esc closes")
 	if w >= panelMinW && (h <= 0 || len(rows)+2+panelChromeH <= h) { // +2: the blank line and the hint
 		return panel(m.th, "Keys", append(rows, "", hint), w, 0, true)
@@ -432,8 +475,10 @@ func (m *Model) View() string {
 		body = tooSmallLines(m.th, w, m.h)
 	case m.search != nil:
 		body = m.search.view(m, w, bh)
+	case m.over != nil:
+		body = m.over.view(m.th, w, bh)
 	case m.showHelp:
-		body = m.overlayLines(w, bh)
+		body, m.helpOff = scrollWindow(m.th, m.overlayLines(w, bh), m.helpOff, bh)
 	default:
 		body = strings.Split(strings.TrimRight(m.active().View(), "\n"), "\n")
 	}
@@ -444,6 +489,9 @@ func (m *Model) View() string {
 	foot := m.help.ShortHelpView(m.ShortHelp())
 	if m.note != "" {
 		foot = m.th.Text(KindWarn, san(m.note))
+	}
+	if m.prompt != nil {
+		foot = m.prompt.footer(m.th, w)
 	}
 	all := append(append([]string{}, head...), body...)
 	if m.h > 0 {
