@@ -1,4 +1,4 @@
-=== 40x10 ===
+=== 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
 Confirm this change
 
@@ -7,7 +7,9 @@ change below is against the current
 values)
 
   close task ac-12
-  ↕ +4 more
+  title: "wire the lease heartbeat"
+
+  ↕ +2 more
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
@@ -40,7 +42,7 @@ exact command:
 
 
 ? help · q quit · tab/→ next tab …
-=== 80x10 ===
+=== 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 Confirm this change
 
@@ -49,7 +51,9 @@ values)
 
   close task ac-12
   title: "wire the lease heartbeat"
-  ↕ +3 more
+
+exact command:
+  bd close ac-12
 ? help · q quit · tab/→ next tab · y apply · n/esc cancel
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
@@ -82,7 +86,7 @@ exact command:
 
 
 ? help · q quit · tab/→ next tab · y apply · n/esc cancel
-=== 120x10 ===
+=== 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 Confirm this change
 
@@ -91,7 +95,9 @@ changed since you opened it: status (the change below is against the current val
   close task ac-12
   title: "wire the lease heartbeat"
 
-  ↕ +2 more
+exact command:
+  bd close ac-12
+
 ? help · q quit · tab/→ next tab · y apply · n/esc cancel
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor

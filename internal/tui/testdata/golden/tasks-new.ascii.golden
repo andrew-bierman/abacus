@@ -1,10 +1,12 @@
-=== 40x10 ===
+=== 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
 New task
 
 Title                     hi▏
 Description
 Priority 0-4
+
+
 
 
 
@@ -40,13 +42,15 @@ Priority 0-4
 
 
 ? help · q quit · tab/→ next tab …
-=== 80x10 ===
+=== 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 New task
 
 Title                     hi▏
 Description
 Priority 0-4
+
+
 
 
 
@@ -82,13 +86,15 @@ Priority 0-4
 
 
 ? help · q quit · tab/→ next tab · enter next/review · esc back
-=== 120x10 ===
+=== 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 New task
 
 Title                     hi▏
 Description
 Priority 0-4
+
+
 
 
 

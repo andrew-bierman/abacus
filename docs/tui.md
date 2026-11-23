@@ -60,6 +60,34 @@ Without an insights provider the block says it is not connected and how to insta
 | < 60 columns | the brand name is dropped from the header |
 | tabs do not fit | header shrinks to the active tab and `n/m` |
 | height < 16 | the rule under the header is dropped |
+| < 40 columns or < 12 rows | the body is a "Terminal too small" message that says what is needed; the tab bar and footer stay around it |
+
+Every threshold has a name in `internal/tui/layout.go` (`bpMin` 40, `bpCompact` 60, `bpWide` 100,
+`bpUltra` 140; `hMin` 12, `hRule` 16, `hSummary` 24, `hTall` 40), and a test pins each value.
+`bpUltra`, `hSummary` and `hTall` are reserved for the wide and tall layouts the tabs adopt in the
+next steps.
+
+Tabs are built from three small helpers, each tested at every size so no line can exceed the
+terminal:
+
+- `split` divides a width (or height) between fixed, minimum and weighted slots, like a ratatui
+  layout, and never overshoots.
+- `fitColumns` and `formatRow` build an aligned table: columns drop in priority order as the
+  width shrinks (the last one left is squeezed, not dropped) and the slack goes to the
+  flexible column.
+- `panel` draws a rounded, titled frame. The focused panel carries a `▸` before its title as
+  well as a brighter border, so focus is visible with `NO_COLOR`. A panel too small for a frame
+  (under 4 cells wide or 3 tall) degrades to plain lines.
+
+Rule for any state that hides a screen (too small, an overlay, a collapsed pane): it must also stop
+input reaching that screen, because a key pressed on a screen the user cannot see can still act
+on it (a hidden confirm answered with `y` would apply a change unseen). Global keys (tabs, help,
+quit) keep working; keys for the hidden section are dropped. Each input path needs its own test,
+capturing and non-capturing, since a guard on one path alone survives mutation of the other
+(`TestTooSmallTerminalCannotApplyAHiddenConfirm`, `TestTooSmallTerminalGivesAHiddenListNoKeys`).
+
+The help overlay is the first user of them: a focused panel with aligned key columns, and a
+plain indented list when the frame would cost rows the text needs.
 
 Header and footer are always shown (down to a height of 2). The body is cut to the remaining
 height and the run list scrolls to keep the cursor visible; clipped content ends in a

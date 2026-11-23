@@ -1,4 +1,4 @@
-=== 40x10 ===
+=== 40x12 ===
  Board  Tasks  Leases  [Queues]  Doctor
 T-1 (running)
 
@@ -8,6 +8,8 @@ session    ses-t1
 attempt    2
 machine    operators-mac
 actor      lambe@operators-mac
+last event 30s
+
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  Board  Tasks  Leases  [Queues]  Doctor
@@ -40,7 +42,7 @@ last event 30s
 
 
 ? help · q quit · tab/→ next tab …
-=== 80x10 ===
+=== 80x12 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 T-1 (running)
 
@@ -50,6 +52,8 @@ session    ses-t1
 attempt    2
 machine    operators-mac
 actor      lambe@operators-mac
+last event 30s
+
 ? help · q quit · tab/→ next tab · ↑/↓ move · esc back · / filter …
 === 80x30 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
@@ -82,16 +86,18 @@ last event 30s
 
 
 ? help · q quit · tab/→ next tab · ↑/↓ move · esc back · / filter …
-=== 120x10 ===
+=== 120x12 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 Runs 3 (demo data)                               │ T-1 (running)
 ▸ T-1     running  gating                        │
   T-2     deferred  deferred                     │ phase      gating
   T-3     running  running  (stalled)            │ workflow   general
                                                  │ session    ses-t1
-  ↕ +3 more                                      │ attempt    2
-Needs attention 1                                │ machine    operators-mac
-  T-2  gate_failed  gh:pr rejected: merge confl… │ actor      lambe@operators-mac
+Queue 2                                          │ attempt    2
+  Q-1  ready  ready task                         │ machine    operators-mac
+  Q-2  (blocked)  blocked task                   │ actor      lambe@operators-mac
+Needs attention 1                                │ last event 30s
+  T-2  gate_failed  gh:pr rejected: merge confl… │
 ? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
 === 120x30 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor

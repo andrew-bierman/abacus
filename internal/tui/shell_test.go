@@ -155,3 +155,114 @@ func TestActiveTabIsMarkedEvenWithoutColor(t *testing.T) {
 		t.Fatalf("header %q", h)
 	}
 }
+
+func TestTooSmallBodyReplacesOnlyTheBody(t *testing.T) {
+	for _, tc := range []struct {
+		w, h  int
+		small bool
+	}{{40, 12, false}, {100, 12, false}, {39, 30, true}, {40, 11, true}, {100, 11, true}, {60, 5, true}} {
+		var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+		m = sized(m, tc.w, tc.h)
+		out := lines(m)
+		got := strings.Contains(m.View(), "Terminal too small")
+		if got != tc.small {
+			t.Fatalf("%dx%d: too-small message shown = %v, want %v:\n%s", tc.w, tc.h, got, tc.small, m.View())
+		}
+		if !tc.small {
+			continue
+		}
+		if tc.w >= 40 && tc.h >= 3 {
+			if !strings.Contains(out[0], "Board") || !strings.Contains(out[len(out)-1], "? help") {
+				t.Errorf("%dx%d: chrome must stay around the message:\n%s", tc.w, tc.h, m.View())
+			}
+		}
+		if tc.w >= 40 && tc.h >= 6 && !strings.Contains(m.View(), "40x12") {
+			t.Errorf("%dx%d: the message must say what is needed:\n%s", tc.w, tc.h, m.View())
+		}
+	}
+}
+
+func TestTooSmallNamesNoTool(t *testing.T) {
+	var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+	m = sized(m, 39, 30)
+	for _, bad := range toolNames {
+		if strings.Contains(m.View(), bad) {
+			t.Errorf("too-small screen names %q:\n%s", bad, m.View())
+		}
+	}
+}
+
+func TestHelpOverlayIsAFocusedPanelWhenItFits(t *testing.T) {
+	var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+	m = sized(m, 100, 30)
+	m = press(m, "?")
+	out := lines(m)
+	if !strings.Contains(out[2], "╭─ ▸ Keys") {
+		t.Fatalf("help must be a framed, focused panel under the header:\n%s", m.View())
+	}
+	cell := func(l, sub string) int { return lipgloss.Width(l[:strings.Index(l, sub)]) }
+	var key, desc int
+	for _, l := range out {
+		if strings.HasPrefix(l, "│") && strings.Contains(l, "next tab") {
+			key, desc = cell(l, "tab/→"), cell(l, "next tab")
+		}
+	}
+	if key == 0 || desc-key != 14 {
+		t.Fatalf("keys and descriptions must stay in aligned columns (key at %d, desc at %d):\n%s", key, desc, m.View())
+	}
+}
+
+func TestHelpOverlayDropsItsFrameRatherThanLoseRowsWhenShort(t *testing.T) {
+	var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+	m = sized(m, 100, 12) // body of 10 rows: the help text needs 9, a frame would need 11
+	m = press(m, "?")
+	if strings.Contains(m.View(), "╭") || !strings.Contains(m.View(), "quit") {
+		t.Fatalf("a short help overlay must stay a plain list:\n%s", m.View())
+	}
+}
+
+func TestTooSmallBodyWinsOverTheHelpOverlay(t *testing.T) {
+	for _, size := range [][2]int{{39, 30}, {100, 11}} {
+		var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+		m = sized(m, size[0], size[1])
+		m = press(m, "?")
+		if !strings.Contains(m.View(), "Terminal too small") || strings.Contains(m.View(), "Keys") {
+			t.Fatalf("%v: the too-small message must stay in charge:\n%s", size, m.View())
+		}
+	}
+}
+
+// The overlay is framed exactly when the whole text fits inside a frame, and otherwise a plain list
+// that keeps every key row. Scan the heights so the boundary itself is pinned, not just two points.
+func TestHelpOverlayFrameBoundaryIsExact(t *testing.T) {
+	build := func(h int) string {
+		var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+		m = sized(m, 100, h)
+		return press(m, "?").View()
+	}
+	framedFrom := -1
+	for h := hMin; h <= 40; h++ {
+		v := build(h)
+		framed := strings.Contains(v, "╭")
+		if framed && framedFrom < 0 {
+			framedFrom = h
+		}
+		if framedFrom >= 0 && !framed {
+			t.Fatalf("height %d lost the frame it had at %d:\n%s", h, framedFrom, v)
+		}
+		if framed && (!strings.Contains(v, "? or esc closes") || !strings.Contains(v, "╰")) {
+			t.Fatalf("height %d: a framed overlay must be whole:\n%s", h, v)
+		}
+		if !framed && !strings.Contains(v, "jump to tab") {
+			t.Fatalf("height %d: a plain overlay must keep its key rows:\n%s", h, v)
+		}
+	}
+	if framedFrom < 0 {
+		t.Fatal("the overlay is never framed")
+	}
+	// One row short of the frame, the plain list has already lost its hint row: that is why the
+	// frame waits for the full text instead of clipping it.
+	if framedFrom > hMin && strings.Contains(build(framedFrom-1), "? or esc closes") {
+		t.Fatalf("the plain list at %d should not fit its hint, so the frame could have started earlier", framedFrom-1)
+	}
+}

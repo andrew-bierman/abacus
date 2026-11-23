@@ -62,6 +62,8 @@ type Theme struct {
 
 	Selected, Header, Title, Label      lipgloss.Style
 	TabActive, TabIdle, TabDim, Divider lipgloss.Style
+	// Border frames a panel; BorderFocus frames the focused one.
+	Border, BorderFocus lipgloss.Style
 }
 
 // NewTheme builds the theme for r. The termenv Ascii profile (NO_COLOR, a dumb terminal or a
@@ -77,6 +79,8 @@ func NewTheme(r *lipgloss.Renderer) Theme {
 	t.TabIdle = s().Padding(0, 1)
 	t.TabDim = t.muted().Faint(true).Padding(0, 1)
 	t.Divider = t.muted()
+	t.Border = t.muted()
+	t.BorderFocus = s().Foreground(colAccent)
 	return t
 }
 

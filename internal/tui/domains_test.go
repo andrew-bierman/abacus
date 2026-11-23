@@ -504,3 +504,65 @@ func TestInsightsFollowAnEmptyTrackerOnceItHasATask(t *testing.T) {
 		t.Fatal("the first task must trigger an insights read, not leave 'no tasks yet' on screen")
 	}
 }
+
+// While the terminal is too small the confirm screen is hidden, so no key may reach it: a change
+// must never be applied on a screen the user cannot read. Growing the window back restores it.
+func TestTooSmallTerminalCannotApplyAHiddenConfirm(t *testing.T) {
+	r := newTasksRig(t)
+	m := press(r.m, "n")
+	m = typeText(m, "ship it")
+	m = press(m, "enter")
+	m = press(m, "enter")
+	m = press(m, "enter")
+	if !strings.Contains(m.View(), "Confirm this change") {
+		t.Fatalf("no confirm screen to hide:\n%s", m.View())
+	}
+	for _, size := range [][2]int{{39, 30}, {100, 11}} {
+		m = sized(m, size[0], size[1])
+		if !strings.Contains(m.View(), "Terminal too small") {
+			t.Fatalf("%v should be too small:\n%s", size, m.View())
+		}
+		for _, k := range []string{"y", "enter", "n", "esc"} {
+			var cmd tea.Cmd
+			m, cmd = m.Update(runeOrKey(k))
+			m = run(t, m, cmd)
+		}
+		if len(*r.prov.ran) != 0 || r.audit.n != 0 {
+			t.Fatalf("%v: a key reached the hidden confirm and wrote: %v", size, *r.prov.ran)
+		}
+	}
+	// ctrl+c still gets the user out.
+	if _, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC}); cmd == nil {
+		t.Fatal("ctrl+c must quit even when the terminal is too small")
+	}
+	m = sized(m, 100, 30)
+	if !strings.Contains(m.View(), "Confirm this change") {
+		t.Fatalf("the pending change must survive the resize:\n%s", m.View())
+	}
+	m, cmd := m.Update(runeOrKey("y"))
+	m = run(t, m, cmd)
+	if len(*r.prov.ran) != 1 {
+		t.Fatalf("y on the restored confirm screen must apply once, ran %v", *r.prov.ran)
+	}
+}
+
+// The same holds for a hidden list: no key may launch the handoff or open a form on a screen the
+// user cannot see, and the keys work again once the window is big enough.
+func TestTooSmallTerminalGivesAHiddenListNoKeys(t *testing.T) {
+	r := newTasksRig(t)
+	m := sized(r.m, 39, 30)
+	for _, k := range []string{"o", "n", "e", "x"} {
+		m = press(m, k)
+	}
+	if len(*r.full) != 0 {
+		t.Fatalf("o launched a handoff from a hidden list: %v", *r.full)
+	}
+	m = sized(m, 100, 40)
+	if strings.Contains(m.View(), "New task") || strings.Contains(m.View(), "Confirm this change") {
+		t.Fatalf("a hidden key opened a form:\n%s", m.View())
+	}
+	m = press(m, "o")
+	if len(*r.full) != 1 {
+		t.Fatalf("o works again at a usable size, ran %v", *r.full)
+	}
+}

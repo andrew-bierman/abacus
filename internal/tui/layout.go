@@ -7,8 +7,32 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// wideBreakpoint is the width at which list and detail sit side by side.
-const wideBreakpoint = 100
+// Breakpoints. Every layout decision keys off one of these names, so a threshold is changed in
+// one place and the tests that pin it say which one they mean.
+//
+//	width:  bpMin      the narrowest layout we draw; below it the body is a "too small" message
+//	        bpCompact  the brand joins the tab bar; fuller rows
+//	        bpWide     list and detail sit side by side
+//	        bpUltra    extra columns and, when tall enough, a summary strip
+//	height: hMin       the shortest body we draw; below it the body is a "too small" message
+//	        hRule      a rule is drawn under the tab bar
+//	        hSummary   room for a summary strip
+//	        hTall      grow the list panel instead of leaving rows blank
+const (
+	bpMin     = 40
+	bpCompact = 60
+	bpWide    = 100
+	bpUltra   = 140
+
+	hMin     = 12
+	hRule    = 16
+	hSummary = 24
+	hTall    = 40
+)
+
+// tooSmall reports whether a terminal w x h cannot hold the layout. A zero height means the
+// size is not known yet, which is never too small.
+func tooSmall(w, h int) bool { return w < bpMin || (h > 0 && h < hMin) }
 
 // defaultWidth stands in until the first tea.WindowSizeMsg arrives.
 const defaultWidth = 80
@@ -41,7 +65,7 @@ func window(lines []string, cursor, h, top int) ([]string, int) {
 	return lines[top : top+h], top
 }
 
-func isStacked(w int) bool { return w < wideBreakpoint }
+func isStacked(w int) bool { return w < bpWide }
 
 // paneWidths is the list and detail content widths for a body w cells wide.
 func paneWidths(w int) (list, detail int) {
@@ -124,4 +148,66 @@ func (s *scroller) view(lines []string, h int) ([]string, int) {
 	n := rows(len(lines), h)
 	s.off = max(0, min(s.off, len(lines)-n))
 	return lines[s.off : s.off+n], len(lines) - n
+}
+
+// track is one slot in a split: a fixed length, a minimum that also shares leftover room, or
+// a pure share of the leftover room.
+type track struct {
+	kind   trackKind
+	n      int // length or minimum
+	weight int // share of the leftover room (flexible tracks)
+}
+
+type trackKind int
+
+const (
+	trackLength trackKind = iota
+	trackAtLeast
+	trackFill
+)
+
+func length(n int) track  { return track{kind: trackLength, n: max(n, 0)} }
+func atLeast(n int) track { return track{kind: trackAtLeast, n: max(n, 0), weight: 1} }
+func fill(weight int) track {
+	if weight <= 0 {
+		weight = 1
+	}
+	return track{kind: trackFill, weight: weight}
+}
+
+// split divides total cells among tracks, like a ratatui layout. Lengths and minimums are served
+// in order and clamped to what is left, then the rest is shared by weight among the flexible
+// tracks, remainders going to the earliest. The sizes never sum to more than total and are never
+// negative; with no flexible track the unclaimed room stays unassigned.
+func split(total int, tracks ...track) []int {
+	out := make([]int, len(tracks))
+	rem := max(total, 0)
+	weights := 0
+	for i, t := range tracks {
+		if t.kind != trackFill {
+			out[i] = min(t.n, rem)
+			rem -= out[i]
+		}
+		if t.kind != trackLength {
+			weights += t.weight
+		}
+	}
+	if weights == 0 || rem == 0 {
+		return out
+	}
+	given := 0
+	for i, t := range tracks {
+		if t.kind != trackLength {
+			share := rem * t.weight / weights
+			out[i] += share
+			given += share
+		}
+	}
+	for i := 0; given < rem && i < len(tracks); i++ {
+		if tracks[i].kind != trackLength {
+			out[i]++
+			given++
+		}
+	}
+	return out
 }

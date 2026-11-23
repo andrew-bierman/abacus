@@ -24,7 +24,7 @@ var update = flag.Bool("update", false, "rewrite golden files in testdata/golden
 
 var (
 	goldenWidths  = []int{40, 80, 120}
-	goldenHeights = []int{10, 30}
+	goldenHeights = []int{12, 30}
 )
 
 // named gives a Fake a product-like display name.
