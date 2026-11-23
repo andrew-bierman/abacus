@@ -43,3 +43,21 @@ blocker open. What bd 1.3.4 did:
 | child of a blocked parent, and its child | held (the hold is inherited down `parent-child` links) | listed |
 | child of an unblocked epic | ready | not listed |
 | closed task whose blocker is open | not listed (closed work is never ready) | **not listed** |
+
+## Dependency graph fixtures (third tracker)
+
+`graph-export.jsonl` is `bd --readonly export` from a third throwaway tracker (same tool, version
+and isolation as above, prefix `gr`, captured 2026-11-23). It was built with the real `bd`: a
+diamond (`Snapshot reader` closed, then `Parse export` in progress and `Sanitize text` blocking
+`Graph layout`, which blocks `Graph view` and `Graph docs`), a chain of eight steps (the first two
+closed, the third in progress), a hub that blocks twelve tasks, a disconnected pair, a lone task,
+a task with ANSI escape and bidi characters in its title, and a wide-rune title. The only thing
+changed after capture is nothing: the file is the export as written.
+
+`graph-export-edges.jsonl` is **not** a bd capture of those edges. bd 1.3.4 refuses to create
+them, so the file is `graph-export.jsonl` with three dependency records added by hand (the same
+record shape bd writes): a cycle (`Cycle alpha` also depends on `Cycle gamma`; `bd dep add` fails
+with "would create a cycle", with or without `--no-cycle-check`), a self-dependency (`bd dep add`
+fails with "cannot add self-dependency"), and a dependency on a task that is not in the tracker
+(`bd delete` removes the links of the task it deletes, so a dangling one cannot be made). `bd sql`
+is "not yet supported in embedded mode", so there was no other way to write them.
