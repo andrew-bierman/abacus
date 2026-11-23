@@ -333,6 +333,19 @@ func requestedID(a []string, dir string) string {
 	return ""
 }
 
+// Export reads every issue, dependencies included, as JSONL (`bd --readonly export`, stdout only).
+// The graph engine uses it when the tracker keeps no .beads/issues.jsonl, which is bd's default.
+func (m *Module) Export(ctx context.Context) ([]byte, error) {
+	out, exit, err := m.read(ctx, readExport)
+	if err != nil {
+		return nil, fmt.Errorf("bd export could not run: %s", core.Sanitize(err.Error()))
+	}
+	if exit != 0 {
+		return nil, fmt.Errorf("bd export exited %d", exit)
+	}
+	return out, nil
+}
+
 // ReadTask re-reads one issue (`bd --readonly show ID --json`) so a confirm screen can show
 // what is there now. The id must match the one asked for.
 func (m *Module) ReadTask(ctx context.Context, id string) (core.Task, error) {

@@ -192,4 +192,5 @@ linked_notices_entry() {
 
 notices_footer() {
   echo "abacus itself is GPL-3.0-or-later (\`LICENSE\`). lambe is GPL-3.0 and shipped as a separate program."
+  echo
 }

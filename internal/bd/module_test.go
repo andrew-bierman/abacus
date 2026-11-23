@@ -185,3 +185,20 @@ func TestReadTaskReadsOneIssueReadonlyAndChecksTheID(t *testing.T) {
 	}
 	var _ core.TaskReader = m
 }
+
+func TestExportReadsTheWholeTrackerReadOnly(t *testing.T) {
+	f := newFake()
+	f.resp["-C /trk --readonly export"] = "{\"id\":\"a\"}\n"
+	out, err := mod(f, Options{Dir: "/trk"}).Export(context.Background())
+	if err != nil || string(out) != "{\"id\":\"a\"}\n" {
+		t.Fatalf("%q %v", out, err)
+	}
+	f.exit = map[string]int{"-C /trk --readonly export": 1}
+	if _, err := mod(f, Options{Dir: "/trk"}).Export(context.Background()); err == nil || !strings.Contains(err.Error(), "exited 1") {
+		t.Fatalf("a failing export must be an error: %v", err)
+	}
+	f.errs = map[string]error{"-C /trk --readonly export": fmt.Errorf("boom\x1b[2J")}
+	if _, err := mod(f, Options{Dir: "/trk"}).Export(context.Background()); err == nil || strings.Contains(err.Error(), "\x1b") {
+		t.Fatalf("the error must be sanitized: %q", err)
+	}
+}

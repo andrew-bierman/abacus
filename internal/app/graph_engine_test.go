@@ -60,14 +60,28 @@ func TestTheLibraryEngineIsTheOnlyInsightsProviderAndReadsTheSharedTracker(t *te
 			t.Fatalf("%q: %+v", flag, r)
 		}
 	}
-	// An unreadable export is a plain failed read: Tasks shows insights as unavailable and
-	// Doctor keeps the reason.
-	entries := engineEntries(t, map[string]string{"ABACUS_BD_DIR": tracker})
-	p := core.ResolveProviders(entries)
-	if err := os.Remove(filepath.Join(tracker, ".beads", "issues.jsonl")); err != nil {
+}
+
+// A tracker with no export file and a bd that cannot export is a plain failed read: Tasks shows
+// the insights as unavailable and Doctor keeps the reason.
+func TestAnUnreadableTrackerIsAPlainFailedRead(t *testing.T) {
+	tracker := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tracker, ".beads"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if r := core.ReadInsights(context.Background(), p.Insights, ""); r.State != core.Degraded || r.Reason != core.InsightsUnavailable {
+	bin := filepath.Join(t.TempDir(), "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "bd"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+"/usr/bin:/bin")
+	old := core.SidecarDirs
+	core.SidecarDirs = func() []string { return nil }
+	t.Cleanup(func() { core.SidecarDirs = old })
+	entries := Build(cli.Options{}, env(t, map[string]string{"ABACUS_BD_DIR": tracker})).Detect(context.Background())
+	if r := core.ReadInsights(context.Background(), core.ResolveProviders(entries).Insights, ""); r.State != core.Degraded || r.Reason != core.InsightsUnavailable {
 		t.Fatalf("%+v", r.Header)
 	}
 }
@@ -78,5 +92,35 @@ func TestDemoRegistersNoGraphEngine(t *testing.T) {
 	got := ids(reg.Detect(context.Background()))
 	if got["graph"] || got["bv"] {
 		t.Fatalf("a demo registers only demo modules: %v", got)
+	}
+}
+
+// A default bd tracker keeps no .beads/issues.jsonl. The engine then reads the tracker through
+// bd's read-only export, so the insights work on it too (and an unreadable tracker is still a
+// plain failed read).
+func TestTheEngineReadsATrackerWithoutAnExportFileThroughBdExport(t *testing.T) {
+	tracker := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tracker, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bin := filepath.Join(t.TempDir(), "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	script := "#!/bin/sh\ncase \"$*\" in\n" +
+		"  *\"--readonly export\") printf '%s\\n%s\\n' '{\"id\":\"x-1\",\"title\":\"first\",\"status\":\"open\"}' " +
+		"'{\"id\":\"x-2\",\"title\":\"second\",\"status\":\"open\",\"dependencies\":[{\"depends_on_id\":\"x-1\",\"type\":\"blocks\"}]}' ;;\n" +
+		"  *version*) echo '{\"version\":\"1.3.4\",\"schema_version\":1}' ;;\n  *) exit 1 ;;\nesac\n"
+	if err := os.WriteFile(filepath.Join(bin, "bd"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+"/usr/bin:/bin")
+	old := core.SidecarDirs
+	core.SidecarDirs = func() []string { return nil }
+	t.Cleanup(func() { core.SidecarDirs = old })
+	entries := Build(cli.Options{}, env(t, map[string]string{"ABACUS_BD_DIR": tracker})).Detect(context.Background())
+	r := core.ReadInsights(context.Background(), core.ResolveProviders(entries).Insights, "")
+	if r.State != core.Connected || r.TotalActionable != 1 || r.TotalBlocked != 1 || len(r.TopPicks) == 0 || r.TopPicks[0].ID != "x-1" {
+		t.Fatalf("%+v", r)
 	}
 }

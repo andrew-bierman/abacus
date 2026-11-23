@@ -30,7 +30,7 @@ const maxExport = 64 << 20
 
 // errTooLarge is what an export over maxExport reports, instead of a parse error on the
 // truncated tail.
-var errTooLarge = errors.New("export larger than 64 MiB: the library engine will not read it (use the default engine)")
+var errTooLarge = errors.New("export larger than 64 MiB: it is too large to analyze")
 
 // capReader reads at most maxExport bytes and then fails with errTooLarge, so the reader can
 // tell a too-large export from a malformed one.
@@ -63,6 +63,7 @@ func tooLarge(err error) bool {
 // record is ignored. Each dependency is the tracker's `{issue_id, depends_on_id, type}`; the
 // `show --json` spellings `id` and `dependency_type` are accepted too.
 type rawIssue struct {
+	Kind         string          `json:"_type"` // bd export tags each record; only "issue" (or no tag) is an issue
 	ID           string          `json:"id"`
 	Title        string          `json:"title"`
 	Status       string          `json:"status"`
@@ -165,7 +166,7 @@ func ParseIssues(r io.Reader) ([]Issue, error) {
 	idx := map[string]int{}
 	var out []Issue
 	for _, ri := range raws {
-		if ri.ID == "" {
+		if ri.ID == "" || (ri.Kind != "" && ri.Kind != "issue") {
 			continue
 		}
 		i := ri.issue()
@@ -209,13 +210,17 @@ func (s StaticSource) Issues(context.Context) ([]Issue, error) { return []Issue(
 // export (or .beads directory) that is a symlink resolving outside the directory it was found
 // in is refused, so a planted link cannot point abacus at another project's file.
 //
-// This is the prototype's reader. The export is written by the tracker; a tracker that does not
-// keep one (or keeps it stale) is reported plainly, and Tasks then shows the insights as
-// unavailable rather than analysing out-of-date data. Freshness reports how far behind the
-// tracker's own data the export is.
+// The export is written by the tracker, and bd's default setup does not write one. When there is
+// no export file, Fallback (when set) reads the tracker itself, read-only, as the same JSONL (the
+// app passes bd's `export`); without one the missing export is reported plainly and Tasks shows
+// the insights as unavailable. A stale export file is still read and flagged: Freshness reports
+// how far behind the tracker's own data it is.
 type FileSource struct {
 	Ref *core.TrackerRef // when set, the tracker directory; "" means the working directory
 	Dir string           // used when Ref is nil
+	// Fallback reads the tracker as JSONL when no export file exists. It is never called when a
+	// file is found, and never writes.
+	Fallback func(context.Context) ([]byte, error)
 }
 
 // ExportFile is the tracker export FileSource reads, relative to a directory holding .beads.
@@ -286,7 +291,7 @@ func (s FileSource) Path() string {
 	return p
 }
 
-var errNoExport = errors.New("no " + filepath.ToSlash(ExportFile) + " export in this tracker, so the library engine has nothing to read (use the default engine)")
+var errNoExport = errors.New("no " + filepath.ToSlash(ExportFile) + " export in this tracker, so there is nothing to analyze")
 
 func (s FileSource) Issues(ctx context.Context) ([]Issue, error) {
 	if err := ctx.Err(); err != nil {
@@ -297,7 +302,14 @@ func (s FileSource) Issues(ctx context.Context) ([]Issue, error) {
 		return nil, err
 	}
 	if p == "" {
-		return nil, errNoExport
+		if s.Fallback == nil {
+			return nil, errNoExport
+		}
+		out, err := s.Fallback(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return ParseIssues(bytes.NewReader(out))
 	}
 	f, err := os.Open(p)
 	if err != nil {

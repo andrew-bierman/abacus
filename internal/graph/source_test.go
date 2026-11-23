@@ -2,6 +2,7 @@ package graph_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -149,9 +150,9 @@ func TestFileSourceReadsTheExportFromTheTrackerOrAParent(t *testing.T) {
 			t.Fatalf("%+v: %v %v", src, issues, err)
 		}
 	}
-	// No export: a plain reason that names the way back, never an empty tracker.
+	// No export: a plain reason, never an empty tracker.
 	none := graph.FileSource{Dir: t.TempDir()}
-	if _, err := none.Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "default engine") {
+	if _, err := none.Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "issues.jsonl") {
 		t.Fatalf("missing export: %v", err)
 	}
 	// A cancelled read does not touch the file.
@@ -196,7 +197,7 @@ func TestFileSourceDoesNotWalkAboveTheTrackerDir(t *testing.T) {
 	if p := src.Path(); p != "" {
 		t.Fatalf("Path walked above the tracker dir: %q", p)
 	}
-	if _, err := src.Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "default engine") {
+	if _, err := src.Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "issues.jsonl") {
 		t.Fatalf("a parent's export must not be read: %v", err)
 	}
 	// The same directory through Dir (no tracker set) still walks up.
@@ -372,4 +373,56 @@ func TestOversizedExportIsAClearError(t *testing.T) {
 	arr := strings.NewReader("[" + strings.Repeat(`{"id":"a","title":"`+strings.Repeat("x", 1<<20-32)+`"},`, 66) + `{"id":"z"}]`)
 	_, err = graph.ParseIssues(arr)
 	check("array stream", err)
+}
+
+// A default tracker keeps no .beads/issues.jsonl, so the source falls back to the tracker read it
+// is given (the bd export); a file, when there is one, wins and the fallback is not called.
+func TestFileSourceFallsBackToTheTrackerReadOnlyWithoutAnExportFile(t *testing.T) {
+	const jsonl = `{"id":"a","title":"A","status":"open"}` + "\n" + `{"id":"b","title":"B","status":"open","dependencies":[{"depends_on_id":"a","type":"blocks"}]}` + "\n"
+	calls := 0
+	src := func(dir string, fallback func(context.Context) ([]byte, error)) graph.FileSource {
+		return graph.FileSource{Ref: core.NewTrackerRef(dir), Fallback: fallback}
+	}
+	live := func(context.Context) ([]byte, error) { calls++; return []byte(jsonl), nil }
+
+	issues, err := src(t.TempDir(), live).Issues(context.Background())
+	if err != nil || len(issues) != 2 || issues[1].DependsOn[0].ID != "a" || calls != 1 {
+		t.Fatalf("%+v %v calls=%d", issues, err, calls)
+	}
+	if _, ok := src(t.TempDir(), live).Freshness(); ok {
+		t.Error("a live read has no export file to be stale")
+	}
+
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".beads", "issues.jsonl"), []byte(`{"id":"only","title":"file","status":"open"}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	calls = 0
+	if issues, err := src(dir, live).Issues(context.Background()); err != nil || len(issues) != 1 || issues[0].ID != "only" || calls != 0 {
+		t.Fatalf("the export file wins: %+v %v calls=%d", issues, err, calls)
+	}
+
+	failing := func(context.Context) ([]byte, error) { return nil, errors.New("bd export exited 1") }
+	if _, err := src(t.TempDir(), failing).Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "exited 1") {
+		t.Fatalf("a failing fallback is an error: %v", err)
+	}
+	if _, err := src(t.TempDir(), nil).Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "issues.jsonl") {
+		t.Fatalf("no file and no fallback is the plain no-export error: %v", err)
+	}
+	garbled := func(context.Context) ([]byte, error) { return []byte("not json"), nil }
+	if _, err := src(t.TempDir(), garbled).Issues(context.Background()); err == nil {
+		t.Fatal("an unreadable fallback is an error, never a partial graph")
+	}
+}
+
+func TestParseIssuesSkipsRecordsThatAreNotIssues(t *testing.T) {
+	got := parse(t, `{"_type":"issue","id":"a","title":"A","status":"open"}
+{"_type":"memory","id":"m-1","title":"a note","status":"open"}
+`)
+	if len(got) != 1 || got[0].ID != "a" {
+		t.Fatalf("%+v", got)
+	}
 }
