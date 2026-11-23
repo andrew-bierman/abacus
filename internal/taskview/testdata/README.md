@@ -77,3 +77,17 @@ test). What bd 1.3.4 did:
 | Ids | children of a parent get dotted ids (`tr-jbt.1.2` is the second child of `tr-jbt.1`); the id does not decide the tree, the link does |
 | Order | line order is map order, not tree order: a child can precede its parent |
 | Redaction | `created_by` was rewritten from the local user name to `ada` (the same name the other fixtures use); nothing else was edited |
+
+## History (fourth tracker, for U10)
+
+`history-events.json` and `history-commits.json` come from a fourth throwaway tracker (same tool
+(`bd version 1.3.4 (7ef2fd05e: main@7ef2fd05eb0c)`), isolation and invented names, prefix `hs`, captured 2026-11-23). One task
+went through: create, status to in progress, title and priority, label, assignee, a blocking
+dependency, a comment, close with a reason, reopen. Commands, from inside that tracker:
+
+| File | Command | Notes |
+|---|---|---|
+| `history-events.json` | `bd --readonly history ID --events --json --limit=50` | What the history view reads. A JSON array, newest first. Fields: `id`, `issue_id`, `event_type`, `actor`, `old_value`, `new_value`, `created_at`, and `comment` on label events. For `updated` and `status_changed`, `new_value` is a JSON string that holds an object of the changed fields and `old_value` the whole old issue; `closed` carries the reason in `new_value`; `dependency_added` carries a sentence; `label_added` has the label in `comment` and no `new_value`. **A comment added with `bd comments add` writes no event.** An unknown id prints `null` and exits 0; `--limit=0` means all. |
+| `history-commits.json` | `bd --readonly history ID --json --limit=3` | The commit-snapshot form: `CommitHash`, `Committer`, `CommitDate` and the whole `Issue` as it was at that commit. Several commits can carry the same snapshot (one write made two). Captured for the record; the view reads the event log, which says what changed and who did it. |
+
+The actor was rewritten from the local user name to `ada`; nothing else was edited.
