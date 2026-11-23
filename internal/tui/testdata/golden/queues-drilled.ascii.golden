@@ -54,7 +54,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 │ machine    operators-mac                                                     │
 │ actor      lambe@operators-mac                                               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ move · esc back · / filter …
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
 === 80x30 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · esc back · / filter …
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
 === 120x12 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
 │   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │                                             │
@@ -98,9 +98,9 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 │ Needs attention 1                                                    │ │ machine    operators-mac                    │
 │   T-2  gate_failed  gh:pr rejected: merge conflict                   │ │ actor      lambe@operators-mac              │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · o open session
 === 120x30 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
@@ -129,4 +129,4 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · o open session

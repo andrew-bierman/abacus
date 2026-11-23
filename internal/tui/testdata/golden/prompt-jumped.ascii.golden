@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Board ────────────────────────────╮
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1) ·   │
+│ ops                                  │
+│                                      │
+│ Recent threads                       │
+│ ▸ #15  dev/web  ada  checkout times… │
+│   ↕ +7 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open │
+│ tasks                                │
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1) ·   │
+│ ops                                  │
+│                                      │
+│ Recent threads                       │
+│ ▸ #15  dev/web  ada  checkout times… │
+│   #2   dev      ada  deploys are gr… │
+│                                      │
+│ Tasks                                │
+│   #16  claimed  codex via…  fix CVE… │
+│   #6   ready    -           review … │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                                   │
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops                                       │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸ #15  dev/web  ada  checkout times out for carts over 40 items, started af… │
+│   ↕ +5 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                                   │
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops                                       │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸ #15  dev/web  ada  checkout times out for carts over 40 items, started af… │
+│   #2   dev      ada  deploys are green again                                 │
+│                                                                              │
+│ Tasks                                                                        │
+│   #16  claimed  codex via ada  fix CVE-123 in acme/web                       │
+│   #6   ready    -              review the fix                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
+│                                                                      │ │ checkout times out for carts over 40 items, │
+│ Channels                                                             │ │ started after the 14:02 deploy              │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ 2 replies, latest:                          │
+│                                                                      │ │ #17 by ada/claude Nov 22 20:14              │
+│ Recent threads                                                       │ │ rolled back to d4e5f6; watching the error   │
+│ ▸ #15  dev/web  ada  checkout times out for carts over 40 items, st… │ │ rate                                        │
+│   ↕ +5 more                                                          │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
+│                                                                      │ │ checkout times out for carts over 40 items, │
+│ Channels                                                             │ │ started after the 14:02 deploy              │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ 2 replies, latest:                          │
+│                                                                      │ │ #17 by ada/claude Nov 22 20:14              │
+│ Recent threads                                                       │ │ rolled back to d4e5f6; watching the error   │
+│ ▸ #15  dev/web  ada  checkout times out for carts over 40 items, st… │ │ rate                                        │
+│   #2   dev      ada  deploys are green again                         │ │                                             │
+│                                                                      │ │                                             │
+│ Tasks                                                                │ │                                             │
+│   #16  claimed  codex via ada  fix CVE-123 in acme/web               │ │                                             │
+│   #6   ready    -              review the fix                        │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks               │
+│                                                          │
+│ Channels                                                 │
+│ dev/web (3) · work (3) · dev (1) · ops                   │
+│                                                          │
+│ Recent threads                                           │
+│ ▸ #15  dev/web  ada  checkout times out for carts over … │
+│   #2   dev      ada  deploys are green again             │
+│                                                          │
+│ Tasks                                                    │
+│   #16  claimed  codex via ada  fix CVE-123 in acme/web   │
+│   #6   ready    -              review the fix            │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks               │ │ #15 in dev/web by ada Nov 22 20:12  │
+│                                                          │ │ checkout times out for carts over   │
+│ Channels                                                 │ │ 40 items, started after the 14:02   │
+│ dev/web (3) · work (3) · dev (1) · ops                   │ │ deploy                              │
+│                                                          │ │ 2 replies, latest:                  │
+│ Recent threads                                           │ │ #17 by ada/claude Nov 22 20:14      │
+│ ▸ #15  dev/web  ada  checkout times out for carts over … │ │ rolled back to d4e5f6; watching the │
+│   #2   dev      ada  deploys are green again             │ │ error rate                          │
+│                                                          │ │                                     │
+│ Tasks                                                    │ │                                     │
+│   #16  claimed  codex via ada  fix CVE-123 in acme/web   │ │                                     │
+│   #6   ready    -              review the fix            │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh

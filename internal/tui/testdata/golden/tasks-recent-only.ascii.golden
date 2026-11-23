@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view …
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                                                 14 tasks
 [List] Kanban  Graph  Insights                                                                                   3 tasks
 [all] / to filter                                                                              3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
@@ -98,9 +98,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
+? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view · enter details · f quick filter · g graph …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                                                 14 tasks
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                                                   3 tasks
 [all] / to filter                                                                              3 of 3 · sort: priority ↑
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
+? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view · enter details · f quick filter · g graph …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,9 +154,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort …
+? help · q quit · tab/→ next tab · : command · / filter …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                             14 tasks
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                               3 tasks
 [all] / to filter                                                          3 of 3 · sort: priority ↑
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │                                     │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │                                     │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter …
+? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view · enter details …

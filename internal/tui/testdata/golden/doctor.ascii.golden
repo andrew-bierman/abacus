@@ -54,7 +54,7 @@ running doctor…
 │ Queues  demo data: fixtures, no live daemon                                  │
 │ Board   4 channels, 2 recent threads, 2 open tasks                           │
   ↕ +29 more
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 80x30 ===
 abacus   Board  Tasks  Leases  Queues  [Doctor]
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ running doctor…
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ beads-lease ────────────────────────────────────────────────────────────────╮
   ↕ +12 more
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 120x12 ===
-abacus   Board  Tasks  Leases  Queues  [Doctor]
+abacus   Board  Tasks  Leases  Queues  [Doctor]                                               fleet · 14 tasks · 3 ready
 running doctor…
 
 (Needs attention) 2 to set up, see below
@@ -98,9 +98,9 @@ running doctor…
 │ Leases  2 held, 1 stale, 1 free                         │ │ board        (found) 0.54.0                              │
 │ Queues  demo data: fixtures, no live daemon             │ │ lambe        (demo)                                      │
   ↕ +24 more
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 120x30 ===
-abacus   Board  Tasks  Leases  Queues  [Doctor]
+abacus   Board  Tasks  Leases  Queues  [Doctor]                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 running doctor…
 
@@ -129,4 +129,4 @@ running doctor…
 │     fix: upgrade beads-lease                                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
   ↕ +7 more
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh

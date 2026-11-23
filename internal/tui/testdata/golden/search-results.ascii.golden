@@ -87,7 +87,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search task▏                                                                                                  6 hits │
 │ Tasks (2)                                                                                                            │
@@ -100,7 +100,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search task▏                                                                                                  6 hits │
@@ -156,7 +156,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group …
 === 100x32 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
 │ search task▏                                                                              6 hits │

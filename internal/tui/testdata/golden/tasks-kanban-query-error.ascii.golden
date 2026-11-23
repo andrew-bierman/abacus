@@ -87,7 +87,7 @@ group: status · /lease foo:x▏                        unknown field "foo" (col
 ╰──────────────────────────────────────────────────────────────────────────────╯
 enter keep · esc clear · q quit · ? help · tab/→ next tab
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
  List [Kanban] Graph  Insights                                                                        14 tasks · 3 ready
 group: status · /lease foo:x▏                                                                unknown field "foo" (col 7)
 ╭─ ▸ Open 0 ─────────────────╮╭─ In progress 0 ────────────╮╭─ Blocked 0 ────────────────╮╭─ Deferred 0 ───────────────╮
@@ -100,7 +100,7 @@ group: status · /lease foo:x▏                                                
 ╰────────────────────────────╯╰────────────────────────────╯╰────────────────────────────╯╰────────────────────────────╯
 enter keep · esc clear · q quit · ? help · tab/→ next tab
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  List [Kanban] Graph  Insights                                                                        14 tasks · 3 ready
 group: status · /lease foo:x▏                                                                unknown field "foo" (col 7)
@@ -156,7 +156,7 @@ group: status · /lease foo:x▏    unknown field "foo" (col 7)
 ╰──────────────────────────────────────────────────────────╯
 enter keep · esc clear · q quit · ? help · tab/→ next tab
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List [Kanban] Graph  Insights                                                    14 tasks · 3 ready
 group: status · /lease foo:x▏                                            unknown field "foo" (col 7)

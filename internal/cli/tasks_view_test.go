@@ -233,3 +233,21 @@ func TestTasksBoardReadFailureExitsNonZeroWithNoJSON(t *testing.T) {
 		}
 	}
 }
+
+// `tasks show --json` is core.ReportJSON of the task's detail report: the TUI's JSON panel prints
+// the same function over the same report, so the two cannot drift.
+func TestTasksShowJSONIsTheSharedReportJSON(t *testing.T) {
+	_, out, _ := runTasks(t, snap(), "tasks", "show", "tk-0at.2", "--json")
+	s, err := snap()[0].(snapMod).Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep, ok := taskview.Build(s, time.Date(2026, 11, 23, 4, 20, 0, 0, time.UTC)).Detail("tk-0at.2")
+	if !ok {
+		t.Fatal("no detail")
+	}
+	want, err := core.ReportJSON(rep)
+	if err != nil || out != string(want) || !strings.Contains(out, `"schema_version": 1`) {
+		t.Errorf("CLI JSON differs from core.ReportJSON:\n%s\n--- want\n%s", out, want)
+	}
+}

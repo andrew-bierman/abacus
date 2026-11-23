@@ -8,6 +8,15 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Command prompt and k9s-style layer (U6 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`):
+  `:` opens a prompt in the footer row with aliases (`:tasks :board :leases :queues :doctor`,
+  `:list :tree :kanban :graph :insights`, `:search TEXT`, `:filter QUERY`, `:ctx`, `:help`, `:q`),
+  tab completion (commands, then query fields and values), history, and a closest-command
+  suggestion for typos. It only navigates, filters and describes; it can never write or run a tool.
+  `d` describes the selected task and `y` shows it as the typed JSON `tasks show --json` prints
+  (read-only panels). From 100 columns the tab bar shows the tracker, task counts and board target
+  on its right; the cursor row fill is brighter; `?` lists the prompt commands and scrolls. The
+  command table, parse, completion and closest match are pure code in `internal/core/commands.go`.
 - Dependency graph view in Tasks (U5 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): `g` on
   a task (or `v`) shows what blocks it and what it blocks, as boxes with connectors from 100 columns
   and an indented outline below; `g` again shows the whole graph in topological layers with the

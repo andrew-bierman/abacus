@@ -1,5 +1,5 @@
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                              gr · 37 tasks · 5 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                                    37 tasks · 5 ready
 whole graph · 36 linked · 1 without links · 7 groups
@@ -30,7 +30,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │ ▸ ○ gr-ko8 Graph layout                                 ⊘2→2 ^ │ │                               │
 │   ↕ +20 more                                                   │ │                               │
 ╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
-? help · q quit · tab/→ next tab · g nearby · enter open · ↑/↓ move · h/l layer · v view · esc back…
+? help · q quit · tab/→ next tab · : command · g nearby · enter open · ↑/↓ move · h/l layer · v vie…
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │ ▸ ○ gr-ko8 Graph layout                                               ⊘2→2 ^ │
 │   ↕ +31 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · g nearby · enter open · ↑/↓ move · h/l layer…
+? help · q quit · tab/→ next tab · : command · g nearby · enter open · ↑/↓ move…
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -80,4 +80,4 @@ whole graph · 36 linked · 1 without links · 7 groups
 │ ▸ ○ gr-ko8 Graph layout                           ⊘2→2 ^ │
 │   ↕ +31 more                                             │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · g nearby · enter open …
+? help · q quit · tab/→ next tab · : command · g nearby …

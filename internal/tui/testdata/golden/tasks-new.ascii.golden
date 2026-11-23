@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 enter next/review · esc back · q quit · ? help · tab/→ next tab
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ New task ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Title         hi▏                                                                                                  │
 │   Description                                                                                                        │
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 enter next/review · esc back · q quit · ? help · tab/→ next tab
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ New task ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Title         hi▏                                                                                                  │
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 enter next/review · esc back · q quit · ? help …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ New task ─────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Title         hi▏                                                                              │

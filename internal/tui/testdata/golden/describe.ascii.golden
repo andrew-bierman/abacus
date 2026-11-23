@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Task ac-12 ───────────────────────╮
+│ ac-12  bug                           │
+│ wire the lease heartbeat             │
+│ ◐ in progress  P0  ada               │
+│ created 9d ago · updated 3d ago      │
+│ labels  core, leases                 │
+│ parent  ○ ac-01 Fleet workspace      │
+│                                      │
+│   ↕ +31 more                         │
+╰──────────────────────────────────────╯
+esc close · ↑/↓ scroll
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Task ac-12 ───────────────────────╮
+│ ac-12  bug                           │
+│ wire the lease heartbeat             │
+│ ◐ in progress  P0  ada               │
+│ created 9d ago · updated 3d ago      │
+│ labels  core, leases                 │
+│ parent  ○ ac-01 Fleet workspace      │
+│                                      │
+│ Blocked by (0)                       │
+│   none                               │
+│                                      │
+│ Blocks (1)                           │
+│   ○ ac-09 queue attention digest     │
+│                                      │
+│ The heartbeat misses a beat when a   │
+│ session resumes, so a live lease     │
+│ looks stale for up to a minute.      │
+│                                      │
+│ Plan                                 │
+│                                      │
+│ • renew on resume, not on the next   │
+│   tick                               │
+│ • show the miss in Doctor            │
+│                                      │
+│   renew --lease ac-zoj --now         │
+│   ↕ +14 more                         │
+╰──────────────────────────────────────╯
+esc close · ↑/↓ scroll
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────╮
+│ ac-12  bug                                                                   │
+│ wire the lease heartbeat                                                     │
+│ ◐ in progress  P0  ada                                                       │
+│ created 9d ago · updated 3d ago                                              │
+│ labels  core, leases                                                         │
+│ parent  ○ ac-01 Fleet workspace                                              │
+│                                                                              │
+│   ↕ +26 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · ↑/↓ scroll
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────╮
+│ ac-12  bug                                                                   │
+│ wire the lease heartbeat                                                     │
+│ ◐ in progress  P0  ada                                                       │
+│ created 9d ago · updated 3d ago                                              │
+│ labels  core, leases                                                         │
+│ parent  ○ ac-01 Fleet workspace                                              │
+│                                                                              │
+│ Blocked by (0)                                                               │
+│   none                                                                       │
+│                                                                              │
+│ Blocks (1)                                                                   │
+│   ○ ac-09 queue attention digest                                             │
+│                                                                              │
+│ The heartbeat misses a beat when a session resumes, so a live lease looks    │
+│ stale for up to a minute.                                                    │
+│                                                                              │
+│ Plan                                                                         │
+│                                                                              │
+│ • renew on resume, not on the next tick                                      │
+│ • show the miss in Doctor                                                    │
+│                                                                              │
+│   renew --lease ac-zoj --now                                                 │
+│                                                                              │
+│ Uses renew with the --now flag.                                              │
+│   ↕ +9 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · ↑/↓ scroll
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ac-12  bug                                                                                                           │
+│ wire the lease heartbeat                                                                                             │
+│ ◐ in progress  P0  ada                                                                                               │
+│ created 9d ago · updated 3d ago                                                                                      │
+│ labels  core, leases                                                                                                 │
+│ parent  ○ ac-01 Fleet workspace                                                                                      │
+│                                                                                                                      │
+│   ↕ +25 more                                                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · ↑/↓ scroll
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ac-12  bug                                                                                                           │
+│ wire the lease heartbeat                                                                                             │
+│ ◐ in progress  P0  ada                                                                                               │
+│ created 9d ago · updated 3d ago                                                                                      │
+│ labels  core, leases                                                                                                 │
+│ parent  ○ ac-01 Fleet workspace                                                                                      │
+│                                                                                                                      │
+│ Blocked by (0)                                                                                                       │
+│   none                                                                                                               │
+│                                                                                                                      │
+│ Blocks (1)                                                                                                           │
+│   ○ ac-09 queue attention digest                                                                                     │
+│                                                                                                                      │
+│ The heartbeat misses a beat when a session resumes, so a live lease looks stale for up to a minute.                  │
+│                                                                                                                      │
+│ Plan                                                                                                                 │
+│                                                                                                                      │
+│ • renew on resume, not on the next tick                                                                              │
+│ • show the miss in Doctor                                                                                            │
+│                                                                                                                      │
+│   renew --lease ac-zoj --now                                                                                         │
+│                                                                                                                      │
+│ Uses renew with the --now flag.                                                                                      │
+│                                                                                                                      │
+│   ↕ +8 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · ↑/↓ scroll
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Task ac-12 ───────────────────────────────────────────╮
+│ ac-12  bug                                               │
+│ wire the lease heartbeat                                 │
+│ ◐ in progress  P0  ada                                   │
+│ created 9d ago · updated 3d ago                          │
+│ labels  core, leases                                     │
+│ parent  ○ ac-01 Fleet workspace                          │
+│                                                          │
+│ Blocked by (0)                                           │
+│   none                                                   │
+│                                                          │
+│ Blocks (1)                                               │
+│   ○ ac-09 queue attention digest                         │
+│                                                          │
+│ The heartbeat misses a beat when a session resumes, so a │
+│ live lease looks stale for up to a minute.               │
+│                                                          │
+│ Plan                                                     │
+│                                                          │
+│   ↕ +17 more                                             │
+╰──────────────────────────────────────────────────────────╯
+esc close · ↑/↓ scroll
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────────────────────────╮
+│ ac-12  bug                                                                                       │
+│ wire the lease heartbeat                                                                         │
+│ ◐ in progress  P0  ada                                                                           │
+│ created 9d ago · updated 3d ago                                                                  │
+│ labels  core, leases                                                                             │
+│ parent  ○ ac-01 Fleet workspace                                                                  │
+│                                                                                                  │
+│ Blocked by (0)                                                                                   │
+│   none                                                                                           │
+│                                                                                                  │
+│ Blocks (1)                                                                                       │
+│   ○ ac-09 queue attention digest                                                                 │
+│                                                                                                  │
+│ The heartbeat misses a beat when a session resumes, so a live lease looks stale for up to a      │
+│ minute.                                                                                          │
+│                                                                                                  │
+│ Plan                                                                                             │
+│                                                                                                  │
+│ • renew on resume, not on the next tick                                                          │
+│ • show the miss in Doctor                                                                        │
+│                                                                                                  │
+│   renew --lease ac-zoj --now                                                                     │
+│                                                                                                  │
+│ Uses renew with the --now flag.                                                                  │
+│                                                                                                  │
+│ Acceptance                                                                                       │
+│   ↕ +7 more                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · ↑/↓ scroll

@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ▸ h04       └─▾ plain xxxxxxxxxxxxxxxxxxxxxxxxx… ▱▱▱▱ ○  P1     task 22d -   │
 │   ↕ +11 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                            hostile · 15 tasks · 15 ready
 [List] Kanban  Graph  Insights                                                                       15 tasks · 15 ready
 [open] / to filter                                                                           15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────────────────╮ ╭─ h04 ───────────────────────────────────────╮
@@ -98,9 +98,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ▸ h04       └─▾ plain xxxxxxxxxxxxxxxxx… ▱▱▱▱ ○  P1     task 22d -   │ │ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │
 │   ↕ +11 more                                                         │ │   ↕ +41 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                            hostile · 15 tasks · 15 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                                       15 tasks · 15 ready
 [open] / to filter                                                                           15 of 15 · sort: priority ↑
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │         字漢字漢字漢字漢字漢字漢字漢字漢字  │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +24 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,9 +154,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold …
+? help · q quit · tab/→ next tab · : command · / filter …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                        hostile · 15 tasks · 15 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                   15 tasks · 15 ready
 [open] / to filter                                                       15 of 15 · sort: priority ↑
@@ -187,9 +187,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │         漢字漢字漢字漢字漢字漢字漢  │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +30 more                        │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view …
 === 140x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                                                hostile · 15 tasks · 15 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                                                           15 tasks · 15 ready
 [open] / to filter                                                                                               15 of 15 · sort: priority ↑
@@ -220,4 +220,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                    │ │                                                     │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                    │ │   ↕ +17 more                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all · f quick filter …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …

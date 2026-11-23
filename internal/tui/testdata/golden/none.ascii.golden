@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · o full view
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · o full view
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -98,7 +98,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · o full view
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · o full view
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · o full view

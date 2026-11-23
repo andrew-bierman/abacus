@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
+│ ▸ (held)   ac-zoj  glm-schedul…  12m │
+│   (held)   ac-00h  codex-macbo…   3m │
+│   (stale)  ac-1k2  claude-mac        │
+│   (free)   ac-9x1                    │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+:leases▏                       esc close
+=== 40x30 ===
+ Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
+│ ▸ (held)   ac-zoj  glm-schedul…  12m │
+│   (held)   ac-00h  codex-macbo…   3m │
+│   (stale)  ac-1k2  claude-mac        │
+│   (free)   ac-9x1                    │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+:leases▏                       esc close
+=== 80x12 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
+│ ▸ (held)   ac-zoj  glm-scheduler-01                                      12m │
+│   (held)   ac-00h  codex-macbookpro                                       3m │
+│   (stale)  ac-1k2  claude-mac                                                │
+│   (free)   ac-9x1                                                            │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+:leases▏                                     tab complete · enter go · esc close
+=== 80x30 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
+│ ▸ (held)   ac-zoj  glm-scheduler-01                                      12m │
+│   (held)   ac-00h  codex-macbookpro                                       3m │
+│   (stale)  ac-1k2  claude-mac                                                │
+│   (free)   ac-9x1                                                            │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+:leases▏                                     tab complete · enter go · esc close
+=== 120x12 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
+│ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
+│   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
+│   (stale)  ac-1k2  claude-mac                                        │ │ holder      glm-scheduler-01                │
+│   (free)   ac-9x1                                                    │ │ expires     12m                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+:leases▏                                                                             tab complete · enter go · esc close
+=== 120x30 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
+│ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
+│   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
+│   (stale)  ac-1k2  claude-mac                                        │ │ holder      glm-scheduler-01                │
+│   (free)   ac-9x1                                                    │ │ expires     12m                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+:leases▏                                                                             tab complete · enter go · esc close
+=== 60x24 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────╮
+│ ▸ (held)   ac-zoj  glm-scheduler-01                  12m │
+│   (held)   ac-00h  codex-macbookpro                   3m │
+│   (stale)  ac-1k2  claude-mac                            │
+│   (free)   ac-9x1                                        │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+:leases▏                 tab complete · enter go · esc close
+=== 100x32 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────╮ ╭─ Lease ─────────────────────────────╮
+│ ▸ (held)   ac-zoj  glm-scheduler-01                  12m │ │ ac-zoj (held)                       │
+│   (held)   ac-00h  codex-macbookpro                   3m │ │                                     │
+│   (stale)  ac-1k2  claude-mac                            │ │ holder      glm-scheduler-01        │
+│   (free)   ac-9x1                                        │ │ expires     12m                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+:leases▏                                                         tab complete · enter go · esc close

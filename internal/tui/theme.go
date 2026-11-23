@@ -38,7 +38,9 @@ var (
 	// colOnBadge is the text color on a filled badge: light text on the darker light-mode
 	// fills, dark text on the brighter dark-mode fills.
 	colOnBadge = pal("#ffffff", "231", "15", "#0d1117", "233", "0")
-	colSelBG   = pal("#ddf4ff", "153", "7", "#1f2a37", "236", "0")
+	// colSelBG is the cursor row's fill: bright enough to find at a glance (the 16-color dark entry is
+	// blue, because black is the terminal's own background there).
+	colSelBG = pal("#90c4f0", "153", "7", "#264f78", "24", "4")
 )
 
 // colTint are the colors people and machines are tinted with. None is a semantic color (red, amber,

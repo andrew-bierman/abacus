@@ -134,19 +134,7 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		if k.String() == "V" {
 			d = n - 1
 		}
-		prev := l.cur
-		l.cur = taskViewID((int(l.cur) + d) % n)
-		s.drilled, l.detailFocus, s.kb.detail = false, false, false
-		s.carrySelection(prev, l.cur)
-		if l.cur == viewGraph { // the graph is about the task selected now, not the one it last showed
-			if prev == viewKanban && s.kb.sel != "" { // ...and on the board that is the selected card
-				s.openGraphOn(s.kb.sel)
-			} else {
-				s.openGraph()
-			}
-			return s.graphRefresh(), true
-		}
-		return nil, true
+		return s.showView(taskViewID((int(l.cur) + d) % n)), true
 	}
 	if l.cur == viewKanban {
 		if cmd, ok := s.kanbanKey(k); ok {
@@ -228,6 +216,26 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		return nil, false
 	}
 	return nil, true
+}
+
+// showView switches the Tasks tab to a view: the one entry both `v` and the `:` prompt use, so a view
+// is initialized the same way however it is reached (the drill closes, the board's selected card
+// carries to the list, the graph opens on the selected task or card).
+func (s *tasksSection) showView(next taskViewID) tea.Cmd {
+	l := &s.list
+	prev := l.cur
+	l.cur = next
+	s.drilled, l.detailFocus, s.kb.detail = false, false, false
+	s.carrySelection(prev, next)
+	if next == viewGraph && prev != viewGraph { // the graph is about the task selected now, not the one it last showed
+		if prev == viewKanban && s.kb.sel != "" { // ...and on the board that is the selected card
+			s.openGraphOn(s.kb.sel)
+		} else {
+			s.openGraph()
+		}
+		return s.graphRefresh()
+	}
+	return nil
 }
 
 // typeKey edits the query: every change filters live, enter keeps the query, esc clears it.

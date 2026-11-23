@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   ac-33   help overlay per view                       ◐  P3     task 1d  mei │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] /label:ui !status:blocked                                                              3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
@@ -98,9 +98,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   ac-33   help overlay per view               ◐  P3     task 1d  mei │ │ created 30d ago · updated 10d ago           │
 │                                                                      │ │   ↕ +25 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · esc back · T tree/flat …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · esc back …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] /label:ui !status:blocked                                                              3 of 14 · sort: priority ↑
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │ Goal                                        │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +8 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · esc back · T tree/flat …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · esc back …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,9 +154,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold …
+? help · q quit · tab/→ next tab · : command · / filter …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                    14 tasks · 3 ready
 [open] /label:ui !status:blocked                                          3 of 14 · sort: priority ↑
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │ One place to see and steer the      │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +8 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view …

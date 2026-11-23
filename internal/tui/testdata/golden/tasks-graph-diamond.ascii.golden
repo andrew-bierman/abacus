@@ -1,5 +1,5 @@
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                              gr · 37 tasks · 5 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                                    37 tasks · 5 ready
 focus gr-ko8 · depth 2 · blocking links
@@ -30,7 +30,7 @@ focus gr-ko8 · depth 2 · blocking links
 │                                                                │ │                               │
 │                                                                │ │                               │
 ╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
-? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth · ↑/↓ move …
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ focus gr-ko8 · depth 2 · blocking links
 │ gr-bac → gr-ko8 → gr-67z → gr-au4                                            │
 │   ↕ +2 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -80,4 +80,4 @@ focus gr-ko8 · depth 2 · blocking links
 │ gr-bac → gr-ko8 → gr-67z → gr-au4                        │
 │   ↕ +2 more                                              │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · g whole · enter open …
+? help · q quit · tab/→ next tab · : command · g whole …

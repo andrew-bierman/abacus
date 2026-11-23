@@ -38,7 +38,9 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `ctrl+k` | global search from any tab (see "Global search"); not offered while a form, the confirm screen or a filter is open |
 | `T`, `h` `l`, `+` `-` | Tasks list: switch between the tree of epics and children and the flat list; in the tree, `h` folds an expanded parent (on a leaf or a folded task it goes up to the parent), `l` unfolds a folded one (on an expanded one it goes to the first child), `+` expands all, `-` folds all |
 | `h` `l`, `H` `L`, `Z`, `s` | Tasks Kanban: previous, next column (the arrow keys stay tab navigation); move the card one column left or right (a confirmed write); show or hide the closed column; next grouping (status, priority, type); `g` opens the graph on the card, `v` and `V` change view |
-| `?` | full help overlay; `?` or `esc` closes it |
+| `:` | the command prompt (see "Command prompt"); not offered while a form, the confirm screen or a filter is open |
+| `d` `y` | Tasks (List and Graph): describe the selected task in a read-only panel; show it as typed JSON (the same report `abacus tasks show ID --json` prints). `esc` closes. `y` only means apply on the confirm screen, which keeps every key |
+| `?` | full help overlay (keys, then the prompt commands; `j` `k` scroll it); `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
 While a form, the confirm screen or the filter is open, every key (including `q`, digits and `?`)
@@ -227,6 +229,31 @@ session keeps none). The queries are stored as plain text: `abacus config set se
 keeps none. If the history file is busy the jump still happens and the footer says it was not saved. `abacus search "QUERY" [--domain D] [--limit N] [--json]` prints the same hits
 (exit 0 with an answer, 1 when no domain could be searched, 2 for a bad invocation or query; nothing
 on stdout on a failure under `--json`).
+
+## Command prompt
+
+`:` opens a one-line prompt in the footer row (k9s style). It only navigates, filters and describes:
+it never writes and never runs a tool, and every line goes through one command table in
+`internal/core/commands.go` (typed `core.Command`, parse, completion and closest match are pure
+functions; a test proves no command can reach a writer). Unknown input shows
+`unknown command: x (try :help)` and the closest command, and the prompt stays open to fix it.
+
+| Command | Does |
+| --- | --- |
+| `:tasks` `:board` `:leases` `:queues` `:doctor` | go to a tab |
+| `:list` `:tree` `:kanban` `:graph` `:insights` | Tasks views (`:tree` and `:list` are the two modes of the List; `:kanban` says "not available yet" until the Kanban view exists) |
+| `:search TEXT` | open global search with TEXT (no text: an empty search) |
+| `:filter QUERY` | apply the Tasks list filter, same grammar as `/`; no query clears it |
+| `:ctx` | say which tracker and board this is (switching trackers is not available yet) |
+| `:help`, `:q` | help overlay, quit |
+
+`tab` completes the command, then field names and values inside `:filter` and `:search`; repeated
+`tab` cycles, `shift+tab` goes back. `up` `down` (or `ctrl+p` `ctrl+n`) recall the commands run this
+session (the last 100; none is saved to disk). `backspace` on an empty line and `esc` close it,
+`ctrl+k` hands over to search. Search and the prompt never stack: inside search `:` is text and
+`ctrl+p` `ctrl+n` recall searches. From 100 columns the tab-bar row shows the context on its right
+(tracker name, count of tasks and ready, board target), dropping the board first and cutting a long
+tracker name before the count; the cursor row is a bright full-row fill, with `▸` for `NO_COLOR`.
 
 ## Board
 

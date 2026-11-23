@@ -87,7 +87,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                                               6 hits │
 │   ac-12  wire the lease heartbeat                                                          in progress · P0 · ada    │
@@ -100,7 +100,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                                               6 hits │
@@ -156,7 +156,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group …
 === 100x32 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                           6 hits │

@@ -6,11 +6,11 @@ Keys
   shift+tab/←   prev tab
   1-9           jump to tab
   ctrl+k        search everything
+  :             command
   ?             help
   q             quit
-
-  ↑/↓           move
-? help · q quit · tab/→ next tab …
+  ↕ +15 more
+?/esc close · ↑/↓ scroll
 === 40x30 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────
@@ -19,6 +19,7 @@ Keys
 │ shift+tab/←   prev tab               │
 │ 1-9           jump to tab            │
 │ ctrl+k        search everything      │
+│ :             command                │
 │ ?             help                   │
 │ q             quit                   │
 │                                      │
@@ -26,22 +27,21 @@ Keys
 │ enter         details                │
 │ r             refresh                │
 │                                      │
+│ Commands (after :, tab completes)    │
+│ Go to a tab   tasks board leases qu… │
+│ Tasks views   list tree kanban grap… │
+│ search TEXT   search every tab, opt… │
+│ filter QUERY  filter the Tasks list… │
+│ ctx NAME      show the tracker and … │
+│ help          keys and commands      │
+│ q             quit                   │
+│                                      │
 │ ? or esc closes                      │
 ╰──────────────────────────────────────╯
 
 
 
-
-
-
-
-
-
-
-
-
-
-? help · q quit · tab/→ next tab …
+?/esc close · ↑/↓ scroll
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 Keys
@@ -50,11 +50,11 @@ Keys
   shift+tab/←   prev tab
   1-9           jump to tab
   ctrl+k        search everything
+  :             command
   ?             help
   q             quit
-
-  ↑/↓           move
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details · r refresh
+  ↕ +15 more
+?/esc close · ↑/↓ scroll
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -63,6 +63,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ shift+tab/←   prev tab                                                       │
 │ 1-9           jump to tab                                                    │
 │ ctrl+k        search everything                                              │
+│ :             command                                                        │
 │ ?             help                                                           │
 │ q             quit                                                           │
 │                                                                              │
@@ -70,48 +71,57 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ enter         details                                                        │
 │ r             refresh                                                        │
 │                                                                              │
+│ Commands (after :, tab completes)                                            │
+│ Go to a tab   tasks board leases queues doctor                               │
+│ Tasks views   list tree kanban graph insights                                │
+│ search TEXT   search every tab, optionally for TEXT                          │
+│ filter QUERY  filter the Tasks list (no query clears it)                     │
+│ ctx NAME      show the tracker and board in use                              │
+│ help          keys and commands                                              │
+│ q             quit                                                           │
+│                                                                              │
 │ ? or esc closes                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
-
-
-
-
-
-
-
-
-
-
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details · r refresh
+?/esc close · ↑/↓ scroll
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 Keys
 
   tab/→         next tab
   shift+tab/←   prev tab
   1-9           jump to tab
   ctrl+k        search everything
+  :             command
   ?             help
   q             quit
-
-  ↑/↓           move
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+  ↕ +14 more
+?/esc close · ↑/↓ scroll
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Keys ─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ tab/→         next tab                                                                                               │
 │ shift+tab/←   prev tab                                                                                               │
 │ 1-9           jump to tab                                                                                            │
 │ ctrl+k        search everything                                                                                      │
+│ :             command                                                                                                │
 │ ?             help                                                                                                   │
 │ q             quit                                                                                                   │
 │                                                                                                                      │
 │ ↑/↓           move                                                                                                   │
 │ r             refresh                                                                                                │
+│                                                                                                                      │
+│ Commands (after :, tab completes)                                                                                    │
+│ Go to a tab   tasks board leases queues doctor                                                                       │
+│ Tasks views   list tree kanban graph insights                                                                        │
+│ search TEXT   search every tab, optionally for TEXT                                                                  │
+│ filter QUERY  filter the Tasks list (no query clears it)                                                             │
+│ ctx NAME      show the tracker and board in use                                                                      │
+│ help          keys and commands                                                                                      │
+│ q             quit                                                                                                   │
 │                                                                                                                      │
 │ ? or esc closes                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -119,14 +129,4 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 
 
-
-
-
-
-
-
-
-
-
-
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+?/esc close · ↑/↓ scroll
