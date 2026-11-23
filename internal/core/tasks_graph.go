@@ -33,12 +33,11 @@ type GraphNode struct {
 	Ready     bool   `json:"ready,omitempty"`
 	Blocked   bool   `json:"blocked,omitempty"`
 	Focus     bool   `json:"focus,omitempty"`
-	// OnChain marks the longest chain; InCycle a member of a dependency cycle; Bottleneck and
-	// Keystone come from the graph-insights engine when its report was given.
+	// OnChain marks the longest chain; InCycle a member of a dependency cycle; Bottleneck comes from
+	// the graph-insights engine when its report was given (never on closed work).
 	OnChain    bool `json:"on_chain,omitempty"`
 	InCycle    bool `json:"in_cycle,omitempty"`
 	Bottleneck bool `json:"bottleneck,omitempty"`
-	Keystone   bool `json:"keystone,omitempty"`
 	SelfDep    bool `json:"self_dependency,omitempty"`
 	// Missing are blocking dependencies on tasks that are not in this tracker.
 	Missing []string `json:"missing,omitempty"`
@@ -60,13 +59,17 @@ type GraphLayer struct {
 }
 
 // OutlineRow is one line of the indented outline. A row with More > 0 and no ID stands for "+N more"
-// siblings; Repeat marks a task already listed above (it is not expanded again).
+// siblings; Repeat marks a task listed elsewhere (it is not expanded again). Every row with an ID
+// carries its node, so the outline can be drawn without looking anything up in GraphView.Nodes
+// (which holds only the tasks the boxes show). A task is listed at its shortest distance from the
+// focus, so the outline and the boxes agree on who is within the depth.
 type OutlineRow struct {
-	ID     string `json:"id,omitempty"`
-	Side   string `json:"side"`
-	Depth  int    `json:"depth"`
-	Repeat bool   `json:"repeat,omitempty"`
-	More   int    `json:"more,omitempty"`
+	ID     string     `json:"id,omitempty"`
+	Side   string     `json:"side"`
+	Depth  int        `json:"depth"`
+	Repeat bool       `json:"repeat,omitempty"`
+	More   int        `json:"more,omitempty"`
+	Node   *GraphNode `json:"node,omitempty"`
 }
 
 // GraphView is the graph of one snapshot, laid out for a neighborhood or the whole tracker.
@@ -87,11 +90,13 @@ type GraphView struct {
 	Cycles   [][]string `json:"cycles,omitempty"`
 	SelfDeps []string   `json:"self_dependencies,omitempty"`
 
-	Total      int `json:"total"`                // tasks in the tracker
-	Components int `json:"components,omitempty"` // connected groups of linked tasks
-	Isolated   int `json:"isolated,omitempty"`   // tasks with no blocking link, left out of the whole graph
-	Hidden     int `json:"hidden,omitempty"`     // linked tasks collapsed into "+N more"
-	CrossLinks int `json:"cross_links,omitempty"`
+	Total      int `json:"total"`                 // tasks in the tracker
+	Components int `json:"components,omitempty"`  // connected groups of linked tasks
+	Isolated   int `json:"isolated,omitempty"`    // tasks with no blocking link, left out of the whole graph
+	Hidden     int `json:"hidden,omitempty"`      // linked tasks collapsed into "+N more"
+	CrossLinks int `json:"cross_links,omitempty"` // links not drawn: between layers that are not neighbors, or sharing a bus ambiguously
+	// MarksSource says where the Bottleneck marks came from: "engine" or "" (none were given).
+	MarksSource string `json:"marks_source,omitempty"`
 	// OpenBlockers and Unblocks describe the focus: unfinished blockers, and dependents that
 	// would be freed when it closes.
 	OpenBlockers int `json:"open_blockers,omitempty"`

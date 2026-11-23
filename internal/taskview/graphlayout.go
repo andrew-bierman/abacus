@@ -33,7 +33,7 @@ type GraphOptions struct {
 	MaxPerLayer int
 	MaxFan      int
 	// Insights is the graph engine's report for this snapshot, when there is one: its
-	// bottlenecks and impact-depth leaders are marked on the nodes.
+	// bottlenecks are marked on the nodes (a stale report must not be passed: the caller compares stamps).
 	Insights *core.InsightsReport
 }
 
@@ -307,6 +307,9 @@ func (g *GraphIndex) View(o GraphOptions) core.GraphView {
 		}
 	}
 	marks := g.engineMarks(o.Insights)
+	if o.Insights != nil {
+		gv.MarksSource = "engine"
+	}
 	if o.Whole {
 		gv.Mode = core.GraphWhole
 		g.whole(&gv, o, marks)
@@ -340,21 +343,16 @@ func (g *GraphIndex) defaultFocus() (int, bool) {
 	return 0, false
 }
 
-type nodeMarks struct{ bottleneck, keystone map[int]bool }
+type nodeMarks struct{ bottleneck map[int]bool }
 
 func (g *GraphIndex) engineMarks(r *core.InsightsReport) nodeMarks {
-	m := nodeMarks{map[int]bool{}, map[int]bool{}}
+	m := nodeMarks{map[int]bool{}}
 	if r == nil {
 		return m
 	}
 	for _, b := range r.Bottlenecks[:min(len(r.Bottlenecks), engineMarks)] {
-		if i, ok := g.at[b.ID]; ok && b.Value > 0 {
+		if i, ok := g.at[b.ID]; ok && b.Value > 0 && g.v.rows[g.v.byID[b.ID]].Status != "closed" { // a closed task is no bottleneck
 			m.bottleneck[i] = true
-		}
-	}
-	for _, k := range r.CriticalPath[:min(len(r.CriticalPath), engineMarks)] {
-		if i, ok := g.at[k.ID]; ok && k.Value > 0 {
-			m.keystone[i] = true
 		}
 	}
 	return m
@@ -362,9 +360,21 @@ func (g *GraphIndex) engineMarks(r *core.InsightsReport) nodeMarks {
 
 func (g *GraphIndex) node(u, layer, order int, onChain map[int]bool, m nodeMarks) core.GraphNode {
 	r := g.v.rows[g.v.byID[g.ids[u]]]
+	open := func(s []int) (n int) { // unfinished neighbors in the deduplicated graph: parallel records are one link
+		for _, w := range s {
+			if g.v.rows[g.v.byID[g.ids[w]]].Status != "closed" {
+				n++
+			}
+		}
+		return n
+	}
+	blockedBy, blocks := 0, open(g.out[u])
+	if r.Status != "closed" {
+		blockedBy = open(g.in[u])
+	}
 	return core.GraphNode{ID: r.ID, Title: r.Title, Status: r.Status, Priority: r.Priority, Layer: layer, Order: order,
-		BlockedBy: r.BlockedBy, Blocks: r.Blocks, Ready: r.Ready, Blocked: r.Blocked,
-		OnChain: onChain[u], InCycle: g.inCycle[u], Bottleneck: m.bottleneck[u], Keystone: m.keystone[u],
+		BlockedBy: blockedBy, Blocks: blocks, Ready: r.Ready, Blocked: r.Blocked,
+		OnChain: onChain[u], InCycle: g.inCycle[u], Bottleneck: m.bottleneck[u],
 		SelfDep: g.self[u], Missing: slices.Clone(g.missing[u])}
 }
 
@@ -556,6 +566,7 @@ func (g *GraphIndex) neighborhood(gv *core.GraphView, focus int, o GraphOptions,
 		}
 		return ea.To < eb.To
 	})
+	g.unclutter(gv, layerOf)
 	r := g.v.rows[g.v.byID[g.ids[focus]]]
 	if r.Status != "closed" {
 		gv.OpenBlockers = r.BlockedBy
@@ -565,57 +576,139 @@ func (g *GraphIndex) neighborhood(gv *core.GraphView, focus int, o GraphOptions,
 			}
 		}
 	}
-	g.outline(gv, focus, o, less)
+	g.outline(gv, focus, o, less, onChain, m)
 }
 
-// outline lists the blockers nested above the focus and the dependents nested below it, each task
-// once (a second sighting is a Repeat row that is not expanded), fan-out capped per parent and the
-// whole list capped, with the overflow counted.
-func (g *GraphIndex) outline(gv *core.GraphView, focus int, o GraphOptions, less func(a, b int) bool) {
-	emit := func(side string, adj [][]int) {
-		seen := map[int]bool{focus: true}
+// unclutter stops drawing the links of a group that a shared connector would misread: where the
+// drawn links between two neighboring layers form a group with several blockers and several
+// dependents (A->C, B->C, B->D), one bus joining them would also seem to say A->D. Such links are
+// counted as not drawn; a group with one blocker or one dependent reads correctly and stays.
+func (g *GraphIndex) unclutter(gv *core.GraphView, layerOf map[int]int) {
+	type k struct{ node, pair int }
+	parent := map[k]k{}
+	var find func(k) k
+	find = func(x k) k {
+		if p, ok := parent[x]; !ok || p == x {
+			parent[x] = x
+			return x
+		}
+		parent[x] = find(parent[x])
+		return parent[x]
+	}
+	key := func(e core.GraphEdge) (k, k) {
+		u, v := g.at[e.From], g.at[e.To]
+		return k{u, layerOf[u]}, k{v, layerOf[u]}
+	}
+	for _, e := range gv.Edges {
+		if e.Drawn {
+			a, b := key(e)
+			parent[find(a)] = find(b)
+		}
+	}
+	parents, kids := map[k]map[int]bool{}, map[k]map[int]bool{}
+	for _, e := range gv.Edges {
+		if !e.Drawn {
+			continue
+		}
+		a, b := key(e)
+		r := find(a)
+		if parents[r] == nil {
+			parents[r], kids[r] = map[int]bool{}, map[int]bool{}
+		}
+		parents[r][a.node], kids[r][b.node] = true, true
+	}
+	for i, e := range gv.Edges {
+		if !e.Drawn {
+			continue
+		}
+		a, _ := key(e)
+		if r := find(a); len(parents[r]) > 1 && len(kids[r]) > 1 {
+			gv.Edges[i].Drawn = false
+			gv.CrossLinks++
+		}
+	}
+}
+
+// outline lists the blockers nested above the focus and the dependents nested below it. Every task
+// within the depth appears once, under a parent that is one step closer to the focus (its shortest
+// distance, the same layers the boxes use); a link to a task listed elsewhere is a Repeat row, not
+// expanded. Fan-out is capped per parent and the whole list is capped, with the overflow counted.
+func (g *GraphIndex) outline(gv *core.GraphView, focus int, o GraphOptions, less func(a, b int) bool, onChain map[int]bool, m nodeMarks) {
+	row := func(side string, depth int, w int, sign int, dist map[int]int, repeat bool) core.OutlineRow {
+		n := g.node(w, sign*dist[w], 0, onChain, m)
+		n.Focus = w == focus
+		return core.OutlineRow{ID: g.ids[w], Side: side, Depth: depth, Repeat: repeat, Node: &n}
+	}
+	emit := func(side string, adj [][]int, sign int) {
+		dist := map[int]int{focus: 0}
+		order := []int{focus}
+		for i := 0; i < len(order); i++ {
+			u := order[i]
+			if dist[u] == o.Depth {
+				continue
+			}
+			for _, w := range adj[u] {
+				if _, ok := dist[w]; !ok {
+					dist[w] = dist[u] + 1
+					order = append(order, w)
+				}
+			}
+		}
+		parent := map[int]int{}
+		for _, u := range order {
+			for _, w := range adj[u] {
+				if dist[w] == dist[u]+1 && dist[w] > 0 {
+					if p, ok := parent[w]; !ok || less(u, p) {
+						parent[w] = u
+					}
+				}
+			}
+		}
 		listed := 0
 		var rows []core.OutlineRow
-		var walk func(u, depth int)
-		walk = func(u, depth int) {
-			if depth > o.Depth || len(rows) >= maxOutlineRows {
-				return
+		var walk func(u int)
+		walk = func(u int) {
+			var kids []int
+			for _, w := range adj[u] {
+				if _, ok := dist[w]; ok && w != u {
+					kids = append(kids, w)
+				}
 			}
-			kids := slices.Clone(adj[u])
 			sort.Slice(kids, func(a, b int) bool { return less(kids[a], kids[b]) })
 			for i, w := range kids {
 				if len(rows) >= maxOutlineRows {
 					return
 				}
 				if i == o.MaxFan {
-					rows = append(rows, core.OutlineRow{Side: side, Depth: depth, More: len(kids) - i})
+					rows = append(rows, core.OutlineRow{Side: side, Depth: dist[u] + 1, More: len(kids) - i})
 					return
 				}
-				if seen[w] {
-					rows = append(rows, core.OutlineRow{ID: g.ids[w], Side: side, Depth: depth, Repeat: true})
+				if p, tree := parent[w]; !tree || p != u {
+					rows = append(rows, row(side, dist[u]+1, w, sign, dist, true))
 					continue
 				}
-				seen[w] = true
 				listed++
-				rows = append(rows, core.OutlineRow{ID: g.ids[w], Side: side, Depth: depth})
-				walk(w, depth+1)
+				rows = append(rows, row(side, dist[u]+1, w, sign, dist, false))
+				if dist[w] < o.Depth {
+					walk(w)
+				}
 			}
 		}
-		walk(focus, 1)
+		walk(focus)
 		if len(rows) >= maxOutlineRows { // say how much the cap hid
-			if left := g.reach(focus, adj, o.Depth) - listed; left > 0 {
+			if left := len(order) - 1 - listed; left > 0 {
 				rows = append(rows, core.OutlineRow{Side: side, Depth: 1, More: left})
 			}
 		}
-		if side == core.OutlineUp {
-			gv.Outline = append(gv.Outline, rows...)
-			gv.Outline = append(gv.Outline, core.OutlineRow{ID: g.ids[focus], Side: core.OutlineFocus})
-			return
-		}
 		gv.Outline = append(gv.Outline, rows...)
+		if side == core.OutlineUp {
+			f := g.node(focus, 0, 0, onChain, m)
+			f.Focus = true
+			gv.Outline = append(gv.Outline, core.OutlineRow{ID: g.ids[focus], Side: core.OutlineFocus, Node: &f})
+		}
 	}
-	emit(core.OutlineUp, g.in)
-	emit(core.OutlineDown, g.out)
+	emit(core.OutlineUp, g.in, -1)
+	emit(core.OutlineDown, g.out, 1)
 }
 
 // reach counts the tasks within depth steps of from along adj, not counting from.

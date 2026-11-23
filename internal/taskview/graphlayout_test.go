@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"reflect"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -192,10 +193,16 @@ func TestGraphNeighborhoodCycleAndMissingFocus(t *testing.T) {
 }
 
 func TestGraphInsightsHighlights(t *testing.T) {
-	ins := &core.InsightsReport{Bottlenecks: []core.Ranked{{ID: "a", Value: 3}}, CriticalPath: []core.Ranked{{ID: "b", Value: 2}}}
-	v := gview(gt("a", "open"), gt("b", "open", "a")).View(GraphOptions{Whole: true, Insights: ins})
-	if !node(v, "a").Bottleneck || !node(v, "b").Keystone || node(v, "b").Bottleneck {
+	ins := &core.InsightsReport{Bottlenecks: []core.Ranked{{ID: "a", Value: 3}, {ID: "c", Value: 2}}}
+	v := gview(gt("a", "open"), gt("b", "open", "a"), gt("c", "closed", "b")).View(GraphOptions{Whole: true, Insights: ins})
+	if !node(v, "a").Bottleneck || node(v, "b").Bottleneck || v.MarksSource != "engine" {
 		t.Errorf("engine highlights: %+v", v.Nodes)
+	}
+	if node(v, "c").Bottleneck {
+		t.Error("a closed task is never marked a bottleneck")
+	}
+	if v := gview(gt("a", "open"), gt("b", "open", "a")).View(GraphOptions{Whole: true}); v.MarksSource != "" || node(v, "a").Bottleneck {
+		t.Error("no report, no marks")
 	}
 }
 
@@ -279,41 +286,6 @@ func TestGraphEditedExportEdges(t *testing.T) {
 	}
 }
 
-func bigIssues(n int) []core.TaskIssue {
-	r := rand.New(rand.NewSource(7))
-	out := make([]core.TaskIssue, n)
-	for i := range out {
-		out[i] = gt(fmt.Sprintf("t%05d", i), []string{"open", "closed", "in_progress"}[i%3])
-		for k := 0; k < 1+i%3 && i > 0; k++ {
-			out[i].Deps = append(out[i].Deps, core.TaskDep{DependsOn: fmt.Sprintf("t%05d", r.Intn(i)), Type: "blocks"})
-		}
-	}
-	return out
-}
-
-func TestGraphFiveThousandTasksStayFast(t *testing.T) {
-	issues := bigIssues(5000)
-	// one long chain and one hub with a huge fan-out ride along
-	for i := 1; i < 800; i++ {
-		issues[i].Status = "open"
-		issues[i].Deps = append(issues[i].Deps, core.TaskDep{DependsOn: fmt.Sprintf("t%05d", i-1), Type: "blocks"})
-	}
-	start := time.Now()
-	g := gview(issues...)
-	whole := g.View(GraphOptions{Whole: true})
-	near := g.View(GraphOptions{Focus: "t00000", Depth: 6})
-	took := time.Since(start)
-	if took > 2*time.Second {
-		t.Errorf("5000 tasks took %v", took)
-	}
-	if len(whole.Nodes)+whole.Hidden+whole.Isolated != whole.Total || len(near.Outline) > 400 {
-		t.Errorf("whole %d nodes + %d hidden + %d isolated of %d, outline %d rows", len(whole.Nodes), whole.Hidden, whole.Isolated, whole.Total, len(near.Outline))
-	}
-	if len(whole.Chain) < 700 {
-		t.Errorf("chain %d", len(whole.Chain))
-	}
-}
-
 // The cycles and the bottleneck marks must agree with the in-process graph engine fed the same
 // snapshot: one answer to "what is a cycle" across the views.
 func TestGraphAgreesWithTheEngine(t *testing.T) {
@@ -351,7 +323,7 @@ func TestGraphAgreesWithTheEngine(t *testing.T) {
 	}
 	marked := 0
 	for _, n := range v.Nodes {
-		if n.Bottleneck || n.Keystone {
+		if n.Bottleneck {
 			marked++
 		}
 	}
@@ -371,6 +343,265 @@ func TestGraphChainIsFlaggedOnNodes(t *testing.T) {
 		}
 		if !reflect.DeepEqual(flagged, []string{"a", "b", "d"}) || !reflect.DeepEqual(v.Chain, []string{"a", "b", "d"}) {
 			t.Errorf("%s: flagged %v, chain %v", name, flagged, v.Chain)
+		}
+	}
+}
+
+func outlineIDs(v core.GraphView, side string) []string {
+	var out []string
+	for _, r := range v.Outline {
+		if r.Side == side && r.ID != "" && !r.Repeat {
+			out = append(out, r.ID)
+		}
+	}
+	return out
+}
+
+// Every outline row carries its node: a task the boxes collapsed (a focus with seven dependents) is
+// still drawn with its title and status by anything that reads the view, the CLI included.
+func TestGraphOutlineRowsCarryTheirNodes(t *testing.T) {
+	issues := []core.TaskIssue{gt("f", "open")}
+	for i := 1; i <= 7; i++ {
+		issues = append(issues, gt(fmt.Sprintf("d%d", i), "open", "f"))
+	}
+	v := gview(issues...).View(GraphOptions{Focus: "f", Depth: 1})
+	if got := outlineIDs(v, core.OutlineDown); len(got) != 7 {
+		t.Fatalf("seven dependents in the outline: %v", got)
+	}
+	inNodes := map[string]bool{}
+	for _, n := range v.Nodes {
+		inNodes[n.ID] = true
+	}
+	missing := 0
+	for _, r := range v.Outline {
+		if r.ID == "" {
+			continue
+		}
+		if r.Node == nil || r.Node.ID != r.ID || r.Node.Title == "" || r.Node.Status == "" {
+			t.Errorf("outline row %q has no node data: %+v", r.ID, r.Node)
+		}
+		if !inNodes[r.ID] {
+			missing++
+		}
+	}
+	if missing != 2 { // d6 and d7 are collapsed out of the boxes
+		t.Errorf("expected the outline to reach past the boxes by 2 tasks, got %d", missing)
+	}
+}
+
+// A shortcut edge must not hide a task that is within the depth: the outline lists each task at its
+// shortest distance, the boxes' layers, whatever order the walk meets the edges in.
+func TestGraphOutlineAndBoxesAgreeWithAShortcut(t *testing.T) {
+	// f <- a <- b <- c, and the shortcut b -> f: c is two steps above f
+	g := gview(gt("c", "open"), gt("b", "open", "c"), gt("a", "open", "b"), gt("f", "open", "a", "b"))
+	v := g.View(GraphOptions{Focus: "f", Depth: 2, MaxPerLayer: 20, MaxFan: 20})
+	up := outlineIDs(v, core.OutlineUp)
+	var boxes []string
+	for _, n := range v.Nodes {
+		if n.Layer < 0 {
+			boxes = append(boxes, n.ID)
+		}
+	}
+	sort.Strings(up)
+	sort.Strings(boxes)
+	if !reflect.DeepEqual(up, boxes) || !reflect.DeepEqual(up, []string{"a", "b", "c"}) {
+		t.Errorf("outline %v, boxes %v", up, boxes)
+	}
+	if r := v.Outline; r[0].ID != "a" || r[0].Depth != 1 {
+		t.Errorf("a is one step above: %+v", r[0])
+	}
+}
+
+// uncluttered is an independent check that no drawn group of links has several blockers and several
+// dependents, which a shared bus would misread.
+func uncluttered(t *testing.T, v core.GraphView) {
+	t.Helper()
+	layer := map[string]int{}
+	for _, n := range v.Nodes {
+		layer[n.ID] = n.Layer
+	}
+	type end struct {
+		id   string
+		pair int
+	}
+	adj := map[end][]end{}
+	for _, e := range v.Edges {
+		if !e.Drawn {
+			continue
+		}
+		a, b := end{e.From, layer[e.From]}, end{e.To, layer[e.From]}
+		adj[a], adj[b] = append(adj[a], b), append(adj[b], a)
+	}
+	seen := map[end]bool{}
+	for start := range adj {
+		if seen[start] {
+			continue
+		}
+		parents, kids := map[string]bool{}, map[string]bool{}
+		stack := []end{start}
+		seen[start] = true
+		for len(stack) > 0 {
+			x := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			if layer[x.id] == x.pair {
+				parents[x.id] = true
+			} else {
+				kids[x.id] = true
+			}
+			for _, y := range adj[x] {
+				if !seen[y] {
+					seen[y] = true
+					stack = append(stack, y)
+				}
+			}
+		}
+		if len(parents) > 1 && len(kids) > 1 {
+			t.Fatalf("a drawn group has %d blockers and %d dependents: %v %v", len(parents), len(kids), parents, kids)
+		}
+	}
+}
+
+// A->C, B->C, B->D drawn on one bus would read as A->D too, so those links are not drawn.
+func TestGraphDoesNotDrawAnAmbiguousBus(t *testing.T) {
+	g := gview(gt("a", "open"), gt("b", "open"), gt("c", "open", "a", "b"), gt("d", "open", "b"), gt("f", "open", "c", "d"))
+	v := g.View(GraphOptions{Focus: "f", Depth: 2})
+	for _, e := range v.Edges {
+		if e.From != "c" && e.From != "d" && e.Drawn {
+			t.Errorf("%s->%s must not be drawn on a shared bus", e.From, e.To)
+		}
+	}
+	if v.CrossLinks != 3 {
+		t.Errorf("three links counted as not drawn: %d", v.CrossLinks)
+	}
+	uncluttered(t, v)
+	// a blocker with several dependents, or a dependent with several blockers, stays drawn
+	v = gview(gt("a", "open"), gt("b", "open", "a"), gt("c", "open", "a"), gt("f", "open", "b", "c")).View(GraphOptions{Focus: "f", Depth: 2})
+	if v.CrossLinks != 0 {
+		t.Errorf("a diamond is unambiguous: %d links hidden", v.CrossLinks)
+	}
+}
+
+func TestGraphNeverDrawsAnAmbiguousBusOnRandomGraphs(t *testing.T) {
+	r := rand.New(rand.NewSource(3))
+	for k := 0; k < 300; k++ {
+		n := 6 + r.Intn(14)
+		var issues []core.TaskIssue
+		for i := 0; i < n; i++ {
+			it := gt(fmt.Sprintf("t%02d", i), "open")
+			for j := 0; j < i; j++ {
+				if r.Intn(4) == 0 {
+					it.Deps = append(it.Deps, core.TaskDep{DependsOn: fmt.Sprintf("t%02d", j), Type: "blocks"})
+				}
+			}
+			issues = append(issues, it)
+		}
+		g := gview(issues...)
+		for _, f := range []string{"t00", fmt.Sprintf("t%02d", n-1), fmt.Sprintf("t%02d", n/2)} {
+			uncluttered(t, g.View(GraphOptions{Focus: f, Depth: 4, MaxPerLayer: 6}))
+		}
+	}
+}
+
+// Five thousand tasks in the shapes that stress a layout: a deep chain, one long cycle with many small
+// ones, and a hub several layers deep. Each is timed.
+func TestGraphFiveThousandTasksStayFast(t *testing.T) {
+	id := func(i int) string { return fmt.Sprintf("t%05d", i) }
+	shapes := map[string]func() ([]core.TaskIssue, func(core.GraphView)){
+		"deep chain": func() ([]core.TaskIssue, func(core.GraphView)) {
+			var is []core.TaskIssue
+			for i := 0; i < 5000; i++ {
+				if i == 0 {
+					is = append(is, gt(id(i), "open"))
+				} else {
+					is = append(is, gt(id(i), "open", id(i-1)))
+				}
+			}
+			return is, func(v core.GraphView) {
+				if len(v.Chain) != 5000 || len(v.Layers) != 5000 {
+					t.Errorf("deep chain: chain %d, layers %d", len(v.Chain), len(v.Layers))
+				}
+			}
+		},
+		"long and many small cycles": func() ([]core.TaskIssue, func(core.GraphView)) {
+			var is []core.TaskIssue
+			for i := 0; i < 2000; i++ { // one cycle of 2000
+				is = append(is, gt(id(i), "open", id((i+1999)%2000)))
+			}
+			for k := 0; k < 1000; k++ { // a thousand 3-cycles
+				b := 2000 + 3*k
+				is = append(is, gt(id(b), "open", id(b+2)), gt(id(b+1), "open", id(b)), gt(id(b+2), "open", id(b+1)))
+			}
+			return is, func(v core.GraphView) {
+				if len(v.Cycles) != 1001 {
+					t.Errorf("cycles %d", len(v.Cycles))
+				}
+			}
+		},
+		"multi-layer hub": func() ([]core.TaskIssue, func(core.GraphView)) {
+			is := []core.TaskIssue{gt(id(0), "open")}
+			n := 1
+			prev := []int{0}
+			for layer := 0; layer < 4 && n < 5000; layer++ {
+				var next []int
+				for _, p := range prev {
+					for k := 0; k < 12 && n < 5000; k++ {
+						is = append(is, gt(id(n), "open", id(p)))
+						next = append(next, n)
+						n++
+					}
+				}
+				prev = next
+			}
+			for n < 5000 {
+				is = append(is, gt(id(n), "open", id(prev[n%len(prev)])))
+				n++
+			}
+			return is, func(v core.GraphView) {
+				if len(v.Layers) < 5 || v.Hidden == 0 {
+					t.Errorf("hub: %d layers, %d hidden", len(v.Layers), v.Hidden)
+				}
+			}
+		},
+	}
+	for name, mk := range shapes {
+		t.Run(name, func(t *testing.T) {
+			issues, check := mk()
+			start := time.Now()
+			g := gview(issues...)
+			whole := g.View(GraphOptions{Whole: true})
+			near := g.View(GraphOptions{Focus: id(0), Depth: 6})
+			if d := time.Since(start); d > 3*time.Second {
+				t.Errorf("took %v", d)
+			}
+			if whole.Total != 5000 || len(near.Outline) > 400 {
+				t.Errorf("total %d, outline %d rows", whole.Total, len(near.Outline))
+			}
+			check(whole)
+		})
+	}
+}
+
+// Parallel blocking edges (blocks and conditional-blocks on the same pair, or a repeated record)
+// are one link: one edge, counted once.
+func TestGraphParallelBlockingEdgesAreOneLink(t *testing.T) {
+	b := gt("b", "open", "a")
+	b.Deps = append(b.Deps, core.TaskDep{DependsOn: "a", Type: "conditional-blocks"}, core.TaskDep{DependsOn: "a", Type: "blocks"})
+	v := gview(gt("a", "open"), b).View(GraphOptions{Focus: "b", Depth: 2})
+	if len(v.Edges) != 1 || len(outlineIDs(v, core.OutlineUp)) != 1 || node(v, "b").BlockedBy != 1 {
+		t.Errorf("edges %d, outline %v, blocked_by %d", len(v.Edges), outlineIDs(v, core.OutlineUp), node(v, "b").BlockedBy)
+	}
+}
+
+// The default cap is five boxes a layer: five dependents all show, a sixth collapses.
+func TestGraphDefaultLayerCapBoundary(t *testing.T) {
+	for _, c := range []struct{ n, more int }{{5, 0}, {6, 1}} {
+		issues := []core.TaskIssue{gt("f", "open")}
+		for i := 0; i < c.n; i++ {
+			issues = append(issues, gt(fmt.Sprintf("d%d", i), "open", "f"))
+		}
+		v := gview(issues...).View(GraphOptions{Focus: "f"})
+		if l := v.Layers[len(v.Layers)-1]; l.More != c.more || len(l.Nodes)+l.More != c.n || v.Hidden != c.more {
+			t.Errorf("%d dependents: %+v hidden %d", c.n, l, v.Hidden)
 		}
 	}
 }
