@@ -53,7 +53,7 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 A domain with no provider shows "not connected" and how to connect; it never disappears.
 `abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders, and
 `abacus tasks list|show|board|graph` print the task list, one task in full, the kanban columns and the dependency graph (`--query`, `--sort`, `--json`), and
-`abacus search "QUERY"` (or `ctrl+k` in the TUI) searches every domain at once.
+`abacus search "QUERY"` (or `ctrl+k` in the TUI) searches every domain at once. In the TUI, `:` opens a k9s-style command prompt (`:tasks`, `:graph`, `:filter label:ui`, `:search foo`, `:help`) that only navigates, and `d` and `y` describe the selected task or show it as JSON.
 
 ## First run
 
