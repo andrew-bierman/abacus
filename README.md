@@ -105,7 +105,7 @@ executable file that is not group- or world-writable, is owned by you or root, a
 link, if any) in a directory nobody else can write to. Doctor shows, for every tool,
 whether it is `bundled`, from `PATH` or an override, or `unavailable` (abacus's own copy is damaged
 or was moved), with its version, and leads with "Bundled tools: 4 of 4 verified". Doctor is
-`Ready` only when all four bundled tools are usable; the Vercel Board CLI is reported separately as
+`Ready` only when bd, lambe and beads-lease are usable (bv adds graph insights and is optional: it counts in the line but never blocks `Ready`); the Vercel Board CLI is reported separately as
 `optional`. Child tools see the sidecar directories first on `PATH`, so bv finds the bundled bd.
 
 A missing bundled tool is never your job. In a release, abacus says its own copy is damaged or was
@@ -121,7 +121,8 @@ for another), checks every sha256 against `bundled-tools.json` (any mismatch abo
 nothing), and puts the four executables, their licenses and `THIRD_PARTY_NOTICES.md` in
 `bin/bundled/`, where `bin/abacus` finds them. It builds in a temp directory and moves it into
 place, is idempotent (a tool that still matches its install record is kept, not downloaded), and
-`--check` only verifies. Linux and macOS on amd64 and arm64 are bundled; Windows is out of scope
+`--check` only verifies. `--out` must be new, empty or a previous install (anything else is refused
+untouched, because the directory is replaced as a whole). Linux and macOS on amd64 and arm64 are bundled; Windows is out of scope
 for now (see `docs/plans/2026-11-22-1900-plan-windows-support.md`) and has no pins.
 
 **The manifest, field by field.** Hand-edited: `schema`, `note`, and per tool `name` (the file

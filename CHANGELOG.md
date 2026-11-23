@@ -16,8 +16,14 @@ may change behavior, and patch versions are fixes and small additions.
   and a test fails when a tool in `bundled-tools.json` lacks an asset for a release platform.
 - `abacus doctor` and `abacus version` report "Bundled tools: 4 of 4 verified" (or what is wrong);
   JSON gains `bundled` (version) and `overview.bundled` (doctor) and tool lines gain `bundled_tool`
-  and `optional`, all additive (schema_version stays 1). Doctor's header says `Ready` only when all
-  four bundled tools are usable.
+  and `optional`, all additive (schema_version stays 1). Doctor's header says `Ready` only when bd,
+  lambe and beads-lease are usable; bv (graph insights) is optional: it still counts in "Bundled
+  tools: N of 4" and is listed as an optional thing to set up, but never blocks `Ready`.
+- `scripts/dev-bundle.sh --out DIR` refuses a DIR that is not empty and does not look like its own
+  install (it replaces the whole directory), re-checks each kept tool's license and file modes (and
+  drops tools the manifest no longer lists), and manifest tool names must match `^[a-z0-9-]+$`.
+- `core.HowToConnect` (map) and `core.HowToConnectInsights` (var) are now `core.HowToConnectFor(domain)`
+  and `core.HowToConnectInsights()`, computed from the build kind: no shared state, race-free.
 
 ### Changed
 

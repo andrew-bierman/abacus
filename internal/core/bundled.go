@@ -45,6 +45,10 @@ func IsBundledTool(tool string) bool {
 	return false
 }
 
+// IsOptionalBundled reports whether a bundled tool is one abacus works without: bv only adds graph
+// insights, so its absence never makes the overview "Needs attention".
+func IsOptionalBundled(tool string) bool { return tool == "bv" }
+
 // BundledProblem is the one sentence for a bundled tool abacus cannot use. refused is the specific
 // reason a copy that exists was turned down ("world-writable", "not executable", ...), or "" when
 // the copy is simply not there.

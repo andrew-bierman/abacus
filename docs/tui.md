@@ -130,7 +130,7 @@ The Doctor tab (the one place providers are listed by name) leads with "Ready" o
 one line per area, a "Bundled tools: 4 of 4 verified" line, and each tool with where it was found
 (`bundled`, `PATH`, `override`, `demo`; or `unavailable` for abacus's own copy that cannot be used,
 `optional` for the Board CLI, which abacus does not ship) and its version, then the detailed checks.
-"Ready" needs all four bundled tools usable. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
+"Ready" needs bd, lambe and beads-lease usable; bv (graph insights) counts in the bundled line but is optional. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
 other modules every 30 seconds.

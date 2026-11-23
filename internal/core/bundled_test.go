@@ -83,11 +83,67 @@ func TestABundledToolThatIsGoneIsAbacusProblemInAReleaseNotMissing(t *testing.T)
 func TestARefusedBundledToolSaysWhyInAReleaseAndWhatToDo(t *testing.T) {
 	asBuild(t, "1.2.3")
 	es := fourBundled(core.SourceBundled)
-	es[1] = absentEntry("bv", "bv not found on PATH (bundled copy ignored: world-writable (/app/bundled/bv))")
+	es[2] = absentEntry("lambe", "lambe not found on PATH (bundled copy ignored: world-writable (/app/bundled/lambe))")
 	o := core.BuildOverview(context.Background(), es)
-	want := "abacus's own copy of bv cannot be used (world-writable (/app/bundled/bv)). Re-extract the download and keep the folder together."
+	want := "abacus's own copy of lambe cannot be used (world-writable (/app/bundled/lambe)). Re-extract the download and keep the folder together."
 	if !strings.HasPrefix(o.Headline, "Needs attention: ") || !strings.Contains(o.Headline, want) {
 		t.Fatalf("%q", o.Headline)
+	}
+}
+
+// Owner decision: bd, lambe and beads-lease unusable block Ready; bv alone does not (graph
+// insights are optional) but it still counts in the bundled line and says so.
+func TestOnlyBvUnusableStillReadyButCountedAndExplained(t *testing.T) {
+	for name, bv := range map[string]core.Entry{
+		"absent":       absentEntry("bv", "bv not found on PATH (bundled copy ignored: world-writable (/app/bundled/bv))"),
+		"incompatible": {Module: &modtest.Fake{IDStr: "bv"}, Detection: core.Detection{State: core.Incompatible, Detail: "bv 9.9 is too new"}},
+	} {
+		for _, build := range []string{"1.2.3", "dev"} {
+			t.Run(name+"/"+build, func(t *testing.T) {
+				asBuild(t, build)
+				es := fourBundled(core.SourceBundled)
+				es[1] = bv
+				o := core.BuildOverview(context.Background(), es)
+				if !o.Ready || strings.HasPrefix(o.Headline, "Needs attention") {
+					t.Fatalf("bv alone must not block Ready: %q", o.Headline)
+				}
+				if o.Bundled.Total != 4 || o.Bundled.Verified != 3 || o.Bundled.Line != "Bundled tools: 3 of 4 verified; 1 unusable (bv)" {
+					t.Fatalf("bv still counts: %+v", o.Bundled)
+				}
+				var note string
+				for _, tl := range o.Tools {
+					if tl.ID == "bv" {
+						note = tl.Note
+					}
+				}
+				if name == "absent" && note == "" {
+					t.Fatalf("an absent bv carries a note")
+				}
+				if len(o.Attention) == 0 || !strings.HasPrefix(o.Attention[0], "Graph insights: ") || !strings.HasSuffix(o.Attention[0], "Everything else works without it.") {
+					t.Fatalf("bv is listed as an optional thing to set up: %q", o.Attention)
+				}
+				if !strings.HasPrefix(o.Headline, "Ready") {
+					t.Fatalf("%q", o.Headline)
+				}
+			})
+		}
+	}
+}
+
+func TestEachOtherBundledToolUnusableStillBlocksReady(t *testing.T) {
+	for _, id := range []string{"bd", "lambe", "beads-lease"} {
+		for _, build := range []string{"1.2.3", "dev"} {
+			asBuild(t, build)
+			es := fourBundled(core.SourceBundled)
+			for i, k := range core.KnownTools {
+				if k == id {
+					es[i] = absentEntry(id, id+" not found on PATH")
+				}
+			}
+			if o := core.BuildOverview(context.Background(), es); o.Ready || !strings.HasPrefix(o.Headline, "Needs attention") {
+				t.Errorf("%s (%s) unusable must block Ready: %q", id, build, o.Headline)
+			}
+		}
 	}
 }
 
@@ -101,7 +157,7 @@ func TestADevBuildSaysRunDevBundleEverywhere(t *testing.T) {
 		es[i] = absentEntry(id, id+" not found on PATH")
 	}
 	o := core.BuildOverview(context.Background(), es)
-	if o.Ready || !strings.Contains(o.Headline, "scripts/dev-bundle.sh") || !strings.Contains(o.Headline, "bd, bv, lambe, beads-lease") {
+	if o.Ready || !strings.Contains(o.Headline, "scripts/dev-bundle.sh") || !strings.Contains(o.Headline, "(bd, lambe, beads-lease)") {
 		t.Fatalf("%q", o.Headline)
 	}
 	for id, s := range map[string]string{"tasks": core.HowToConnectFor(core.DomainTasks), "leases": core.HowToConnectFor(core.DomainLeases),
@@ -188,13 +244,13 @@ func TestAPathCopyInPlaceOfTheBundledOneIsExplainedAndStillReady(t *testing.T) {
 	}
 }
 
-func TestAnIncompatibleBundledToolIsNotReady(t *testing.T) {
+func TestAnIncompatibleRequiredBundledToolIsNotReady(t *testing.T) {
 	asBuild(t, "1.2.3")
 	es := fourBundled(core.SourceBundled)
-	es[1] = core.Entry{Module: &modtest.Fake{IDStr: "bv"}, Detection: core.Detection{State: core.Incompatible, Detail: "bv 9.9 is too new"}}
+	es[2] = core.Entry{Module: &modtest.Fake{IDStr: "lambe"}, Detection: core.Detection{State: core.Incompatible, Detail: "lambe 9.9 is too new"}}
 	o := core.BuildOverview(context.Background(), es)
-	if o.Ready || o.Bundled.Complete() || o.Bundled.Line != "Bundled tools: 3 of 4 verified; 1 unusable (bv)" {
-		t.Fatalf("Ready needs all four bundled tools usable: %+v", o)
+	if o.Ready || o.Bundled.Complete() || o.Bundled.Line != "Bundled tools: 3 of 4 verified; 1 unusable (lambe)" {
+		t.Fatalf("Ready needs bd, lambe and beads-lease usable: %+v", o)
 	}
 }
 
