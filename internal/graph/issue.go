@@ -85,6 +85,8 @@ type Issue struct {
 	// DependsOn, for sources that record the link on the blocker: "a blocks b" means b depends
 	// on a, and the analyzer sees one and the same edge either way.
 	Blocks []string
+	// Labels are the issue's labels; bv's triage reads them.
+	Labels []string
 }
 
 // Edges returns every dependency edge in issues as (dependent, dependsOn, type), merging the

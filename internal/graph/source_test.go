@@ -447,3 +447,36 @@ func TestFallbackOverTheCapIsTheExistingTooLargeErrorAndEmptyOutputIsEmpty(t *te
 		t.Fatalf("empty stdout is the empty report: %+v %v", r, err)
 	}
 }
+
+// The real `bd --readonly export` output (testdata/bd/README.md) goes through the fallback and the
+// parser: the shape the decoder assumes is the shape bd writes.
+func TestTheRealBdExportDecodes(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "bd", "export-real.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := graph.FileSource{Ref: core.NewTrackerRef(t.TempDir()), Fallback: func(context.Context) ([]byte, error) { return raw, nil }}
+	issues, err := src.Issues(context.Background())
+	if err != nil || len(issues) != 4 {
+		t.Fatalf("%d issues, %v", len(issues), err)
+	}
+	by := map[string]graph.Issue{}
+	for _, i := range issues {
+		by[i.Title] = i
+	}
+	design, build, docs, ship := by["Design the schema"], by["Build the importer"], by["Write the docs"], by["Ship the first cut"]
+	if ship.Status != graph.StatusClosed || ship.Priority != 0 || design.Status != graph.StatusOpen || design.Type != "task" || design.UpdatedAt.IsZero() {
+		t.Fatalf("%+v %+v", ship, design)
+	}
+	if len(build.DependsOn) != 1 || build.DependsOn[0] != (graph.Dependency{ID: design.ID, Type: graph.DepBlocks}) ||
+		len(docs.DependsOn) != 1 || docs.DependsOn[0].ID != build.ID || len(design.DependsOn) != 0 {
+		t.Fatalf("dependencies: %+v %+v %+v", design.DependsOn, build.DependsOn, docs.DependsOn)
+	}
+	if fmt.Sprint(design.Labels) != "[backend]" || fmt.Sprint(docs.Labels) != "[docs]" || len(build.Labels) != 0 {
+		t.Fatalf("labels: %v %v %v", design.Labels, docs.Labels, build.Labels)
+	}
+	r, err := graph.NewBVAnalyzer().Analyze(context.Background(), issues)
+	if err != nil || r.TotalActionable != 1 || r.TotalBlocked != 2 || len(r.TopPicks) == 0 || r.TopPicks[0].ID != design.ID {
+		t.Fatalf("%+v %v", r, err)
+	}
+}

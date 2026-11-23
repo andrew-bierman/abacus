@@ -105,7 +105,7 @@ func toBV(issues []Issue) []model.Issue {
 	out := make([]model.Issue, len(issues))
 	at := make(map[string]int, len(issues))
 	for n, i := range issues {
-		out[n] = model.Issue{ID: i.ID, Title: i.Title, Status: bvStatus(i.Status), Priority: i.Priority, IssueType: model.IssueType(i.Type), UpdatedAt: i.UpdatedAt}
+		out[n] = model.Issue{ID: i.ID, Title: i.Title, Status: bvStatus(i.Status), Priority: i.Priority, IssueType: model.IssueType(i.Type), UpdatedAt: i.UpdatedAt, Labels: i.Labels}
 		at[i.ID] = n
 	}
 	for _, e := range Edges(issues) {

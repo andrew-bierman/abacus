@@ -72,6 +72,7 @@ type rawIssue struct {
 	UpdatedAt    string          `json:"updated_at"`
 	Dependencies []rawDependency `json:"dependencies"`
 	Blocks       []string        `json:"blocks"`
+	Labels       []string        `json:"labels"`
 }
 
 type rawDependency struct {
@@ -94,7 +95,7 @@ func (d *rawDependency) UnmarshalJSON(b []byte) error {
 }
 
 func (r rawIssue) issue() Issue {
-	i := Issue{ID: r.ID, Title: r.Title, Status: ParseStatus(r.Status), Priority: r.Priority, Type: r.IssueType, Blocks: r.Blocks}
+	i := Issue{ID: r.ID, Title: r.Title, Status: ParseStatus(r.Status), Priority: r.Priority, Type: r.IssueType, Blocks: r.Blocks, Labels: r.Labels}
 	// A missing or unparseable time is left zero: it only affects a staleness hint.
 	if t, err := time.Parse(time.RFC3339, r.UpdatedAt); err == nil {
 		i.UpdatedAt = t

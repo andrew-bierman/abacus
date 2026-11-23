@@ -282,7 +282,7 @@ nothing above it is read, because an export in a parent belongs to another proje
 directory set the search starts at the working directory and walks up through its parents. An
 export or `.beads` directory that is a symlink resolving outside the directory it was found in is
 refused with a plain reason, never read. The reader takes
-JSONL or a JSON array with `id`, `title`, `status`, `priority`, `issue_type`, `updated_at` and
+JSONL or a JSON array with `id`, `title`, `status`, `priority`, `issue_type`, `updated_at`, `labels` and
 `dependencies` (`{issue_id, depends_on_id, type}`; a bare id counts as a blocking dependency; an
 empty type is `blocks`), and an optional `blocks` list on the blocker. It never writes.
 
@@ -337,7 +337,7 @@ never block. Every id, title and reason in the report is sanitized.
    not the keystone list's.
 4. The next pick is bv's triage score (PageRank, unblocks, priority, staleness), not `bd ready`'s
    ordering. Scores can differ slightly from a `bv` run on the same tracker because the engine
-   reads only the fields above (no labels, estimates or created_at); the picked issue, the
+   reads only the fields above plus labels (no estimates or created_at); the picked issue, the
    counts, the cycles and the critical-path scores agree on the parity fixtures.
 5. "Blocked" is an unfinished blocker or a blocked status; deferred and custom-status issues are
    in neither count.

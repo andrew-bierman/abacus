@@ -29,7 +29,7 @@ package graph_test
 //     probe saw a closed issue score 3); the engine uses the scoped insights the CLI uses.
 //  4. The next pick is bv's triage score (PageRank, unblocks, priority, staleness and more), not
 //     bd's ready ordering, so scores differ from a recorded run by the fields the export does
-//     not carry (labels, estimates, created_at) and can differ from `bd ready`. Parity is on
+//     not carry (estimates, created_at) and can differ from `bd ready`. Parity is on
 //     which issue is picked, never on the score value.
 //  5. "Blocked" counts issues held back by an unfinished blocker or a blocked status; deferred
 //     and custom-status issues are in neither count.
