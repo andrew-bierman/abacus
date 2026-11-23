@@ -350,7 +350,7 @@ func (s *boardSection) connectedView() string {
 	}
 	var chans []string
 	for _, c := range r.Channels {
-		name := th.Tint(c.Path, san(c.Path))
+		name := san(c.Path)
 		if c.Threads > 0 { // a board that gives no counts shows none
 			name += th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads))
 		}
@@ -367,7 +367,7 @@ func (s *boardSection) connectedView() string {
 	var trows, tplain [][]string
 	for _, t := range r.Threads {
 		tplain = append(tplain, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), san(firstLine(t.Root.Text))})
-		trows = append(trows, []string{hash + san(t.Root.ID), th.Tint(t.Root.Channel, orDash(t.Root.Channel)), th.Tint(t.Root.Author, orDash(t.Root.Author)), san(firstLine(t.Root.Text))})
+		trows = append(trows, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), th.Tint(t.Root.Author, orDash(t.Root.Author)), san(firstLine(t.Root.Text))})
 	}
 	first := len(lines)
 	lines = append(lines, renderRows(th, threadCols, iw, trows, tplain, s.cursor)...)
@@ -946,14 +946,12 @@ func taskStatusKind(status string) (Kind, bool) {
 	return 0, false
 }
 
-// taskPriorityKind is the color role of a priority: P0 and P1 call for attention, P4 is quiet, and
-// the middle priorities are plain.
+// taskPriorityKind is the color role of a priority: P0 calls for attention and P4 is quiet; the rest
+// are plain, so amber still means one thing (deferred).
 func taskPriorityKind(p int) (Kind, bool) {
 	switch p {
 	case 0:
 		return KindFail, true
-	case 1:
-		return KindWarn, true
 	case 4:
 		return KindMuted, true
 	}
@@ -976,7 +974,7 @@ func (s *tasksSection) panelView() string {
 	title := titled("Tasks", s.report.Source)
 	c := s.report.Counts
 	var lines []string
-	if bar := th.stackBar(iw, taskBarSegments(c)); bar != "" {
+	if bar := th.stackBar(min(iw, taskBarMax), taskBarSegments(c)); bar != "" {
 		lines = append(lines, bar)
 	}
 	lines = append(lines, wrap(fmt.Sprintf("%d tasks: %d open · %d in progress · %d blocked · %d deferred · %d closed", c.Total, c.Open, c.InProgress, c.Blocked, c.Deferred, c.Closed), iw)...)

@@ -180,3 +180,51 @@ func TestSectionHeadingIsBoldAccentAndPlainWithoutColor(t *testing.T) {
 		t.Fatalf("a section heading is bold and colored: %q", s)
 	}
 }
+
+// A name is never mistaken for a state: on every profile and background no tint renders like any
+// semantic role, and no two tints collapse into one on a 16-color terminal.
+func TestNoTintLooksLikeASemanticColorOnAnyProfile(t *testing.T) {
+	var keys []string
+	for i := 0; i < 300; i++ {
+		keys = append(keys, "name-"+string(rune('a'+i%26))+string(rune('A'+i/26)))
+	}
+	for name, p := range map[string]termenv.Profile{"truecolor": termenv.TrueColor, "256": termenv.ANSI256, "16": termenv.ANSI} {
+		for _, dark := range []bool{true, false} {
+			th := NewTheme(rendererFor(p, dark))
+			tints := map[string]bool{}
+			for _, k := range keys {
+				s := th.Tint(k, "x")
+				tints[s] = true
+				for _, kind := range allKinds() {
+					if s == th.Text(kind, "x") {
+						t.Fatalf("%s dark=%v: the tint for %q equals semantic kind %d: %q", name, dark, k, kind, s)
+					}
+				}
+				if s == th.BorderFocus.Render("x") {
+					t.Fatalf("%s dark=%v: a tint equals the focus color: %q", name, dark, s)
+				}
+			}
+			if want := map[string]int{"truecolor": 4, "256": 4, "16": 2}[name]; len(tints) != want {
+				t.Errorf("%s dark=%v: %d distinct tints, want %d", name, dark, len(tints), want)
+			}
+		}
+	}
+}
+
+// On 16 colors the two usable tints split names about evenly (not three to one because three of
+// the four would render alike).
+func TestSixteenColorTintsAreBalanced(t *testing.T) {
+	th := NewTheme(rendererFor(termenv.ANSI, true))
+	count := map[string]int{}
+	for i := 0; i < 400; i++ {
+		count[th.Tint("agent-"+strings.Repeat("x", i%7)+string(rune('a'+i%26))+string(rune('A'+i/26)), "x")]++
+	}
+	if len(count) != 2 {
+		t.Fatalf("16 colors have two tints, got %d", len(count))
+	}
+	for s, n := range count {
+		if n < 140 || n > 260 {
+			t.Errorf("tint %q covers %d of 400 names: the split is skewed", s, n)
+		}
+	}
+}

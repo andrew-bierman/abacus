@@ -41,14 +41,14 @@ var (
 	colSelBG   = pal("#ddf4ff", "153", "7", "#1f2a37", "236", "0")
 )
 
-// colTint are the colors names are tinted with: none of them is a semantic color, so a name is never
-// mistaken for a state (red means failed, green means ok).
+// colTint are the colors people and machines are tinted with. None is a semantic color (red, amber,
+// green, blue) or close to one, so a name is never mistaken for a state. The first two are distinct
+// on a 16-color terminal, which is all that profile gets: it has no other neutral hue.
 var colTint = []lipgloss.CompleteAdaptiveColor{
 	pal("#8250df", "98", "5", "#d2a8ff", "183", "13"),  // purple
 	pal("#1b7c83", "30", "6", "#76e3ea", "117", "14"),  // teal
-	pal("#bc4c00", "166", "3", "#ffa657", "215", "11"), // orange
-	pal("#bf3989", "169", "5", "#ff9bce", "211", "13"), // pink
-	pal("#0550ae", "25", "4", "#79c0ff", "111", "12"),  // sky
+	pal("#bf3989", "169", "5", "#ff9bce", "211", "13"), // magenta
+	pal("#5b4fcf", "62", "5", "#aab4ff", "147", "13"),  // lilac
 }
 
 func colorFor(k Kind) lipgloss.TerminalColor {
@@ -122,9 +122,13 @@ func (t Theme) Tint(key, s string) string {
 	if t.plain {
 		return s
 	}
+	n := len(colTint)
+	if t.basic {
+		n = 2
+	}
 	h := fnv.New32a()
 	h.Write([]byte(key))
-	return t.r.NewStyle().Foreground(colTint[h.Sum32()%uint32(len(colTint))]).Render(s)
+	return t.r.NewStyle().Foreground(colTint[h.Sum32()%uint32(n)]).Render(s)
 }
 
 // Section is a heading inside a panel: bold and accent colored.

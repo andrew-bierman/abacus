@@ -15,6 +15,9 @@ type barSegment struct {
 	glyph string
 }
 
+// taskBarMax is the widest the Tasks bar is drawn: a glance, not a banner.
+const taskBarMax = 40
+
 // taskBarSegments are the task states as bar shares, in the order the counts line lists them.
 func taskBarSegments(c core.TaskCounts) []barSegment {
 	return []barSegment{

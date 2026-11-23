@@ -244,6 +244,23 @@ func runCols(withFlag bool) []column {
 		column{min: 8, max: 16, prio: 4}, column{min: 5, max: 8, prio: 5, right: true})
 }
 
+// runStateGlyph is a shape per run state, so the mark before the state says something without color.
+func runStateGlyph(state string) string {
+	switch core.RunState(strings.ToLower(state)) {
+	case core.RunRunning:
+		return "●"
+	case core.RunFailed:
+		return "✕"
+	case core.RunDeferred:
+		return "◐"
+	case core.RunPending:
+		return "◌"
+	case core.RunSettled, core.RunCanceled:
+		return "○"
+	}
+	return "·"
+}
+
 // listLines is the scrolling part of the list panel (the title carries the count) and the line the
 // cursor is on.
 func (s *lambeSection) listLines(iw int) ([]string, int) {
@@ -284,8 +301,9 @@ func (s *lambeSection) listLines(iw int) ([]string, int) {
 			return append(cells, orDash(r.Phase), machine, orDash(r.Workflow), orDash(r.LastEventAge))
 		}
 		kind := stateKind(r.State)
-		styled = append(styled, mk(th.Text(kind, "●")+" "+th.Text(kind, state), flag, th.Tint(r.Machine, orDash(r.Machine))))
-		plain = append(plain, mk("● "+state, plainFlag, orDash(r.Machine)))
+		glyph := runStateGlyph(r.State)
+		styled = append(styled, mk(th.Text(kind, glyph)+" "+th.Text(kind, state), flag, th.Tint(r.Machine, orDash(r.Machine))))
+		plain = append(plain, mk(glyph+" "+state, plainFlag, orDash(r.Machine)))
 	}
 	out = append(out, renderRows(th, tb, iw, styled, plain, s.cursor)...)
 	if s.view.Source != lambe.SourceTracker {

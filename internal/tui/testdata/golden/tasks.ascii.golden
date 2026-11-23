@@ -59,7 +59,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
-│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████████████▓▓▓▓▓▓▓▓▓▓▓░░░░░░··········· │
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
 │ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
 │ ready 4                                                                      │
 │                                                                              │
@@ -89,7 +89,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Tasks ────────────────────────────────────────────────────────────╮ ╭─ Insights · graph analysis ─────────────────╮
-│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒███████████████▓▓▓▓▓▓▓▓▓▓░░░░░·········· │ │ 4 actionable · 2 blocked · 1 cycles         │
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                             │ │ 4 actionable · 2 blocked · 1 cycles         │
 │ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed │ │ next     ac-12  wire the lease heartbeat    │
 │ ready 4                                                              │ │          (unblocks 2)                       │
 │                                                                      │ │ blocker  ac-12  wire the lease heartbeat    │
@@ -103,7 +103,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Tasks ────────────────────────────────────────────────────────────╮ ╭─ Insights · graph analysis ─────────────────╮
-│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒███████████████▓▓▓▓▓▓▓▓▓▓░░░░░·········· │ │ 4 actionable · 2 blocked · 1 cycles         │
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                             │ │ 4 actionable · 2 blocked · 1 cycles         │
 │ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed │ │ next     ac-12  wire the lease heartbeat    │
 │ ready 4                                                              │ │          (unblocks 2)                       │
 │                                                                      │ │ blocker  ac-12  wire the lease heartbeat    │

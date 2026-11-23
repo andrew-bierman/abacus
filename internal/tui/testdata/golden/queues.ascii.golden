@@ -2,7 +2,7 @@
  Board  Tasks  Leases  [Queues]  Doctor
 ╭─ ▸ Runs 3 · demo data ───────────────╮
 │ ▸ T-1  ● running                     │
-│   T-2  ● deferred                    │
+│   T-2  ◐ deferred                    │
 │   T-3  ● running   (stalled)         │
 │                                      │
 │ Queue 2                              │
@@ -16,7 +16,7 @@
 ────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────╮
 │ ▸ T-1  ● running                     │
-│   T-2  ● deferred                    │
+│   T-2  ◐ deferred                    │
 │   T-3  ● running   (stalled)         │
 │                                      │
 │ Queue 2                              │
@@ -46,7 +46,7 @@
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s          │
-│   T-2  ● deferred             deferred  operators-mac  -        n/a          │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a          │
 │   T-3  ● running   (stalled)  running   operators-mac  review   12m          │
 │                                                                              │
 │ Queue 2                                                                      │
@@ -60,7 +60,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s          │
-│   T-2  ● deferred             deferred  operators-mac  -        n/a          │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a          │
 │   T-3  ● running   (stalled)  running   operators-mac  review   12m          │
 │                                                                              │
 │ Queue 2                                                                      │
@@ -90,7 +90,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
-│   T-2  ● deferred             deferred  operators-mac  -        n/a  │ │                                             │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │                                             │
 │   T-3  ● running   (stalled)  running   operators-mac  review   12m  │ │ phase      gating                           │
 │                                                                      │ │ workflow   general                          │
 │ Queue 2                                                              │ │ session    ses-t1                           │
@@ -104,7 +104,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
-│   T-2  ● deferred             deferred  operators-mac  -        n/a  │ │                                             │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │                                             │
 │   T-3  ● running   (stalled)  running   operators-mac  review   12m  │ │ phase      gating                           │
 │                                                                      │ │ workflow   general                          │
 │ Queue 2                                                              │ │ session    ses-t1                           │
