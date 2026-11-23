@@ -92,7 +92,8 @@ func TestMoveWithAStaleGuardIsReportedAsChangedAndAuditedAsAnError(t *testing.T)
 func TestMoveVerificationNeedsTheAskedForStatusInTheAnswerAndTheReread(t *testing.T) {
 	// exit 0 and the right issue, but bd answered with another status
 	f := moveFake(issueIn("open"), issueIn("open"), 0)
-	if _, err := writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "update", "tt-1", "--json", "--status=in_progress", "--if-status=open"}); err == nil || !strings.Contains(err.Error(), `wanted "in_progress"`) {
+	delete(f.resp, showKey) // no re-read to lean on: the answer alone must fail it
+	if _, err := writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "update", "tt-1", "--json", "--status=in_progress", "--if-status=open"}); err == nil || !strings.Contains(err.Error(), "bd answered with status") {
 		t.Errorf("answer mismatch: %v", err)
 	}
 	// the answer is right but the re-read disagrees (another actor moved it again): not a success
