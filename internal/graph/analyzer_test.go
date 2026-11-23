@@ -3,6 +3,9 @@ package graph_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"unicode"
@@ -259,5 +262,89 @@ func TestModuleReportsAFailedReadAndRecovers(t *testing.T) {
 	rep := core.ReadInsights(context.Background(), ok, "")
 	if rep.State != core.Connected || rep.Title != "Insights" || rep.Source != core.SourceGraph {
 		t.Fatalf("%+v", rep.Header)
+	}
+}
+
+// A status abacus has no name for is parked: it is not actionable, and not closed either, so a
+// dependent of it stays blocked. (bvStatus's fall-through case.)
+func TestCustomStatusIsParkedNeitherActionableNorClosed(t *testing.T) {
+	r, err := graph.NewBVAnalyzer().Analyze(context.Background(), []graph.Issue{
+		is("review", "in_review"),
+		is("waiter", graph.StatusOpen, graph.Dependency{ID: "review", Type: graph.DepBlocks}),
+		is("free", graph.StatusOpen),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Only "free" is actionable; "waiter" is held by the parked issue; "review" is in neither.
+	if r.TotalActionable != 1 || r.TotalBlocked != 1 {
+		t.Fatalf("actionable %d, blocked %d; want 1 and 1", r.TotalActionable, r.TotalBlocked)
+	}
+}
+
+// A dependency type abacus has no name for is "related": it never blocks. (bvDepType's
+// fall-through case.)
+func TestUnknownDependencyTypeIsRelatedAndNeverBlocks(t *testing.T) {
+	r, err := graph.NewBVAnalyzer().Analyze(context.Background(), []graph.Issue{
+		is("a", graph.StatusOpen, graph.Dependency{ID: "b", Type: "mystery-link"}),
+		is("b", graph.StatusOpen),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.TotalActionable != 2 || r.TotalBlocked != 0 {
+		t.Fatalf("actionable %d, blocked %d; want 2 and 0", r.TotalActionable, r.TotalBlocked)
+	}
+	// The known hard type, for contrast, does block.
+	r, _ = graph.NewBVAnalyzer().Analyze(context.Background(), []graph.Issue{
+		is("a", graph.StatusOpen, graph.Dependency{ID: "b", Type: graph.DepBlocks}),
+		is("b", graph.StatusOpen),
+	})
+	if r.TotalActionable != 1 || r.TotalBlocked != 1 {
+		t.Fatalf("blocks: actionable %d, blocked %d; want 1 and 1", r.TotalActionable, r.TotalBlocked)
+	}
+}
+
+// bv's pkg/debug reads BV_DEBUG in an init() that runs before main (so unsetting the variable in
+// main is too late) and then logs to stderr, which would scribble over the TUI. The analyzer
+// switches it off whatever the environment said. This runs the check in a child process that
+// really starts with BV_DEBUG set.
+func TestAnalyzerSilencesBvDebugLogging(t *testing.T) {
+	switch os.Getenv("ABACUS_TEST_BV_DEBUG_CHILD") {
+	case "new": // the constructor alone is enough
+		before := graph.BVDebugEnabled()
+		graph.NewBVAnalyzer()
+		fmt.Printf("before=%v after=%v", before, graph.BVDebugEnabled())
+		return
+	case "zero": // the zero value never went through the constructor; analysis re-asserts the guard
+		before := graph.BVDebugEnabled()
+		var an graph.BVAnalyzer
+		if _, err := an.Analyze(context.Background(), []graph.Issue{is("a", graph.StatusOpen)}); err != nil {
+			t.Fatal(err)
+		}
+		fmt.Printf("before=%v after=%v", before, graph.BVDebugEnabled())
+		return
+	}
+	for _, mode := range []string{"new", "zero"} {
+		cmd := exec.Command(os.Args[0], "-test.run=^TestAnalyzerSilencesBvDebugLogging$")
+		cmd.Env = append(os.Environ(), "ABACUS_TEST_BV_DEBUG_CHILD="+mode, "BV_DEBUG=1")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%s: %v\n%s", mode, err, out)
+		}
+		// "before=true" proves bv's init() ran with the variable set, ahead of any abacus code.
+		if !strings.Contains(string(out), "before=true after=false") {
+			t.Fatalf("%s: child output: %s", mode, out)
+		}
+	}
+}
+
+// With nothing set the guard is a no-op: the logger stays off.
+func TestBvDebugIsOffByDefault(t *testing.T) {
+	if os.Getenv("BV_DEBUG") != "" {
+		t.Skip("BV_DEBUG is set")
+	}
+	if graph.BVDebugEnabled() {
+		t.Fatal("bv debug logging is on without BV_DEBUG")
 	}
 }

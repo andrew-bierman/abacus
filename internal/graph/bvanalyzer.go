@@ -29,6 +29,7 @@ import (
 	"fmt"
 
 	"github.com/Dicklesworthstone/beads_viewer/pkg/analysis"
+	"github.com/Dicklesworthstone/beads_viewer/pkg/debug"
 	"github.com/Dicklesworthstone/beads_viewer/pkg/model"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -44,7 +45,20 @@ const (
 // BVAnalyzer is the Analyzer backed by bv's analysis package, run in this process.
 type BVAnalyzer struct{}
 
-func NewBVAnalyzer() BVAnalyzer { return BVAnalyzer{} }
+func NewBVAnalyzer() BVAnalyzer {
+	quietBV()
+	return BVAnalyzer{}
+}
+
+// quietBV switches off bv's debug logger. bv's pkg/debug turns it on in an init() when BV_DEBUG
+// is set, which runs before main, so the variable cannot be cleared in time; this flips the
+// logger off instead. Its output goes to stderr in this process and would corrupt the TUI.
+// bv's metrics (BV_METRICS) only collect in memory and print nothing, so they need no guard.
+// The analysis path in v0.27.0 does not log, so this is defence for a later bv bump.
+func quietBV() { debug.SetEnabled(false) }
+
+// BVDebugEnabled reports whether bv's debug logger is on (it is off after NewBVAnalyzer).
+func BVDebugEnabled() bool { return debug.Enabled() }
 
 // bvStatus maps an abacus status to bv's, explicitly. A status abacus has no name for passes
 // through unchanged: bv keeps a custom state as neither closed nor claimable.
@@ -131,6 +145,7 @@ func (BVAnalyzer) Analyze(ctx context.Context, issues []Issue) (core.InsightsRep
 }
 
 func analyze(ctx context.Context, issues []Issue) (core.InsightsReport, error) {
+	quietBV()
 	titles := make(map[string]string, len(issues))
 	for _, i := range issues {
 		titles[i.ID] = i.Title

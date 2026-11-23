@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/graph"
@@ -141,7 +142,8 @@ func TestFileSourceReadsTheExportFromTheTrackerOrAParent(t *testing.T) {
 	if err := os.MkdirAll(sub, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, src := range []graph.FileSource{{Dir: root}, {Dir: sub}, {Ref: core.NewTrackerRef(sub)}} {
+	// Without a tracker directory the lookup walks up from the directory, as the tracker does.
+	for _, src := range []graph.FileSource{{Dir: root}, {Dir: sub}, {Ref: core.NewTrackerRef(root)}} {
 		issues, err := src.Issues(context.Background())
 		if err != nil || len(issues) != 3 {
 			t.Fatalf("%+v: %v %v", src, issues, err)
@@ -158,4 +160,216 @@ func TestFileSourceReadsTheExportFromTheTrackerOrAParent(t *testing.T) {
 	if _, err := (graph.FileSource{Dir: root}).Issues(ctx); err == nil {
 		t.Fatal("a cancelled context must stop the read")
 	}
+}
+
+// writeExport makes dir/.beads/issues.jsonl with the chain fixture.
+func writeExport(t *testing.T, dir string) string {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(dir, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(filepath.Join("testdata", "chain.jsonl"))
+	p := filepath.Join(dir, ".beads", "issues.jsonl")
+	if err := os.WriteFile(p, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func touch(t *testing.T, p string, mod time.Time) {
+	t.Helper()
+	if err := os.Chtimes(p, mod, mod); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// With a tracker directory set the lookup stays inside it: an export in a parent belongs to
+// another project and is never read.
+func TestFileSourceDoesNotWalkAboveTheTrackerDir(t *testing.T) {
+	root := t.TempDir()
+	writeExport(t, root)
+	sub := filepath.Join(root, "child")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	src := graph.FileSource{Ref: core.NewTrackerRef(sub)}
+	if p := src.Path(); p != "" {
+		t.Fatalf("Path walked above the tracker dir: %q", p)
+	}
+	if _, err := src.Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "default engine") {
+		t.Fatalf("a parent's export must not be read: %v", err)
+	}
+	// The same directory through Dir (no tracker set) still walks up.
+	if is, err := (graph.FileSource{Dir: sub}).Issues(context.Background()); err != nil || len(is) != 3 {
+		t.Fatalf("Dir walks up: %v %v", is, err)
+	}
+	// A Ref with no directory means the working directory, and that walks up like Dir.
+	t.Chdir(sub)
+	if is, err := (graph.FileSource{Ref: core.NewTrackerRef("")}).Issues(context.Background()); err != nil || len(is) != 3 {
+		t.Fatalf("empty Ref walks up from the working directory: %v %v", is, err)
+	}
+	// A tracker directory holding its own export reads it.
+	p := writeExport(t, sub)
+	if got := (graph.FileSource{Ref: core.NewTrackerRef(sub)}).Path(); got != p {
+		t.Fatalf("Path = %q, want %q", got, p)
+	}
+}
+
+// An export, or the .beads directory, that is a symlink leaving the tracker directory is
+// refused: a planted link must not make abacus read another project's file.
+func TestFileSourceRefusesASymlinkLeavingTheTrackerDir(t *testing.T) {
+	outside := t.TempDir()
+	outExport := writeExport(t, outside)
+
+	check := func(name string, src graph.FileSource) {
+		t.Helper()
+		if p := src.Path(); p != "" {
+			t.Errorf("%s: Path = %q, want none", name, p)
+		}
+		_, err := src.Issues(context.Background())
+		if err == nil || !strings.Contains(err.Error(), "outside the tracker directory") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+
+	fileLink := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(fileLink, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outExport, filepath.Join(fileLink, ".beads", "issues.jsonl")); err != nil {
+		t.Skip("symlinks unavailable:", err)
+	}
+	check("issues.jsonl link", graph.FileSource{Ref: core.NewTrackerRef(fileLink)})
+	check("issues.jsonl link via Dir", graph.FileSource{Dir: fileLink})
+
+	dirLink := t.TempDir()
+	if err := os.Symlink(filepath.Join(outside, ".beads"), filepath.Join(dirLink, ".beads")); err != nil {
+		t.Fatal(err)
+	}
+	check(".beads link", graph.FileSource{Ref: core.NewTrackerRef(dirLink)})
+
+	// A link that stays inside the tracker directory is fine, and so is a tracker directory
+	// that is itself reached through a link.
+	inside := t.TempDir()
+	real := writeExport(t, inside)
+	alias := filepath.Join(inside, ".beads", "alias.jsonl")
+	if err := os.Rename(real, alias); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(alias, real); err != nil {
+		t.Fatal(err)
+	}
+	top := filepath.Join(t.TempDir(), "via-link")
+	if err := os.Symlink(inside, top); err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range []string{inside, top} {
+		if is, err := (graph.FileSource{Ref: core.NewTrackerRef(d)}).Issues(context.Background()); err != nil || len(is) != 3 {
+			t.Errorf("%s: %v %v", d, is, err)
+		}
+	}
+}
+
+func TestFileSourceFreshnessComparesTheExportToTheTrackerData(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	dir := t.TempDir()
+	exp := writeExport(t, dir)
+	touch(t, exp, now.Add(-10*time.Minute))
+	src := graph.FileSource{Ref: core.NewTrackerRef(dir)}
+
+	f, ok := src.Freshness()
+	if !ok || !f.Export.Equal(now.Add(-10*time.Minute)) || !f.Data.IsZero() || f.Stale() {
+		t.Fatalf("no tracker data: %+v %v", f, ok)
+	}
+
+	// A database newer than the export: stale, by the difference.
+	db := filepath.Join(dir, ".beads", "beads.db")
+	if err := os.WriteFile(db, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	touch(t, db, now.Add(-4*time.Minute))
+	f, _ = src.Freshness()
+	if !f.Stale() || f.Behind() != 6*time.Minute || !f.Data.Equal(now.Add(-4*time.Minute)) {
+		t.Fatalf("db newer: %+v behind %v", f, f.Behind())
+	}
+
+	// Within the slack the export is current (it is written moments after the data).
+	touch(t, db, now.Add(-10*time.Minute).Add(time.Second))
+	if f, _ = src.Freshness(); f.Stale() {
+		t.Fatalf("a one second lag is not stale: %+v", f)
+	}
+	// An older database: not stale.
+	touch(t, db, now.Add(-30*time.Minute))
+	if f, _ = src.Freshness(); f.Stale() || f.Behind() != 0 {
+		t.Fatalf("old db: %+v", f)
+	}
+
+	// So does a write-ahead log beside the database.
+	wal := filepath.Join(dir, ".beads", "beads.db-wal")
+	if err := os.WriteFile(wal, []byte("w"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	touch(t, wal, now.Add(-2*time.Minute))
+	if f, _ = src.Freshness(); f.Behind() != 8*time.Minute {
+		t.Fatalf("wal newer: %+v behind %v", f, f.Behind())
+	}
+	touch(t, wal, now.Add(-30*time.Minute))
+
+	// A dolt directory counts too, by the newest file inside it.
+	dolt := filepath.Join(dir, ".beads", "dolt", "noms")
+	if err := os.MkdirAll(dolt, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := filepath.Join(dolt, "manifest")
+	if err := os.WriteFile(manifest, []byte("m"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	touch(t, manifest, now.Add(-1*time.Minute))
+	touch(t, dolt, now.Add(-2*time.Hour))
+	touch(t, filepath.Join(dir, ".beads", "dolt"), now.Add(-2*time.Hour))
+	f, _ = src.Freshness()
+	if !f.Stale() || f.Behind() != 9*time.Minute {
+		t.Fatalf("dolt newer: %+v behind %v", f, f.Behind())
+	}
+
+	// No export: nothing to report.
+	if _, ok := (graph.FileSource{Dir: t.TempDir()}).Freshness(); ok {
+		t.Fatal("no export, no freshness")
+	}
+}
+
+func TestOversizedExportIsAClearError(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(dir, ".beads", "issues.jsonl")
+	f, err := os.Create(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := `{"id":"a","title":"` + strings.Repeat("x", 1<<20-32) + `"}` + "\n"
+	for written := 0; written <= 64<<20; written += len(line) {
+		if _, err := f.WriteString(line); err != nil {
+			t.Fatal(err)
+		}
+	}
+	f.Close()
+	check := func(name string, err error) {
+		t.Helper()
+		if err == nil || !strings.Contains(err.Error(), "export larger than 64 MiB") || strings.Contains(err.Error(), "unreadable") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	_, err = (graph.FileSource{Ref: core.NewTrackerRef(dir)}).Issues(context.Background())
+	check("file", err)
+
+	// The stream path (no size known up front) says the same, for JSONL and for a JSON array.
+	rf, _ := os.Open(p)
+	defer rf.Close()
+	_, err = graph.ParseIssues(rf)
+	check("jsonl stream", err)
+	arr := strings.NewReader("[" + strings.Repeat(`{"id":"a","title":"`+strings.Repeat("x", 1<<20-32)+`"},`, 66) + `{"id":"z"}]`)
+	_, err = graph.ParseIssues(arr)
+	check("array stream", err)
 }

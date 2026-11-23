@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -21,8 +23,40 @@ type IssueSource interface {
 	Issues(ctx context.Context) ([]Issue, error)
 }
 
-// maxExport bounds how much of an export is read, so a runaway file cannot exhaust memory.
+// maxExport bounds how much of an export is read, so a runaway file cannot exhaust memory. The
+// whole export is decoded into memory, so the working set is a small multiple of this (see
+// docs/tool-contract.md, "Memory ceiling").
 const maxExport = 64 << 20
+
+// errTooLarge is what an export over maxExport reports, instead of a parse error on the
+// truncated tail.
+var errTooLarge = errors.New("export larger than 64 MiB: the library engine will not read it (use the default engine)")
+
+// capReader reads at most maxExport bytes and then fails with errTooLarge, so the reader can
+// tell a too-large export from a malformed one.
+type capReader struct {
+	r io.Reader
+	n int64
+}
+
+func (c *capReader) Read(p []byte) (int, error) {
+	if c.n >= maxExport+1 {
+		return 0, errTooLarge
+	}
+	if int64(len(p)) > maxExport+1-c.n {
+		p = p[:maxExport+1-c.n]
+	}
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	if c.n > maxExport {
+		return n - int(c.n-maxExport), errTooLarge
+	}
+	return n, err
+}
+
+func tooLarge(err error) bool {
+	return errors.Is(err, errTooLarge) || errors.Is(err, bufio.ErrTooLong)
+}
 
 // rawIssue is the JSON shape the tracker writes, for the fields graph analysis reads: the one
 // line of `.beads/issues.jsonl`, or one element of a `--json` array. Anything else in the
@@ -87,16 +121,21 @@ func (r rawIssue) issue() Issue {
 // Records without an id are skipped; a repeated id keeps the last record in the first one's
 // position, as the tracker's own loader does. Malformed JSON is an error, never a partial graph.
 func ParseIssues(r io.Reader) ([]Issue, error) {
-	br := bufio.NewReaderSize(io.LimitReader(r, maxExport+1), 1<<20)
+	br := bufio.NewReaderSize(&capReader{r: r}, 1<<20)
 	var raws []rawIssue
 	first, err := peekNonSpace(br)
 	switch {
 	case err == io.EOF:
 		return nil, nil
+	case tooLarge(err):
+		return nil, errTooLarge
 	case err != nil:
 		return nil, err
 	case first == '[':
 		if err := json.NewDecoder(br).Decode(&raws); err != nil {
+			if tooLarge(err) {
+				return nil, errTooLarge
+			}
 			return nil, fmt.Errorf("unreadable issue list: %w", err)
 		}
 	default:
@@ -109,11 +148,17 @@ func ParseIssues(r io.Reader) ([]Issue, error) {
 			}
 			var ri rawIssue
 			if err := json.Unmarshal(line, &ri); err != nil {
+				if tooLarge(sc.Err()) { // the line is the truncated tail of an oversized export
+					return nil, errTooLarge
+				}
 				return nil, fmt.Errorf("unreadable issue on line %d", n)
 			}
 			raws = append(raws, ri)
 		}
 		if err := sc.Err(); err != nil {
+			if tooLarge(err) {
+				return nil, errTooLarge
+			}
 			return nil, fmt.Errorf("unreadable issue export: %w", err)
 		}
 	}
@@ -154,12 +199,20 @@ type StaticSource []Issue
 func (s StaticSource) Issues(context.Context) ([]Issue, error) { return []Issue(s), nil }
 
 // FileSource reads the tracker's JSONL export (.beads/issues.jsonl) from the tracker directory
-// shared with the other modules, or from the working directory when none is set, looking in the
-// directory and then each parent, as the tracker itself does. It only reads a file: no tool runs.
+// shared with the other modules, or from the working directory when none is set. It only reads
+// a file: no tool runs.
+//
+// With a tracker directory set (Ref with a directory) the export must be in that directory:
+// nothing above it is read, since an export in a parent belongs to another project. Without one
+// (Dir, or a Ref with no directory) the lookup starts at the directory (or the working
+// directory) and walks up through each parent, as the tracker itself does. In both cases an
+// export (or .beads directory) that is a symlink resolving outside the directory it was found
+// in is refused, so a planted link cannot point abacus at another project's file.
 //
 // This is the prototype's reader. The export is written by the tracker; a tracker that does not
 // keep one (or keeps it stale) is reported plainly, and Tasks then shows the insights as
-// unavailable rather than analysing out-of-date data.
+// unavailable rather than analysing out-of-date data. Freshness reports how far behind the
+// tracker's own data the export is.
 type FileSource struct {
 	Ref *core.TrackerRef // when set, the tracker directory; "" means the working directory
 	Dir string           // used when Ref is nil
@@ -175,27 +228,62 @@ func (s FileSource) dir() string {
 	return s.Dir
 }
 
-// Path is the export file this source would read, or "" when there is none.
-func (s FileSource) Path() string {
+// bounded reports whether the lookup stays in the tracker directory: a tracker directory is set.
+func (s FileSource) bounded() bool { return s.Ref != nil && s.Ref.Dir() != "" }
+
+var errOutside = errors.New("the issue export resolves outside the tracker directory (a symlink), so it was not read")
+
+// locate finds the export. It returns "" and a nil error when there is none, and an error when
+// one was found but refused.
+func (s FileSource) locate() (string, error) {
 	dir := s.dir()
 	if dir == "" {
 		var err error
 		if dir, err = os.Getwd(); err != nil {
-			return ""
+			return "", nil
 		}
 	}
 	dir, _ = filepath.Abs(dir)
 	for {
 		p := filepath.Join(dir, ExportFile)
 		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() {
-			return p
+			if !within(dir, p) {
+				return "", errOutside
+			}
+			return p, nil
 		}
 		parent := filepath.Dir(dir)
-		if parent == dir {
-			return ""
+		if s.bounded() || parent == dir {
+			return "", nil
 		}
 		dir = parent
 	}
+}
+
+// within reports whether file, with every symlink resolved, is inside root, also resolved.
+func within(root, file string) bool {
+	r, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return false
+	}
+	f, err := filepath.EvalSymlinks(file)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(r, f)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
+}
+
+// Path is the export file this source would read, or "" when there is none (or it is refused).
+func (s FileSource) Path() string {
+	p, err := s.locate()
+	if err != nil {
+		return ""
+	}
+	return p
 }
 
 var errNoExport = errors.New("no " + filepath.ToSlash(ExportFile) + " export in this tracker, so the library engine has nothing to read (use the default engine)")
@@ -204,7 +292,10 @@ func (s FileSource) Issues(ctx context.Context) ([]Issue, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	p := s.Path()
+	p, err := s.locate()
+	if err != nil {
+		return nil, err
+	}
 	if p == "" {
 		return nil, errNoExport
 	}
@@ -213,5 +304,89 @@ func (s FileSource) Issues(ctx context.Context) ([]Issue, error) {
 		return nil, fmt.Errorf("could not read the issue export: %w", err)
 	}
 	defer f.Close()
+	if fi, err := f.Stat(); err == nil && fi.Size() > maxExport {
+		return nil, errTooLarge
+	}
 	return ParseIssues(f)
+}
+
+// staleSlack is how far the tracker data may be ahead of the export before the export counts
+// as stale: the tracker writes the export moments after the data changes.
+const staleSlack = 5 * time.Second
+
+// Freshness compares the export's modification time with the tracker's own data in the same
+// .beads directory.
+type Freshness struct {
+	Export time.Time
+	// Data is the newest modification time among the tracker's database (.beads/*.db and its
+	// write-ahead log) and Dolt directory; zero when the tracker keeps neither here.
+	Data time.Time
+}
+
+// Behind is how far the export trails the data (zero when it does not).
+func (f Freshness) Behind() time.Duration {
+	if f.Data.IsZero() || !f.Data.After(f.Export) {
+		return 0
+	}
+	return f.Data.Sub(f.Export)
+}
+
+// Stale reports an export that is older than the tracker data by more than staleSlack.
+func (f Freshness) Stale() bool { return f.Behind() > staleSlack }
+
+// FreshnessSource is an IssueSource that can say how current its export is.
+type FreshnessSource interface {
+	Freshness() (Freshness, bool)
+}
+
+// Freshness stats the export and the tracker data beside it. It reports false when there is no
+// export to judge.
+func (s FileSource) Freshness() (Freshness, bool) {
+	p := s.Path()
+	if p == "" {
+		return Freshness{}, false
+	}
+	fi, err := os.Stat(p)
+	if err != nil {
+		return Freshness{}, false
+	}
+	return Freshness{Export: fi.ModTime(), Data: newestData(filepath.Dir(p))}, true
+}
+
+// maxWalk bounds how many Dolt directory entries are looked at.
+const maxWalk = 20000
+
+// newestData is the newest modification time of the database files and Dolt directory in a
+// .beads directory. Nothing is followed through a symlink.
+func newestData(beads string) time.Time {
+	var newest time.Time
+	note := func(fi os.FileInfo) {
+		if fi.ModTime().After(newest) {
+			newest = fi.ModTime()
+		}
+	}
+	for _, pat := range []string{"*.db", "*.db-wal"} {
+		names, _ := filepath.Glob(filepath.Join(beads, pat))
+		for _, n := range names {
+			if fi, err := os.Lstat(n); err == nil && fi.Mode().IsRegular() {
+				note(fi)
+			}
+		}
+	}
+	seen := 0
+	_ = filepath.WalkDir(filepath.Join(beads, "dolt"), func(_ string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if seen++; seen > maxWalk {
+			return filepath.SkipAll
+		}
+		if d.Type()&fs.ModeSymlink == 0 {
+			if fi, err := d.Info(); err == nil {
+				note(fi)
+			}
+		}
+		return nil
+	})
+	return newest
 }
