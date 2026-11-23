@@ -150,7 +150,7 @@ differ by a refresh.)
   need the status grouping). From 100 columns the columns sit side by side (a column needs 20
   cells: five columns, with `Z`, fit from 100 columns and six from 120); below that a tab strip shows one
   column at a time, `h` and `l` change it. `j` and `k` move between cards, `enter` shows the card in
-  full (`esc` back), `/` edits the same query the list uses and applies to the board. The selected
+  full (`esc` back), `/` edits the same query the list uses and applies to the board. The view order is List, Kanban, Graph, Insights. `g` (or `v` into the Graph) opens the graph on the selected card, and `V` back to the List puts the list cursor on it. `h` `l` `H` `L` and the tree keys (`T`, `+`, `-`) stay strictly per view. The selected
   card is a task id: when a refresh moves it to another column the cursor follows it. All the
   grouping, counting and ordering is core's (`internal/taskview` `Board`, printed by
   `abacus tasks board [--json]`); the view only draws it.
