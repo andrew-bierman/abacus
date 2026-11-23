@@ -34,6 +34,12 @@ may change behavior, and patch versions are fixes and small additions.
   ship (Vercel Board CLI, b9s) say they are optional and what they add. Doctor's tool badge reads
   `unavailable` or `optional` instead of `missing`; the raw `where: "missing"` in JSON is unchanged.
 
+
+- Assessment of bv and b9s as importable Go packages for the Tasks graph insights
+  (`docs/plans/2026-11-22-graph-core-assessment.md`): measurements, a decision and the bv license
+  rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
+  dependency change.
+- `docs/plans/2026-11-22-board-bundling-assessment.md`: how to ship the Board domain without asking for Node (compiled binary measured, native client judged, trust model, recommendation).
 - `abacus tui --demo` shows every tab with invented data: Board, Tasks (with graph insights and the
   confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
   only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,
