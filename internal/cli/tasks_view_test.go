@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -220,5 +221,15 @@ func TestTasksBoardTextJSONAndUsage(t *testing.T) {
 	}
 	if code, _, e := runTasks(t, nil, "tasks", "board"); code != core.ExitFail || !strings.Contains(e, "not connected") {
 		t.Errorf("not connected: %d %q", code, e)
+	}
+}
+
+func TestTasksBoardReadFailureExitsNonZeroWithNoJSON(t *testing.T) {
+	bad := []core.Module{snapMod{Fake: &modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1"}}, err: errors.New("export failed")}}
+	for _, args := range [][]string{{"tasks", "board"}, {"tasks", "board", "--json"}} {
+		code, out, errOut := runTasks(t, bad, args...)
+		if code != core.ExitFail || out != "" || !strings.Contains(errOut, "export failed") {
+			t.Errorf("%v: %d %q %q", args, code, out, errOut)
+		}
 	}
 }

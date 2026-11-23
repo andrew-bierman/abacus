@@ -148,7 +148,7 @@ differ by a refresh.)
   last column. A task held back only by a dependency keeps its stored column and shows `⊘N`: the
   derived state is a badge, never a column. `s` regroups the columns by priority or type (moves
   need the status grouping). From 100 columns the columns sit side by side (a column needs 20
-  cells, so a fifth column with `Z` at exactly 100 still fits); below that a tab strip shows one
+  cells: five columns, with `Z`, fit from 100 columns and six from 120); below that a tab strip shows one
   column at a time, `h` and `l` change it. `j` and `k` move between cards, `enter` shows the card in
   full (`esc` back), `/` edits the same query the list uses and applies to the board. The selected
   card is a task id: when a refresh moves it to another column the cursor follows it. All the
@@ -162,8 +162,17 @@ differ by a refresh.)
   The legal moves: between the four working statuses (`bd update --status` with `--if-status`, so the
   tracker itself refuses with exit 13 if another actor moved the task first); into closed (`bd
   close`, no reason); out of closed only to open (`bd reopen`; `H` from the closed column goes
-  there). A custom status is a column to move out of, never into. After the write the task is read
+  there). A custom status is a column to move out of, never into (stepping with `H` and `L` skips it). After the write the task is read
   again and its status must be the one asked for. There is no delete.
+
+  Be clear about the guards. Moves between the working statuses are guarded by the tracker itself
+  (`--if-status`). `bd close` and `bd reopen` have **no** tracker-side guard, so their protection is
+  abacus's own: the task is read again when the confirm screen opens and again right before the write
+  after `y`, and the move is dropped ("changed since you opened it") on any mismatch. If the task cannot
+  be read at either point the move is refused ("could not verify the current status; nothing was
+  written"), never confirmed unchecked. What remains is the gap between that last read and the tracker
+  running the command. A write the tracker confirmed but whose re-read shows another status (someone
+  moved it again) is reported as written, not as failed, and audited as `applied-mismatch`.
 - **Insights view.** `n` works from any view; `e`, `x` and the workspace key act on the list's task,
   which this view does not show, so they only say `switch to the List view (v)`.
 - **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e` and `x` forms and

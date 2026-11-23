@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -187,6 +188,9 @@ func (s *tasksSection) openGraphOn(id string) {
 	s.list.cur, s.drilled, s.list.detailFocus = viewGraph, false, false
 }
 
+// enterable is whether a card can be moved into the column: the four working statuses and closed.
+func enterable(key string) bool { return key == "closed" || slices.Contains(core.TaskStatuses, key) }
+
 func orStatus(g string) string {
 	if g == "" {
 		return taskview.GroupStatus
@@ -215,6 +219,11 @@ func (s *tasksSection) kbMove(cols []core.KanbanColumn, ci int, card core.Kanban
 			if c.Key == "open" {
 				to = i
 			}
+		}
+	}
+	if card.Status != "closed" || d > 0 { // stepping skips columns a card cannot enter (a custom status is move-out-only)
+		for to >= 0 && to < len(cols) && !enterable(cols[to].Key) {
+			to += d
 		}
 	}
 	if to < 0 || to >= len(cols) {

@@ -251,3 +251,10 @@ func TestDisplayArgvQuotesArgumentsWithNonPrintableRunes(t *testing.T) {
 		t.Errorf("printable arguments stay unquoted: %q", got)
 	}
 }
+
+func TestGuardShapeErrorNamesTheCause(t *testing.T) {
+	_, err := core.PlanTaskChange(&fakeWriter{}, core.TaskChange{Op: core.TaskUpdate, ID: "t-1", Status: "open", IfStatus: "Weird Status"})
+	if err == nil || !strings.Contains(err.Error(), "plain lower-case word") || !strings.Contains(err.Error(), "Weird Status") {
+		t.Fatalf("%v", err)
+	}
+}

@@ -32,6 +32,7 @@ type taskVerifiedMsg struct {
 	task core.Task
 	err  error
 }
+
 var errCannotVerify = errors.New("could not verify the current status; nothing was written")
 
 type taskAppliedMsg struct {

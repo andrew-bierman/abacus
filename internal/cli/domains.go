@@ -297,6 +297,11 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 			return core.ExitFail
 		}
 		ch.IfStatus, ch.Before = cur.Status, cur
+		// naming the status it already has is not a change: drop it (and its guard) when other fields
+		// are set; alone it stays the "already X" refusal
+		if ch.Status == cur.Status && (ch.Title != "" || ch.Description != "" || ch.Priority != nil) {
+			ch.Status, ch.IfStatus = "", ""
+		}
 	}
 	plan, err := core.PlanTaskChange(w, ch)
 	if err != nil {

@@ -97,3 +97,10 @@ func TestPlanMoveWarnsThatClosingAHeldCardWillBeRefused(t *testing.T) {
 		t.Errorf("an unheld card closes without a warning: %q", ch.Warning)
 	}
 }
+
+func TestMoveIntoACustomStatusExplainsTheWayRound(t *testing.T) {
+	_, err := PlanMove(moveRow("open"), "pinned")
+	if err == nil || !strings.Contains(err.Error(), "custom status") || !strings.Contains(err.Error(), "x in the List view") {
+		t.Fatalf("%v", err)
+	}
+}

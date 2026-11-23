@@ -177,8 +177,10 @@ func validate(ch TaskChange) error {
 		switch {
 		case ch.Status == "" && ch.IfStatus != "":
 			return errors.New("a status guard needs a status change")
-		case ch.Status != "" && !StatusGuardRE.MatchString(ch.IfStatus):
+		case ch.Status != "" && ch.IfStatus == "":
 			return errors.New("a status change needs the status the task has now (so a change by someone else is refused)")
+		case ch.Status != "" && !StatusGuardRE.MatchString(ch.IfStatus):
+			return fmt.Errorf("the task's status %q is not a plain lower-case word (letters, digits, _ and -, up to 32 characters), so it cannot be used as the guard of a status change", ch.IfStatus)
 		case ch.IfStatus == "closed":
 			return errors.New("closed work leaves closed by reopening it, not by a status update")
 		case ch.Status != "" && ch.IfStatus == ch.Status:

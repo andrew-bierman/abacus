@@ -343,8 +343,14 @@ func TestKanbanMoveToACustomStatusIsRefused(t *testing.T) {
 		t.Fatal(got)
 	}
 	send(s, "l", "l", "l") // deferred
-	send(s, "L")           // deferred -> pinned
-	if s.mode != modeList || !strings.Contains(s.notice, "cannot be moved to pinned") || ranMoves(p) != "" {
+	send(s, "L")           // deferred -> skips pinned -> closed
+	if s.mode != modeVerify || s.pending.Op != core.TaskClose {
+		t.Fatalf("stepping skips the custom column: mode %v pending %+v notice %q", s.mode, s.pending, s.notice)
+	}
+	s.mode = modeList
+	send(s, "Z") // hide closed again: nothing enterable is right of deferred
+	send(s, "L")
+	if s.mode != modeList || !strings.Contains(s.notice, "no column that way") || ranMoves(p) != "" {
 		t.Fatalf("mode %v notice %q", s.mode, s.notice)
 	}
 }
@@ -581,5 +587,20 @@ func TestKanbanMoveStillAppliesWhenTheRecheckAgrees(t *testing.T) {
 	s.Update(cmd())
 	if ranMoves(p) == "" {
 		t.Fatalf("ran %q", ranMoves(p))
+	}
+}
+
+// A column needs kbSideMinW cells: with six columns (a custom status and Z) the board is side by side
+// from 120 columns and a tab strip at 119.
+func TestKanbanSideBySideBoundaryWithSixColumns(t *testing.T) {
+	snap := fixtureSnapshot()
+	snap.Issues[0].Status = "pinned"
+	for w := 114; w <= 121; w++ {
+		s := kbWith(w, 30, snap.Issues)
+		send(s, "Z")
+		side := strings.Contains(s.View(), "╮╭─")
+		if want := w >= 6*kbSideMinW; side != want {
+			t.Errorf("%d columns: side by side = %v, want %v", w, side, want)
+		}
 	}
 }

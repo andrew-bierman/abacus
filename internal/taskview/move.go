@@ -40,7 +40,7 @@ func PlanMove(r core.TaskRow, to string) (core.TaskChange, error) {
 			ch.Warning = fmt.Sprintf("%s is held by %d unfinished task(s)", r.ID, r.BlockedBy)
 		}
 	default:
-		return core.TaskChange{}, fmt.Errorf("a card cannot be moved to %s", to)
+		return core.TaskChange{}, fmt.Errorf("%s is a custom status: cards can leave it but not enter it (close a task with x in the List view)", to)
 	}
 	return ch, nil
 }

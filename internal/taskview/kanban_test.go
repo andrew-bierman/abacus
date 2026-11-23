@@ -169,3 +169,12 @@ func TestBoardAgeUsesTheInjectedClock(t *testing.T) {
 		t.Errorf("age %q", got)
 	}
 }
+
+// Type columns: the known types in core.TaskTypes order (feature, task, epic here), then unknown ones A to Z, then "none".
+func TestBoardTypeGroupingOrder(t *testing.T) {
+	mk := func(id, typ string) core.TaskIssue { i := iss(id, "open", 1); i.Type = typ; return i }
+	r := view(mk("a", ""), mk("b", "zeta"), mk("c", "task"), mk("d", "epic"), mk("e", "alpha"), mk("f", "feature")).Board(BoardOptions{Group: GroupType})
+	if got := colKeys(r); got != "feature task epic alpha zeta none" {
+		t.Fatalf("%s", got)
+	}
+}
