@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "note": "Pinned sidecar tools shipped in every release archive. Fields and which are hand-edited versus script-written are documented in scripts/lib/bundle.sh. Re-pin with scripts/update-bundled-tools.sh, never by hand.",
+  "note": "Pinned sidecar tools shipped in every release archive, and the licenses of Go modules linked into the binary that must ship verbatim. Fields and which are hand-edited versus script-written are documented in scripts/lib/bundle.sh. Re-pin with scripts/update-bundled-tools.sh, never by hand.",
   "tools": [
     {
       "name": "bd",
@@ -38,43 +38,6 @@
         }
       },
       "license_sha256": "caa2c60efbbf71e18b45ef6006a18213f8a42554b235af88883f6f1ec240b7db"
-    },
-    {
-      "name": "bv",
-      "repo": "Dicklesworthstone/beads_viewer",
-      "license": "MIT with OpenAI/Anthropic rider (shipped verbatim)",
-      "version": "0.27.0",
-      "tag_template": "v{version}",
-      "asset_template": "bv_{version}_{os}_{arch}.tar.gz",
-      "checksums_asset": "checksums.txt",
-      "member": "bv",
-      "license_source": {
-        "from": "archive",
-        "member": "LICENSE"
-      },
-      "assets": {
-        "darwin-amd64": {
-          "asset": "bv_0.27.0_darwin_amd64.tar.gz",
-          "sha256": "4a687c9776ee371a4e2d0b201b7a2523acaa1895ce10f0858c33b02fe7a91452",
-          "member": "bv"
-        },
-        "darwin-arm64": {
-          "asset": "bv_0.27.0_darwin_arm64.tar.gz",
-          "sha256": "20aa4711c23819aa15c15a333c88e1e6716c23551e080e8020c042389383b28f",
-          "member": "bv"
-        },
-        "linux-amd64": {
-          "asset": "bv_0.27.0_linux_amd64.tar.gz",
-          "sha256": "7a8f640c95cf73586e1bd6af1d6c9b782ff9768fc07ae8b5cea55adceb817bd7",
-          "member": "bv"
-        },
-        "linux-arm64": {
-          "asset": "bv_0.27.0_linux_arm64.tar.gz",
-          "sha256": "13d7f926a059e74213e0129a3bfdbf2a0a6753febb4fbad8925e63ef43f7ec47",
-          "member": "bv"
-        }
-      },
-      "license_sha256": "32a82e0a5754e72e51fae44b65a936c831c07376f21c90f5fb9e76897fcc3509"
     },
     {
       "name": "lambe",
@@ -149,6 +112,17 @@
         }
       },
       "license_sha256": "1e10ac301ec8ef373fde87cac16a5b2372c35dbd0cc737d8711fb23bf895ce84"
+    }
+  ],
+  "linked_licenses": [
+    {
+      "name": "bv",
+      "module": "github.com/Dicklesworthstone/beads_viewer",
+      "version": "v0.27.0",
+      "license": "MIT with OpenAI/Anthropic rider (shipped verbatim)",
+      "license_path": "LICENSE",
+      "license_sha256": "32a82e0a5754e72e51fae44b65a936c831c07376f21c90f5fb9e76897fcc3509",
+      "linked_what": "pkg/analysis and the packages it depends on, for the in-process graph engine"
     }
   ]
 }

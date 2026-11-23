@@ -104,7 +104,7 @@ func newRig(t *testing.T, members func(platform string) []member) *rig {
 		sums.WriteString(sum(b) + "  " + name + "\n")
 	}
 	must(t, os.WriteFile(filepath.Join(r.remote, "checksums.txt"), []byte(sums.String()), 0o644))
-	m := map[string]any{"schema": 1, "tools": []any{map[string]any{
+	m := map[string]any{"schema": 1, "linked_licenses": realLinkedLicenses(t), "tools": []any{map[string]any{
 		"name": "bd", "repo": "o/fake", "license": "MIT", "version": "1.0.0", "tag_template": "v{version}",
 		"asset_template": "fake_{os}_{arch}.tar.gz", "checksums_asset": "checksums.txt", "member": "bd",
 		"license_source": map[string]string{"from": "archive", "member": "LICENSE"},
@@ -132,6 +132,20 @@ if [ -n "$outfile" ]; then cp "$src" "$outfile"; else cp "$src" "$outdir/$name";
 	return r
 }
 
+// realLinkedLicenses is the real manifest's linked_licenses (the bv entry): the rig links the real
+// module graph, so it needs the real pin to package against.
+func realLinkedLicenses(t *testing.T) any {
+	t.Helper()
+	b, err := os.ReadFile("../../bundled-tools.json")
+	must(t, err)
+	var m map[string]any
+	must(t, json.Unmarshal(b, &m))
+	if m["linked_licenses"] == nil {
+		t.Fatal("the real manifest has no linked_licenses")
+	}
+	return m["linked_licenses"]
+}
+
 // goEnv reads a Go setting from the process running the tests, so the packaging script (which
 // lists linked modules) reuses the real module cache instead of building a read-only one under
 // the test's temporary HOME, which TempDir cleanup cannot remove.
@@ -152,6 +166,15 @@ func must(t *testing.T, err error) {
 func (r *rig) writeManifest(m any) {
 	b, _ := json.MarshalIndent(m, "", "  ")
 	must(r.t, os.WriteFile(r.manifest, b, 0o644))
+}
+
+func (r *rig) editTop(f func(m map[string]any)) {
+	var m map[string]any
+	b, err := os.ReadFile(r.manifest)
+	must(r.t, err)
+	must(r.t, json.Unmarshal(b, &m))
+	f(m)
+	r.writeManifest(m)
 }
 
 func (r *rig) editManifest(f func(tool map[string]any)) {
@@ -219,36 +242,77 @@ func TestPackageUntouchedArchivePasses(t *testing.T) {
 	}
 }
 
-// The notices must say what is true: the tools are separate programs, and the binary also
-// links parts of bv's Go packages and other modules, each with its license text.
+// unpack packages linux-amd64 and returns the extracted archive root.
+func (r *rig) unpack() string {
+	r.t.Helper()
+	if out, err := r.pkg("--platforms", "linux-amd64"); err != nil {
+		r.t.Fatalf("%v\n%s", err, out)
+	}
+	dir := r.t.TempDir()
+	must(r.t, exec.Command("tar", "-xzf", filepath.Join(r.out, "abacus_0.0.1_linux_amd64.tar.gz"), "-C", dir).Run())
+	return filepath.Join(dir, "abacus_0.0.1_linux_amd64")
+}
+
+func realLinkedPin(t *testing.T) (module, version, licenseSHA string) {
+	t.Helper()
+	b, err := os.ReadFile("../../bundled-tools.json")
+	must(t, err)
+	var m struct {
+		Linked []struct {
+			Name, Module, Version string
+			SHA                   string `json:"license_sha256"`
+		} `json:"linked_licenses"`
+	}
+	must(t, json.Unmarshal(b, &m))
+	for _, l := range m.Linked {
+		if l.Name == "bv" {
+			return l.Module, l.Version, l.SHA
+		}
+	}
+	t.Fatal("no bv entry in linked_licenses")
+	return
+}
+
+// The notices must say what is true: bd, lambe and beads-lease are separate programs, bv is a
+// linked library (no bv program ships), and every linked Go module is listed with its license
+// text, ending the file.
 func TestPackageNoticesAreTruthfulAboutLinkedGoCode(t *testing.T) {
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skip("go is not installed")
 	}
-	r := newRig(t, nil)
-	if out, err := r.pkg("--platforms", "linux-amd64"); err != nil {
-		t.Fatalf("%v\n%s", err, out)
-	}
-	dir := t.TempDir()
-	must(t, exec.Command("tar", "-xzf", filepath.Join(r.out, "abacus_0.0.1_linux_amd64.tar.gz"), "-C", dir).Run())
-	b, err := os.ReadFile(filepath.Join(dir, "abacus_0.0.1_linux_amd64", "THIRD_PARTY_NOTICES.md"))
+	base := newRig(t, nil).unpack()
+	b, err := os.ReadFile(filepath.Join(base, "THIRD_PARTY_NOTICES.md"))
 	must(t, err)
 	n := string(b)
-	if strings.Contains(n, "does not link or import") {
-		t.Errorf("the notices still claim abacus links no tool code:\n%s", n)
-	}
+	_, version, _ := realLinkedPin(t)
 	for _, want := range []string{
 		"unmodified", "subprocesses",
-		"statically links parts of bv's Go packages (bv v", "pkg/analysis",
+		"## bv " + version + " (linked library)",
+		"statically links parts of bv's Go packages (bv " + version, "pkg/analysis",
+		"MIT with OpenAI/Anthropic rider",
 		"third_party/bv/LICENSE",
 		"## Go modules linked into abacus",
 		"### gonum.org/v1/gonum v", "### github.com/goccy/go-json v", "### golang.org/x/sync v",
-		"### github.com/Dicklesworthstone/beads_viewer v",
+		"### github.com/Dicklesworthstone/beads_viewer " + version,
 		"Gonum Authors", // a license text, verbatim
 	} {
 		if !strings.Contains(n, want) {
 			t.Errorf("notices lack %q", want)
 		}
+	}
+	// bv is a library, not a shipped program.
+	for _, not := range []string{"bundled/bv", "ABACUS_GRAPH_ENGINE", "does not link or import", "optional in-process"} {
+		if strings.Contains(n, not) {
+			t.Errorf("notices still say %q", not)
+		}
+	}
+	// The Go module list ends the file: bv's own section comes before it, and the last section is
+	// the Go toolchain's.
+	if strings.Index(n, "## bv ") > strings.Index(n, "## Go modules linked into abacus") {
+		t.Error("the bv entry must come before the Go module list")
+	}
+	if i := strings.LastIndex(n, "### "); !strings.HasPrefix(n[i:], "### Go standard library and runtime") {
+		t.Errorf("the notices must end with the Go module list, last section %q", n[i:i+60])
 	}
 	// One section per module, however many of its packages are linked.
 	if c := strings.Count(n, "### gonum.org/v1/gonum v"); c != 1 {
@@ -259,6 +323,78 @@ func TestPackageNoticesAreTruthfulAboutLinkedGoCode(t *testing.T) {
 		if strings.Contains(n, not) {
 			t.Errorf("lists %q, which is not a linked dependency", not)
 		}
+	}
+}
+
+// bv is linked, so its license ships verbatim even though no bv sidecar does: the file in the
+// archive is the pinned module's LICENSE, and its sha256 is the pin in the manifest.
+func TestPackageShipsBvLicenseVerbatimMatchingThePin(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go is not installed")
+	}
+	r := newRig(t, nil)
+	base := r.unpack()
+	got, err := os.ReadFile(filepath.Join(base, "third_party", "bv", "LICENSE"))
+	must(t, err)
+	module, version, pin := realLinkedPin(t)
+	if sum(got) != pin {
+		t.Fatalf("third_party/bv/LICENSE sha256 %s, the pin says %s", sum(got), pin)
+	}
+	out, err := exec.Command("go", "mod", "download", "-json", module+"@"+version).Output()
+	must(t, err)
+	var dl struct{ Dir string }
+	must(t, json.Unmarshal(out, &dl))
+	want, err := os.ReadFile(filepath.Join(dl.Dir, "LICENSE"))
+	must(t, err)
+	if !bytes.Equal(got, want) {
+		t.Fatal("third_party/bv/LICENSE is not the module's LICENSE byte for byte")
+	}
+	if _, err := os.Stat(filepath.Join(base, "bundled", "bv")); !os.IsNotExist(err) {
+		t.Fatalf("no bv program may ship: %v", err)
+	}
+	// The manifest copy inside the archive carries the same pin.
+	mb, err := os.ReadFile(filepath.Join(base, "third_party", "bundled-tools.json"))
+	must(t, err)
+	if !strings.Contains(string(mb), pin) {
+		t.Error("the shipped manifest does not carry the license pin")
+	}
+}
+
+func TestPackageFailsClosedWhenTheBvLicenseChangedFromItsPin(t *testing.T) {
+	r := newRig(t, nil)
+	r.editTop(func(m map[string]any) {
+		m["linked_licenses"].([]any)[0].(map[string]any)["license_sha256"] = strings.Repeat("0", 64)
+	})
+	out, err := r.pkg("--platforms", "linux-amd64")
+	if err == nil || !strings.Contains(out, "bv: license changed from its pin") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if len(r.outFiles()) != 0 {
+		t.Fatalf("a failed build must leave nothing in the output: %v", r.outFiles())
+	}
+}
+
+func TestPackageFailsClosedWhenTheLinkedBvVersionIsNotThePinnedOne(t *testing.T) {
+	r := newRig(t, nil)
+	r.editTop(func(m map[string]any) { m["linked_licenses"].([]any)[0].(map[string]any)["version"] = "v0.0.1" })
+	out, err := r.pkg("--platforms", "linux-amd64")
+	if err == nil || !strings.Contains(out, "is linked at") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if len(r.outFiles()) != 0 {
+		t.Fatalf("%v", r.outFiles())
+	}
+}
+
+func TestPackageFailsClosedWhenALinkedBvHasNoLicenseEntry(t *testing.T) {
+	r := newRig(t, nil)
+	r.editTop(func(m map[string]any) { delete(m, "linked_licenses") })
+	out, err := r.pkg("--platforms", "linux-amd64")
+	if err == nil || !strings.Contains(out, "no linked_licenses entry") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if len(r.outFiles()) != 0 {
+		t.Fatalf("%v", r.outFiles())
 	}
 }
 
@@ -381,5 +517,26 @@ func TestUpdateRejectsADownloadThatDoesNotMatchUpstream(t *testing.T) {
 	out, err := r.run("update-bundled-tools.sh", "bd", "1.0.0")
 	if err == nil || !strings.Contains(out, "does not match upstream") {
 		t.Fatalf("%v\n%s", err, out)
+	}
+}
+
+func TestUpdateRepinsALinkedLicenseFromTheModuleCache(t *testing.T) {
+	r := newRig(t, nil)
+	_, _, pin := realLinkedPin(t)
+	r.editTop(func(m map[string]any) {
+		m["linked_licenses"].([]any)[0].(map[string]any)["license_sha256"] = strings.Repeat("0", 64)
+	})
+	if out, err := r.run("update-bundled-tools.sh", "--license", "bv"); err != nil || !strings.Contains(out, "pinned license of bv") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	var m struct {
+		Linked []struct {
+			SHA string `json:"license_sha256"`
+		} `json:"linked_licenses"`
+	}
+	b, _ := os.ReadFile(r.manifest)
+	must(t, json.Unmarshal(b, &m))
+	if m.Linked[0].SHA != pin {
+		t.Fatalf("re-pinned to %s, want the module's license %s", m.Linked[0].SHA, pin)
 	}
 }

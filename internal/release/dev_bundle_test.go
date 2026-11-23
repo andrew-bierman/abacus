@@ -193,16 +193,16 @@ func TestDevBundleOneToolWithoutAPinInstallsNothing(t *testing.T) {
 	b, _ := os.ReadFile(r.manifest)
 	must(t, json.Unmarshal(b, &m))
 	bd := m["tools"].([]any)[0].(map[string]any)
-	bv := map[string]any{}
+	second := map[string]any{}
 	for k, v := range bd {
-		bv[k] = v
+		second[k] = v
 	}
-	bv["name"] = "bv"
-	bv["assets"] = map[string]any{"darwin-arm64": map[string]string{"asset": "x.tar.gz", "sha256": strings.Repeat("a", 64), "member": "bv"}}
-	m["tools"] = []any{bd, bv}
+	second["name"] = "second"
+	second["assets"] = map[string]any{"darwin-arm64": map[string]string{"asset": "x.tar.gz", "sha256": strings.Repeat("a", 64), "member": "second"}}
+	m["tools"] = []any{bd, second}
 	r.writeManifest(m)
 	o, err := r.dev(out)
-	if err == nil || !strings.Contains(o, "bv has no pin for linux-amd64") {
+	if err == nil || !strings.Contains(o, "second has no pin for linux-amd64") {
 		t.Fatalf("%v\n%s", err, o)
 	}
 	if _, err := os.Stat(out); !os.IsNotExist(err) || len(leftovers(t, out)) != 0 {
@@ -228,6 +228,9 @@ func TestTheRealManifestPinsEveryToolForEveryPlatform(t *testing.T) {
 		t.Fatal("the manifest lists no tools")
 	}
 	for _, tool := range m.Tools {
+		if tool.Name == "bv" {
+			t.Error("bv is linked, not bundled: it belongs in linked_licenses, not tools")
+		}
 		if !hex64.MatchString(tool.Lic) {
 			t.Errorf("%s: license_sha256 is not pinned", tool.Name)
 		}
@@ -436,5 +439,19 @@ func TestScriptsRefuseUnsafeToolNames(t *testing.T) {
 		if _, err := os.Stat(out); !os.IsNotExist(err) || len(r.outFiles()) != 0 {
 			t.Errorf("nothing may be written for name %q", name)
 		}
+	}
+}
+
+// The linked-license pin names the version go.mod links, and pins its license text: a bump of the
+// module in go.mod without re-pinning the license must fail here, before packaging does.
+func TestTheRealManifestPinsTheLinkedBvLicenseAtTheGoModVersion(t *testing.T) {
+	module, version, pin := realLinkedPin(t)
+	if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(pin) {
+		t.Errorf("bv license_sha256 is not pinned: %q", pin)
+	}
+	gomod, err := os.ReadFile("../../go.mod")
+	must(t, err)
+	if !strings.Contains(string(gomod), "\t"+module+" "+version+"\n") {
+		t.Errorf("go.mod does not require %s %s: re-pin linked_licenses with go.mod", module, version)
 	}
 }

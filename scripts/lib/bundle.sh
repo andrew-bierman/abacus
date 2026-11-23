@@ -18,6 +18,17 @@
 #   tools[].version            script  the pinned version
 #   tools[].assets             script  platform (os-arch) -> {asset, sha256, member}
 #   tools[].license_sha256     script  sha256 of the license file at the pin
+#   linked_licenses[]          Go modules linked into the binary whose license must ship verbatim
+#                              (no program is bundled for them; package-release.sh only)
+#   linked_licenses[].name     hand    the name shown in the notices and the directory under third_party/
+#   linked_licenses[].module   hand    the Go module path
+#   linked_licenses[].version  hand    the module version; must equal the version linked into the binary
+#                                      (go.mod), checked by package-release.sh and a Go test
+#   linked_licenses[].license  hand    license name shown in THIRD_PARTY_NOTICES.md
+#   linked_licenses[].license_path hand  the license file at the module root
+#   linked_licenses[].linked_what hand   what of the module is linked, in the notices
+#   linked_licenses[].license_sha256 script  sha256 of that license file at the pinned version
+#                              (update-bundled-tools.sh --license NAME writes it from the module cache)
 #
 # The caller sets BUNDLE_SCRIPT (for messages) and `manifest` (path to the manifest).
 
@@ -43,6 +54,39 @@ check_tool_names() {
   for n in "$@"; do
     [[ "$n" =~ ^[a-z0-9-]+$ ]] || die "unsafe tool name '$n' in the manifest (allowed: lowercase letters, digits and dashes)"
   done
+}
+
+# linked_field NAME JQ_EXPR  (the expression is applied to that linked_licenses entry)
+linked_field() { jq -r --arg t "$1" ".linked_licenses[] | select(.name==\$t) | $2" "$manifest"; }
+
+# module_license_file MODULE VERSION LICENSE_PATH -> prints the path of that file in the module
+# download cache at exactly that version (go mod download -json; no network when it is cached).
+# The caller sets `root` (the module root, for go.mod's toolchain and checksums).
+module_license_file() {
+  local dir
+  [[ "$3" =~ ^[A-Za-z0-9._-]+$ ]] || die "unsafe license path '$3' in the manifest"
+  dir="$(go -C "$root" mod download -json "$1@$2" | jq -r .Dir)" && [ -d "$dir" ] \
+    || die "cannot read $1@$2 from the module cache (run go mod download first)"
+  [ -f "$dir/$3" ] && [ ! -L "$dir/$3" ] || die "$1@$2 has no regular file $3"
+  echo "$dir/$3"
+}
+
+# install_linked_license LICDIR NAME MODS
+# MODS is the go_linked_modules output for the target. The module must be linked at exactly the
+# pinned version; its license is copied from the module cache to LICDIR/NAME/LICENSE and checked
+# against the pin (fails closed on any mismatch).
+install_linked_license() {
+  local licdir="$1" name="$2" mods="$3" module version linked src lic
+  module="$(linked_field "$name" .module)"; version="$(linked_field "$name" .version)"
+  linked="$(printf '%s\n' "$mods" | awk -F'\t' -v m="$module" '$1==m{print $2}')"
+  [ -n "$linked" ] || die "$name: $module is not linked into abacus; remove it from linked_licenses"
+  [ "$linked" = "$version" ] || die "$name: $module is linked at $linked but linked_licenses pins $version; update both together"
+  src="$(module_license_file "$module" "$version" "$(linked_field "$name" .license_path)")"
+  lic="$licdir/$name/LICENSE"
+  mkdir -p "$licdir/$name"
+  cp "$src" "$lic"
+  [ "$(sha "$lic")" = "$(linked_field "$name" .license_sha256)" ] || die "$name: license changed from its pin; review it, then re-pin"
+  chmod 0644 "$lic"
 }
 
 # tag_for TOOL VERSION
@@ -131,8 +175,21 @@ notices_entry() {
   echo
 }
 
+# linked_notices_entry NAME: a Go module linked into the binary, with no program shipped for it.
+linked_notices_entry() {
+  local v; v="$(linked_field "$1" .version)"
+  echo "## $1 $v (linked library)"
+  echo
+  echo "- License: $(linked_field "$1" .license)"
+  echo "- Source: https://$(linked_field "$1" .module)"
+  echo "- Linked: the \`abacus\` binary statically links parts of $1's Go packages ($1 $v,"
+  echo "  $(linked_field "$1" .linked_what)). No $1 program is shipped or run."
+  echo "- License text: \`third_party/$1/LICENSE\`, copied verbatim from the Go module at that version."
+  echo "  The $1 license adds a rider about use with OpenAI and Anthropic products; read it before"
+  echo "  redistributing."
+  echo
+}
+
 notices_footer() {
   echo "abacus itself is GPL-3.0-or-later (\`LICENSE\`). lambe is GPL-3.0 and shipped as a separate program."
-  echo "The bv license adds a rider about use with OpenAI and Anthropic products; read"
-  echo "\`third_party/bv/LICENSE\` before redistributing."
 }
