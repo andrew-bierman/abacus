@@ -5,8 +5,8 @@
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id      title                st P  │
 │   tr-09k  ▾ Tasks workspace 1… ○  P1 │
-│ ▸ tr-09k… ├── Tree view of ep… ○  P1 │
-│   tr-09k… └── Kanban cards sh… ○  P1 │
+│ ▸ 1…09k.1 ├── Tree view of ep… ○  P1 │
+│   1…09k.2 └── Kanban cards sh… ○  P1 │
 │   tr-jbt  ▾ Fleet workspace 0… ○  P1 │
 │   ↕ +8 more                          │
 ╰──────────────────────────────────────╯
@@ -19,16 +19,16 @@
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id      title                st P  │
 │   tr-09k  ▾ Tasks workspace 1… ○  P1 │
-│ ▸ tr-09k… ├── Tree view of ep… ○  P1 │
-│   tr-09k… └── Kanban cards sh… ○  P1 │
+│ ▸ 1…09k.1 ├── Tree view of ep… ○  P1 │
+│   1…09k.2 └── Kanban cards sh… ○  P1 │
 │   tr-jbt  ▾ Fleet workspace 0… ○  P1 │
-│   tr-jbt… ├─▾ Leases surface … ○  P1 │
-│   tr-jbt… │ ├── Wire the leas… ○  P0 │
-│   tr-jbt… │ ├── Lease holder … ○  P1 │
-│   tr-jbt… │ └── Stale lease w… ○  P2 │
-│   tr-jbt… ├─▾ Queues surface … ○  P2 │
-│   tr-jbt… │ └── Queue attenti… ○  P2 │
-│   tr-jbt… └── Doctor stale ex… ○  P2 │
+│   1…jbt.1 ├─▾ Leases surface … ○  P1 │
+│   2…t.1.1 │ ├── Wire the leas… ○  P0 │
+│   2…t.1.3 │ ├── Lease holder … ○  P1 │
+│   2…t.1.2 │ └── Stale lease w… ○  P2 │
+│   1…jbt.2 ├─▾ Queues surface … ○  P2 │
+│   2…t.2.1 │ └── Queue attenti… ○  P2 │
+│   1…jbt.3 └── Doctor stale ex… ○  P2 │
 │   tr-u40    Standalone: verif… ○  P3 │
 │                                      │
 │                                      │

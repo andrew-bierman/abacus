@@ -85,6 +85,7 @@ func (s *tasksSection) recompute() {
 	}
 	l.rep = l.view.List(taskview.ListOptions{Query: l.q, Preset: l.preset, Sort: l.sort})
 	s.recomputeTree()
+	s.climbToListed()
 	s.reanchor(s.ids(), true)
 	s.settle(len(l.rep.Rows))
 	if len(l.rep.Rows) == 0 {

@@ -337,6 +337,9 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
+		if s.list.view != nil {
+			s.recompute() // the tree's branch lines are drawn to fit the width
+		}
 		s.fit(m.Width) // a resize drops the drill when side by side...
 		if isStacked(m.Width) {
 			s.list.detailFocus = false // ...and the detail focus when stacked, so j and k move the list again

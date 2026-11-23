@@ -226,7 +226,7 @@ func TestFoldStateIsKeptPerTrackerInAbacusState(t *testing.T) {
 	send(s, "h")
 	s.selectID("tr-09k")
 	send(s, "h", "T") // fold, then choose the flat list
-	if got := st.Load("name:fleet"); !slices.Equal(got.Folded, []string{"tr-09k", "tr-jbt"}) || got.View != "flat" {
+	if got := st.Load("unrooted:fleet"); !slices.Equal(got.Folded, []string{"tr-09k", "tr-jbt"}) || got.View != "flat" {
 		t.Fatalf("saved: %+v", got)
 	}
 	// The next run: same tracker, same choices.
@@ -247,7 +247,7 @@ func TestFoldStateIsKeptPerTrackerInAbacusState(t *testing.T) {
 		t.Errorf("another tracker starts expanded as a tree: %v", ids(s3))
 	}
 	send(s3, "+") // nothing folded: no write that could clobber
-	if got := st.Load("name:fleet"); len(got.Folded) != 2 {
+	if got := st.Load("unrooted:fleet"); len(got.Folded) != 2 {
 		t.Errorf("tracker one lost its folds: %+v", got)
 	}
 	// A tracker that is re-pointed while running loads that tracker's choices.
@@ -263,17 +263,17 @@ func TestFoldStateIsKeptPerTrackerInAbacusState(t *testing.T) {
 
 func TestFoldsOfTasksThatNoLongerExistAreNotKept(t *testing.T) {
 	st := core.NewTreeState(filepath.Join(t.TempDir(), "s.json"))
-	_ = st.Save("name:fleet", core.TreeLayout{Folded: []string{"tr-jbt", "gone-1"}})
+	_ = st.Save("unrooted:fleet", core.TreeLayout{Folded: []string{"tr-jbt", "gone-1"}})
 	s := treeSection(t, realTreeSnapshot(t), st)
 	send(s, "+") // clears every fold, including the one for a task that is gone
-	if got := st.Load("name:fleet"); len(got.Folded) != 0 {
+	if got := st.Load("unrooted:fleet"); len(got.Folded) != 0 {
 		t.Errorf("expand all cleared the saved folds: %+v", got)
 	}
-	_ = st.Save("name:fleet", core.TreeLayout{Folded: []string{"tr-jbt", "gone-1"}})
+	_ = st.Save("unrooted:fleet", core.TreeLayout{Folded: []string{"tr-jbt", "gone-1"}})
 	s = treeSection(t, realTreeSnapshot(t), st)
 	s.selectID("tr-09k")
 	send(s, "h")
-	if got := st.Load("name:fleet"); !slices.Equal(got.Folded, []string{"tr-09k", "tr-jbt"}) {
+	if got := st.Load("unrooted:fleet"); !slices.Equal(got.Folded, []string{"tr-09k", "tr-jbt"}) {
 		t.Errorf("a fold of a task that is gone is dropped when the state is next written: %+v", got.Folded)
 	}
 }
@@ -445,6 +445,7 @@ func treeScenarios() []scenario {
 		{name: "tasks-tree-folded", build: real, keys: []string{"2", "-"}, tab: "Tasks", extra: sizes},
 		{name: "tasks-tree-filter", build: real, keys: append(append([]string{"2", "/"}, typed("lease")...), "enter"), tab: "Tasks", extra: sizes},
 		{name: "tasks-tree-flat", build: real, keys: []string{"2", "T"}, tab: "Tasks", extra: sizes},
+		{name: "tasks-tree-dotted", build: over(func(testing.TB) core.TaskSnapshot { return dottedChain(9) }), keys: []string{"2", "j", "j", "j"}, tab: "Tasks", extra: [][2]int{{50, 24}, {60, 24}, {100, 32}}},
 		{name: "tasks-tree-hostile", build: hostile, keys: []string{"2", "j", "j", "j", "j", "j"}, tab: "Tasks", extra: sizes},
 	}
 }
@@ -485,6 +486,263 @@ func TestLongDottedIdsNeverCostTheTitle(t *testing.T) {
 			if lipgloss.Width(l) > w {
 				t.Errorf("w=%d: %q is %d wide", w, l, lipgloss.Width(l))
 			}
+		}
+	}
+}
+
+// ---- review fixes ----
+
+func withRoot(snap core.TaskSnapshot, root string) core.TaskSnapshot { snap.Root = root; return snap }
+
+// titleStyledIn reports whether the row holding title is drawn in a style (dimmed or muted), judged
+// by the last style change before the title; the guide before it ends in a reset.
+func titleStyledIn(t *testing.T, v, title string) bool {
+	t.Helper()
+	styled := regexp.MustCompile("\x1b\\[[0-9;]*m")
+	for _, l := range strings.Split(v, "\n") {
+		if i := strings.Index(l, title); i >= 0 {
+			seq := styled.FindAllString(l[:i], -1)
+			return len(seq) > 0 && seq[len(seq)-1] != "\x1b[0m"
+		}
+	}
+	t.Fatalf("no row with %q:\n%s", title, v)
+	return false
+}
+
+func TestTwoProjectsWithTheSameFolderNameKeepTheirOwnFolds(t *testing.T) {
+	st := core.NewTreeState(filepath.Join(t.TempDir(), "tasks-tree.json"))
+	a := withRoot(realTreeSnapshot(t), "/work/one/api")
+	b := withRoot(realTreeSnapshot(t), "/work/two/api")
+	a.Tracker, b.Tracker = "api", "api"
+	sa := treeSection(t, a, st)
+	sa.selectID("tr-jbt")
+	send(sa, "h")
+	sb := treeSection(t, b, st) // the second project, same basename
+	if got := strings.Join(ids(sb), " "); got != openTree {
+		t.Fatalf("project two must not inherit project one's folds: %q", got)
+	}
+	sb.selectID("tr-09k")
+	send(sb, "h")
+	if got := st.Load("/work/one/api").Folded; !slices.Equal(got, []string{"tr-jbt"}) {
+		t.Errorf("project two's fold overwrote project one's: %v", got)
+	}
+	if got := st.Load("/work/two/api").Folded; !slices.Equal(got, []string{"tr-09k"}) {
+		t.Errorf("project two's folds: %v", got)
+	}
+	send(sb, "T") // and a view choice
+	if got := st.Load("/work/one/api"); got.View != "" {
+		t.Errorf("project one's view choice changed: %+v", got)
+	}
+}
+
+func TestTheSelectionClimbsToAListedAncestorWheneverFoldsReappear(t *testing.T) {
+	root := "/work/fleet"
+	t.Run("esc clears a query and a persisted fold resumes", func(t *testing.T) {
+		st := core.NewTreeState(filepath.Join(t.TempDir(), "s.json"))
+		_ = st.Save(root, core.TreeLayout{Folded: []string{"tr-jbt.1"}})
+		s := treeSection(t, withRoot(realTreeSnapshot(t), root), st)
+		send(s, "/")
+		typeIn(s, "heartbeat")
+		send(s, "enter")
+		if !s.selectID("tr-jbt.1.1") {
+			t.Fatalf("the match is listed while the query is active: %v", ids(s))
+		}
+		send(s, "esc")
+		if s.selected != "tr-jbt.1" || ids(s)[s.cursor] != "tr-jbt.1" {
+			t.Errorf("selection %q (cursor row %q), want the folded parent tr-jbt.1", s.selected, ids(s)[s.cursor])
+		}
+	})
+	t.Run("T from the flat list into a tree with a folded ancestor", func(t *testing.T) {
+		s := treeSection(t, withRoot(realTreeSnapshot(t), root), nil)
+		s.selectID("tr-jbt.1")
+		send(s, "h", "T")
+		s.selectID("tr-jbt.1.1")
+		send(s, "T")
+		if !s.treeOn() || s.selected != "tr-jbt.1" {
+			t.Errorf("tree %v selection %q", s.treeOn(), s.selected)
+		}
+	})
+	t.Run("a refresh that folds the selection away", func(t *testing.T) {
+		st := core.NewTreeState(filepath.Join(t.TempDir(), "s.json"))
+		_ = st.Save(root, core.TreeLayout{Folded: []string{"tr-09k"}})
+		s := treeSection(t, withRoot(realTreeSnapshot(t), root), st)
+		s.selectID("tr-u40")
+		moved := withRoot(realTreeSnapshot(t), root)
+		for i := range moved.Issues {
+			if moved.Issues[i].ID == "tr-u40" { // someone moved it under the folded epic
+				moved.Issues[i].Deps = []core.TaskDep{{DependsOn: "tr-09k", Type: "parent-child"}}
+			}
+		}
+		s.Update(taskSnapshotMsg{snap: moved})
+		if s.selected != "tr-09k" || ids(s)[s.cursor] != "tr-09k" {
+			t.Errorf("selection %q, want the folded epic", s.selected)
+		}
+	})
+}
+
+func TestAPartialSnapshotNeverPrunesSavedFolds(t *testing.T) {
+	st := core.NewTreeState(filepath.Join(t.TempDir(), "s.json"))
+	_ = st.Save("/work/fleet", core.TreeLayout{Folded: []string{"tr-jbt", "tr-09k"}})
+	partial := withRoot(realTreeSnapshot(t), "/work/fleet")
+	var kept []core.TaskIssue
+	for _, it := range partial.Issues {
+		if !strings.HasPrefix(it.ID, "tr-jbt") {
+			kept = append(kept, it)
+		}
+	}
+	partial.Issues, partial.Warnings = kept, []string{"3 records look incomplete"}
+	s := treeSection(t, partial, st)
+	s.selectID("tr-09k")
+	send(s, "l") // unfold: a save happens
+	if got := st.Load("/work/fleet").Folded; !slices.Equal(got, []string{"tr-jbt"}) {
+		t.Errorf("the fold of a task the partial read lacks must survive, and the unfolded one go: %v", got)
+	}
+}
+
+func TestExpandAllIsPausedWhileAQueryIsActive(t *testing.T) {
+	st := core.NewTreeState(filepath.Join(t.TempDir(), "s.json"))
+	_ = st.Save("/work/fleet", core.TreeLayout{Folded: []string{"tr-09k"}})
+	s := treeSection(t, withRoot(realTreeSnapshot(t), "/work/fleet"), st)
+	send(s, "/")
+	typeIn(s, "heartbeat")
+	send(s, "enter")
+	send(s, "+")
+	if !strings.Contains(s.notice, "paused") {
+		t.Errorf("+ says folds are paused: %q", s.notice)
+	}
+	if got := st.Load("/work/fleet").Folded; !slices.Equal(got, []string{"tr-09k"}) {
+		t.Errorf("+ must not clear and save folds while the UI says they are paused: %v", got)
+	}
+}
+
+func TestClosedRowsAreDimmedInTheTree(t *testing.T) {
+	s := treeSection(t, realTreeSnapshot(t), nil)
+	s.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+	s.SetTheme(colorTheme())
+	send(s, "f", "f", "f", "f") // open, ready, blocked, closed, all
+	if s.list.preset != taskview.PresetAll {
+		t.Fatalf("preset %q", s.list.preset)
+	}
+	s.selectID("tr-09k")
+	v := s.View()
+	if !titleStyledIn(t, v, "Document the") || !titleStyledIn(t, v, "Queue filter") {
+		t.Errorf("closed rows are muted:\n%s", v)
+	}
+	if titleStyledIn(t, v, "Tree view") {
+		t.Error("an open row is not")
+	}
+}
+
+func dottedChain(n int) core.TaskSnapshot {
+	snap := core.TaskSnapshot{ReadAt: goldenNow, Tracker: "dots"}
+	id := "tr-abcd"
+	for i := 0; i < n; i++ {
+		it := core.TaskIssue{ID: id, Title: fmt.Sprintf("Title at level %d", i), Status: "open", Priority: 1}
+		if i > 0 {
+			it.Deps = []core.TaskDep{{DependsOn: id[:strings.LastIndex(id, ".")], Type: "parent-child"}}
+		}
+		snap.Issues = append(snap.Issues, it)
+		id += ".1"
+	}
+	return snap
+}
+
+// listIDs reads the id cell of each list row off a render: the first word after the border and the cursor.
+func listIDs(v string) []string {
+	var out []string
+	in := false
+	for _, l := range strings.Split(v, "\n") {
+		f := strings.Fields(strings.TrimPrefix(strings.TrimLeft(l, " "), "│"))
+		if len(f) > 0 && f[0] == "id" {
+			in = true
+			continue
+		}
+		if in && strings.HasPrefix(l, "│") && len(f) > 0 && !strings.HasPrefix(f[0], "▾") {
+			if f[0] == "▸" && len(f) > 1 {
+				f = f[1:]
+			}
+			if strings.ContainsAny(l, "▱▰") || strings.Contains(l, "Title") || strings.Contains(l, "─") {
+				out = append(out, f[0])
+			}
+		}
+	}
+	return out
+}
+
+func TestADeepDottedChainKeepsATitleAndDistinctIdsAtNarrowWidths(t *testing.T) {
+	for _, w := range []int{40, 50, 60} {
+		s := treeSection(t, dottedChain(9), nil)
+		s.Update(tea.WindowSizeMsg{Width: w, Height: 30})
+		v := s.View()
+		titles := 0
+		for _, l := range strings.Split(v, "\n") {
+			if strings.Contains(l, "Title") || strings.Contains(l, "Titl…") {
+				titles++
+			}
+		}
+		if titles < 9 {
+			t.Errorf("w=%d: %d of 9 rows keep readable title text:\n%s", w, titles, v)
+		}
+		got := listIDs(v)
+		seen := map[string]bool{}
+		for _, id := range got {
+			seen[id] = true
+		}
+		if len(got) != 9 || len(seen) != 9 {
+			t.Errorf("w=%d: want 9 distinct ids, got %v:\n%s", w, got, v)
+		}
+	}
+}
+
+func TestDuplicateIdsUseOneRecordForTheParentAndTheRow(t *testing.T) {
+	mk := func(id, title string, parent string) core.TaskIssue {
+		it := core.TaskIssue{ID: id, Title: title, Status: "open", Priority: 1}
+		if parent != "" {
+			it.Deps = []core.TaskDep{{DependsOn: parent, Type: "parent-child"}}
+		}
+		return it
+	}
+	snap := core.TaskSnapshot{ReadAt: goldenNow, Tracker: "dup", Issues: []core.TaskIssue{
+		mk("p1", "first epic", ""), mk("p2", "second epic", ""), mk("d", "earlier record", "p1"), mk("d", "later record", "p2")}}
+	s := treeSection(t, snap, nil)
+	var d []core.TaskTreeRow
+	for _, r := range s.list.tree.rep.Rows {
+		if r.ID == "d" {
+			d = append(d, r)
+		}
+	}
+	if len(d) != 1 || d[0].Title != "later record" || d[0].Parent != "p2" || d[0].Depth != 1 {
+		t.Fatalf("one row, the record displayed, under the parent that record names: %+v", d)
+	}
+	if got := strings.Join(ids(s), " "); got != "p1 p2 d" {
+		t.Errorf("rows %q", got)
+	}
+}
+
+func TestOneEpicWithFiveThousandChildren(t *testing.T) {
+	snap := core.TaskSnapshot{ReadAt: goldenNow, Tracker: "wide"}
+	snap.Issues = append(snap.Issues, core.TaskIssue{ID: "ep", Title: "epic", Status: "open", Type: "epic"})
+	for i := 0; i < 5000; i++ {
+		snap.Issues = append(snap.Issues, core.TaskIssue{ID: fmt.Sprintf("k%05d", i), Title: fmt.Sprintf("kid %d", i), Status: "open", Priority: i % 5,
+			Deps: []core.TaskDep{{DependsOn: "ep", Type: "parent-child"}}})
+	}
+	s := treeSection(t, snap, nil)
+	if len(s.rows()) != 5001 || s.list.tree.rep.Rows[0].ChildTotal != 5000 {
+		t.Fatalf("rows %d", len(s.rows()))
+	}
+	s.selectID("k04999")
+	send(s, "h") // up to the epic
+	send(s, "h") // fold it
+	if len(s.rows()) != 1 || s.selected != "ep" {
+		t.Fatalf("folded: %d rows, selected %q", len(s.rows()), s.selected)
+	}
+	send(s, "l")
+	for i := 0; i < 50; i++ {
+		send(s, "down")
+	}
+	for _, l := range strings.Split(s.View(), "\n") {
+		if lipgloss.Width(l) > 100 {
+			t.Fatalf("wide line %q", l)
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -25,6 +26,15 @@ var (
 // treeBarW is the width of the progress bar of an epic row.
 const treeBarW = 4
 
+// The cells the list's other columns and the title are guaranteed beside the tree's branch lines
+// and the id: the status and priority cells with the gaps between four columns, the narrowest id,
+// and the least title worth showing.
+const (
+	treeFixed      = 2 + 2 + 3
+	treeIDFloor    = 5
+	treeTitleFloor = 14
+)
+
 // treeIDMax is the widest an id column grows for the dotted ids of nested children.
 const treeIDMax = 18
 
@@ -47,14 +57,17 @@ func (s *tasksSection) treeOn() bool {
 	return l.view != nil && !l.depsUnknown && l.tree.hier && l.tree.mode != "flat"
 }
 
-// treeKeyFor names the tracker whose fold state this is: its directory when known, else its name.
+// treeKeyFor names the tracker whose fold state this is: the absolute directory of the project the
+// snapshot was read from, never its folder name (two projects can both be called api). Without a
+// root (a provider that cannot say) the name is a last resort and is namespaced apart from roots.
 func (s *tasksSection) treeKeyFor(snap core.TaskSnapshot) string {
-	if s.writer != nil {
-		if d := s.writer.TrackerDir(); d != "" {
-			return d
-		}
+	switch {
+	case snap.Root != "":
+		return snap.Root
+	case s.writer != nil && s.writer.TrackerDir() != "":
+		return s.writer.TrackerDir()
 	}
-	return "name:" + snap.Tracker
+	return "unrooted:" + snap.Tracker
 }
 
 // loadTree takes the saved choices when a snapshot of another tracker arrives (and the first one).
@@ -80,7 +93,7 @@ func (s *tasksSection) recomputeTree() {
 	if !s.treeOn() {
 		return
 	}
-	t.rep = l.view.Tree(taskview.TreeOptions{ListOptions: taskview.ListOptions{Query: l.q, Preset: l.preset, Sort: l.sort}, Folded: t.folded})
+	t.rep = l.view.Tree(taskview.TreeOptions{ListOptions: taskview.ListOptions{Query: l.q, Preset: l.preset, Sort: l.sort}, Folded: t.folded, GuideLevels: s.treeGuideLevels()})
 	t.rows = make([]core.TaskRow, len(t.rep.Rows))
 	for i, r := range t.rep.Rows {
 		t.rows[i] = r.TaskRow
@@ -90,9 +103,13 @@ func (s *tasksSection) recomputeTree() {
 // saveTree keeps the fold choices of this tracker (only folds of tasks that exist).
 func (s *tasksSection) saveTree() {
 	t := &s.list.tree
+	// A task that is gone loses its fold, but only judged against a complete, fresh snapshot: a
+	// fallback list, a failed read or a read that looks incomplete would drop folds of tasks it merely lacks.
+	l := &s.list
+	prune := !l.fallback && l.snapErr == nil && len(l.warnings) == 0
 	var ids []string
 	for id := range t.folded {
-		if _, ok := s.list.view.Row(id); ok {
+		if _, ok := l.view.Row(id); ok || !prune {
 			ids = append(ids, id)
 		}
 	}
@@ -115,22 +132,67 @@ func (s *tasksSection) selectID(id string) bool {
 	return true
 }
 
-// refold rebuilds after a fold change and keeps the selection: on the same task if it is still
-// listed, else on its nearest listed ancestor (a task folded away under the cursor).
+// refold rebuilds after a fold change and saves it. The selection stays on the same task, or climbs to
+// its nearest listed ancestor if its branch was folded away (recompute does that for every path).
 func (s *tasksSection) refold() {
-	parents := map[string]string{}
-	for _, r := range s.rows() {
-		parents[r.ID] = r.Parent
+	s.recompute()
+	s.saveTree()
+}
+
+// climbToListed moves the selection to its nearest listed ancestor when the selected task is not
+// in the tree (it sits inside a folded parent, or a filter or refresh just hid it), so a recompute
+// never leaves the cursor on an unrelated row. It walks the parent links of the snapshot, bounded.
+func (s *tasksSection) climbToListed() {
+	l := &s.list
+	if !s.treeOn() || s.selected == "" {
+		return
+	}
+	listed := make(map[string]bool, len(l.tree.rows))
+	for _, r := range l.tree.rows {
+		listed[r.ID] = true
+	}
+	if listed[s.selected] {
+		return
 	}
 	want := s.selected
-	s.recompute()
-	for n := 0; want != "" && n <= len(parents); n++ {
-		if s.selectID(want) {
-			break
+	for n := 0; n < 1000; n++ {
+		r, ok := l.view.Row(want)
+		if !ok || r.Parent == "" {
+			return
 		}
-		want = parents[want]
+		if want = r.Parent; listed[want] {
+			s.selected = want
+			return
+		}
 	}
-	s.saveTree()
+}
+
+// idCell fits an id into w cells. A cut id keeps its end, which tells siblings apart, behind an
+// ellipsis led by the task's depth ("4…1.1"), which tells the levels of a first-child chain apart:
+// ids like tr-x.1.1.1.1 differ only in length, so neither end alone is enough. The root is cut
+// plainly ("…bcd").
+func idCell(id string, depth, w int) string {
+	if lipgloss.Width(id) <= w {
+		return id
+	}
+	prefix := "…"
+	if depth > 0 && w >= 4 {
+		prefix = fmt.Sprint(depth) + "…"
+	}
+	r := []rune(id)
+	for len(r) > 0 && lipgloss.Width(prefix)+lipgloss.Width(string(r)) > w {
+		r = r[1:]
+	}
+	return prefix + string(r)
+}
+
+// treeGuideLevels is how many ancestor levels the branch lines may draw at this width: as many as
+// leave the title its floor beside an id and the other columns, so deep nesting at 40 columns does
+// not turn the title into branch lines.
+func (s *tasksSection) treeGuideLevels() int {
+	avail := max(duoLayout(s.width(), 0).listInner()-2, 1)
+	budget := avail - treeFixed - treeIDFloor - treeTitleFloor
+	return min(max((budget-6)/2, 1), taskview.MaxGuideLevels)
 }
 
 // treeKey handles T, h, l, + and - on the List view.
@@ -181,6 +243,10 @@ func (s *tasksSection) treeKey(k string) {
 			s.selectID(rows[s.cursor+1].ID)
 		}
 	case "+":
+		if paused {
+			s.notice = "folds are paused while a query is active (esc clears it)"
+			return
+		}
 		if len(t.folded) > 0 {
 			clear(t.folded)
 			s.refold()
@@ -223,10 +289,20 @@ func (s *tasksSection) treeBindings() []key.Binding {
 func (s *tasksSection) treeColumns(iw int, tb table, hdr []string, styled, plain [][]string) (table, []string, [][]string, [][]string) {
 	th := s.th
 	rows := s.list.tree.rep.Rows
-	guide, idw := 0, 0 // the title keeps room beside the widest branch lines; an id is never cut short of itself
+	guide, idw := 0, 0
 	for _, r := range rows {
 		guide = max(guide, lipgloss.Width(r.Guide))
 		idw = max(idw, lipgloss.Width(san(r.ID)))
+	}
+	cols := slices.Clone(tb.cols)
+	// Reserve room for the branch lines beside the title, and give the id what is left of a whole
+	// id (cut from the left if need be), but never at the title's expense.
+	avail := max(iw-2, 1)
+	idW := min(idw, treeIDMax, avail-treeFixed-treeTitleFloor-guide)
+	idW = max(idW, min(treeIDFloor, idw))
+	if idW+treeTitleFloor+guide+treeFixed <= avail {
+		cols[0].min, cols[0].max = idW, max(cols[0].max, idW)
+		cols[1].min = treeTitleFloor + guide
 	}
 	for i, r := range rows {
 		g := th.Text(KindMuted, r.Guide)
@@ -235,8 +311,10 @@ func (s *tasksSection) treeColumns(iw int, tb table, hdr []string, styled, plain
 		if r.Context || r.Status == "closed" {
 			cell = th.Text(KindMuted, title)
 		}
+		id := idCell(plain[i][0], r.Depth, max(cols[0].min, 1))
+		plain[i][0], styled[i][0] = id, id
 		if r.Context {
-			styled[i][0] = th.Text(KindMuted, plain[i][0])
+			styled[i][0] = th.Text(KindMuted, id)
 		}
 		bar, barPlain := "", ""
 		if r.ChildTotal > 0 {
@@ -248,18 +326,6 @@ func (s *tasksSection) treeColumns(iw int, tb table, hdr []string, styled, plain
 		styled[i][1] = g + cell
 		styled[i] = slices.Insert(styled[i], 2, bar)
 		plain[i] = slices.Insert(plain[i], 2, barPlain)
-	}
-	cols := slices.Clone(tb.cols)
-	// Reserve room for the branch lines beside the title and for a whole id, but only as far as the
-	// width allows: asking for more than fits would drop the title, the one column that must stay.
-	avail, fixed := max(iw-2, 1), 2+2+3 // the status and priority cells and the gaps between four columns
-	titleMin, idMin := cols[1].min+guide, min(idw, treeIDMax)
-	if idMin+titleMin+fixed <= avail {
-		cols[0].max = max(cols[0].max, idMin) // dotted child ids run long
-		cols[0].min = max(cols[0].min, idMin)
-	}
-	if cols[0].min+titleMin+fixed <= avail {
-		cols[1].min = titleMin
 	}
 	cols = slices.Insert(cols, 2, column{min: treeBarW, max: treeBarW, prio: 2})
 	return table{cols: cols, gap: tb.gap}, slices.Insert(slices.Clone(hdr), 2, "done"), styled, plain

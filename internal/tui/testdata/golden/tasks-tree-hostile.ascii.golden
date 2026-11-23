@@ -3,11 +3,11 @@
 [List] Insights      15 tasks · 15 ready
 [open] / to… 15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────╮
-│   h00 ▾ ]0;ownedepic… ▱▱▱▱ ○  P1     │
-│   h01 └─▾ level 1 [2… ▱▱▱▱ ○  P1     │
-│   h02   └─▾ plain xx… ▱▱▱▱ ○  P1     │
-│   h03     └─▾ level … ▱▱▱▱ ○  P1     │
-│ ▸ h04       └─▾ plai… ▱▱▱▱ ○  P1     │
+│   h00 ▾ ]0;ownedepic evil 0/1  ○  P1 │
+│   h01 └─▾ level 1 [2J漢字漢字… ○  P1 │
+│   h02   └─▾ plain xxxxxxxxxxx… ○  P1 │
+│   h03 …   └─▾ level 3 [2J漢字… ○  P1 │
+│ ▸ h04 …   └─▾ plain xxxxxxxxx… ○  P1 │
 │   ↕ +11 more                         │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
@@ -17,22 +17,22 @@
 [List] Insights      15 tasks · 15 ready
 [open] / to… 15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────╮
-│   id  title           done st P  dep │
-│   c1  ▾ cycle one 0/1 ▱▱▱▱ ○  P1     │
-│   c2  └── cycle two … ▱▱▱▱ ○  P1     │
-│   h00 ▾ ]0;ownedepic… ▱▱▱▱ ○  P1     │
-│   h01 └─▾ level 1 [2… ▱▱▱▱ ○  P1     │
-│   h02   └─▾ plain xx… ▱▱▱▱ ○  P1     │
-│   h03     └─▾ level … ▱▱▱▱ ○  P1     │
-│ ▸ h04       └─▾ plai… ▱▱▱▱ ○  P1     │
-│   h05         └─▾ le… ▱▱▱▱ ○  P1     │
-│   h06           └─▾ … ▱▱▱▱ ○  P1     │
-│   h07 …           └─… ▱▱▱▱ ○  P1     │
-│   h08 …           └─… ▱▱▱▱ ○  P1     │
-│   h09 …           └─… ▱▱▱▱ ○  P1     │
-│   h10 …           └─… ▱▱▱▱ ○  P1     │
-│   h11 …           └─…      ○  P1     │
-│   or    orphan             ○  P1     │
+│   id  title                    st P  │
+│   c1  ▾ cycle one 0/1          ○  P1 │
+│   c2  └── cycle two 0/1        ○  P1 │
+│   h00 ▾ ]0;ownedepic evil 0/1  ○  P1 │
+│   h01 └─▾ level 1 [2J漢字漢字… ○  P1 │
+│   h02   └─▾ plain xxxxxxxxxxx… ○  P1 │
+│   h03 …   └─▾ level 3 [2J漢字… ○  P1 │
+│ ▸ h04 …   └─▾ plain xxxxxxxxx… ○  P1 │
+│   h05 …   └─▾ level 5 [2J漢字… ○  P1 │
+│   h06 …   └─▾ plain xxxxxxxxx… ○  P1 │
+│   h07 …   └─▾ level 7 [2J漢字… ○  P1 │
+│   h08 …   └─▾ plain xxxxxxxxx… ○  P1 │
+│   h09 …   └─▾ level 9 [2J漢字… ○  P1 │
+│   h10 …   └─▾ plain xxxxxxxxx… ○  P1 │
+│   h11 …   └── level 11 [2J漢…  ○  P1 │
+│   or    orphan                 ○  P1 │
 │                                      │
 │                                      │
 │                                      │

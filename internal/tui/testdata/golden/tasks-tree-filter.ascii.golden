@@ -4,11 +4,11 @@
 [open] /lease 4 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id      title                st P  │
-│   tr-jbt  ▾ Fleet workspace 0… ○  P1 │
-│ ▸ tr-jbt… └─▾ Leases surface … ○  P1 │
-│   tr-jbt…   ├── Wire the leas… ○  P0 │
-│   tr-jbt…   ├── Lease holder … ○  P1 │
-│   tr-jbt…   └── Stale lease w… ○  P2 │
+│ ▸ tr-jbt  ▾ Fleet workspace 0… ○  P1 │
+│   1…jbt.1 └─▾ Leases surface … ○  P1 │
+│   2…t.1.1   ├── Wire the leas… ○  P0 │
+│   2…t.1.3   ├── Lease holder … ○  P1 │
+│   2…t.1.2   └── Stale lease w… ○  P2 │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
@@ -18,11 +18,11 @@
 [open] /lease 4 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id      title                st P  │
-│   tr-jbt  ▾ Fleet workspace 0… ○  P1 │
-│ ▸ tr-jbt… └─▾ Leases surface … ○  P1 │
-│   tr-jbt…   ├── Wire the leas… ○  P0 │
-│   tr-jbt…   ├── Lease holder … ○  P1 │
-│   tr-jbt…   └── Stale lease w… ○  P2 │
+│ ▸ tr-jbt  ▾ Fleet workspace 0… ○  P1 │
+│   1…jbt.1 └─▾ Leases surface … ○  P1 │
+│   2…t.1.1   ├── Wire the leas… ○  P0 │
+│   2…t.1.3   ├── Lease holder … ○  P1 │
+│   2…t.1.2   └── Stale lease w… ○  P2 │
 │                                      │
 │                                      │
 │                                      │
@@ -48,8 +48,8 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [open] /lease                                         4 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id         title                               done st P  dep type age who │
-│   tr-jbt     ▾ Fleet workspace 0/3               ▱▱▱▱ ○  P1     epic 6h  mei │
-│ ▸ tr-jbt.1   └─▾ Leases surface 0/3              ▱▱▱▱ ○  P1     epic 6h  ada │
+│ ▸ tr-jbt     ▾ Fleet workspace 0/3               ▱▱▱▱ ○  P1     epic 6h  mei │
+│   tr-jbt.1   └─▾ Leases surface 0/3              ▱▱▱▱ ○  P1     epic 6h  ada │
 │   tr-jbt.1.1   ├── Wire the lease heartbeat           ○  P0 →1  bug  6h  ada │
 │   tr-jbt.1.3   ├── Lease holder column                ○  P1 →1  feat 6h  mei │
 │   tr-jbt.1.2   └── Stale lease warning                ○  P2 ⊘1  task 6h  -   │
@@ -62,8 +62,8 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [open] /lease                                         4 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id         title                               done st P  dep type age who │
-│   tr-jbt     ▾ Fleet workspace 0/3               ▱▱▱▱ ○  P1     epic 6h  mei │
-│ ▸ tr-jbt.1   └─▾ Leases surface 0/3              ▱▱▱▱ ○  P1     epic 6h  ada │
+│ ▸ tr-jbt     ▾ Fleet workspace 0/3               ▱▱▱▱ ○  P1     epic 6h  mei │
+│   tr-jbt.1   └─▾ Leases surface 0/3              ▱▱▱▱ ○  P1     epic 6h  ada │
 │   tr-jbt.1.1   ├── Wire the lease heartbeat           ○  P0 →1  bug  6h  ada │
 │   tr-jbt.1.3   ├── Lease holder column                ○  P1 →1  feat 6h  mei │
 │   tr-jbt.1.2   └── Stale lease warning                ○  P2 ⊘1  task 6h  -   │
@@ -90,13 +90,13 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Insights                                                                                       14 tasks · 9 ready
 [open] /lease                                                                                 4 of 14 · sort: priority ↑
-╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ tr-jbt.1 ──────────────────────────────────╮
-│   id         title                       done st P  dep type age who │ │ tr-jbt.1  epic                              │
-│   tr-jbt     ▾ Fleet workspace 0/3       ▱▱▱▱ ○  P1     epic 6h  mei │ │ Leases surface                              │
-│ ▸ tr-jbt.1   └─▾ Leases surface 0/3      ▱▱▱▱ ○  P1     epic 6h  ada │ │ ○ open  P1  ada                             │
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ tr-jbt ────────────────────────────────────╮
+│   id         title                       done st P  dep type age who │ │ tr-jbt  epic                                │
+│ ▸ tr-jbt     ▾ Fleet workspace 0/3       ▱▱▱▱ ○  P1     epic 6h  mei │ │ Fleet workspace                             │
+│   tr-jbt.1   └─▾ Leases surface 0/3      ▱▱▱▱ ○  P1     epic 6h  ada │ │ ○ open  P1  mei                             │
 │   tr-jbt.1.1   ├── Wire the lease heart…      ○  P0 →1  bug  6h  ada │ │ ready                                       │
 │   tr-jbt.1.3   ├── Lease holder column        ○  P1 →1  feat 6h  mei │ │ created 6h ago · updated 6h ago             │
-│   tr-jbt.1.2   └── Stale lease warning        ○  P2 ⊘1  task 6h  -   │ │   ↕ +16 more                                │
+│   tr-jbt.1.2   └── Stale lease warning        ○  P2 ⊘1  task 6h  -   │ │   ↕ +15 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · esc back · T tree/flat …
 === 120x30 ===
@@ -104,14 +104,13 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Insights                                                                                       14 tasks · 9 ready
 [open] /lease                                                                                 4 of 14 · sort: priority ↑
-╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ tr-jbt.1 ──────────────────────────────────╮
-│   id         title                       done st P  dep type age who │ │ tr-jbt.1  epic                              │
-│   tr-jbt     ▾ Fleet workspace 0/3       ▱▱▱▱ ○  P1     epic 6h  mei │ │ Leases surface                              │
-│ ▸ tr-jbt.1   └─▾ Leases surface 0/3      ▱▱▱▱ ○  P1     epic 6h  ada │ │ ○ open  P1  ada                             │
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ tr-jbt ────────────────────────────────────╮
+│   id         title                       done st P  dep type age who │ │ tr-jbt  epic                                │
+│ ▸ tr-jbt     ▾ Fleet workspace 0/3       ▱▱▱▱ ○  P1     epic 6h  mei │ │ Fleet workspace                             │
+│   tr-jbt.1   └─▾ Leases surface 0/3      ▱▱▱▱ ○  P1     epic 6h  ada │ │ ○ open  P1  mei                             │
 │   tr-jbt.1.1   ├── Wire the lease heart…      ○  P0 →1  bug  6h  ada │ │ ready                                       │
 │   tr-jbt.1.3   ├── Lease holder column        ○  P1 →1  feat 6h  mei │ │ created 6h ago · updated 6h ago             │
-│   tr-jbt.1.2   └── Stale lease warning        ○  P2 ⊘1  task 6h  -   │ │ labels  leases, workspace                   │
-│                                                                      │ │ parent  ○ tr-jbt Fleet workspace            │
+│   tr-jbt.1.2   └── Stale lease warning        ○  P2 ⊘1  task 6h  -   │ │ labels  workspace                           │
 │                                                                      │ │                                             │
 │                                                                      │ │ Blocked by (0)                              │
 │                                                                      │ │   none                                      │
@@ -121,11 +120,12 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │ Children                                    │
 │                                                                      │ │   ░░░░░░░░░░ 0/3                            │
-│                                                                      │ │   ○ tr-jbt.1.1 Wire the lease heartbeat     │
-│                                                                      │ │   ○ tr-jbt.1.2 Stale lease warning          │
-│                                                                      │ │   ○ tr-jbt.1.3 Lease holder column          │
+│                                                                      │ │   ○ tr-jbt.1 Leases surface                 │
+│                                                                      │ │   ○ tr-jbt.2 Queues surface                 │
+│                                                                      │ │   ○ tr-jbt.3 Doctor stale export warning    │
 │                                                                      │ │                                             │
-│ ▾ open ▹ folded · folds paused · dim: context                        │ │ no description                              │
+│                                                                      │ │ no description                              │
+│ ▾ open ▹ folded · folds paused · dim: context                        │ │                                             │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
@@ -137,8 +137,8 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [open] /lease                     4 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
 │   id         title                   done st P  dep type │
-│   tr-jbt     ▾ Fleet workspace 0/3   ▱▱▱▱ ○  P1     epic │
-│ ▸ tr-jbt.1   └─▾ Leases surface 0/3  ▱▱▱▱ ○  P1     epic │
+│ ▸ tr-jbt     ▾ Fleet workspace 0/3   ▱▱▱▱ ○  P1     epic │
+│   tr-jbt.1   └─▾ Leases surface 0/3  ▱▱▱▱ ○  P1     epic │
 │   tr-jbt.1.1   ├── Wire the lease h…      ○  P0 →1  bug  │
 │   tr-jbt.1.3   ├── Lease holder col…      ○  P1 →1  feat │
 │   tr-jbt.1.2   └── Stale lease warn…      ○  P2 ⊘1  task │
@@ -160,14 +160,13 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Insights                                                                   14 tasks · 9 ready
 [open] /lease                                                             4 of 14 · sort: priority ↑
-╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ tr-jbt.1 ──────────────────────────╮
-│   id         title                   done st P  dep type │ │ tr-jbt.1  epic                      │
-│   tr-jbt     ▾ Fleet workspace 0/3   ▱▱▱▱ ○  P1     epic │ │ Leases surface                      │
-│ ▸ tr-jbt.1   └─▾ Leases surface 0/3  ▱▱▱▱ ○  P1     epic │ │ ○ open  P1  ada                     │
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ tr-jbt ────────────────────────────╮
+│   id         title                   done st P  dep type │ │ tr-jbt  epic                        │
+│ ▸ tr-jbt     ▾ Fleet workspace 0/3   ▱▱▱▱ ○  P1     epic │ │ Fleet workspace                     │
+│   tr-jbt.1   └─▾ Leases surface 0/3  ▱▱▱▱ ○  P1     epic │ │ ○ open  P1  mei                     │
 │   tr-jbt.1.1   ├── Wire the lease h…      ○  P0 →1  bug  │ │ ready                               │
 │   tr-jbt.1.3   ├── Lease holder col…      ○  P1 →1  feat │ │ created 6h ago · updated 6h ago     │
-│   tr-jbt.1.2   └── Stale lease warn…      ○  P2 ⊘1  task │ │ labels  leases, workspace           │
-│                                                          │ │ parent  ○ tr-jbt Fleet workspace    │
+│   tr-jbt.1.2   └── Stale lease warn…      ○  P2 ⊘1  task │ │ labels  workspace                   │
 │                                                          │ │                                     │
 │                                                          │ │ Blocked by (0)                      │
 │                                                          │ │   none                              │
@@ -177,12 +176,13 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │                                     │
 │                                                          │ │ Children                            │
 │                                                          │ │   ░░░░░░░░░░ 0/3                    │
-│                                                          │ │   ○ tr-jbt.1.1 Wire the lease       │
-│                                                          │ │     heartbeat                       │
-│                                                          │ │   ○ tr-jbt.1.2 Stale lease warning  │
-│                                                          │ │   ○ tr-jbt.1.3 Lease holder column  │
+│                                                          │ │   ○ tr-jbt.1 Leases surface         │
+│                                                          │ │   ○ tr-jbt.2 Queues surface         │
+│                                                          │ │   ○ tr-jbt.3 Doctor stale export    │
+│                                                          │ │     warning                         │
 │                                                          │ │                                     │
 │                                                          │ │ no description                      │
+│                                                          │ │                                     │
 │ ▾ open ▹ folded · folds paused · dim: context            │ │                                     │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │                                     │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │                                     │
@@ -193,14 +193,13 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Insights                                                                                                           14 tasks · 9 ready
 [open] /lease                                                                                                     4 of 14 · sort: priority ↑
-╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────────╮ ╭─ tr-jbt.1 ──────────────────────────────────────────╮
-│   id         title                done st P  dep type age who labels             │ │ tr-jbt.1  epic                                      │
-│   tr-jbt     ▾ Fleet workspace 0… ▱▱▱▱ ○  P1     epic 6h  mei workspace          │ │ Leases surface                                      │
-│ ▸ tr-jbt.1   └─▾ Leases surface … ▱▱▱▱ ○  P1     epic 6h  ada leases,workspace   │ │ ○ open  P1  ada                                     │
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────────╮ ╭─ tr-jbt ────────────────────────────────────────────╮
+│   id         title                done st P  dep type age who labels             │ │ tr-jbt  epic                                        │
+│ ▸ tr-jbt     ▾ Fleet workspace 0… ▱▱▱▱ ○  P1     epic 6h  mei workspace          │ │ Fleet workspace                                     │
+│   tr-jbt.1   └─▾ Leases surface … ▱▱▱▱ ○  P1     epic 6h  ada leases,workspace   │ │ ○ open  P1  mei                                     │
 │   tr-jbt.1.1   ├── Wire the leas…      ○  P0 →1  bug  6h  ada core,leases,works… │ │ ready                                               │
 │   tr-jbt.1.3   ├── Lease holder …      ○  P1 →1  feat 6h  mei leases,ui,workspa… │ │ created 6h ago · updated 6h ago                     │
-│   tr-jbt.1.2   └── Stale lease w…      ○  P2 ⊘1  task 6h  -   leases,workspace   │ │ labels  leases, workspace                           │
-│                                                                                  │ │ parent  ○ tr-jbt Fleet workspace                    │
+│   tr-jbt.1.2   └── Stale lease w…      ○  P2 ⊘1  task 6h  -   leases,workspace   │ │ labels  workspace                                   │
 │                                                                                  │ │                                                     │
 │                                                                                  │ │ Blocked by (0)                                      │
 │                                                                                  │ │   none                                              │
@@ -210,11 +209,12 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                                  │ │                                                     │
 │                                                                                  │ │ Children                                            │
 │                                                                                  │ │   ░░░░░░░░░░ 0/3                                    │
-│                                                                                  │ │   ○ tr-jbt.1.1 Wire the lease heartbeat             │
-│                                                                                  │ │   ○ tr-jbt.1.2 Stale lease warning                  │
-│                                                                                  │ │   ○ tr-jbt.1.3 Lease holder column                  │
+│                                                                                  │ │   ○ tr-jbt.1 Leases surface                         │
+│                                                                                  │ │   ○ tr-jbt.2 Queues surface                         │
+│                                                                                  │ │   ○ tr-jbt.3 Doctor stale export warning            │
 │                                                                                  │ │                                                     │
 │                                                                                  │ │ no description                                      │
+│                                                                                  │ │                                                     │
 │                                                                                  │ │                                                     │
 │ ▾ open ▹ folded · folds paused · dim: context                                    │ │                                                     │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                    │ │                                                     │
