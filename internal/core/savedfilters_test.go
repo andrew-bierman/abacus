@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -183,7 +184,13 @@ func TestSavedFiltersConcurrentWritersUnderLockLoseNothing(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			if err := (core.SavedFilters{Path: p}).Save(fmt.Sprintf("w%02d", i), "label:ui"); err != nil {
+			var err error
+			for try := 0; try < 100; try++ { // the lock wait is short (500 ms): a busy answer is retried, as a person would
+				if err = (core.SavedFilters{Path: p}).Save(fmt.Sprintf("w%02d", i), "label:ui"); !errors.Is(err, core.ErrFiltersBusy) {
+					break
+				}
+			}
+			if err != nil {
 				t.Errorf("writer %d: %v", i, err)
 			}
 		}(i)
