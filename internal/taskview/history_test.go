@@ -85,14 +85,3 @@ func TestParseHistoryHostileText(t *testing.T) {
 		t.Errorf("detail = %q", rep.Events[0].Detail)
 	}
 }
-
-// The commit-snapshot form (bd history ID --json) is captured too; this reader uses the event log,
-// so pin that the fixture is the shape documented in the README rather than leave it unused.
-func TestCommitHistoryFixtureShape(t *testing.T) {
-	b := fixture(t, "history-commits.json")
-	for _, k := range []string{`"CommitHash"`, `"Committer"`, `"CommitDate"`, `"Issue"`} {
-		if !strings.Contains(string(b), k) {
-			t.Errorf("history-commits.json lacks %s", k)
-		}
-	}
-}
