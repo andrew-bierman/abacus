@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+[List] Graph  Insights
+[open] / to… 12 of 14 · sort: priority ↑
+╭─ ▸ ac-12 ────────────────────────────╮
+│ History                              │
+│   1d   reopened ada                  │
+│   2d   closed ada  shipped           │
+│   3d   dependency_added ada  Added   │
+│        dependency: hs-yqf blocks hs- │
+│   ↕ +10 more                         │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+[List] Graph  Insights
+[open] / to… 12 of 14 · sort: priority ↑
+╭─ ▸ ac-12 ────────────────────────────╮
+│ Comments (2)                         │
+│ mei  1d                              │
+│   Seen twice on the laptop after     │
+│   sleep.                             │
+│ ada  6h                              │
+│   Reproduced. The tick interval is   │
+│   the cause; fix is small.           │
+│                                      │
+│ History                              │
+│   1d   reopened ada                  │
+│   2d   closed ada  shipped           │
+│   3d   dependency_added ada  Added   │
+│        dependency: hs-yqf blocks hs- │
+│        8md                           │
+│   4d   updated ada  assignee="mei"   │
+│   5d   label_added ada  Added label: │
+│        backend                       │
+│   6d   updated ada  priority=1       │
+│        title="Write the parser and   │
+│        tests"                        │
+│   7d   status_changed ada            │
+│        status="in_progress"          │
+│   8d   created ada                   │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Graph  Insights                                        14 tasks · 3 ready
+[open] / to filter                                   12 of 14 · sort: priority ↑
+╭─ ▸ ac-12 ────────────────────────────────────────────────────────────────────╮
+│ History                                                                      │
+│   1d   reopened ada                                                          │
+│   2d   closed ada  shipped                                                   │
+│   3d   dependency_added ada  Added dependency: hs-yqf blocks hs-8md          │
+│   4d   updated ada  assignee="mei"                                           │
+│   ↕ +4 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · ↑/↓ scroll · esc back · n new · e edit …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+[List] Graph  Insights                                        14 tasks · 3 ready
+[open] / to filter                                   12 of 14 · sort: priority ↑
+╭─ ▸ ac-12 ────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   renew --lease ac-zoj --now                                                 │
+│                                                                              │
+│ Uses renew with the --now flag.                                              │
+│                                                                              │
+│ Acceptance                                                                   │
+│ A resumed session keeps its lease without a stale window.                    │
+│                                                                              │
+│ Comments (2)                                                                 │
+│ mei  1d                                                                      │
+│   Seen twice on the laptop after sleep.                                      │
+│ ada  6h                                                                      │
+│   Reproduced. The tick interval is the cause; fix is small.                  │
+│                                                                              │
+│ History                                                                      │
+│   1d   reopened ada                                                          │
+│   2d   closed ada  shipped                                                   │
+│   3d   dependency_added ada  Added dependency: hs-yqf blocks hs-8md          │
+│   4d   updated ada  assignee="mei"                                           │
+│   5d   label_added ada  Added label: backend                                 │
+│   6d   updated ada  priority=1 title="Write the parser and tests"            │
+│   7d   status_changed ada  status="in_progress"                              │
+│   8d   created ada                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · ↑/↓ scroll · esc back · n new · e edit …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Graph  Insights                                                                                14 tasks · 3 ready
+[open] / to filter                                                                           12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
+│   id    title                          done st P  dep  type  age who │ │ History                                     │
+│   ac-01 ▾ Fleet workspace 1/5          ▰▱▱▱ ○  P1      epic  30d mei │ │   1d   reopened ada                         │
+│ ▸ ac-12 ├── wire the lease heartbeat        ◐  P0 →1   bug   9d  ada │ │   2d   closed ada  shipped                  │
+│   ac-15 ├── lease holder column             ○  P1 →1   feat  6d  mei │ │   3d   dependency_added ada  Added          │
+│   ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │        dependency: hs-yqf blocks hs-8md     │
+│   ↕ +8 more                                                          │ │   ↕ +8 more                                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Graph  Insights                                                                                14 tasks · 3 ready
+[open] / to filter                                                                           12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
+│   id    title                          done st P  dep  type  age who │ │ A resumed session keeps its lease without a │
+│   ac-01 ▾ Fleet workspace 1/5          ▰▱▱▱ ○  P1      epic  30d mei │ │ stale window.                               │
+│ ▸ ac-12 ├── wire the lease heartbeat        ◐  P0 →1   bug   9d  ada │ │                                             │
+│   ac-15 ├── lease holder column             ○  P1 →1   feat  6d  mei │ │ Comments (2)                                │
+│   ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │ mei  1d                                     │
+│   ac-16 └── stale lease warning             ○  P2 ⊘1   task  5d  -   │ │   Seen twice on the laptop after sleep.     │
+│   ac-20   split graph source from exp…      ◐  P1 ⊘1→1 task  4d  ada │ │ ada  6h                                     │
+│   ac-21   export reader                     ○  P2 ⊘1→1 task  4d  -   │ │   Reproduced. The tick interval is the      │
+│   ac-25   doctor: stale export warning      ●  P2      bug   3d  ada │ │   cause; fix is small.                      │
+│   ac-27   board thread digest               ●  P3      feat  2d  -   │ │                                             │
+│   ac-30   saved filters                     ○  P3      feat  2d  -   │ │ History                                     │
+│   ac-33   help overlay per view             ◐  P3      task  1d  mei │ │   1d   reopened ada                         │
+│   ac-36   verify tool flags against h…      ◇  P3      chore 40d mei │ │   2d   closed ada  shipped                  │
+│                                                                      │ │   3d   dependency_added ada  Added          │
+│                                                                      │ │        dependency: hs-yqf blocks hs-8md     │
+│                                                                      │ │   4d   updated ada  assignee="mei"          │
+│                                                                      │ │   5d   label_added ada  Added label:        │
+│                                                                      │ │        backend                              │
+│                                                                      │ │   6d   updated ada  priority=1 title="Write │
+│                                                                      │ │        the parser and tests"                │
+│ ▾ open ▹ folded                                                      │ │   7d   status_changed ada                   │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │        status="in_progress"                 │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   8d   created ada                          │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+[List] Graph  Insights                    14 tasks · 3 ready
+[open] / to filter               12 of 14 · sort: priority ↑
+╭─ ▸ ac-12 ────────────────────────────────────────────────╮
+│ mei  1d                                                  │
+│   Seen twice on the laptop after sleep.                  │
+│ ada  6h                                                  │
+│   Reproduced. The tick interval is the cause; fix is     │
+│   small.                                                 │
+│                                                          │
+│ History                                                  │
+│   1d   reopened ada                                      │
+│   2d   closed ada  shipped                               │
+│   3d   dependency_added ada  Added dependency: hs-yqf    │
+│        blocks hs-8md                                     │
+│   4d   updated ada  assignee="mei"                       │
+│   5d   label_added ada  Added label: backend             │
+│   6d   updated ada  priority=1 title="Write the parser   │
+│        and tests"                                        │
+│   7d   status_changed ada  status="in_progress"          │
+│   8d   created ada                                       │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · ↑/↓ scroll · esc back …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Graph  Insights                                                            14 tasks · 3 ready
+[open] / to filter                                                       12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────╮
+│   id    title              done st P  dep  type  age who │ │ without a stale window.             │
+│   ac-01 ▾ Fleet workspace… ▰▱▱▱ ○  P1      epic  30d mei │ │                                     │
+│ ▸ ac-12 ├── wire the leas…      ◐  P0 →1   bug   9d  ada │ │ Comments (2)                        │
+│   ac-15 ├── lease holder …      ○  P1 →1   feat  6d  mei │ │ mei  1d                             │
+│   ac-09 ├── queue attenti…      ○  P2 ⊘1   feat  12d -   │ │   Seen twice on the laptop after    │
+│   ac-16 └── stale lease w…      ○  P2 ⊘1   task  5d  -   │ │   sleep.                            │
+│   ac-20   split graph sou…      ◐  P1 ⊘1→1 task  4d  ada │ │ ada  6h                             │
+│   ac-21   export reader         ○  P2 ⊘1→1 task  4d  -   │ │   Reproduced. The tick interval is  │
+│   ac-25   doctor: stale e…      ●  P2      bug   3d  ada │ │   the cause; fix is small.          │
+│   ac-27   board thread di…      ●  P3      feat  2d  -   │ │                                     │
+│   ac-30   saved filters         ○  P3      feat  2d  -   │ │ History                             │
+│   ac-33   help overlay pe…      ◐  P3      task  1d  mei │ │   1d   reopened ada                 │
+│   ac-36   verify tool fla…      ◇  P3      chore 40d mei │ │   2d   closed ada  shipped          │
+│                                                          │ │   3d   dependency_added ada  Added  │
+│                                                          │ │        dependency: hs-yqf blocks    │
+│                                                          │ │        hs-8md                       │
+│                                                          │ │   4d   updated ada  assignee="mei"  │
+│                                                          │ │   5d   label_added ada  Added       │
+│                                                          │ │        label: backend               │
+│                                                          │ │   6d   updated ada  priority=1      │
+│                                                          │ │        title="Write the parser and  │
+│                                                          │ │        tests"                       │
+│ ▾ open ▹ folded                                          │ │   7d   status_changed ada           │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │        status="in_progress"         │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   8d   created ada                  │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details …
