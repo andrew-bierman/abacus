@@ -21,12 +21,14 @@ type Config struct {
 	TrackerDir  string `json:"tracker_dir,omitempty"`
 	LambeConfig string `json:"lambe_config,omitempty"`
 	BoardURL    string `json:"board_url,omitempty"`
+	// SearchHistory is "off" to keep no search history (queries are stored in plain text).
+	SearchHistory string `json:"search_history,omitempty"`
 }
 
 var actorRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._@-]{0,63}$`)
 
 // ConfigKeys are the settable keys, in display order.
-var ConfigKeys = []string{"actor", "tracker_dir", "lambe_config", "board_url"}
+var ConfigKeys = []string{"actor", "tracker_dir", "lambe_config", "board_url", "search_history"}
 
 // Set validates and sets one key; on error the config is unchanged.
 func (c *Config) Set(key, val string) error {
@@ -60,6 +62,15 @@ func (c *Config) Set(key, val string) error {
 			}
 		}
 		c.BoardURL = val
+	case "search_history":
+		switch val {
+		case "on", "":
+			c.SearchHistory = ""
+		case "off":
+			c.SearchHistory = "off"
+		default:
+			return errors.New("search_history must be on or off")
+		}
 	default:
 		return fmt.Errorf("unknown setting %q (known: %s)", key, strings.Join(ConfigKeys, ", "))
 	}
@@ -77,6 +88,11 @@ func (c Config) Get(key string) (string, error) {
 		return c.LambeConfig, nil
 	case "board_url":
 		return c.BoardURL, nil
+	case "search_history":
+		if c.SearchHistory == "off" {
+			return "off", nil
+		}
+		return "on", nil
 	}
 	return "", fmt.Errorf("unknown setting %q", key)
 }

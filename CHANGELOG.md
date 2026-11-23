@@ -22,6 +22,16 @@ may change behavior, and patch versions are fixes and small additions.
   derive, sort, list, detail), with fixtures captured from real `bd` 1.3.4 output. Read only: no
   write path changed.
 
+- Global search (U3 of the same plan): `ctrl+k` opens a live search over Tasks, Board (threads,
+  replies, tasks), Leases and Queues (runs, queue, attention, history) with the Tasks query grammar,
+  results grouped by domain (20 each), `enter` to jump to the owning tab with the row selected,
+  stale-read marks, plain-language not-connected and loading lines, and a history of the last 100
+  queries in the abacus state directory. `abacus search QUERY [--domain] [--limit] [--json]` prints
+  the same hits (`schema_version` 1, exit codes 0/1/2). The core `SearchIndex` is built only from
+  the reports the tabs already hold, so search runs no tool of its own. `queues --json` runs gain an
+  additive `workflow` field. `expires` durations point ahead (`expires>2h` is more than two hours from now);
+  `search_history` is a new config key (`off` keeps no query history).
+
 ### Changed
 
 - abacus no longer says it has no issue browser: the Tasks tab is its own list and detail view. The

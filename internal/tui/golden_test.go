@@ -48,6 +48,9 @@ type scenario struct {
 	// extra sizes (width, height) rendered into the golden after the standard grid: the
 	// breakpoints the converted screens are checked at.
 	extra [][2]int
+	// overlay: a capturing overlay owns the footer (its own keys, no q quit), so the footer's
+	// quit and help hints are not required.
+	overlay bool
 }
 
 // typed is a string as the key presses that type it.
@@ -221,7 +224,7 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 func scenarios() []scenario {
 	std := func(t *testing.T, th Theme) tea.Model { return load(t, th, nil) }
 	wsStd := func(t *testing.T, th Theme) tea.Model { return demoWorkspaceModel(t, th, &wsRecorder{}, 100, 32) }
-	return []scenario{
+	return append([]scenario{
 		{name: "queues", build: std, keys: []string{"4"}, tab: "Queues"},
 		{name: "queues-drilled", build: std, keys: []string{"4", "enter"}, tab: "Queues"},
 		{name: "queues-tracker", keys: []string{"4"}, tab: "Queues", build: func(t *testing.T, th Theme) tea.Model {
@@ -298,7 +301,7 @@ func scenarios() []scenario {
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
-	}
+	}, searchScenarios()...)
 }
 
 func render(t *testing.T, sc scenario, th Theme, w, h int) string {
@@ -404,7 +407,9 @@ func invariantErrs(sc scenario, out string, w, h int) []string {
 	}
 	last := ls[len(ls)-1]
 	hints := []string{"? help", "q quit"}
-	if !strings.HasPrefix(last, "? help") {
+	if sc.overlay && !tooSmall(w, h) { // too small to draw, the overlay never opens
+		hints = []string{"esc close"}
+	} else if !strings.HasPrefix(last, "? help") {
 		// A screen that asks for a decision leads its footer with its own keys (y apply, n cancel),
 		// and at 40 columns the lower-priority "? help" is the first to go; q quit stays.
 		hints = hints[1:]

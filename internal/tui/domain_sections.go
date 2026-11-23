@@ -119,6 +119,7 @@ type boardSection struct {
 	report  core.BoardReport
 	err     error
 	loaded  bool
+	readAt  time.Time // when the last read arrived (global search marks a stale one)
 	busy    bool
 	active  bool
 	gen     int // bumped on every (de)activation: a tick from an older visit is dropped
@@ -259,7 +260,7 @@ func taskBody(t core.BoardTask) []string {
 func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case boardMsg:
-		s.report, s.err, s.loaded, s.busy = m.report, m.err, true, false
+		s.report, s.err, s.loaded, s.busy, s.readAt = m.report, m.err, true, false, nowFn()
 		s.reanchor(s.ids(), true) // follow: the clamped row under the cursor is selected
 		s.settle(len(s.report.Threads) + len(s.report.Tasks))
 	case boardTickMsg:

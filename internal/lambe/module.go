@@ -355,7 +355,7 @@ func queuesReport(v View, demo bool) core.QueuesReport {
 	}
 	r.Reason = strings.Join(why, "; ")
 	for _, x := range v.Snapshot.Runs {
-		r.Runs = append(r.Runs, core.QueueRun{Issue: x.Issue, State: core.RunState(x.State), Phase: x.Phase, Machine: x.Machine, Stalled: x.Stalled})
+		r.Runs = append(r.Runs, core.QueueRun{Issue: x.Issue, State: core.RunState(x.State), Phase: x.Phase, Machine: x.Machine, Stalled: x.Stalled, Workflow: x.Workflow})
 	}
 	for _, x := range v.Queue.Rows {
 		r.Queue = append(r.Queue, core.QueueItem{ID: x.ID, Title: x.Title, Blocked: x.Blocked})

@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────╮
+│ search zzzzzz▏                0 hits │
+│ No matches for “zzzzzz”.             │
+│ Try fewer words, or narrow with      │
+│ field:value, for example             │
+│ status:open.                         │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 40x30 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────╮
+│ search zzzzzz▏                0 hits │
+│ No matches for “zzzzzz”.             │
+│ Try fewer words, or narrow with      │
+│ field:value, for example             │
+│ status:open.                         │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search zzzzzz▏                                                        0 hits │
+│ No matches for “zzzzzz”.                                                     │
+│ Try fewer words, or narrow with field:value, for example status:open.        │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search zzzzzz▏                                                        0 hits │
+│ No matches for “zzzzzz”.                                                     │
+│ Try fewer words, or narrow with field:value, for example status:open.        │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search zzzzzz▏                                                                                                0 hits │
+│ No matches for “zzzzzz”.                                                                                             │
+│ Try fewer words, or narrow with field:value, for example status:open.                                                │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search zzzzzz▏                                                                                                0 hits │
+│ No matches for “zzzzzz”.                                                                                             │
+│ Try fewer words, or narrow with field:value, for example status:open.                                                │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────╮
+│ search zzzzzz▏                                    0 hits │
+│ No matches for “zzzzzz”.                                 │
+│ Try fewer words, or narrow with field:value, for example │
+│ status:open.                                             │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
+│ search zzzzzz▏                                                                            0 hits │
+│ No matches for “zzzzzz”.                                                                         │
+│ Try fewer words, or narrow with field:value, for example status:open.                            │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history

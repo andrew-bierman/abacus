@@ -48,6 +48,7 @@ type leasesSection struct {
 	read   func(ctx context.Context) leasesRead
 	got    leasesRead
 	loaded bool
+	readAt time.Time      // when the last read arrived (global search marks a stale one)
 	tick   func() tea.Cmd // injectable so tests never sleep
 	th     Theme
 	geom
@@ -122,7 +123,7 @@ func (s *leasesSection) Init() tea.Cmd { return tea.Batch(s.fetch(), s.tick()) }
 func (s *leasesSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case leasesMsg:
-		s.got, s.loaded = m.read, true
+		s.got, s.loaded, s.readAt = m.read, true, nowFn()
 		s.reanchor(s.ids(), false) // pin: a lease that vanishes and comes back is selected again
 		s.settle(len(s.leases()))
 		return s, s.ws.fetch(s.wsItems())

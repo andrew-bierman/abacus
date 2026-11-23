@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────╮
+│ search e▏                    30 hits │
+│ Tasks (15)                           │
+│ ▸ ac-[2Jx   evil [31m…  open · P0    │
+│   ac-33     help over…  in progress… │
+│   ac-27     board thr…  blocked · P3 │
+│   ac-30     saved fil…  open · P3    │
+│   ac-25     doctor: s…  blocked · P… │
+│   ↕ +31 more                         │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 40x30 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────╮
+│ search e▏                    30 hits │
+│ Tasks (15)                           │
+│ ▸ ac-[2Jx   evil [31m…  open · P0    │
+│   ac-33     help over…  in progress… │
+│   ac-27     board thr…  blocked · P3 │
+│   ac-30     saved fil…  open · P3    │
+│   ac-25     doctor: s…  blocked · P… │
+│   ac-20     split gra…  in progress… │
+│   ac-21     export re…  open · P2    │
+│   ac-16     stale lea…  open · P2    │
+│   ac-15     lease hol…  open · P1 ·… │
+│   ac-12     wire the …  in progress… │
+│   ac-09     queue att…  open · P2    │
+│   ac-04     document …  closed · P2… │
+│   ac-03     retire th…  closed · P3… │
+│   ac-01     Fleet wor…  open · P1 ·… │
+│   ac-36     verify to…  deferred · … │
+│                                      │
+│ Board (6)                            │
+│   #17       rolled ba…  reply · ada… │
+│   #15       checkout …  dev/web · a… │
+│   #2        deploys a…  dev · ada    │
+│   #16       fix CVE-1…  task · clai… │
+│   #6        review th…  task · read… │
+│   ↕ +14 more                         │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search e▏                                                            30 hits │
+│ Tasks (15)                                                                   │
+│ ▸ ac-[2Jx         evil [31mred[0m  rtl be…  open · P0                        │
+│   ac-33           help overlay per view     in progress · P3 · mei           │
+│   ac-27           board thread digest       blocked · P3                     │
+│   ac-30           saved filters             open · P3                        │
+│   ac-25           doctor: stale export wa…  blocked · P2 · ada               │
+│   ↕ +31 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search e▏                                                            30 hits │
+│ Tasks (15)                                                                   │
+│ ▸ ac-[2Jx         evil [31mred[0m  rtl be…  open · P0                        │
+│   ac-33           help overlay per view     in progress · P3 · mei           │
+│   ac-27           board thread digest       blocked · P3                     │
+│   ac-30           saved filters             open · P3                        │
+│   ac-25           doctor: stale export wa…  blocked · P2 · ada               │
+│   ac-20           split graph source from…  in progress · P1 · ada           │
+│   ac-21           export reader             open · P2                        │
+│   ac-16           stale lease warning       open · P2                        │
+│   ac-15           lease holder column       open · P1 · mei                  │
+│   ac-12           wire the lease heartbeat  in progress · P0 · ada           │
+│   ac-09           queue attention digest    open · P2                        │
+│   ac-04           document the write gate   closed · P2 · mei                │
+│   ac-03           retire the old poller     closed · P3 · ada                │
+│   ac-01           Fleet workspace           open · P1 · mei                  │
+│   ac-36           verify tool flags again…  deferred · P3 · mei              │
+│                                                                              │
+│ Board (6)                                                                    │
+│   #17             rolled back to d4e5f6; …  reply · ada/claude · #15         │
+│   #15             checkout times out for …  dev/web · ada · 2 replies        │
+│   #2              deploys are green again   dev · ada                        │
+│   #16             fix CVE-123 in acme/web   task · claimed · codex via ada … │
+│   #6              review the fix            task · ready · work              │
+│   ↕ +14 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search e▏                                                                                                    30 hits │
+│ Tasks (15)                                                                                                           │
+│ ▸ ac-[2Jx         evil [31mred[0m  rtl bell 界界界界界界界界界界界界界界界界界界…   open · P0                        │
+│   ac-33           help overlay per view                                             in progress · P3 · mei           │
+│   ac-27           board thread digest                                               blocked · P3                     │
+│   ac-30           saved filters                                                     open · P3                        │
+│   ac-25           doctor: stale export warning                                      blocked · P2 · ada               │
+│   ↕ +31 more                                                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search e▏                                                                                                    30 hits │
+│ Tasks (15)                                                                                                           │
+│ ▸ ac-[2Jx         evil [31mred[0m  rtl bell 界界界界界界界界界界界界界界界界界界…   open · P0                        │
+│   ac-33           help overlay per view                                             in progress · P3 · mei           │
+│   ac-27           board thread digest                                               blocked · P3                     │
+│   ac-30           saved filters                                                     open · P3                        │
+│   ac-25           doctor: stale export warning                                      blocked · P2 · ada               │
+│   ac-20           split graph source from export                                    in progress · P1 · ada           │
+│   ac-21           export reader                                                     open · P2                        │
+│   ac-16           stale lease warning                                               open · P2                        │
+│   ac-15           lease holder column                                               open · P1 · mei                  │
+│   ac-12           wire the lease heartbeat                                          in progress · P0 · ada           │
+│   ac-09           queue attention digest                                            open · P2                        │
+│   ac-04           document the write gate                                           closed · P2 · mei                │
+│   ac-03           retire the old poller                                             closed · P3 · ada                │
+│   ac-01           Fleet workspace                                                   open · P1 · mei                  │
+│   ac-36           verify tool flags against help                                    deferred · P3 · mei              │
+│                                                                                                                      │
+│ Board (6)                                                                                                            │
+│   #17             rolled back to d4e5f6; watching the error rate                    reply · ada/claude · #15         │
+│   #15             checkout times out for carts over 40 items, started after the 1…  dev/web · ada · 2 replies        │
+│   #2              deploys are green again                                           dev · ada                        │
+│   #16             fix CVE-123 in acme/web                                           task · claimed · codex via ada … │
+│   #6              review the fix                                                    task · ready · work              │
+│   ↕ +14 more                                                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────╮
+│ search e▏                                        30 hits │
+│ Tasks (15)                                               │
+│ ▸ ac-[2Jx         evil [31m…  open · P0                  │
+│   ac-33           help over…  in progress · P3 · mei     │
+│   ac-27           board thr…  blocked · P3               │
+│   ac-30           saved fil…  open · P3                  │
+│   ac-25           doctor: s…  blocked · P2 · ada         │
+│   ac-20           split gra…  in progress · P1 · ada     │
+│   ac-21           export re…  open · P2                  │
+│   ac-16           stale lea…  open · P2                  │
+│   ac-15           lease hol…  open · P1 · mei            │
+│   ac-12           wire the …  in progress · P0 · ada     │
+│   ac-09           queue att…  open · P2                  │
+│   ac-04           document …  closed · P2 · mei          │
+│   ac-03           retire th…  closed · P3 · ada          │
+│   ac-01           Fleet wor…  open · P1 · mei            │
+│   ac-36           verify to…  deferred · P3 · mei        │
+│                                                          │
+│   ↕ +20 more                                             │
+╰──────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
+│ search e▏                                                                                30 hits │
+│ Tasks (15)                                                                                       │
+│ ▸ ac-[2Jx         evil [31mred[0m  rtl bell 界界界界界界界界…   open · P0                        │
+│   ac-33           help overlay per view                         in progress · P3 · mei           │
+│   ac-27           board thread digest                           blocked · P3                     │
+│   ac-30           saved filters                                 open · P3                        │
+│   ac-25           doctor: stale export warning                  blocked · P2 · ada               │
+│   ac-20           split graph source from export                in progress · P1 · ada           │
+│   ac-21           export reader                                 open · P2                        │
+│   ac-16           stale lease warning                           open · P2                        │
+│   ac-15           lease holder column                           open · P1 · mei                  │
+│   ac-12           wire the lease heartbeat                      in progress · P0 · ada           │
+│   ac-09           queue attention digest                        open · P2                        │
+│   ac-04           document the write gate                       closed · P2 · mei                │
+│   ac-03           retire the old poller                         closed · P3 · ada                │
+│   ac-01           Fleet workspace                               open · P1 · mei                  │
+│   ac-36           verify tool flags against help                deferred · P3 · mei              │
+│                                                                                                  │
+│ Board (6)                                                                                        │
+│   #17             rolled back to d4e5f6; watching the error r…  reply · ada/claude · #15         │
+│   #15             checkout times out for carts over 40 items,…  dev/web · ada · 2 replies        │
+│   #2              deploys are green again                       dev · ada                        │
+│   #16             fix CVE-123 in acme/web                       task · claimed · codex via ada … │
+│   #6              review the fix                                task · ready · work              │
+│   #9]0;x          evil [31mred[0m  rtl bell 界界界界界界界界…   evil [31mred[0m  rtl bell 界界…  │
+│                                                                                                  │
+│   ↕ +12 more                                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history

@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────╮
+│ search ▏                             │
+│ Search tasks, board threads, leases  │
+│ and runs. Words match titles and     │
+│ text; field:value narrows, for       │
+│ example status:open, who:ada or      │
+│ in:board.                            │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 40x30 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────╮
+│ search ▏                             │
+│ Search tasks, board threads, leases  │
+│ and runs. Words match titles and     │
+│ text; field:value narrows, for       │
+│ example status:open, who:ada or      │
+│ in:board.                            │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search ▏                                                                     │
+│ Search tasks, board threads, leases and runs. Words match titles and text;   │
+│ field:value narrows, for example status:open, who:ada or in:board.           │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search ▏                                                                     │
+│ Search tasks, board threads, leases and runs. Words match titles and text;   │
+│ field:value narrows, for example status:open, who:ada or in:board.           │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search ▏                                                                                                             │
+│ Search tasks, board threads, leases and runs. Words match titles and text; field:value narrows, for example          │
+│ status:open, who:ada or in:board.                                                                                    │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search ▏                                                                                                             │
+│ Search tasks, board threads, leases and runs. Words match titles and text; field:value narrows, for example          │
+│ status:open, who:ada or in:board.                                                                                    │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────╮
+│ search ▏                                                 │
+│ Search tasks, board threads, leases and runs. Words      │
+│ match titles and text; field:value narrows, for example  │
+│ status:open, who:ada or in:board.                        │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
+│ search ▏                                                                                         │
+│ Search tasks, board threads, leases and runs. Words match titles and text; field:value narrows,  │
+│ for example status:open, who:ada or in:board.                                                    │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history

@@ -1,0 +1,93 @@
+{
+  "domains": [
+    {
+      "domain": "tasks",
+      "title": "Tasks",
+      "state": "searched",
+      "docs": 9,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "board",
+      "title": "Board",
+      "state": "searched",
+      "docs": 4,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "leases",
+      "title": "Leases",
+      "state": "searched",
+      "docs": 2,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "queues",
+      "title": "Queues",
+      "state": "searched",
+      "docs": 1,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    }
+  ],
+  "groups": [
+    {
+      "domain": "tasks",
+      "title": "Tasks",
+      "total": 1,
+      "results": [
+        {
+          "domain": "tasks",
+          "kind": "task",
+          "id": "tk-tbr",
+          "label": "tk-tbr",
+          "title": "Lease heartbeat bug",
+          "meta": "in progress · P0 · ada",
+          "status": "in_progress",
+          "matched": [
+            "title"
+          ],
+          "rank": 2
+        }
+      ]
+    },
+    {
+      "domain": "board",
+      "title": "Board",
+      "total": 2,
+      "results": [
+        {
+          "domain": "board",
+          "kind": "thread",
+          "id": "t:15",
+          "label": "#15",
+          "title": "lease heartbeat keeps missing",
+          "meta": "dev · ada",
+          "matched": [
+            "title"
+          ],
+          "rank": 2
+        },
+        {
+          "domain": "board",
+          "kind": "board_task",
+          "id": "k:16",
+          "label": "#16",
+          "title": "review the heartbeat fix",
+          "meta": "task · ready · work",
+          "status": "ready",
+          "matched": [
+            "title"
+          ],
+          "rank": 2
+        }
+      ]
+    }
+  ],
+  "query": "heartbeat",
+  "schema_version": 1,
+  "total": 3
+}

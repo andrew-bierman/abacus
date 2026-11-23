@@ -38,7 +38,7 @@ type Deps struct {
 }
 
 func usage(d Deps) {
-	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show browse; tasks create|update|close change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n\nfirst run:\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
+	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show browse; tasks create|update|close change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n  search    find tasks, board threads, leases and runs; --domain, --limit, --json\n\nfirst run:\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
 }
 
 // Run dispatches a command and returns the process exit code.
@@ -53,6 +53,8 @@ func Run(args []string, d Deps) int {
 	case "version", "doctor", "status", "tui":
 	case "tasks", "leases", "queues", "board":
 		return runDomain(cmd, rest, d)
+	case "search":
+		return runSearch(rest, d)
 	case "setup":
 		return runSetup(rest, d)
 	case "config":
