@@ -267,3 +267,24 @@ func TestEmptyAndRepeatedAreStable(t *testing.T) {
 		t.Fatalf("normalizing changes the query: %+v vs %+v", a, b)
 	}
 }
+
+// A duration so large it overflows time.Duration used to wrap to a time in the future: nothing
+// matched or everything did. Above 100 years it is an error with a column.
+func TestHugeDurationsAreRejected(t *testing.T) {
+	for _, in := range []string{"updated>999999d", "updated>3000000d", "updated>36501d", "updated<5300w", "updated>9999999999h", "created>99999999999999999999m"} {
+		_, err := Parse(in)
+		var qe *Error
+		if !errors.As(err, &qe) || qe.Col != strings.IndexAny(in, "<>")+2 {
+			t.Errorf("Parse(%q) = %v, want a typed error at the value", in, err)
+		}
+	}
+	for _, in := range []string{"updated>36500d", "updated>5200w", "updated>876000h", "updated>0d", "updated>1m"} {
+		if _, err := Parse(in); err != nil {
+			t.Errorf("Parse(%q): %v", in, err)
+		}
+	}
+	q, _ := Parse("updated>36500d")
+	if !q.Match(task("a", "b", "open", 1, ""), now) {
+		t.Error("a hundred years ago is long before this task was updated: it matches")
+	}
+}

@@ -42,8 +42,11 @@ goes to it. Nothing writes except `y` on the confirm screen.
 ## Tasks
 
 Every task in the tracker, read as one snapshot (`bd --readonly export`, a fixed read that never
-writes) and derived in `internal/taskview`: the list, the detail and the counts all come from that
-one read, so they cannot disagree about what is blocked or ready.
+writes, with the long export deadline and the 64 MiB cap) and derived in `internal/taskview`: the
+list, the detail, the strip and the Insights summary line all come from that one read, so they
+agree about what is blocked or ready. (The graph analysis lines under that summary, next pick,
+blockers, critical path and cycles, are computed by the graph engine from its own read and can
+differ by a refresh.)
 
 ```
  [List] Insights                                                     14 tasks · 3 ready   view strip, then counts
@@ -56,9 +59,11 @@ one read, so they cannot disagree about what is blocked or ready.
   `●` blocked, `✓` closed, `◇` deferred), priority, `dep`, type, age, assignee, and from 140 columns
   the labels. `dep` reads `⊘N` held by N unfinished tasks and `→N` holds N tasks back. Columns drop
   by importance as the width shrinks (40 columns keep `id`, title, status, priority and `dep`). The
-  title carries `done/total` for an epic. The tracker's directory name is in the panel title; a read
-  older than two polls adds `stale 3m`, and a snapshot that may have lost records says so under the
-  panel.
+  title carries `done/total` for an epic. The panels fill the body height, with a two-row legend of
+  the marks at the foot of the list. The panel title names the directory that holds the tracker (found
+  the way bd finds it, so it is the project the list and the `n` `e` `x` writes really use); a read
+  older than two polls adds `stale 3m`, and a snapshot that may have lost records, or that saw
+  duplicate ids (the later record is used; an export's order is not stable), says so under the panel.
 - **Detail.** Beside the list from 100 columns, otherwise `enter` opens it full width and `esc`
   returns. It shows the task, its status, labels and parent, what blocks it and what it blocks
   (finished ones are listed too, marked `✓`), the children of an epic with a progress bar, the
@@ -69,10 +74,15 @@ one read, so they cannot disagree about what is blocked or ready.
 - **Sort.** `s` cycles priority, created, updated, title, status, type, deps and deferred, each in its
   natural direction (newest first for times); `S` reverses. Ties always break by id, ascending, so a
   refresh never shuffles equal rows.
-- **Quick filters.** `f` cycles open (not closed, the default), ready, blocked, closed and all. Ready
-  is open, not deferred and with no unfinished blocker; it matches `bd ready` on the captured
-  fixtures. Blocked is held by an unfinished dependency *or* stored as blocked: the stored status
-  stays what a card move would write, and the derived state is the `⊘N` mark and `blocked:true`.
+- **Quick filters.** `f` cycles open (not closed, the default), ready, blocked, closed and all; your
+  choice survives a refresh. Ready is open, not deferred and not held, and it matches `bd ready` and
+  `bd blocked` on every case captured from bd 1.3.4 (`internal/taskview/testdata/README.md`): a
+  `blocks` or `conditional-blocks` dependency on an unfinished task holds a task; so does a held
+  ancestor (the hold is inherited down parent-child links, shown as `⊘↑`); `waits-for`, `related`,
+  `discovered-from` and an `external:` reference never hold; closed work is never held, ready or
+  in the blocked quick filter. The blocked quick filter is held *or* stored as blocked: the stored
+  status stays what a card move would write, and the derived state is the `⊘N` mark and
+  `blocked:true`.
 - **Query.** `/` edits a query that filters as you type; `enter` keeps it and `esc` clears it. Free
   words match the id, title and labels (every word must; a word of up to four characters matches as a
   subsequence, a longer one as contiguous text; `"quoted phrase"` is contiguous). Predicates narrow
@@ -91,7 +101,14 @@ one read, so they cannot disagree about what is blocked or ready.
   `scripts/dev-bundle.sh`).
 - **Fallbacks.** A provider that cannot read the whole tracker, or a read that failed before the
   first snapshot, lists the summary's recent changes (`recent only` in the panel title) with the
-  reason. A read that fails after a good one keeps the last list and says `refresh failed`.
+  reason. Dependencies were not read, so that list shows no ready count, no `⊘` marks, no blockers
+  and no ready or blocked quick filter. A read that fails after a good one keeps the last list and says
+  `refresh failed`. A read that times out (or is over 64 MiB) is not retried on the 30 s poll: the
+  notice says `tracker too large to load quickly` and the next try is five minutes later, or at once on
+  `r` or after a write. A write that lands while a read is in flight triggers one more read at once,
+  and until it lands the notice says the list may not show your last change.
+- **Insights view.** `n` works from any view; `e`, `x` and the workspace key act on the list's task,
+  which this view does not show, so they only say `switch to the List view (v)`.
 - **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e` and `x` forms and
   the confirm gate below are unchanged and now act on the task under the cursor.
 

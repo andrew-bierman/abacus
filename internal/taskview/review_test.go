@@ -187,3 +187,16 @@ func TestDuplicateIdsAreCountedInTheWarnings(t *testing.T) {
 		t.Errorf("a clean export has no warnings: %v", c.Warnings)
 	}
 }
+
+// A closed parent holds nobody, even if its own blocker is still open (bd allows `close --force`).
+func TestAClosedParentHoldsItsChildrenNotAtAll(t *testing.T) {
+	v := view(iss("blocker", "open", 1), iss("parent", "closed", 1, blk("blocker")), iss("child", "open", 1, parent("parent")))
+	if r := getRow(t, v, "child"); r.Blocked || !r.Ready || r.HeldBy != "" {
+		t.Errorf("child of a closed parent: %+v", r)
+	}
+	// The same shape with the parent open does hold the child.
+	v = view(iss("blocker", "open", 1), iss("parent", "open", 1, blk("blocker")), iss("child", "open", 1, parent("parent")))
+	if r := getRow(t, v, "child"); !r.Blocked || r.Ready || r.HeldBy != "parent" {
+		t.Errorf("child of a held parent: %+v", r)
+	}
+}
