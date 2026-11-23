@@ -87,7 +87,7 @@ one read, so they cannot disagree about what is blocked or ready.
 - **Insights.** `v` switches to the graph insights panel: the counts bar, the next pick, the issues
   that block the most, the critical path and dependency cycles. Insights are read on start and on
   `r`, not on a timer, because each read analyzes the whole tracker. Without an insights provider the panel says it is not connected and what is
-  wrong with abacus's own bv (a release: damaged or moved, re-extract; a dev build: run
+  wrong with abacus's own bd (a release: damaged or moved, re-extract; a dev build: run
   `scripts/dev-bundle.sh`).
 - **Fallbacks.** A provider that cannot read the whole tracker, or a read that failed before the
   first snapshot, lists the summary's recent changes (`recent only` in the panel title) with the
