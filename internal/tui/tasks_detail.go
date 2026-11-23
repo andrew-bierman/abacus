@@ -134,13 +134,19 @@ func (s *tasksSection) detailLines(d core.TaskDetailReport, w int) []string {
 	case r.Ready:
 		add(th.Text(KindOK, "ready"))
 	}
+	ago := func(a string) string { // "now" reads "just now", not "now ago"
+		if a == "now" {
+			return "just now"
+		}
+		return a + " ago"
+	}
 	when := []string{}
 	if r.Age != "" {
-		when = append(when, "created "+r.Age+" ago")
+		when = append(when, "created "+ago(r.Age))
 	}
 	if u, err := time.Parse(time.RFC3339, r.UpdatedAt); err == nil {
 		if a := taskview.Age(u, nowFn()); a != "" {
-			when = append(when, "updated "+a+" ago")
+			when = append(when, "updated "+ago(a))
 		}
 	}
 	if len(when) > 0 {
