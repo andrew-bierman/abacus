@@ -159,6 +159,9 @@ func (s *tasksSection) Bindings() []key.Binding {
 	if s.list.typing {
 		return s.listBindings()
 	}
+	if s.list.cur != viewList { // e, x and the jump act on the list's task, which this view does not show
+		return append(s.listBindings(), keyNew, keyFull, keyReload)
+	}
 	it, ok := s.selectedItem()
 	return append(s.listBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload)
 }

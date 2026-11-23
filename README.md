@@ -336,6 +336,16 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   ac-30 saved filters                               ○  P3      feat  2d  -   │
 │   ac-33 help overlay per view                       ◐  P3      task  1d  mei │
 │   ac-36 verify tool flags against help              ◇  P3      chore 40d mei │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
 ```
