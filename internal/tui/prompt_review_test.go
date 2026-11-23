@@ -109,6 +109,13 @@ func TestAnOverLongLineIsRefusedNotTruncated(t *testing.T) {
 	if prm(m2) == nil || !strings.Contains(footer(m2), "too long") {
 		t.Errorf("an over-long line is refused with the reason: %q", footer(m2))
 	}
+	// trailing blanks count: q plus 300 spaces is a long line, not :q
+	m = press(pm(t, 100, 32), ":")
+	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q" + strings.Repeat(" ", 300)), Paste: true})
+	m3, c3 := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if c3 != nil && c3() == tea.Quit() || prm(m3) == nil {
+		t.Error("q plus 300 blanks must be refused, not run as :q")
+	}
 	// far beyond any sane paste: still bounded and still refused
 	m = press(pm(t, 100, 32), ":")
 	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(strings.Repeat("x", 100000)), Paste: true})
@@ -286,6 +293,13 @@ func TestPromptViewEntryIsTheKeyPathEntry(t *testing.T) {
 	before := tasksSec(g).graph
 	if after := tasksSec(cmd(g, "graph")).graph; after.focus != before.focus || after.sel != before.sel || after.whole != before.whole {
 		t.Error(":graph in the Graph moved it")
+	}
+	whole := press(press(press(list(), "v"), "v"), "g") // the whole graph
+	if !tasksSec(whole).graph.whole {
+		t.Fatal("g did not show the whole graph")
+	}
+	if !tasksSec(cmd(whole, "graph")).graph.whole {
+		t.Error(":graph in the whole graph re-opened the neighborhood")
 	}
 	// the List from the Kanban carries the selected card, as v does
 	if s := tasksSec(cmd(board(), "list")); s.list.cur != viewList || s.selected != card {
