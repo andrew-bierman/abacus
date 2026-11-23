@@ -278,11 +278,7 @@ func parseVersion(out []byte) (versionInfo, string) {
 // wholeNumber reads a JSON number that is a non-negative integer; strings, null, booleans,
 // fractions and exponents are not.
 func wholeNumber(raw json.RawMessage) (int, bool) {
-	s := strings.TrimSpace(string(raw))
-	if s == "" || s[0] != '-' && (s[0] < '0' || s[0] > '9') {
-		return 0, false
-	}
-	n, err := strconv.ParseInt(s, 10, 32)
+	n, err := strconv.ParseInt(strings.TrimSpace(string(raw)), 10, 32) // quotes, null, true and fractions do not parse
 	if err != nil || n < 0 {
 		return 0, false
 	}

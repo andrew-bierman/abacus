@@ -417,17 +417,17 @@ func TestTimeoutDetailsSayTimedOutNotAContextError(t *testing.T) {
 	f := &fake{hang: true}
 	m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f, ProbeTimeout: 10 * time.Millisecond})
 	d := detect(m)
-	if !strings.Contains(d.Detail, "timed out") || strings.Contains(d.Detail, "context") || strings.Contains(d.Detail, "deadline") {
+	if d.Detail != "the Rex probe timed out" {
 		t.Fatalf("probe: %q", d.Detail)
 	}
 	m = New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(k string) string { return map[string]string{"REX_SESSION": "s"}[k] }, Runner: f, CallTimeout: 10 * time.Millisecond})
-	if d := detect(m); !strings.Contains(d.Detail, "timed out") || strings.Contains(d.Detail, "deadline") {
+	if d := detect(m); d.Detail != "rex version --json timed out; Rex is optional, so the workspace layer is off" {
 		t.Fatalf("version: %q", d.Detail)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	m = New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f})
-	if d := m.Detect(ctx); !strings.Contains(d.Detail, "canceled") || strings.Contains(d.Detail, "context") {
+	if d := m.Detect(ctx); d.Detail != "the Rex probe was canceled" {
 		t.Fatalf("cancel: %q", d.Detail)
 	}
 }
@@ -1301,5 +1301,21 @@ func TestTheDefaultRunnerCapsOutputAtOneMebibyte(t *testing.T) {
 	}
 	if rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{{ID: "LAM-1"}}); rep.State != core.Degraded || !strings.Contains(rep.Reason, "reading sessions") {
 		t.Fatalf("%+v", rep)
+	}
+}
+
+// Several failing hosts together must still fit the bound on Reason.
+func TestManyFailingHostsKeepReasonBounded(t *testing.T) {
+	f := fleetFake(t)
+	var items []core.WorkspaceItem
+	for i := 0; i < 8; i++ {
+		h := fmt.Sprintf("h%d", i)
+		f.resp["-S "+h+" "+lsLocal] = resp{err: errors.New(strings.Repeat("e", 190))}
+		items = append(items, core.WorkspaceItem{ID: "LAM-1", Host: h})
+	}
+	m := readyMod(t, f, nil)
+	rep, _ := m.Workspace(context.Background(), items)
+	if n := len([]rune(rep.Reason)); rep.State != core.Degraded || n != 300 {
+		t.Fatalf("%d runes: %q", n, rep.Reason)
 	}
 }
