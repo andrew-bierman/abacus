@@ -75,6 +75,7 @@ type tasksSection struct {
 	notice   string
 	listNav  // ids are the task IDs; below bpWide enter drills into the detail
 	list     tasksList
+	graph    graphState
 	snapBusy bool // a snapshot read is in flight: another is not started
 	// snapDirty: a read was asked for while one was in flight (a write landed), so the answer that
 	// arrives may predate it and one more read follows at once.

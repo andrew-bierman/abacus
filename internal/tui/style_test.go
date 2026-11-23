@@ -36,7 +36,7 @@ func tasksModelWith(t *testing.T, th Theme, rep core.TasksReport, w, h int) tea.
 
 func TestTasksPanelShowsAStateBarAsWideAsThePanel(t *testing.T) {
 	for _, w := range []int{40, 80, 120} {
-		v := press(sized(newTasksRig(t).m, w, 40), "v").View() // the Insights view
+		v := press(sized(newTasksRig(t).m, w, 40), "V").View() // the Insights view
 		var bar string
 		for _, l := range strings.Split(v, "\n") {
 			if strings.Contains(l, "▒") && strings.Contains(l, "█") && strings.Contains(l, "▓") {
@@ -291,7 +291,7 @@ func TestRunStateGlyphsDifferPerState(t *testing.T) {
 }
 
 func TestTheTasksBarIsCappedSoItStaysAGlance(t *testing.T) {
-	v := press(sized(newTasksRig(t).m, 160, 40), "v").View() // the Insights view
+	v := press(sized(newTasksRig(t).m, 160, 40), "V").View() // the Insights view
 	for _, l := range strings.Split(v, "\n") {
 		if strings.Contains(l, "▒") && strings.Contains(l, "█") {
 			bar := strings.Fields(strings.Split(l, "│")[1])[0]

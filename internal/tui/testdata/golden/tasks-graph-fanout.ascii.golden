@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                            37 tasks · 5 ready
+focus gr-6yh · depth 2 · blocking links
+╭─ ▸ Graph · gr-6yh ─────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│                  ╔═════════════════════════╗                   │ │ longest chain (2):            │
+│                  ║ ○ gr-6yh Release hub  * ║                   │ │ gr-6yh → gr-1wu               │
+│                  ╚════════════╤════════════╝                   │ │                               │
+│          ┌────────────────────┼────────────────────┐           │ │ cycle gr-syt → gr-tse →       │
+│          │                    │                    │           │ │ gr-vgy → gr-syt               │
+│ ┌────────┴────────┐  ┌────────┴────────┐  ┌────────┴────────┐  │ │ depends on itself gr-1fm      │
+│ │ ○ gr-1wu Fan… * │  │ ○ gr-33j Fan i… │  │ ○ gr-347 Fan i… │  │ │                               │
+│ └─────────────────┘  └─────────────────┘  └─────────────────┘  │ │ blockers open: 0              │
+│                            +9 more                             │ │ freed when closed: 12         │
+│                                                                │ │ +9 more not drawn             │
+│                                                                │ │                               │
+│                                                                │ │ ○ open ◐ active ● blocked     │
+│                                                                │ │ ✓ closed ◇ deferred           │
+│                                                                │ │ * longest chain · ~ cycle     │
+│                                                                │ │ ^ bottleneck · ! self-dep     │
+│                                                                │ │ ? blocker not in tracker      │
+│                                                                │ │ ═ focus · ┃ selected          │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                        37 tasks · 5 ready
+focus gr-6yh · depth 2 · blocking links
+╭─ ▸ Graph · gr-6yh ───────────────────────────────────────────────────────────╮
+│ blocked by                                                                   │
+│   nothing                                                                    │
+│                                                                              │
+│ ▸ ○ gr-6yh Release hub                                                 →12 * │
+│                                                                              │
+│ blocks                                                                       │
+│   ○ gr-1wu Fan item 7                                                   ⊘1 * │
+│   ○ gr-33j Fan item 11                                                    ⊘1 │
+│   ○ gr-347 Fan item 12                                                    ⊘1 │
+│   ○ gr-845 Fan item 1                                                     ⊘1 │
+│   ○ gr-8ax Fan item 5                                                     ⊘1 │
+│   ○ gr-ak2 Fan item 9                                                     ⊘1 │
+│   ○ gr-d23 Fan item 10                                                    ⊘1 │
+│   ○ gr-ea5 Fan item 8                                                     ⊘1 │
+│   … +4 more                                                                  │
+│                                                                              │
+│   ↕ +4 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                    37 tasks · 5 ready
+focus gr-6yh · depth 2 · blocking links
+╭─ ▸ Graph · gr-6yh ───────────────────────────────────────╮
+│ blocked by                                               │
+│   nothing                                                │
+│                                                          │
+│ ▸ ○ gr-6yh Release hub                             →12 * │
+│                                                          │
+│ blocks                                                   │
+│   ○ gr-1wu Fan item 7                               ⊘1 * │
+│   ○ gr-33j Fan item 11                                ⊘1 │
+│   ○ gr-347 Fan item 12                                ⊘1 │
+│   ○ gr-845 Fan item 1                                 ⊘1 │
+│   ○ gr-8ax Fan item 5                                 ⊘1 │
+│   ○ gr-ak2 Fan item 9                                 ⊘1 │
+│   ○ gr-d23 Fan item 10                                ⊘1 │
+│   ○ gr-ea5 Fan item 8                                 ⊘1 │
+│   … +4 more                                              │
+│                                                          │
+│   ↕ +4 more                                              │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open …

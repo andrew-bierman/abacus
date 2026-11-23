@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights       14 tasks · 3 ready
+[List] Graph  Insights
 [ready] / to… 3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Insights       14 tasks · 3 ready
+[List] Graph  Insights
 [ready] / to… 3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
@@ -44,7 +44,7 @@
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                               14 tasks · 3 ready
+[List] Graph  Insights                                        14 tasks · 3 ready
 [ready] / to filter                                   3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id    title                                         st P  dep type age who │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                               14 tasks · 3 ready
+[List] Graph  Insights                                        14 tasks · 3 ready
 [ready] / to filter                                   3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id    title                                         st P  dep type age who │
@@ -88,7 +88,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                                                       14 tasks · 3 ready
+[List] Graph  Insights                                                                                14 tasks · 3 ready
 [ready] / to filter                                                                           3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-01  epic                                 │
@@ -98,11 +98,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │ created 30d ago · updated 10d ago           │
 │                                                                      │ │   ↕ +25 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                       14 tasks · 3 ready
+[List] Graph  Insights                                                                                14 tasks · 3 ready
 [ready] / to filter                                                                           3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-01  epic                                 │
@@ -129,11 +129,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │ Goal                                        │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +8 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Insights                           14 tasks · 3 ready
+[List] Graph  Insights                    14 tasks · 3 ready
 [ready] / to filter               3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
 │   id    title                     st P  dep type age who │
@@ -158,7 +158,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                   14 tasks · 3 ready
+[List] Graph  Insights                                                            14 tasks · 3 ready
 [ready] / to filter                                                       3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────╮
 │   id    title                     st P  dep type age who │ │ ac-01  epic                         │

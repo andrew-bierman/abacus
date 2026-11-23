@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                            37 tasks · 5 ready
+focus gr-syt · depth 2 · blocking links
+╭─ ▸ Graph · gr-syt ─────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│                  ┌─────────────────────────┐                   │ │ longest chain: none           │
+│                  │ ○ gr-tse Cycle gamma  ~ │                   │ │                               │
+│                  └────────────┬────────────┘                   │ │ cycle gr-syt → gr-tse →       │
+│                               │                                │ │ gr-vgy → gr-syt               │
+│                               │                                │ │ depends on itself gr-1fm      │
+│                  ┌────────────┴────────────┐                   │ │                               │
+│                  │ ○ gr-vgy Cycle alpha  ~ │                   │ │ blockers open: 1              │
+│                  └────────────┬────────────┘                   │ │ freed when closed: 1          │
+│                               │                                │ │ +1 links not drawn            │
+│                               │                                │ │                               │
+│                  ╔════════════╧════════════╗                   │ │ ○ open ◐ active ● blocked     │
+│                  ║ ○ gr-syt Cycle beta   ~ ║                   │ │ ✓ closed ◇ deferred           │
+│                  ╚═════════════════════════╝                   │ │ * longest chain · ~ cycle     │
+│                                                                │ │ ^ bottleneck · ! self-dep     │
+│                                                                │ │ ? blocker not in tracker      │
+│                                                                │ │ ═ focus · ┃ selected          │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                        37 tasks · 5 ready
+focus gr-syt · depth 2 · blocking links
+╭─ ▸ Graph · gr-syt ───────────────────────────────────────────────────────────╮
+│ blocked by                                                                   │
+│   ○ gr-vgy Cycle alpha                                                ⊘1→1 ~ │
+│     ○ gr-tse Cycle gamma                                              ⊘1→1 ~ │
+│                                                                              │
+│ ▸ ○ gr-syt Cycle beta                                                 ⊘1→1 ~ │
+│                                                                              │
+│ blocks                                                                       │
+│   ○ gr-tse Cycle gamma                                                ⊘1→1 ~ │
+│     ○ gr-vgy Cycle alpha                                              ⊘1→1 ~ │
+│                                                                              │
+│ longest chain: none                                                          │
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                                      │
+│ depends on itself gr-1fm                                                     │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                    37 tasks · 5 ready
+focus gr-syt · depth 2 · blocking links
+╭─ ▸ Graph · gr-syt ───────────────────────────────────────╮
+│ blocked by                                               │
+│   ○ gr-vgy Cycle alpha                            ⊘1→1 ~ │
+│     ○ gr-tse Cycle gamma                          ⊘1→1 ~ │
+│                                                          │
+│ ▸ ○ gr-syt Cycle beta                             ⊘1→1 ~ │
+│                                                          │
+│ blocks                                                   │
+│   ○ gr-tse Cycle gamma                            ⊘1→1 ~ │
+│     ○ gr-vgy Cycle alpha                          ⊘1→1 ~ │
+│                                                          │
+│ longest chain: none                                      │
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                  │
+│ depends on itself gr-1fm                                 │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open …

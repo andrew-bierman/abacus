@@ -13,6 +13,7 @@ type taskViewID int
 
 const (
 	viewList taskViewID = iota
+	viewGraph
 	viewInsights
 )
 
@@ -22,6 +23,7 @@ var taskViews = []struct {
 	name string
 }{
 	{viewList, "List"},
+	{viewGraph, "Graph"},
 	{viewInsights, "Insights"},
 }
 
@@ -29,6 +31,9 @@ var taskViews = []struct {
 func (s *tasksSection) body() string {
 	if s.list.cur == viewInsights {
 		return s.insightsView()
+	}
+	if s.list.cur == viewGraph {
+		return s.graphView()
 	}
 	return s.listView()
 }

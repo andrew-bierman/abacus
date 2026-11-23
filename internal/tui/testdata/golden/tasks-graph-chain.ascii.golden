@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                            37 tasks · 5 ready
+focus gr-hsy · depth 2 · blocking links
+╭─ ▸ Graph · gr-hsy ─────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│                  ┌─────────────────────────┐                   │ │ longest chain (6):            │
+│                  │ ✓ gr-blj Chain step 2   │                   │ │ gr-q7z → gr-hsy → gr-3k9 →    │
+│                  └────────────┬────────────┘                   │ │ gr-hoz → gr-fdz → gr-l5l      │
+│                               │                                │ │                               │
+│                               │                                │ │ cycle gr-syt → gr-tse →       │
+│                  ┌────────────┴────────────┐                   │ │ gr-vgy → gr-syt               │
+│                  │ ◐ gr-q7z Chain step 3 * │                   │ │ depends on itself gr-1fm      │
+│                  └────────────┬────────────┘                   │ │                               │
+│                               │                                │ │ blockers open: 1              │
+│                               │                                │ │ freed when closed: 1          │
+│                  ╔════════════╧════════════╗                   │ │                               │
+│                  ║ ○ gr-hsy Chain step 4 * ║                   │ │ ○ open ◐ active ● blocked     │
+│                  ╚════════════╤════════════╝                   │ │ ✓ closed ◇ deferred           │
+│                               │                                │ │ * longest chain · ~ cycle     │
+│                               │                                │ │ ^ bottleneck · ! self-dep     │
+│                  ┌────────────┴────────────┐                   │ │ ? blocker not in tracker      │
+│                  │ ○ gr-3k9 Chain step… *^ │                   │ │ ═ focus · ┃ selected          │
+│                  └────────────┬────────────┘                   │ │                               │
+│                               │                                │ │                               │
+│                               │                                │ │                               │
+│                  ┌────────────┴────────────┐                   │ │                               │
+│                  │ ○ gr-hoz Chain step… *^ │                   │ │                               │
+│                  └─────────────────────────┘                   │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                        37 tasks · 5 ready
+focus gr-hsy · depth 2 · blocking links
+╭─ ▸ Graph · gr-hsy ───────────────────────────────────────────────────────────╮
+│ blocked by                                                                   │
+│   ◐ gr-q7z Chain step 3                                                 →1 * │
+│     ✓ gr-blj Chain step 2                                                 →1 │
+│                                                                              │
+│ ▸ ○ gr-hsy Chain step 4                                               ⊘1→1 * │
+│                                                                              │
+│ blocks                                                                       │
+│   ○ gr-3k9 Chain step 5                                              ⊘1→1 *^ │
+│     ○ gr-hoz Chain step 6                                            ⊘1→1 *^ │
+│                                                                              │
+│ longest chain (6):                                                           │
+│ gr-q7z → gr-hsy → gr-3k9 → gr-hoz → gr-fdz → gr-l5l                          │
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                                      │
+│ depends on itself gr-1fm                                                     │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                    37 tasks · 5 ready
+focus gr-hsy · depth 2 · blocking links
+╭─ ▸ Graph · gr-hsy ───────────────────────────────────────╮
+│ blocked by                                               │
+│   ◐ gr-q7z Chain step 3                             →1 * │
+│     ✓ gr-blj Chain step 2                             →1 │
+│                                                          │
+│ ▸ ○ gr-hsy Chain step 4                           ⊘1→1 * │
+│                                                          │
+│ blocks                                                   │
+│   ○ gr-3k9 Chain step 5                          ⊘1→1 *^ │
+│     ○ gr-hoz Chain step 6                        ⊘1→1 *^ │
+│                                                          │
+│ longest chain (6):                                       │
+│ gr-q7z → gr-hsy → gr-3k9 → gr-hoz → gr-fdz → gr-l5l      │
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                  │
+│ depends on itself gr-1fm                                 │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open …

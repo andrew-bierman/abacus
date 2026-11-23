@@ -129,6 +129,11 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		s.drilled, l.detailFocus = false, false
 		return nil, true
 	}
+	if l.cur == viewGraph {
+		if cmd, ok := s.graphKeys(k); ok {
+			return cmd, true
+		}
+	}
 	if l.cur != viewList {
 		// e, x and the workspace jump act on the list's current task, which this view does not show.
 		if key.Matches(k, keyEdit, keyClose, keyWorkspace) {
@@ -148,6 +153,8 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		}
 		s.recompute()
 		s.moved()
+	case key.Matches(k, keyGraph):
+		s.openGraph()
 	case key.Matches(k, keyPreset):
 		l.preset, l.presetSet = l.preset.Next(l.depsUnknown), true
 		if l.depsUnknown {
@@ -251,6 +258,9 @@ func (s *tasksSection) listBindings() []key.Binding {
 	if l.typing {
 		return []key.Binding{key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "keep")), key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "clear"))}
 	}
+	if l.cur == viewGraph {
+		return s.graphBindings()
+	}
 	if l.cur != viewList {
 		return []key.Binding{keyView}
 	}
@@ -259,7 +269,7 @@ func (s *tasksSection) listBindings() []key.Binding {
 	}
 	// The filter, sort and view keys lead: a narrow footer is cut from the right, and these are
 	// the ones a new user has to find.
-	return []key.Binding{keyFilter, keySort, keyView, enter, back, keyPreset, moveBindings()[0]}
+	return []key.Binding{keyFilter, keySort, keyView, enter, back, keyPreset, keyGraph, moveBindings()[0]}
 }
 
 // ---- drawing ----

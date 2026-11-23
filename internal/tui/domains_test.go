@@ -136,7 +136,7 @@ func typeText(m tea.Model, s string) tea.Model {
 func TestTasksListsEveryTaskAndKeepsTheSummaryAndInsightsInTheirOwnView(t *testing.T) {
 	m := newTasksRig(t).m
 	v := m.View()
-	for _, want := range []string{"[List] Insights", "14 tasks · 3 ready", "12 of 14", "ac-12", "ac-01", "ac-33", "sort: priority ↑"} {
+	for _, want := range []string{"[List] Graph", "14 tasks · 3 ready", "12 of 14", "ac-12", "ac-01", "ac-33", "sort: priority ↑"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("list view: missing %q:\n%s", want, v)
 		}
@@ -144,8 +144,8 @@ func TestTasksListsEveryTaskAndKeepsTheSummaryAndInsightsInTheirOwnView(t *testi
 	if strings.Contains(v, "ac-03 ") {
 		t.Errorf("the default quick filter hides closed tasks:\n%s", v)
 	}
-	v = press(m, "v").View()
-	for _, want := range []string{"List [Insights]", "14 tasks:", "ready 3", "Insights · graph analysis", "next", "critical path", "cycle"} {
+	v = press(m, "V").View()
+	for _, want := range []string{"Graph [Insights]", "14 tasks:", "ready 3", "Insights · graph analysis", "next", "critical path", "cycle"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("insights view: missing %q:\n%s", want, v)
 		}
@@ -155,7 +155,7 @@ func TestTasksListsEveryTaskAndKeepsTheSummaryAndInsightsInTheirOwnView(t *testi
 func TestInsightsNotConnectedShowsHowToInstall(t *testing.T) {
 	r := newTasksRig(t)
 	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights()}}})
-	m = press(m, "v") // the Insights view
+	m = press(m, "V") // the Insights view (the last view)
 	if v := m.View(); !strings.Contains(v, "own copy of") || strings.Contains(v, "brew install") || !strings.Contains(v, "not connected") {
 		t.Fatalf("%s", v)
 	}

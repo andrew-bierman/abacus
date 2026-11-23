@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights       14 tasks · 3 ready
+[List] Graph  Insights
 [open] / to … 12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title             st P  dep  │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Insights       14 tasks · 3 ready
+[List] Graph  Insights
 [open] / to … 12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title             st P  dep  │
@@ -44,7 +44,7 @@
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                               14 tasks · 3 ready
+[List] Graph  Insights                                        14 tasks · 3 ready
 [open] / to filter                                    12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id    title                                       st P  dep  type  age who │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                               14 tasks · 3 ready
+[List] Graph  Insights                                        14 tasks · 3 ready
 [open] / to filter                                    12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id    title                                       st P  dep  type  age who │
@@ -88,7 +88,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                                                       14 tasks · 3 ready
+[List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] / to filter                                                                            12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
 │   id    title                               st P  dep  type  age who │ │ ac-12  bug                                  │
@@ -98,11 +98,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ▸ ac-12 wire the lease heartbeat            ◐  P0 →1   bug   9d  ada │ │ labels  core, leases                        │
 │   ↕ +8 more                                                          │ │   ↕ +31 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                       14 tasks · 3 ready
+[List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] / to filter                                                                            12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
 │   id    title                               st P  dep  type  age who │ │ ac-12  bug                                  │
@@ -129,11 +129,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +14 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Insights                           14 tasks · 3 ready
+[List] Graph  Insights                    14 tasks · 3 ready
 [open] / to filter                12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
 │   id    title                   st P  dep  type  age who │
@@ -158,7 +158,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                   14 tasks · 3 ready
+[List] Graph  Insights                                                            14 tasks · 3 ready
 [open] / to filter                                                        12 of 14 · sort: created ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────╮
 │   id    title                   st P  dep  type  age who │ │ ac-12  bug                          │

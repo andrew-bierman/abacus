@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                            37 tasks · 5 ready
+focus gr-67z · depth 2 · blocking links
+╭─ ▸ Graph · gr-67z ─────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│   ┌─────────────────────────┐  ┌─────────────────────────┐     │ │ longest chain (4):            │
+│   │ ○ gr-bac Sanitize te… * │  │ ◐ gr-nqy Parse export   │     │ │ gr-bac → gr-ko8 → gr-67z →    │
+│   └────────────┬────────────┘  └────────────┬────────────┘     │ │ gr-au4                        │
+│                └──────────────┬─────────────┘                  │ │                               │
+│                               │                                │ │ cycle gr-syt → gr-tse →       │
+│                  ┌────────────┴────────────┐                   │ │ gr-vgy → gr-syt               │
+│                  │ ○ gr-ko8 Graph layo… *^ │                   │ │ depends on itself gr-1fm      │
+│                  └────────────┬────────────┘                   │ │                               │
+│                               │                                │ │ blockers open: 1              │
+│                               │                                │ │ freed when closed: 2          │
+│                  ╔════════════╧════════════╗                   │ │                               │
+│                  ║ ○ gr-67z Graph view  *^ ║                   │ │ ○ open ◐ active ● blocked     │
+│                  ╚════════════╤════════════╝                   │ │ ✓ closed ◇ deferred           │
+│                ┌──────────────┴─────────────┐                  │ │ * longest chain · ~ cycle     │
+│                │                            │                  │ │ ^ bottleneck · ! self-dep     │
+│   ┌────────────┴────────────┐  ┌────────────┴────────────┐     │ │ ? blocker not in tracker      │
+│   │ ○ gr-au4 日本語のと…  * │  │ ○ gr-gdm Hostile [31mr… │     │ │ ═ focus · ┃ selected          │
+│   └─────────────────────────┘  └─────────────────────────┘     │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                        37 tasks · 5 ready
+focus gr-67z · depth 2 · blocking links
+╭─ ▸ Graph · gr-67z ───────────────────────────────────────────────────────────╮
+│ blocked by                                                                   │
+│   ○ gr-ko8 Graph layout                                              ⊘2→2 *^ │
+│     ○ gr-bac Sanitize text                                              →1 * │
+│     ◐ gr-nqy Parse export                                                 →1 │
+│                                                                              │
+│ ▸ ○ gr-67z Graph view                                                ⊘1→2 *^ │
+│                                                                              │
+│ blocks                                                                       │
+│   ○ gr-au4 日本語のとても長いタイトルがここにあります — wide runes and… ⊘1 * │
+│   ○ gr-gdm Hostile [31mred[0m evil                                        ⊘1 │
+│                                                                              │
+│ longest chain (4):                                                           │
+│ gr-bac → gr-ko8 → gr-67z → gr-au4                                            │
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                                      │
+│ depends on itself gr-1fm                                                     │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                    37 tasks · 5 ready
+focus gr-67z · depth 2 · blocking links
+╭─ ▸ Graph · gr-67z ───────────────────────────────────────╮
+│ blocked by                                               │
+│   ○ gr-ko8 Graph layout                          ⊘2→2 *^ │
+│     ○ gr-bac Sanitize text                          →1 * │
+│     ◐ gr-nqy Parse export                             →1 │
+│                                                          │
+│ ▸ ○ gr-67z Graph view                            ⊘1→2 *^ │
+│                                                          │
+│ blocks                                                   │
+│   ○ gr-au4 日本語のとても長いタイトルがここにあり…  ⊘1 * │
+│   ○ gr-gdm Hostile [31mred[0m evil                    ⊘1 │
+│                                                          │
+│ longest chain (4):                                       │
+│ gr-bac → gr-ko8 → gr-67z → gr-au4                        │
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                  │
+│ depends on itself gr-1fm                                 │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open …
