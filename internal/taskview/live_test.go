@@ -174,35 +174,69 @@ func TestPollerBacksOffOnSlowOrFailedAndRecovers(t *testing.T) {
 	if p.Wait() != 40*time.Second {
 		t.Errorf("failure at the cap stays at the cap, got %v", p.Wait())
 	}
-	now = now.Add(40 * time.Second)
-	p.Start(now)
-	p.Done(now, time.Millisecond, true)
+	for i := 0; i < quickToRecover; i++ { // one quick check is not recovery: it takes three in a row
+		now = now.Add(p.Wait())
+		if !p.Start(now) {
+			t.Fatalf("check %d not due", i)
+		}
+		p.Done(now, time.Millisecond, true)
+		if want := 40 * time.Second; i < quickToRecover-1 && p.Wait() != want {
+			t.Errorf("after %d quick checks the wait is %v, want it still %v", i+1, p.Wait(), want)
+		}
+	}
 	if p.Wait() != 5*time.Second {
-		t.Errorf("a quick success returns to the base, got %v", p.Wait())
+		t.Errorf("three quick successes return to the base, got %v", p.Wait())
 	}
 	if p.Due(now.Add(4*time.Second)) || !p.Due(now.Add(5*time.Second)) {
 		t.Error("after recovery the next check is one base wait away")
 	}
 }
 
-func TestPollerPausesWhileHiddenAndResumesAtOnce(t *testing.T) {
+// A poller whose base was raised (a tracker with no cheap fingerprint) never waits less than that
+// base, whatever its wait was before: a slow read must not back off below the base.
+func TestPollerNeverWaitsBelowARaisedBase(t *testing.T) {
+	now := time.Unix(1000, 0)
+	p := NewPoller(5*time.Second, 60*time.Second, time.Second)
+	p.Base, p.Max = 30*time.Second, 120*time.Second
+	p.Start(now)
+	p.Done(now, 3*time.Second, true) // slower than Slow
+	if p.Wait() < 30*time.Second {
+		t.Errorf("a slow read backed off to %v, below the base of 30s", p.Wait())
+	}
+	p.Start(now.Add(time.Minute))
+	p.Done(now.Add(time.Minute), time.Millisecond, true)
+	if p.Wait() < 30*time.Second {
+		t.Errorf("a quick read left the wait at %v", p.Wait())
+	}
+}
+
+func TestPollerHiddenTabLooksOnlySlowlyAndResumesAtOnce(t *testing.T) {
 	now := time.Unix(1000, 0)
 	p := NewPoller(5*time.Second, 60*time.Second, time.Second)
 	p.Start(now)
 	p.Done(now, time.Millisecond, true)
 	p.SetHidden(true)
-	if p.Due(now.Add(time.Hour)) || p.Start(now.Add(time.Hour)) {
-		t.Fatal("a hidden tab never checks")
+	// the wait already running is not cut short, and after it a hidden tab waits HiddenWait
+	t1 := now.Add(5 * time.Second)
+	if !p.Start(t1) {
+		t.Fatal("the check that was due is allowed")
+	}
+	p.Done(t1, time.Millisecond, true)
+	if p.Due(t1.Add(29 * time.Second)) {
+		t.Fatal("a hidden tab checks at most every HiddenWait")
+	}
+	if !p.Due(t1.Add(30 * time.Second)) {
+		t.Fatal("but it does check: a frozen Tasks tab would feed stale data to search")
 	}
 	p.SetHidden(false)
-	if !p.Due(now.Add(time.Second)) {
+	if !p.Due(t1.Add(time.Second)) {
 		t.Fatal("showing the tab again checks at once: the tracker may have moved")
 	}
 	p.SetHidden(false) // showing an already shown tab keeps the schedule
-	p.Start(now.Add(time.Second))
-	p.Done(now.Add(time.Second), time.Millisecond, true)
+	p.Start(t1.Add(time.Second))
+	p.Done(t1.Add(time.Second), time.Millisecond, true)
 	p.SetHidden(false)
-	if p.Due(now.Add(2 * time.Second)) {
+	if p.Due(t1.Add(2 * time.Second)) {
 		t.Fatal("an idempotent show must not reset the wait")
 	}
 }

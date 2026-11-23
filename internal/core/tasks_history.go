@@ -42,6 +42,11 @@ type TaskHistorySource interface {
 // store, or its files are not where they are expected): the caller falls back to a slow poll.
 var ErrNoFingerprint = errors.New("no cheap change fingerprint for this tracker")
 
+// ErrFingerprintFailed means the fingerprint could not be read this time (an I/O error, a timeout, a
+// permission problem): unlike ErrNoFingerprint it says nothing about the tracker, so the caller backs
+// off and tries again instead of giving up on cheap checks for good.
+var ErrFingerprintFailed = errors.New("could not read the tracker's change fingerprint")
+
 // TaskFingerprinter says, without running the tracker tool, whether the tracker changed: two
 // equal fingerprints mean no write happened in between. A read never changes it.
 type TaskFingerprinter interface {

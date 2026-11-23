@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -166,4 +168,106 @@ func TestSetTrackerDirRepointsTheSharedRefOnlyToATracker(t *testing.T) {
 		t.Error("a module without a shared reference cannot switch")
 	}
 	var _ core.TrackerSwitcher = m
+}
+
+// A manifest that is a FIFO would block an open for ever: it is refused on its type, before any open,
+// and promptly. Symlinks, directories and oversize files are refused too; a plain I/O failure is a
+// different error, so the caller backs off instead of giving up on cheap checks.
+func TestFingerprintRefusesNonRegularManifests(t *testing.T) {
+	for name, make := range map[string]func(path string, t *testing.T){
+		"fifo": func(p string, t *testing.T) {
+			_ = os.Remove(p)
+			if err := syscall.Mkfifo(p, 0o600); err != nil {
+				t.Skip("no mkfifo here")
+			}
+		},
+		"symlink": func(p string, t *testing.T) {
+			real := p + ".real"
+			_ = os.Rename(p, real)
+			if err := os.Symlink(real, p); err != nil {
+				t.Fatal(err)
+			}
+		},
+		"directory": func(p string, t *testing.T) { _ = os.Remove(p); _ = os.Mkdir(p, 0o700) },
+		"oversize":  func(p string, t *testing.T) { _ = os.WriteFile(p, make8k(), 0o600) },
+	} {
+		root, mp := trackerWithManifest(t, "manifest-before.txt", embeddedMeta)
+		make(mp, t)
+		done := make1(New(Options{Dir: root}))
+		select {
+		case err := <-done:
+			if !errors.Is(err, core.ErrNoFingerprint) {
+				t.Errorf("%s: %v, want ErrNoFingerprint", name, err)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("%s: Fingerprint did not return: a non-regular manifest blocked it", name)
+		}
+	}
+}
+
+func make8k() []byte { return make([]byte, 9<<10) }
+
+func make1(m *Module) chan error {
+	ch := make(chan error, 1)
+	go func() { _, err := m.Fingerprint(context.Background()); ch <- err }()
+	return ch
+}
+
+func TestFingerprintRefusesASymlinkedMetadataAndReportsIOFailureApart(t *testing.T) {
+	root, _ := trackerWithManifest(t, "manifest-before.txt", embeddedMeta)
+	meta := filepath.Join(root, ".beads", "metadata.json")
+	real := meta + ".real"
+	_ = os.Rename(meta, real)
+	if err := os.Symlink(real, meta); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(Options{Dir: root}).Fingerprint(context.Background()); !errors.Is(err, core.ErrNoFingerprint) {
+		t.Errorf("a symlinked metadata.json: %v", err)
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("root reads anything")
+	}
+	root, mp := trackerWithManifest(t, "manifest-before.txt", embeddedMeta)
+	if err := os.Chmod(mp, 0); err != nil {
+		t.Fatal(err)
+	}
+	_, err := New(Options{Dir: root}).Fingerprint(context.Background())
+	if !errors.Is(err, core.ErrFingerprintFailed) || errors.Is(err, core.ErrNoFingerprint) {
+		t.Errorf("an unreadable manifest is a failed read, not 'no fingerprint': %v", err)
+	}
+}
+
+func TestFingerprintHonorsAnExpiredContext(t *testing.T) {
+	root, _ := trackerWithManifest(t, "manifest-before.txt", embeddedMeta)
+	ctx, cancel := context.WithTimeout(context.Background(), -time.Second)
+	defer cancel()
+	if _, err := New(Options{Dir: root}).Fingerprint(ctx); !errors.Is(err, core.ErrFingerprintFailed) {
+		t.Errorf("%v", err)
+	}
+}
+
+// A limit above the maximum is clamped to the default, never passed on to bd.
+func TestHistoryClampsAnOversizeLimit(t *testing.T) {
+	events, _ := os.ReadFile(filepath.Join("..", "taskview", "testdata", "history-events.json"))
+	f := &fakeRun{resp: map[string]string{
+		"-C /trk --readonly version --json":                            verJSON,
+		"-C /trk --readonly history hs-yqf --events --json --limit=51": string(events),
+	}}
+	m := mod(f, Options{Dir: "/trk"})
+	m.Detect(context.Background())
+	for _, lim := range []int{core.HistoryMaxLimit + 1, 999, -5} {
+		if _, err := m.History(context.Background(), "hs-yqf", lim); err != nil {
+			t.Fatalf("limit %d: %v", lim, err)
+		}
+		if got := f.calls[len(f.calls)-1]; got != "-C /trk --readonly history hs-yqf --events --json --limit=51" {
+			t.Errorf("limit %d went to bd as %q", lim, got)
+		}
+	}
+	if _, err := m.History(context.Background(), "hs-yqf", core.HistoryMaxLimit); err == nil {
+		// limit 200 asks bd for 201: the fake has no such response, so this must be an error from the runner
+		t.Log("limit 200 reached bd as limit=201")
+	}
+	if got := f.calls[len(f.calls)-1]; got != "-C /trk --readonly history hs-yqf --events --json --limit=201" {
+		t.Errorf("the maximum limit is allowed: %q", got)
+	}
 }
