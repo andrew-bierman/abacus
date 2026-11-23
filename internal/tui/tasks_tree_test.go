@@ -445,3 +445,15 @@ func treeScenarios() []scenario {
 		{name: "tasks-tree-hostile", build: hostile, keys: []string{"2", "j", "j", "j", "j", "j"}, tab: "Tasks", extra: sizes},
 	}
 }
+
+func TestFoldsSurviveARefreshWithoutAnyStoredState(t *testing.T) {
+	s := treeSection(t, realTreeSnapshot(t), nil)
+	s.selectID("tr-jbt")
+	send(s, "h")
+	for i := 0; i < 3; i++ { // the 30 s poll delivers a new snapshot of the same tracker
+		s.Update(taskSnapshotMsg{snap: realTreeSnapshot(t)})
+	}
+	if got := strings.Join(ids(s), " "); got != "tr-09k tr-09k.1 tr-09k.2 tr-jbt tr-u40" || s.selected != "tr-jbt" {
+		t.Errorf("a refresh must not unfold: %q selected %q", got, s.selected)
+	}
+}
