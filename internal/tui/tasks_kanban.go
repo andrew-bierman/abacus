@@ -421,7 +421,13 @@ func (s *tasksSection) tabStrip(cols []core.KanbanColumn, active, w int) string 
 
 // kanbanView is the board: the view strip, the query line, then the columns side by side from
 // bpWide columns (when each gets kbSideMinW), else a tab strip with one column at a time.
-func (s *tasksSection) kanbanView() string {
+func (s *tasksSection) kanbanView() (out string) {
+	// A board that cannot be drawn must not take the whole TUI down: say so and keep the keys alive.
+	defer func() {
+		if recover() != nil {
+			out = joinLines([]string{trunc(s.th.Text(KindWarn, "the board could not be drawn: press v for another view or r to refresh"), s.width())})
+		}
+	}()
 	th, w := s.th, s.width()
 	l := &s.list
 	rep := s.board()
@@ -443,6 +449,9 @@ func (s *tasksSection) kanbanView() string {
 	switch {
 	case rep.Total == 0:
 		body = append(body, panel(th, "Kanban", padRows([]string{th.Text(KindMuted, "no tasks yet — press n to add the first one")}, rowsOf(panelH)), w, panelH, true)...)
+	case len(cols) == 0:
+		hint := "no cards in this grouping: press s for another grouping, or esc to clear the filter"
+		body = append(body, panel(th, "Kanban", padRows(wrap(th.Text(KindMuted, hint), max(w-panelChromeW, 1)), rowsOf(panelH)), w, panelH, true)...)
 	case s.kb.detail && has:
 		d, _ := s.list.view.Detail(card.ID)
 		rows := rowsOf(panelH)

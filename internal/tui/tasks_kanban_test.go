@@ -441,3 +441,60 @@ func TestKanbanAThousandTasksRenderAndScroll(t *testing.T) {
 var _ = context.Background
 var _ = errors.New
 var _ = taskview.GroupStatus
+
+// ---- review fixes: zero columns ----
+
+func kbWith(w, h int, issues []core.TaskIssue) *tasksSection {
+	s := newTasksSection(core.Providers{}, &config{})
+	s.SetTheme(asciiTheme())
+	s.Update(tea.WindowSizeMsg{Width: w, Height: h})
+	s.Update(tasksMsg{report: demo.TasksReport()})
+	s.Update(taskSnapshotMsg{snap: core.TaskSnapshot{Issues: issues, ReadAt: goldenNow}})
+	send(s, "v")
+	return s
+}
+
+func TestKanbanWithNoColumnsRendersAHintInsteadOfPanicking(t *testing.T) {
+	for _, w := range []int{40, 60, 100, 140} {
+		s, _ := kbAt(w, 30)
+		send(s, "/")
+		typeIn(s, "zzzzzz")
+		send(s, "enter", "s")
+		v := s.View()
+		if !strings.Contains(v, "no cards in this grouping") || !strings.Contains(v, "press s") {
+			t.Errorf("no-match query, priority grouping, %d wide:\n%s", w, v)
+		}
+		closed := fixtureSnapshot()
+		for i := range closed.Issues {
+			closed.Issues[i].Status = "closed"
+		}
+		s2 := kbWith(w, 30, closed.Issues)
+		send(s2, "s")
+		if v := s2.View(); !strings.Contains(v, "no cards in this grouping") {
+			t.Errorf("all closed, priority grouping, %d wide:\n%s", w, v)
+		}
+		send(s2, "s", "Z", "enter", "j", "k", "H", "L", "l", "h")
+		_ = s2.View()
+	}
+}
+
+// Every grouping, every snapshot shape, every width: no panic and no line wider than the terminal.
+func TestKanbanNeverPanicsOverGroupingsShapesAndWidths(t *testing.T) {
+	mk := func(status string) core.TaskIssue { return core.TaskIssue{ID: "x-1", Title: "t", Status: status} }
+	shapes := map[string][]core.TaskIssue{
+		"empty": nil, "all closed": {mk("closed")}, "custom only": {mk("pinned")}, "one open": {mk("open")},
+	}
+	for name, issues := range shapes {
+		for _, keys := range [][]string{nil, {"s"}, {"s", "s"}, {"Z"}, {"s", "Z"}, {"enter"}, {"l", "L", "H"}} {
+			for w := 20; w <= 300; w += 7 {
+				s := kbWith(w, 24, issues)
+				send(s, keys...)
+				for i, l := range strings.Split(s.View(), "\n") {
+					if lipgloss.Width(l) > w {
+						t.Fatalf("%s %v w=%d line %d is %d wide: %q", name, keys, w, i, lipgloss.Width(l), l)
+					}
+				}
+			}
+		}
+	}
+}
