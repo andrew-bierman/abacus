@@ -1,4 +1,4 @@
-.PHONY: build build-dev release check-tools test
+.PHONY: build build-dev release check-tools test check
 
 # The platform this machine builds for, as os-arch (the names the scripts and the blob folders use).
 PLATFORM := $(shell go env GOOS)-$(shell go env GOARCH)
@@ -27,3 +27,11 @@ check-tools:
 
 test:
 	go test ./...
+
+# check: what CI runs, plus the tagged build when blobs exist (it says so and skips when they do not).
+check:
+	@test -z "$$(gofmt -l .)" || { gofmt -l .; exit 1; }
+	go vet ./...
+	shellcheck -x -P SCRIPTDIR scripts/*.sh scripts/lib/*.sh
+	go test ./...
+	scripts/check-embedtools.sh
