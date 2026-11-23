@@ -1,12 +1,12 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-Confirm this change
-
-  close task ac-12
-  title: "wire the lease heartbeat"
-
-exact command:
-  bd close ac-12
+╭─ ▸ Confirm this change ──────────────╮
+│   close task ac-12                   │
+│   title: "wire the lease heartbeat"  │
+│                                      │
+│ exact command:                       │
+│   bd close ac-12                     │
+╰──────────────────────────────────────╯
 
 
 
@@ -14,13 +14,13 @@ exact command:
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-Confirm this change
-
-  close task ac-12
-  title: "wire the lease heartbeat"
-
-exact command:
-  bd close ac-12
+╭─ ▸ Confirm this change ──────────────╮
+│   close task ac-12                   │
+│   title: "wire the lease heartbeat"  │
+│                                      │
+│ exact command:                       │
+│   bd close ac-12                     │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,13 +44,13 @@ exact command:
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Confirm this change
-
-  close task ac-12
-  title: "wire the lease heartbeat"
-
-exact command:
-  bd close ac-12
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   close task ac-12                                                           │
+│   title: "wire the lease heartbeat"                                          │
+│                                                                              │
+│ exact command:                                                               │
+│   bd close ac-12                                                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -58,13 +58,13 @@ exact command:
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Confirm this change
-
-  close task ac-12
-  title: "wire the lease heartbeat"
-
-exact command:
-  bd close ac-12
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   close task ac-12                                                           │
+│   title: "wire the lease heartbeat"                                          │
+│                                                                              │
+│ exact command:                                                               │
+│   bd close ac-12                                                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,13 +88,13 @@ exact command:
 ? help · q quit · tab/→ next tab · y apply · n/esc cancel
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Confirm this change
-
-  close task ac-12
-  title: "wire the lease heartbeat"
-
-exact command:
-  bd close ac-12
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   close task ac-12                                                                                                   │
+│   title: "wire the lease heartbeat"                                                                                  │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd close ac-12                                                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -102,13 +102,71 @@ exact command:
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Confirm this change
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   close task ac-12                                                                                                   │
+│   title: "wire the lease heartbeat"                                                                                  │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd close ac-12                                                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-  close task ac-12
-  title: "wire the lease heartbeat"
 
-exact command:
-  bd close ac-12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · y apply · n/esc cancel
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────╮
+│   close task ac-12                                       │
+│   title: "wire the lease heartbeat"                      │
+│                                                          │
+│ exact command:                                           │
+│   bd close ac-12                                         │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · y apply · n/esc cancel
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────╮
+│   close task ac-12                                                                               │
+│   title: "wire the lease heartbeat"                                                              │
+│                                                                                                  │
+│ exact command:                                                                                   │
+│   bd close ac-12                                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
 
 
 

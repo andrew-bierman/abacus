@@ -1,10 +1,10 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-New task
-
-Title                     hi▏
-Description
-Priority 0-4
+╭─ ▸ New task ─────────────────────────╮
+│ ▸ Title         hi▏                  │
+│   Description                        │
+│   Priority 0-4                       │
+╰──────────────────────────────────────╯
 
 
 
@@ -14,11 +14,11 @@ Priority 0-4
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-New task
-
-Title                     hi▏
-Description
-Priority 0-4
+╭─ ▸ New task ─────────────────────────╮
+│ ▸ Title         hi▏                  │
+│   Description                        │
+│   Priority 0-4                       │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,11 +44,11 @@ Priority 0-4
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-New task
-
-Title                     hi▏
-Description
-Priority 0-4
+╭─ ▸ New task ─────────────────────────────────────────────────────────────────╮
+│ ▸ Title         hi▏                                                          │
+│   Description                                                                │
+│   Priority 0-4                                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -58,11 +58,11 @@ Priority 0-4
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-New task
-
-Title                     hi▏
-Description
-Priority 0-4
+╭─ ▸ New task ─────────────────────────────────────────────────────────────────╮
+│ ▸ Title         hi▏                                                          │
+│   Description                                                                │
+│   Priority 0-4                                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,11 +88,11 @@ Priority 0-4
 ? help · q quit · tab/→ next tab · enter next/review · esc back
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-New task
-
-Title                     hi▏
-Description
-Priority 0-4
+╭─ ▸ New task ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Title         hi▏                                                                                                  │
+│   Description                                                                                                        │
+│   Priority 0-4                                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -102,11 +102,69 @@ Priority 0-4
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-New task
+╭─ ▸ New task ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Title         hi▏                                                                                                  │
+│   Description                                                                                                        │
+│   Priority 0-4                                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-Title                     hi▏
-Description
-Priority 0-4
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · enter next/review · esc back
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ New task ─────────────────────────────────────────────╮
+│ ▸ Title         hi▏                                      │
+│   Description                                            │
+│   Priority 0-4                                           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · enter next/review …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ New task ─────────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Title         hi▏                                                                              │
+│   Description                                                                                    │
+│   Priority 0-4                                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
 
 
 

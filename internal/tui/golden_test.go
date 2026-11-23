@@ -44,6 +44,24 @@ type scenario struct {
 	keys  []string // pressed after the data is loaded
 	tab   string   // name of the tab that must be marked active in the header
 	empty bool     // no tabs: the header/footer invariant does not apply
+	// extra sizes (width, height) rendered into the golden after the standard grid: the
+	// breakpoints the converted screens are checked at.
+	extra [][2]int
+}
+
+// framedSizes are the extra golden sizes for the screens drawn as one framed panel: a mid-width
+// terminal and the width where list and detail sit side by side.
+var framedSizes = [][2]int{{60, 24}, {100, 32}}
+
+// sizes is the standard grid followed by the scenario's extra sizes.
+func (sc scenario) sizes() [][2]int {
+	var out [][2]int
+	for _, w := range goldenWidths {
+		for _, h := range goldenHeights {
+			out = append(out, [2]int{w, h})
+		}
+	}
+	return append(out, sc.extra...)
 }
 
 // leaseProv is a fixture Leases provider (a fake module that also provides the domain).
@@ -185,13 +203,20 @@ func scenarios() []scenario {
 			return load(t, th, func(v lambe.View) lambe.View { v.Source, v.Queue = lambe.SourceTracker, lambe.Queue{}; return v })
 		}},
 		{name: "tasks", build: std, keys: []string{"2"}, tab: "Tasks"},
-		{name: "tasks-new", build: std, keys: []string{"2", "n", "h", "i"}, tab: "Tasks"},
-		{name: "tasks-confirm", tab: "Tasks", build: func(t *testing.T, th Theme) tea.Model {
+		{name: "tasks-new", build: std, keys: []string{"2", "n", "h", "i"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-edit", build: std, keys: []string{"2", "e"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-verify", build: std, keys: []string{"2", "x"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-busy", tab: "Tasks", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
+			m := press(press(load(t, th, nil), "2"), "x")
+			m, _ = m.Update(taskVerifiedMsg{id: "ac-12", task: fixtureTasks().Recent[0]})
+			return press(m, "y") // the apply command is never run: the screen stays on "applying…"
+		}},
+		{name: "tasks-confirm", tab: "Tasks", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
 			m := press(press(load(t, th, nil), "2"), "x") // the check of the current state is async
 			m, _ = m.Update(taskVerifiedMsg{id: "ac-12", task: fixtureTasks().Recent[0]})
 			return m
 		}},
-		{name: "tasks-confirm-stale", tab: "Tasks", build: func(t *testing.T, th Theme) tea.Model {
+		{name: "tasks-confirm-stale", tab: "Tasks", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
 			m := press(press(load(t, th, nil), "2"), "x")
 			fresh := fixtureTasks().Recent[0]
 			fresh.Status = "blocked"
@@ -203,16 +228,16 @@ func scenarios() []scenario {
 		{name: "board-detail", build: std, keys: []string{"down"}, tab: "Board"},
 		{name: "board-drilled", build: std, keys: []string{"1", "enter"}, tab: "Board"},
 		{name: "board-task", build: std, keys: []string{"down", "down"}, tab: "Board"},
-		{name: "board-absent", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+		{name: "board-absent", tab: "Board", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
 			return New(nil, WithTheme(th), WithFullView(noFullView))
 		}},
-		{name: "board-degraded", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+		{name: "board-degraded", tab: "Board", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
 			b := boardFake()
 			var m tea.Model = New([]core.Entry{{Module: b, Detection: b.Det}}, WithTheme(th), WithAudit(&memAudit{}))
 			m, _ = m.Update(boardMsg{err: errors.New("could not reach the board")})
 			return m
 		}},
-		{name: "board-setup", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
+		{name: "board-setup", tab: "Board", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
 			b := boardFake()
 			b.err = &core.NotConnectedError{Reason: core.BoardNotSetUpReason, HowToConnect: core.BoardNotSetUp}
 			var m tea.Model = New([]core.Entry{{Module: b, Detection: b.Det}}, WithTheme(th), WithAudit(&memAudit{}))
@@ -221,7 +246,7 @@ func scenarios() []scenario {
 		}},
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
-		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks"},
+		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
 	}
 }
 
@@ -269,19 +294,18 @@ func TestGoldenAsciiRenders(t *testing.T) {
 		t.Run(sc.name, func(t *testing.T) {
 			var b strings.Builder
 			valid := true
-			for _, w := range goldenWidths {
-				for _, h := range goldenHeights {
-					if errs := invariantErrs(sc, render(t, sc, th, w, h), w, h); len(errs) > 0 {
-						valid = false
-						t.Errorf("%dx%d: %s", w, h, strings.Join(errs, "; "))
-					}
-					// Trailing spaces are padding, not content; trim them so goldens diff cleanly.
-					var lines []string
-					for _, l := range strings.Split(render(t, sc, th, w, h), "\n") {
-						lines = append(lines, strings.TrimRight(l, " "))
-					}
-					fmt.Fprintf(&b, "=== %dx%d ===\n%s\n", w, h, strings.Join(lines, "\n"))
+			for _, sz := range sc.sizes() {
+				w, h := sz[0], sz[1]
+				if errs := invariantErrs(sc, render(t, sc, th, w, h), w, h); len(errs) > 0 {
+					valid = false
+					t.Errorf("%dx%d: %s", w, h, strings.Join(errs, "; "))
 				}
+				// Trailing spaces are padding, not content; trim them so goldens diff cleanly.
+				var lines []string
+				for _, l := range strings.Split(render(t, sc, th, w, h), "\n") {
+					lines = append(lines, strings.TrimRight(l, " "))
+				}
+				fmt.Fprintf(&b, "=== %dx%d ===\n%s\n", w, h, strings.Join(lines, "\n"))
 			}
 			checkGolden(t, sc.name+".ascii.golden", b.String(), valid)
 		})

@@ -23,6 +23,15 @@ type notConnectedSection struct {
 	linesSection
 }
 
+// bodyRows is how many rows of text the panel holds (0: the height is not known yet).
+func (s *notConnectedSection) bodyRows() int {
+	h := s.bodyH(s.notice)
+	if h <= 0 {
+		return 0
+	}
+	return max(h-panelChromeH, 1)
+}
+
 func newNotConnectedSection(h core.Header, fullView func(string) tea.Cmd) *notConnectedSection {
 	return &notConnectedSection{h: h, fullView: fullView, linesSection: linesSection{th: DefaultTheme()}}
 }
@@ -47,7 +56,12 @@ func (s *notConnectedSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.KeyMsg:
 		s.notice = ""
-		if s.scrollKey(m, len(s.lines())) {
+		switch {
+		case key.Matches(m, keyUp):
+			s.scroll.move(-1, len(s.lines()), s.bodyRows())
+			return s, nil
+		case key.Matches(m, keyDown):
+			s.scroll.move(1, len(s.lines()), s.bodyRows())
 			return s, nil
 		}
 		if key.Matches(m, keyFull) && s.fullView != nil {
@@ -57,22 +71,27 @@ func (s *notConnectedSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, nil
 }
 
+// lines is the panel's text: the state, why, and how to connect.
 func (s *notConnectedSection) lines() []string {
-	th, w := s.th, s.width()
-	out := []string{th.Header.Render(san(s.h.Title)) + " " + th.Badge(KindSkip, "not connected")}
-	if s.h.Reason != "" {
-		out = append(out, "")
-		out = append(out, wrap(th.Text(KindWarn, san(s.h.Reason)), w)...)
-	}
-	out = append(out, "")
-	out = append(out, wrap(th.Text(KindAccent, "how to connect: ")+san(s.h.HowToConnect), w)...)
-	if s.notice != "" {
-		out = append(out, "", th.Text(KindWarn, s.notice))
-	}
-	return out
+	return notConnectedBody(s.th, s.h.Reason, s.h.HowToConnect, innerW(s.width()))
 }
 
-func (s *notConnectedSection) View() string { return s.render(s.lines()) }
+func (s *notConnectedSection) View() string {
+	th, w := s.th, s.width()
+	vis, hidden := s.scroll.view(s.lines(), s.bodyRows())
+	if hidden > 0 && s.bodyRows() >= 2 {
+		vis = append(append([]string(nil), vis...), th.moreMarker(hidden))
+	}
+	height := len(vis) + panelChromeH
+	if h := s.bodyH(s.notice); h > 0 {
+		height = min(height, h)
+	}
+	out := panel(th, san(s.h.Title), vis, w, height, true)
+	if s.notice != "" {
+		out = append(out, noticeLine(th, w, s.notice)...)
+	}
+	return joinLines(out)
+}
 
 // boardInspector is implemented by a Board provider that can hand the terminal to its local
 // web inspector (a command, run only from an explicit keypress).
@@ -282,34 +301,33 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, nil
 }
 
-func (s *boardSection) lines() ([]string, int) {
+// stateLines is the Board before it can list anything, as one framed panel: loading, not connected
+// (the tool is there but no board is set up), or why the read failed.
+func (s *boardSection) stateView() string {
 	th, w := s.th, s.width()
-	switch {
-	case !s.loaded:
-		return []string{th.Text(KindMuted, "loading…")}, 0
-	case s.err != nil:
-		var nc *core.NotConnectedError
-		if errors.As(s.err, &nc) { // the tool is there but no board is set up: say how to connect
-			out := []string{th.Header.Render("Board") + " " + th.Badge(KindSkip, "not connected"), ""}
-			out = append(out, wrap(th.Text(KindWarn, san(nc.Reason)), w)...)
-			if nc.HowToConnect != nc.Reason {
-				out = append(out, "")
-				out = append(out, wrap(th.Text(KindAccent, "how to connect: ")+san(nc.HowToConnect), w)...)
-			}
-			return out, 0
-		}
-		out := wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w)
-		return append(append(out, ""), wrap(th.Text(KindMuted, strings.ToLower(core.HowToConnectBoardDegraded[:1])+core.HowToConnectBoardDegraded[1:]), w)...), 0
+	inner := innerW(w)
+	if !s.loaded {
+		return joinLines([]string{th.Text(KindMuted, "loading…")})
 	}
-	return nil, 0 // connected: View draws the panels instead
+	var nc *core.NotConnectedError
+	if errors.As(s.err, &nc) { // the tool is there but no board is set up: say how to connect
+		how := nc.HowToConnect
+		if how == nc.Reason {
+			how = ""
+		}
+		return joinLines(box(th, "Board", notConnectedBody(th, nc.Reason, how, inner), w, s.h))
+	}
+	body := unavailableBody(th, s.err.Error(), inner)
+	body = append(body, "")
+	body = append(body, wrap(th.Text(KindMuted, strings.ToLower(core.HowToConnectBoardDegraded[:1])+core.HowToConnectBoardDegraded[1:]), inner)...)
+	return joinLines(box(th, "Board", body, w, s.h))
 }
 
 func (s *boardSection) View() string {
 	if s.loaded && s.err == nil {
 		return s.connectedView()
 	}
-	lines, cursorLine := s.lines()
-	return renderWindow(s.th, lines, cursorLine, s.geom, &s.top)
+	return s.stateView()
 }
 
 // threadCols and taskCols are the board tables: the id and the text always stay, the channel,
@@ -399,20 +417,4 @@ func (s *boardSection) connectedView() string {
 		body = append(body, noticeLine(th, w, s.notice)...)
 	}
 	return joinLines(body)
-}
-
-// renderWindow draws lines in the section's height, keeping cursorLine in view (top is the scroll
-// state), truncated to the width, with a "+N more" marker when clipped. Shared by the sections
-// that have a cursor.
-func renderWindow(th Theme, lines []string, cursorLine int, g geom, top *int) string {
-	vis, newTop, hidden := windowMore(lines, cursorLine, g.h, *top)
-	*top = newTop
-	body := make([]string, 0, len(vis)+1)
-	for _, l := range vis {
-		body = append(body, trunc(l, g.width()))
-	}
-	if hidden > 0 && g.h >= 2 {
-		body = append(body, th.moreMarker(hidden))
-	}
-	return strings.Join(body, "\n") + "\n"
 }

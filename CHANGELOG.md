@@ -35,6 +35,14 @@ may change behavior, and patch versions are fixes and small additions.
   two hues it can tell apart. Each color is also carried by a glyph or word, so nothing depends on color:
   the bar uses a different glyph per state and the dot is a character. Selected rows stay plain on
   the highlight. In `--demo`, Doctor now lists the demo tools as demo instead of missing.
+- The Tasks forms and the screens around the write gate are framed panels like the other tabs: the
+  new and edit forms (fields aligned in a table with a marker and caret on the focused one, the
+  error under them), "Checking the current state…", the confirm screen (the "changed since you
+  opened it" note, the plan, and the exact command wrapped in full, never cut) and its "applying…"
+  state. The first-run setup prompt and its confirm screen, and the not-connected and unavailable
+  states of Tasks, Board, Leases and Queues, are framed too. Wording, keys and the write gate are
+  unchanged: nothing is written before `y` on the confirm screen. Long titles and commands wrap
+  instead of being cut, and a body that does not fit a short terminal ends in a "+N more" row.
 - Internal: Leases, Queues, Board and Tasks share one list-navigation piece (`listNav`: cursor,
   scroll, selected row identity, drill), with direct tests. Selection and key behavior are unchanged
   (Leases and Queues still pin the selection when its row disappears; Board and Tasks follow the

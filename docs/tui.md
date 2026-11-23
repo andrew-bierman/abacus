@@ -43,8 +43,17 @@ Counts by state, ready work and the most recent changes (an aligned table with a
 issues that block the most, the critical path and dependency cycles. From 100 columns the insights
 sit beside the list; below that they sit under it (the list keeps two thirds of the rows). Insights
 are read on start and on `r`, not on a timer, because they run several processes. Without an
-insights provider the panel says it is not connected and how to install one. The forms and the
-confirm screen are drawn as before and are not framed yet.
+insights provider the panel says it is not connected and how to install one.
+
+The new and edit forms, the "Checking the current state…" screen, the confirm screen and its
+"applying…" state are each one framed panel with the title in the border. The form is a table: a
+marker column (`▸` on the focused field, with the caret `▏` at the end of its value, so focus
+shows without color), the label column, then the value column; a long value wraps in its column.
+When the value column would be narrower than 12 cells (the edit form below 45 columns) the label sits above its value instead. The form error is a row under the fields.
+The confirm screen shows the "changed since you opened it" note when there is one, the plan lines
+and "exact command:" with the command wrapped in full, never cut. Only a body taller than the
+terminal is clipped, and then a `↕ +N more` row says so. None of this changes a key or the gate:
+nothing writes before `y` on the confirm screen, and a state that hides a screen still blocks keys.
 
 ## Board
 
@@ -115,7 +124,9 @@ ID). When the selected row disappears on a refresh, Leases and Queues keep the s
 it (it is selected again if the row comes back) and Board and Tasks select the clamped row now
 under the cursor. Tasks has no detail panel to drill into.
 
-Not-connected and unavailable states stay plain unframed lines with their "how to connect" text.
+Not-connected and unavailable states (and the first-run setup prompt) are one framed panel with the
+domain in the border; the "how to connect:" text is a block of its own, set off by blank rows, which
+the tool-name test exempts. Loading is a plain line.
 
 The help overlay was the first user of the helpers: a focused panel with aligned key columns, and a
 plain indented list when the frame would cost rows the text needs.

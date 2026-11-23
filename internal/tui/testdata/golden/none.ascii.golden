@@ -1,28 +1,28 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-Tasks (not connected)
-
-how to connect: The Beads CLI (bd) was
-not found. It comes with the abacus
-download (keep the whole folder
-together), or install it and put it on
-your PATH.
-
-
+╭─ ▸ Tasks ────────────────────────────╮
+│ (not connected)                      │
+│                                      │
+│ how to connect: The Beads CLI (bd)   │
+│ was not found. It comes with the     │
+│ abacus download (keep the whole      │
+│ folder together), or install it and  │
+│ put it on your PATH.                 │
+╰──────────────────────────────────────╯
 
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-Tasks (not connected)
-
-how to connect: The Beads CLI (bd) was
-not found. It comes with the abacus
-download (keep the whole folder
-together), or install it and put it on
-your PATH.
-
-
+╭─ ▸ Tasks ────────────────────────────╮
+│ (not connected)                      │
+│                                      │
+│ how to connect: The Beads CLI (bd)   │
+│ was not found. It comes with the     │
+│ abacus download (keep the whole      │
+│ folder together), or install it and  │
+│ put it on your PATH.                 │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,13 +44,13 @@ your PATH.
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Tasks (not connected)
-
-how to connect: The Beads CLI (bd) was not found. It comes with the abacus
-download (keep the whole folder together), or install it and put it on your
-PATH.
-
-
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                              │
+│                                                                              │
+│ how to connect: The Beads CLI (bd) was not found. It comes with the abacus   │
+│ download (keep the whole folder together), or install it and put it on your  │
+│ PATH.                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -58,13 +58,13 @@ PATH.
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Tasks (not connected)
-
-how to connect: The Beads CLI (bd) was not found. It comes with the abacus
-download (keep the whole folder together), or install it and put it on your
-PATH.
-
-
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                              │
+│                                                                              │
+│ how to connect: The Beads CLI (bd) was not found. It comes with the abacus   │
+│ download (keep the whole folder together), or install it and put it on your  │
+│ PATH.                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,12 +88,12 @@ PATH.
 ? help · q quit · tab/→ next tab · ↑/↓ move · o full view
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Tasks (not connected)
-
-how to connect: The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder together), or
-install it and put it on your PATH.
-
-
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                                      │
+│                                                                                                                      │
+│ how to connect: The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder           │
+│ together), or install it and put it on your PATH.                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -102,10 +102,68 @@ install it and put it on your PATH.
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Tasks (not connected)
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                                      │
+│                                                                                                                      │
+│ how to connect: The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder           │
+│ together), or install it and put it on your PATH.                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-how to connect: The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder together), or
-install it and put it on your PATH.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Tasks ────────────────────────────────────────────────╮
+│ (not connected)                                          │
+│                                                          │
+│ how to connect: The Beads CLI (bd) was not found. It     │
+│ comes with the abacus download (keep the whole folder    │
+│ together), or install it and put it on your PATH.        │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                  │
+│                                                                                                  │
+│ how to connect: The Beads CLI (bd) was not found. It comes with the abacus download (keep the    │
+│ whole folder together), or install it and put it on your PATH.                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 

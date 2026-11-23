@@ -181,17 +181,13 @@ func (s *leasesSection) detailLines() []string {
 func (s *leasesSection) View() string {
 	th := s.th
 	w := s.width()
-	head := th.Header.Render("Leases")
 	switch {
 	case !s.loaded:
-		return joinLines([]string{head, th.Text(KindMuted, "loading…")})
+		return joinLines([]string{th.Text(KindMuted, "loading…")})
 	case s.got.unavailable != "" && s.got.howToConnect != "":
-		out := []string{head + " " + th.Badge(KindSkip, "not connected"), ""}
-		out = append(out, wrap(th.Text(KindWarn, san(s.got.unavailable)), w)...)
-		out = append(out, "")
-		return joinLines(append(out, wrap(th.Text(KindAccent, "how to connect: ")+san(s.got.howToConnect), w)...))
+		return joinLines(box(th, "Leases", notConnectedBody(th, s.got.unavailable, s.got.howToConnect, innerW(w)), w, s.h))
 	case s.got.unavailable != "":
-		return joinLines(append([]string{head}, wrap(th.Text(KindWarn, "state unavailable: "+san(s.got.unavailable)), w)...))
+		return joinLines(box(th, "Leases", unavailableBody(th, s.got.unavailable, innerW(w)), w, s.h))
 	}
 	g := duoLayout(w, s.h)
 	list := s.listLines(g)

@@ -410,49 +410,43 @@ func (s *tasksSection) apply(p core.WritePlan) tea.Cmd {
 	}
 }
 
-func (s *tasksSection) lines() ([]string, int) {
-	th, w := s.th, s.width()
+// modalView is the screen for every mode but the list: the form, the check of the current state,
+// the confirm screen and its busy state, each one framed panel.
+func (s *tasksSection) modalView() []string {
+	th, w, inner := s.th, s.width(), innerW(s.width())
 	switch s.mode {
 	case modeForm:
 		title := map[core.TaskOp]string{core.TaskCreate: "New task", core.TaskUpdate: "Edit task " + s.target.ID}[s.op]
-		out := []string{th.Header.Render(san(title)), ""}
-		for i, f := range s.fields {
-			caret := ""
-			if i == s.fi {
-				caret = "▏"
-			}
-			out = append(out, th.Label.Render(padTo(f.label, 26))+san(f.value)+caret)
-		}
+		body := fieldRows(th, s.fields, s.fi, inner)
 		if s.formErr != "" {
-			out = append(out, "", th.Text(KindFail, san(s.formErr)))
+			body = append(body, "")
+			body = append(body, wrap(th.Text(KindFail, san(s.formErr)), inner)...)
 		}
-		return out, 0
+		return box(th, san(title), body, w, s.h)
 	case modeVerify:
-		return []string{th.Header.Render("Checking the current state of " + san(s.pending.ID) + "…"), "", th.Text(KindMuted, "esc cancels")}, 0
-	case modeConfirm, modeBusy:
-		out := []string{th.Header.Render("Confirm this change"), ""}
-		if s.changedNote != "" {
-			out = append(out, wrap(th.Text(KindWarn, san(s.changedNote)), w)...)
-			out = append(out, "")
-		}
-		for _, l := range s.plan.Lines {
-			out = append(out, wrap("  "+san(l), w)...)
-		}
-		out = append(out, "", th.Text(KindMuted, "exact command:"))
-		out = append(out, wrap("  "+san(core.DisplayArgv(s.plan.Argv)), w)...)
-		if s.mode == modeBusy {
-			out = append(out, "", th.Text(KindMuted, "applying…"))
-		}
-		return out, 0
+		body := wrap("reading "+san(s.pending.ID)+" before the confirm screen", inner)
+		body = append(body, "", th.Text(KindMuted, "esc cancels"))
+		return box(th, "Checking the current state…", body, w, s.h)
 	}
+	title := "Confirm this change"
+	if s.mode == modeBusy {
+		title = "Applying this change"
+	}
+	return box(th, title, confirmBody(th, s.changedNote, s.plan.Lines, s.plan.Argv, s.mode == modeBusy, inner), w, s.h)
+}
+
+// stateView is the Tasks tab before it has anything to list: loading, or why the read failed.
+func (s *tasksSection) stateView() string {
+	th, w := s.th, s.width()
 	if !s.loaded {
-		return []string{th.Text(KindMuted, "loading…")}, 0
+		return joinLines([]string{th.Text(KindMuted, "loading…")})
 	}
-	out := wrap(th.Text(KindWarn, "state unavailable: "+san(s.err.Error())), w)
+	body := unavailableBody(th, s.err.Error(), innerW(w))
 	if s.notice != "" { // a write outcome, or why a key did nothing, is never lost to a failed read
-		out = append(out, "", th.Text(KindWarn, san(s.notice)))
+		body = append(body, "")
+		body = append(body, wrap(th.Text(KindWarn, san(s.notice)), innerW(w))...)
 	}
-	return out, 0
+	return joinLines(box(th, "Tasks", body, w, s.h))
 }
 
 func (s *tasksSection) insightParts(iw int) (string, []string) {
@@ -596,6 +590,8 @@ func (s *tasksSection) View() string {
 	if s.mode == modeList && s.loaded && s.err == nil {
 		return s.panelView()
 	}
-	lines, cursorLine := s.lines()
-	return renderWindow(s.th, lines, cursorLine, s.geom, &s.top)
+	if s.mode != modeList {
+		return joinLines(s.modalView())
+	}
+	return s.stateView()
 }
