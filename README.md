@@ -246,28 +246,32 @@ single-use and audit gate. Leases and Queues writes are blocked upstream: see `d
 ### TUI
 
 `abacus tui` has one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. A tab whose tool
-needs one-time setup shows a single prompt (see First run) instead of an error. In Queues, below 100
-columns the list fills the screen and Enter drills into a run; at 100 and wider the run detail sits
-beside the list. This is the 80-column Tasks render with colors off (`NO_COLOR`), from the golden test,
+needs one-time setup shows a single prompt (see First run) instead of an error. In Queues, Leases and Board, below
+100 columns the list fills the screen and Enter drills into the detail; at 100 and wider the detail
+sits beside the list. This is the 80-column Tasks render with colors off (`NO_COLOR`), from the golden test,
 using data from fixture providers:
 
 ```
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Tasks
-14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed
-ready 4
-
-Recent changes
-▸ ac-12         in_progress  P1  wire the lease heartbeat
-  ac-09         open  P2  queue attention digest
-  ac-03         closed  P3  retire the old poller
-
-Insights (graph analysis)
-  4 actionable · 2 blocked · 1 cycles
-  next     ac-12  wire the lease heartbeat  (unblocks 2)
-  blocker  ac-12  wire the lease heartbeat  (unblocks 2)
-  critical path  ac-12 > ac-09
-  cycle  ac-20 -> ac-21 -> ac-20
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ ready 4                                                                      │
+│                                                                              │
+│ Recent changes                                                               │
+│ ▸ ac-12  in_progress  P1  wire the lease heartbeat                           │
+│   ac-09  open         P2  queue attention digest                             │
+│   ac-03  closed       P3  retire the old poller                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Insights · graph analysis ──────────────────────────────────────────────────╮
+│ 4 actionable · 2 blocked · 1 cycles                                          │
+│ next     ac-12  wire the lease heartbeat  (unblocks 2)                       │
+│ blocker  ac-12  wire the lease heartbeat  (unblocks 2)                       │
+│ critical path  ac-12 > ac-09                                                 │
+│ cycle  ac-20 -> ac-21 -> ac-20                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · ↑/↓ move · n new · e edit · x close task …
 ```

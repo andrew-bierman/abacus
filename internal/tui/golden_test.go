@@ -387,7 +387,13 @@ func TestReadmeSampleMatchesTheGolden(t *testing.T) {
 	for len(ls) > 0 && ls[len(ls)-1] == "" {
 		ls = ls[:len(ls)-1]
 	}
-	want := strings.Join(append(ls[:17:17], foot), "\n")
+	end := 17 // through the last panel border: a sample that stops inside a box looks broken
+	for i, l := range ls[:len(ls)-1] {
+		if strings.HasPrefix(l, "╰") {
+			end = i + 1
+		}
+	}
+	want := strings.Join(append(ls[:end:end], foot), "\n")
 	path := filepath.Join("..", "..", "README.md")
 	raw, err := os.ReadFile(path)
 	if err != nil {
