@@ -173,3 +173,17 @@ func TestTwentyThousandTasksAreNotQuadratic(t *testing.T) {
 		t.Errorf("5 lists and counts of 20,000 tasks took %v", d)
 	}
 }
+
+func TestDuplicateIdsAreCountedInTheWarnings(t *testing.T) {
+	in := `{"id":"a-1","title":"old"}` + "\n" + `{"id":"a-2","title":"two"}` + "\n" + `{"id":"a-1","title":"new"}` + "\n" + `{"id":"a\u001b-2","title":"two again"}`
+	s, err := Parse(bytes.NewReader([]byte(in)), fixedNow, "")
+	if err != nil || len(s.Issues) != 2 {
+		t.Fatalf("%v %d", err, len(s.Issues))
+	}
+	if len(s.Warnings) != 1 || s.Warnings[0] != "2 duplicate ids: the later record of each was used (the order of an export is not stable)" {
+		t.Errorf("warnings: %q", s.Warnings)
+	}
+	if c, _ := Parse(bytes.NewReader(fixture(t, "export.jsonl")), fixedNow, ""); len(c.Warnings) != 0 {
+		t.Errorf("a clean export has no warnings: %v", c.Warnings)
+	}
+}

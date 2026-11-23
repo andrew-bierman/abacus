@@ -78,7 +78,7 @@ func Parse(r io.Reader, readAt time.Time, tracker string) (core.TaskSnapshot, er
 	br := bufio.NewReaderSize(io.LimitReader(r, MaxExport+1), 64<<10)
 	var total int64
 	seen := map[string]int{}
-	var badTimes int
+	var badTimes, dups int
 	for n := 1; ; n++ {
 		line, err := br.ReadBytes('\n')
 		total += int64(len(line))
@@ -97,6 +97,7 @@ func Parse(r io.Reader, readAt time.Time, tracker string) (core.TaskSnapshot, er
 				}
 				badTimes += bad
 				if at, dup := seen[iss.ID]; dup { // the later record is the newer
+					dups++
 					snap.Issues[at] = iss
 				} else {
 					seen[iss.ID] = len(snap.Issues)
@@ -113,6 +114,9 @@ func Parse(r io.Reader, readAt time.Time, tracker string) (core.TaskSnapshot, er
 	}
 	if badTimes > 0 {
 		snap.Warnings = append(snap.Warnings, fmt.Sprintf("%d time values could not be read", badTimes))
+	}
+	if dups > 0 {
+		snap.Warnings = append(snap.Warnings, fmt.Sprintf("%d duplicate ids: the later record of each was used (the order of an export is not stable)", dups))
 	}
 	snap.Warnings = append(snap.Warnings, Consistency(snap)...)
 	return snap, nil

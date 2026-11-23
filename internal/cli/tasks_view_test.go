@@ -143,6 +143,15 @@ func checkGoldenFile(t *testing.T, name, got string) {
 	t.Helper()
 	path := filepath.Join("testdata", name)
 	if *updateGolden {
+		var m map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(got), &m); err != nil || string(m["schema_version"]) != "1" {
+			t.Fatalf("%s: not rewritten, the output is not a schema_version 1 object (%v)", name, err)
+		}
+		for _, k := range []string{"domain", "state"} {
+			if _, ok := m[k]; !ok {
+				t.Fatalf("%s: not rewritten, the report lacks %q", name, k)
+			}
+		}
 		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -154,5 +163,21 @@ func checkGoldenFile(t *testing.T, name, got string) {
 	}
 	if string(want) != got {
 		t.Errorf("%s differs (-update-golden accepts):\n--- want\n%s\n--- got\n%s", name, want, got)
+	}
+}
+
+// Each sort key starts in its natural direction (newest first for times, most dependencies first for
+// deps, A to Z and P0 first for the rest); --reverse flips it.
+func TestTasksListSortNaturalDirections(t *testing.T) {
+	for key, want := range map[string]string{"priority": "↑", "title": "↑", "status": "↑", "type": "↑", "deferred": "↑", "created": "↓", "updated": "↓", "deps": "↓"} {
+		_, out, _ := runTasks(t, snap(), "tasks", "list", "--sort", key)
+		if !strings.Contains(strings.Split(out, "\n")[0], "sort: "+key+" "+want) {
+			t.Errorf("--sort %s: %q, want direction %s", key, strings.Split(out, "\n")[0], want)
+		}
+		flip := map[string]string{"↑": "↓", "↓": "↑"}[want]
+		_, out, _ = runTasks(t, snap(), "tasks", "list", "--sort", key, "--reverse")
+		if !strings.Contains(strings.Split(out, "\n")[0], "sort: "+key+" "+flip) {
+			t.Errorf("--sort %s --reverse: %q, want direction %s", key, strings.Split(out, "\n")[0], flip)
+		}
 	}
 }

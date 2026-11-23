@@ -55,6 +55,15 @@ func golden(t *testing.T, name string, v any) {
 	got = append(got, '\n')
 	path := filepath.Join("testdata", name)
 	if *update {
+		var m map[string]json.RawMessage
+		if err := json.Unmarshal(got, &m); err != nil {
+			t.Fatalf("%s: not rewritten, the output is not a JSON object: %v", name, err)
+		}
+		for _, k := range []string{"domain", "title", "state"} { // a broken report must not become the new contract
+			if _, ok := m[k]; !ok {
+				t.Fatalf("%s: not rewritten, the report lacks %q", name, k)
+			}
+		}
 		if err := os.WriteFile(path, got, 0o644); err != nil {
 			t.Fatal(err)
 		}
