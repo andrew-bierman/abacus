@@ -183,7 +183,7 @@ func LocateFound(tool, explicit string, look func(string) (string, error)) (Foun
 			return Found{Bin: p, Src: SourcePATH, Ignored: ignored}, ""
 		}
 	}
-	detail := fmt.Sprintf("%s not found on PATH", tool)
+	detail := fmt.Sprintf("%s was not found", tool)
 	if ignored != "" {
 		detail += " " + refusedMarker + ignored + ")"
 	}

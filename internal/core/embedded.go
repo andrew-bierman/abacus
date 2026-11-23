@@ -176,7 +176,7 @@ func (s *embeddedSet) ensure(root string, t embedtools.Tool) (string, error) {
 	}
 	unlock, err := lockConfig(filepath.Join(root, s.hash)) // <root>/<hash>.lock: one extraction at a time
 	if err != nil {
-		return "", fmt.Errorf("could not lock %s: %w", root, err)
+		return "", fmt.Errorf("could not lock %s: %s", root, plainWhy(err))
 	}
 	defer unlock()
 	if p, err := verifyExtracted(dir, t, false); err == nil { // another abacus finished while we waited
@@ -209,15 +209,15 @@ func isMine(fi os.FileInfo) bool {
 // is not a directory of the user's, or that others can write to.
 func ensureRoot(root string) error {
 	if err := os.MkdirAll(filepath.Dir(root), 0o755); err != nil {
-		return fmt.Errorf("could not create %s: %w", filepath.Dir(root), err)
+		return fmt.Errorf("could not create %s: %s", filepath.Dir(root), plainWhy(err))
 	}
 	if err := os.Mkdir(root, 0o700); err != nil && !errors.Is(err, fs.ErrExist) {
-		return fmt.Errorf("could not create %s: %w", root, err)
+		return fmt.Errorf("could not create %s: %s", root, plainWhy(err))
 	}
 	fi, err := os.Stat(root) // the root itself may be a link (a dotfiles setup); nothing below it may be
 	switch {
 	case err != nil:
-		return fmt.Errorf("could not read %s: %w", root, err)
+		return fmt.Errorf("could not read %s: %s", root, plainWhy(err))
 	case !fi.IsDir():
 		return fmt.Errorf("%s is not a folder", root)
 	case !isMine(fi):
@@ -232,22 +232,31 @@ func ensureRoot(root string) error {
 // user's own, closed to group and others.
 func ensureDir(dir string) error {
 	if err := os.Mkdir(dir, 0o700); err != nil && !errors.Is(err, fs.ErrExist) {
-		return fmt.Errorf("could not create %s: %w", dir, err)
+		return fmt.Errorf("could not create %s: %s", dir, plainWhy(err))
 	}
 	fi, err := os.Lstat(dir)
 	switch {
 	case err != nil:
-		return fmt.Errorf("could not read %s: %w", dir, err)
+		return fmt.Errorf("could not read %s: %s", dir, plainWhy(err))
 	case !fi.IsDir():
 		return fmt.Errorf("%s is not a plain folder (a link or a file is in its place)", dir)
 	case !isMine(fi):
 		return fmt.Errorf("%s belongs to another user", dir)
 	case fi.Mode().Perm()&0o077 != 0:
 		if err := os.Chmod(dir, 0o700); err != nil {
-			return fmt.Errorf("%s is open to other users and could not be closed: %w", dir, err)
+			return fmt.Errorf("%s is open to other users and could not be closed: %s", dir, plainWhy(err))
 		}
 	}
 	return nil
+}
+
+// plainWhy is an error without the operation and path Go repeats in it ("permission denied").
+func plainWhy(err error) string {
+	var pe *fs.PathError
+	if errors.As(err, &pe) {
+		return pe.Err.Error()
+	}
+	return err.Error()
 }
 
 func markerOf(path string) string { return path + ".ok" }
@@ -263,7 +272,7 @@ func verifyExtracted(dir string, t embedtools.Tool, verifyHash bool) (string, er
 	}
 	switch {
 	case err != nil:
-		return "", fmt.Errorf("could not read %s: %w", dir, err)
+		return "", fmt.Errorf("could not read %s: %s", dir, plainWhy(err))
 	case !di.IsDir():
 		return "", fmt.Errorf("%s is not a plain folder (a link or a file is in its place)", dir)
 	case !isMine(di):
@@ -278,7 +287,7 @@ func verifyExtracted(dir string, t embedtools.Tool, verifyHash bool) (string, er
 	}
 	switch {
 	case err != nil:
-		return "", fmt.Errorf("could not read %s: %w", path, err)
+		return "", fmt.Errorf("could not read %s: %s", path, plainWhy(err))
 	case !fi.Mode().IsRegular():
 		return "", fmt.Errorf("%s is not a plain file (a link or a folder is in its place)", path)
 	case !isMine(fi):
@@ -294,7 +303,7 @@ func verifyExtracted(dir string, t embedtools.Tool, verifyHash bool) (string, er
 	}
 	got, err := fileSHA256(path)
 	if err != nil {
-		return "", fmt.Errorf("could not read %s: %w", path, err)
+		return "", fmt.Errorf("could not read %s: %s", path, plainWhy(err))
 	}
 	if got != t.SHA256 {
 		return "", errRepair
@@ -356,12 +365,12 @@ func (s *embeddedSet) extract(dir string, t embedtools.Tool) (string, error) {
 	defer src.Close()
 	dec, err := zstd.NewReader(src)
 	if err != nil {
-		return "", fmt.Errorf("the built-in %s cannot be read: %w", t.Name, err)
+		return "", fmt.Errorf("the built-in %s cannot be read: %s", t.Name, plainWhy(err))
 	}
 	defer dec.Close()
 	tmp, err := os.CreateTemp(dir, ".tmp-"+t.Name+"-")
 	if err != nil {
-		return "", fmt.Errorf("could not write into %s: %w", dir, err)
+		return "", fmt.Errorf("could not write into %s: %s", dir, plainWhy(err))
 	}
 	tmpName := tmp.Name()
 	fail := func(err error) (string, error) { tmp.Close(); os.Remove(tmpName); return "", err }
@@ -374,11 +383,11 @@ func (s *embeddedSet) extract(dir string, t embedtools.Tool) (string, error) {
 		return fail(fmt.Errorf("the built-in %s %s (its sha256 or length is different)", t.Name, damagedMark))
 	}
 	if err := tmp.Sync(); err != nil {
-		return fail(fmt.Errorf("could not write %s: %w", tmpName, err))
+		return fail(fmt.Errorf("could not write %s: %s", tmpName, plainWhy(err)))
 	}
 	if err := tmp.Close(); err != nil {
 		os.Remove(tmpName)
-		return "", fmt.Errorf("could not write %s: %w", tmpName, err)
+		return "", fmt.Errorf("could not write %s: %s", tmpName, plainWhy(err))
 	}
 	if err := os.Chmod(tmpName, 0o700); err != nil {
 		os.Remove(tmpName)
@@ -386,7 +395,7 @@ func (s *embeddedSet) extract(dir string, t embedtools.Tool) (string, error) {
 	}
 	if err := os.Rename(tmpName, path); err != nil {
 		os.Remove(tmpName)
-		return "", fmt.Errorf("could not place %s: %w", path, err)
+		return "", fmt.Errorf("could not place %s: %s", path, plainWhy(err))
 	}
 	if d, err := os.Open(dir); err == nil { // make the rename durable
 		_ = d.Sync()
