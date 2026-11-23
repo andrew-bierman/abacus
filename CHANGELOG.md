@@ -8,6 +8,15 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- The TUI shows the optional workspace layer: the Queues, Leases and Tasks detail shows where the
+  selected item lives (session and machine, match, ambiguity with candidates, not placed, cached or
+  truncated reads), and at 140 columns and wider the lists get an aligned `where` column. The new
+  `w` key on Leases and Tasks (and `o` on Queues for a run the workspace knows) runs only the first
+  interactive step of core's open plan, on that keypress, when the placement is unambiguous;
+  otherwise it shows a framed notice with the candidates or the command to copy. The key is absent
+  without workspace data or a placement. A demo session never runs a step (this also stops `o` on
+  an unplaced demo run from handing over the terminal). The demo workspace now places task ac-09.
+  See `docs/tui.md`. Without workspace data every screen is unchanged.
 - Release notices: `THIRD_PARTY_NOTICES.md` now says the bundled tools ship unmodified and run as
   subprocesses, and that the `abacus` binary also statically links parts of bv's Go packages (bv
   v0.27.0 `pkg/analysis` and dependencies) under bv's license (`third_party/bv/LICENSE`, verbatim).
