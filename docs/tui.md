@@ -147,6 +147,21 @@ appears in any other file.
 - Badges: doctor `ok` `warn` `fail` `skip`, lease `held` `stale` `free`, `stalled`, `blocked`,
   `not connected` and the source labels (`tracker subset`, `graph analysis`).
 
+## Visual language
+
+Color means something, and every color is backed by a word or glyph so `NO_COLOR` loses nothing.
+
+- **Red, amber, green** are states only: failed or blocked or P0, attention or P1 or deferred, ok or
+  running. Names never use them: the tints for an agent, channel or machine come from a separate set
+  (purple, teal, orange, pink, sky), chosen by a hash of the name, so `ada` is the same color as a
+  lease holder, a board author and a run's machine.
+- **Accent** (blue) marks focus (the focused panel's border and title), section headings and the
+  in-progress state.
+- **Tasks bar**: the states in proportion across the panel, one glyph per state (`▒` open, `█` in
+  progress, `▓` blocked, `░` deferred, `·` closed), so it reads in monochrome.
+- **Queues dot**: `●` before the state, colored by its tone.
+- The selected row is drawn plain on the highlight so the highlight stays whole.
+
 ## Demo
 
 `abacus tui --demo` shows every tab with invented data (the fixtures in `internal/demo`, the same

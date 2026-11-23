@@ -26,6 +26,13 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- A visual pass over the tabs, restrained and meaningful: Tasks opens with a bar of the task states
+  in proportion (blocked in red, in progress in the accent color, closed quiet), status and priority
+  are colored by meaning (blocked and P0 red, P1 and deferred amber), Queues states get a colored
+  dot, section headings are accent colored, and a name (an agent, a channel, a machine) has one
+  color on every tab. Each color is also carried by a glyph or word, so nothing depends on color:
+  the bar uses a different glyph per state and the dot is a character. Selected rows stay plain on
+  the highlight. In `--demo`, Doctor now lists the demo tools as demo instead of missing.
 - Tasks and Board are drawn in framed panels with aligned columns. Tasks shows the counts and an
   aligned task table in a list panel and the graph insights in their own panel, beside the list from
   100 columns and under it below that. Board shows the summary, channels and aligned thread and task
