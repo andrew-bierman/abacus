@@ -45,7 +45,7 @@ That is the owner's call because it changes the project's minimum Go version for
 
 ## 1. License rider (recorded as a fact, not re-litigated)
 
-The owner reports that their lawyer confirmed bv's license is fine for this use. The text, verbatim
+The owner has reviewed bv's license and accepts it for this use. The text, verbatim
 from the LICENSE file of beads_viewer v0.27.0 (module cache copy), is recorded here so the
 conditions travel with the decision. The MIT grant paragraph and the notice and warranty paragraphs
 are included in full.
