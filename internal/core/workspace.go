@@ -52,6 +52,9 @@ const (
 	MatchExact PlacementMatch = "exact"
 	// MatchLabel means the item's id appears in a label, as a whole word.
 	MatchLabel PlacementMatch = "label"
+	// MatchHostNotConfigured means the item runs on a machine abacus was not told it may contact,
+	// so its sessions were not read: there is no session, only the command to open that machine.
+	MatchHostNotConfigured PlacementMatch = "host-not-configured"
 )
 
 // Placement is where an item lives as a terminal: on which host, in which session and tab. The
@@ -73,6 +76,8 @@ type Placement struct {
 type Ambiguity struct {
 	Item       WorkspaceItem `json:"item"`
 	Candidates []Placement   `json:"candidates"`
+	// Truncated says there were more claimants than Candidates lists.
+	Truncated bool `json:"truncated,omitempty"`
 }
 
 // WorkspaceReport is what a provider found. State says whether a workspace was reachable; a
@@ -83,6 +88,11 @@ type WorkspaceReport struct {
 	HowToConnect string      `json:"how_to_connect,omitempty"`
 	Placements   []Placement `json:"placements,omitempty"`
 	Ambiguous    []Ambiguity `json:"ambiguous,omitempty"`
+	// Stale says some of this came from a recent earlier read (a short per-process cache), not a
+	// fresh one. Truncated says something was cut: more sessions than are looked at, more
+	// placements than are kept, or a placement dropped because its machine name was not safe.
+	Stale     bool `json:"stale,omitempty"`
+	Truncated bool `json:"truncated,omitempty"`
 }
 
 // Empty reports whether the report has nothing worth putting in JSON: no placements, nothing
@@ -112,6 +122,9 @@ func (r WorkspaceReport) For(it WorkspaceItem) (p *Placement, candidates []Place
 type OpenRung struct {
 	Name string   `json:"name"`
 	Argv []string `json:"argv"`
+	// Interactive says the command takes over the terminal (a front-end must suspend its own UI
+	// to run it) rather than running quietly in the background.
+	Interactive bool `json:"interactive"`
 }
 
 // OpenPlan is how to get to a placement. Rungs are tried in order, only on an explicit keypress
@@ -140,6 +153,9 @@ const (
 	// MaxLabelRunes bounds a session or tab label; MaxIDRunes bounds an id or host.
 	MaxLabelRunes = 64
 	MaxIDRunes    = 128
+	// MaxHostRunes is the longest machine name; a longer one is rejected, never clipped, because
+	// clipping can turn one host into another.
+	MaxHostRunes = 253
 )
 
 // ClipRunes cuts s to at most n runes and never splits one (a hostile ten-thousand-character

@@ -107,7 +107,10 @@ func Build(o cli.Options, e Env) *core.Registry {
 		board.New(boardOptions(e, cfg)),
 		// Rex is optional: ABACUS_REX_BIN overrides the lookup, and an absent Rex stays out of the
 		// tool list and Doctor. In --demo the demo Leases provider supplies the workspace instead.
-		rex.New(rex.Options{Bin: e.Getenv("ABACUS_REX_BIN"), Getenv: e.Getenv}),
+		// ABACUS_REX_HOSTS lists the only other machines a read may contact with -S, and
+		// ABACUS_REX_PASS_ENV the extra variables (such as SSH_AUTH_SOCK) rex is given.
+		rex.New(rex.Options{Bin: e.Getenv("ABACUS_REX_BIN"), Getenv: e.Getenv,
+			Hosts: rex.ParseHosts(e.Getenv("ABACUS_REX_HOSTS")), PassEnv: rex.ParsePassEnv(e.Getenv("ABACUS_REX_PASS_ENV"))}),
 		core.NewConfigCheck(e.Config),
 	)
 }

@@ -38,12 +38,16 @@ const (
 	exitAmbiguous = 3
 )
 
+// defaultCacheTTL is how long a host's session list is reused (see Module.read).
+const defaultCacheTTL = 3 * time.Second
+
 // maxHosts bounds how many distinct hosts one read contacts.
 const maxHosts = 8
 
 const (
 	// RungHandoff is the existing `rex -S <machine>` handoff, the first rung of the open plan.
-	RungHandoff = "rex-handoff"
+	// The name is neutral: it is shown, and the UI does not name tools.
+	RungHandoff = "handoff"
 
 	// HowToConnect is shown when no workspace is reachable. Rex is optional.
 	HowToConnect = "Start a Rex server (rex server start) or run abacus inside a Rex terminal. Rex is optional; nothing else in abacus depends on it."
@@ -61,9 +65,21 @@ type Options struct {
 	// LabelConventions are the labels that name an item exactly, as {id} templates; empty means
 	// core.DefaultLabelConventions.
 	LabelConventions []string
+	// Hosts are the only machines, other than this one, that a read may contact with -S
+	// (ABACUS_REX_HOSTS). A machine name a run carries is data from another program and `-S` can
+	// open a connection to it, so a name not listed here is never contacted. Invalid entries are
+	// dropped.
+	Hosts []string
+	// PassEnv names extra environment variables to hand to rex (ABACUS_REX_PASS_ENV, for example
+	// SSH_AUTH_SOCK so -S can authenticate). Everything not named here or in ScrubEnv is dropped.
+	PassEnv []string
 	// ProbeTimeout bounds the detection probe, CallTimeout every other call.
 	ProbeTimeout time.Duration
 	CallTimeout  time.Duration
+	// CacheTTL is how long one host's session list is reused within this process: 0 means the
+	// default (3 s), negative turns the cache off. Now is the clock for it (nil means time.Now).
+	CacheTTL time.Duration
+	Now      func() time.Time
 }
 
 // Module implements core.Module and core.WorkspaceProvider for Rex.
@@ -76,6 +92,7 @@ type Module struct {
 	server string // how the server was found: "environment", "probe" or "" (none running)
 	rev    int
 	ver    string
+	cache  map[string]cached
 }
 
 // New returns a Rex module with defaults filled in.
@@ -86,8 +103,16 @@ func New(o Options) *Module {
 	if o.Getenv == nil {
 		o.Getenv = os.Getenv
 	}
+	o.Hosts = ParseHosts(strings.Join(o.Hosts, ","))
+	o.PassEnv = ParsePassEnv(strings.Join(o.PassEnv, ","))
 	if o.Runner == nil {
-		o.Runner = defaultRunner()
+		o.Runner = defaultRunner(o.PassEnv)
+	}
+	if o.Now == nil {
+		o.Now = time.Now
+	}
+	if o.CacheTTL == 0 {
+		o.CacheTTL = defaultCacheTTL
 	}
 	if o.Hostname == nil {
 		o.Hostname = shortHostname
@@ -122,6 +147,7 @@ func (m *Module) Quiet() bool {
 func (m *Module) set(s core.State, server string, rev int, ver string) {
 	m.mu.Lock()
 	m.state, m.server, m.rev, m.ver = s, server, rev, ver
+	m.cache = nil // a new detection starts from a clean slate
 	m.mu.Unlock()
 }
 
@@ -323,75 +349,150 @@ func parseLS(out []byte) (ss []session, truncated bool, err error) {
 
 // Status summarizes the sessions on the local server; no server is unavailable, not an error.
 func (m *Module) Status(ctx context.Context) core.Status {
-	ss, err := m.sessions(ctx, "")
+	res, _ := m.read(ctx, "")
 	switch {
-	case errors.Is(err, errNoServer):
+	case errors.Is(res.err, errNoServer):
 		return core.Status{Unavailable: noWorkspace, HowToConnect: HowToConnect}
-	case err != nil:
-		return core.Status{Unavailable: safe(err.Error(), 200)}
+	case res.err != nil:
+		return core.Status{Unavailable: safe(res.err.Error(), 200)}
 	}
-	return core.Status{Summary: fmt.Sprintf("%d sessions", len(ss))}
+	n := fmt.Sprintf("%d sessions", len(res.ss))
+	switch {
+	case res.truncated:
+		n = fmt.Sprintf("%d+ sessions", len(res.ss))
+	case len(res.ss) == 1:
+		n = "1 session"
+	}
+	return core.Status{Summary: n}
 }
 
 var errNoServer = errors.New("no Rex server running")
 
-// sessions reads one host's session list (host "" is the local server).
-func (m *Module) sessions(ctx context.Context, host string) ([]session, error) {
+// lsResult is one host's session list as read: the sessions, whether there were more than
+// maxSessions, or why there is none.
+type lsResult struct {
+	ss        []session
+	truncated bool
+	err       error
+}
+
+type cached struct {
+	at  time.Time
+	res lsResult
+}
+
+// read returns one host's session list (host "" is the local server). The adapter owns caching:
+// a result, success or failure, is kept for a short TTL (Options.CacheTTL) in this process, so a
+// slow or hung rex is paid for once per TTL and not once per read. core owns the time budget and
+// runs the whole workspace read concurrently with other reads. cached says the result is a
+// replay, so the report can be marked stale.
+func (m *Module) read(ctx context.Context, host string) (res lsResult, replay bool) {
+	ttl := m.o.CacheTTL
+	if ttl > 0 {
+		m.mu.Lock()
+		c, ok := m.cache[host]
+		m.mu.Unlock()
+		if ok && m.o.Now().Sub(c.at) < ttl {
+			return c.res, true
+		}
+	}
+	res = m.sessions(ctx, host)
+	if ttl > 0 && ctx.Err() == nil { // a canceled read says nothing about rex
+		m.mu.Lock()
+		if m.cache == nil {
+			m.cache = map[string]cached{}
+		}
+		m.cache[host] = cached{at: m.o.Now(), res: res}
+		m.mu.Unlock()
+	}
+	return res, false
+}
+
+// sessions runs one `ls --json` for a host.
+func (m *Module) sessions(ctx context.Context, host string) lsResult {
 	ctx, cancel := context.WithTimeout(ctx, m.o.CallTimeout)
 	defer cancel()
 	out, exit, err := m.run.Run(ctx, m.Bin(), lsArgv(host)...)
 	switch {
 	case err != nil:
-		return nil, fmt.Errorf("rex ls %s", runFailure(err))
+		return lsResult{err: fmt.Errorf("reading sessions %s", runFailure(err))}
 	case exit == exitNoServer:
-		return nil, errNoServer
+		return lsResult{err: errNoServer}
 	case exit == exitAmbiguous:
-		return nil, errors.New("rex ls found more than one server (exit 3)")
+		return lsResult{err: errors.New("more than one workspace server answers (exit 3)")}
 	case exit != 0:
-		return nil, fmt.Errorf("rex ls exited %d", exit)
+		return lsResult{err: fmt.Errorf("reading sessions exited %d", exit)}
 	}
-	ss, _, err := parseLS(out)
-	return ss, err
+	ss, trunc, err := parseLS(out)
+	return lsResult{ss: ss, truncated: trunc, err: err}
 }
 
-// hostOf is the server an item is read from: "" for this machine, otherwise the one -S host the
-// item already carries.
-func (m *Module) hostOf(it core.WorkspaceItem) string {
-	if it.Host == "" || strings.EqualFold(it.Host, m.o.Hostname()) {
-		return ""
+// hostKind says what may be done with the machine an item carries.
+type hostKind int
+
+const (
+	hostLocal      hostKind = iota // this machine: read without -S
+	hostAllowed                    // in the explicit allowlist: read with -S
+	hostNotAllowed                 // a well-formed name nobody configured: never contacted
+	hostInvalid                    // not a safe name at all
+)
+
+// classify decides, for the machine an item carries, whether it may be contacted. Hosts come from
+// run data (any program can write them), and `-S` can make rex open a connection to the host, so
+// only this machine and the hosts in Options.Hosts (ABACUS_REX_HOSTS) are ever contacted. The
+// second result is the allowlist's own spelling of the host, which is what goes into argv.
+func (m *Module) classify(it core.WorkspaceItem) (hostKind, string) {
+	h := it.Host
+	switch {
+	case h == "" || strings.EqualFold(h, m.o.Hostname()):
+		return hostLocal, ""
+	case !ValidHost(h):
+		return hostInvalid, ""
 	}
-	return it.Host
+	for _, a := range m.o.Hosts {
+		if strings.EqualFold(a, h) {
+			return hostAllowed, a
+		}
+	}
+	return hostNotAllowed, ""
 }
 
 type hostRead struct {
-	host     string
-	items    []core.WorkspaceItem
-	sessions []session
-	err      error
+	host  string
+	items []core.WorkspaceItem
+	res   lsResult
+	stale bool
 }
 
 // Workspace places items among the sessions of the servers they live on: the local one, and any
-// one -S host a run already carries (at most maxHosts). A server that is not running is not an
-// error; one that fails degrades the report, keeping what the others found. A label claimed
-// twice is reported as ambiguous with its candidates.
+// configured -S host a run already carries (at most maxHosts). A server that is not running is
+// not an error; one that fails degrades the report, keeping what the others found. A label
+// claimed twice is reported as ambiguous with its candidates. An item on a machine nobody
+// configured is not contacted: it gets a placement saying so, with the command to copy.
 func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (core.WorkspaceReport, error) {
 	var reads []*hostRead
 	byHost := map[string]*hostRead{}
+	var unconfigured []core.WorkspaceItem
 	var skipped, badHost int
 	for _, it := range items {
-		h := m.hostOf(it)
-		if h != "" && !ValidHost(h) {
+		kind, h := m.classify(it)
+		switch kind {
+		case hostInvalid:
 			badHost++
 			continue
+		case hostNotAllowed:
+			unconfigured = append(unconfigured, it)
+			continue
 		}
-		r := byHost[h]
+		key := strings.ToLower(h)
+		r := byHost[key]
 		if r == nil {
 			if len(reads) >= maxHosts {
 				skipped++
 				continue
 			}
 			r = &hostRead{host: h}
-			byHost[h] = r
+			byHost[key] = r
 			reads = append(reads, r)
 		}
 		r.items = append(r.items, it)
@@ -401,7 +502,7 @@ func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (cor
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			r.sessions, r.err = m.sessions(ctx, r.host)
+			r.res, r.stale = m.read(ctx, r.host)
 		}()
 	}
 	wg.Wait()
@@ -412,15 +513,17 @@ func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (cor
 	var problems []string
 	for _, r := range reads {
 		switch {
-		case errors.Is(r.err, errNoServer):
+		case errors.Is(r.res.err, errNoServer):
 			continue
-		case r.err != nil:
-			problems = append(problems, r.err.Error())
+		case r.res.err != nil:
+			problems = append(problems, r.res.err.Error())
 			continue
 		}
 		rep.State, rep.Reason, rep.HowToConnect = core.Connected, "", ""
+		rep.Stale = rep.Stale || r.stale
+		rep.Truncated = rep.Truncated || r.res.truncated
 		for _, it := range r.items {
-			p, amb := place(it, r.sessions, m.o.LabelConventions)
+			p, amb := place(it, r.res.ss, m.o.LabelConventions)
 			if p != nil {
 				rep.Placements = append(rep.Placements, *p)
 			}
@@ -428,6 +531,9 @@ func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (cor
 				rep.Ambiguous = append(rep.Ambiguous, *amb)
 			}
 		}
+	}
+	for _, it := range unconfigured {
+		rep.Placements = append(rep.Placements, core.Placement{ID: core.PlacementID(it, it.Host, ""), Item: it, Host: it.Host, Match: core.MatchHostNotConfigured})
 	}
 	if skipped > 0 {
 		problems = append(problems, fmt.Sprintf("more than %d hosts; some were not read", maxHosts))
@@ -442,17 +548,35 @@ func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (cor
 	return rep, nil
 }
 
-// Open is the plan for one placement: the existing `rex -S <machine>` handoff, then the same
-// command to copy. The richer rungs (focus a window, open a new one, select a session) are
-// deferred until they have been verified against a real Rex; a rung is data, so adding one is a
-// new value here. Nothing is run. The argv carries only the machine name, never a label.
+// Open is the plan for one placement. Nothing is run here; a front-end runs a rung only on an
+// explicit keypress. The argv carries only the machine name, never a label, and uses the located
+// binary so the command shown is the command that works.
+//
+//   - a machine that was not configured for reads: no rung, only the command to copy
+//   - a machine: the handoff rung, then the same command to copy
+//   - no machine (a session on this one): no rung, the command to open the workspace and a note
+//     saying which session to pick. Focusing or selecting a session needs calls that have not been
+//     verified against a real Rex.
+//
+// Richer rungs are deferred; a rung is data, so adding one is a new value here.
 func (m *Module) Open(p core.Placement) core.OpenPlan {
-	if !ValidHost(p.Host) {
-		return core.OpenPlan{Rungs: []core.OpenRung{}, Note: "No machine is recorded for this item, so there is no command to run. Open Rex and look for the session named \"" + core.Sanitize(p.Label) + "\"."}
+	bin := m.Bin()
+	which := "Pick the session named \"" + safe(p.Label, core.MaxLabelRunes) + "\"."
+	if p.Label == "" {
+		which = "Pick the session for this item."
 	}
-	argv := HandoffArgv(p.Host)
-	return core.OpenPlan{Rungs: []core.OpenRung{{Name: RungHandoff, Argv: argv}}, Copy: core.ShellJoin(argv)}
+	switch {
+	case p.Host != "" && !ValidHost(p.Host):
+		return core.OpenPlan{Rungs: []core.OpenRung{}, Note: "This item's machine name is not safe to pass on, so there is no command to run. Open the terminal workspace and look for the item."}
+	case p.Host != "" && p.Match == core.MatchHostNotConfigured:
+		return core.OpenPlan{Rungs: []core.OpenRung{}, Copy: core.ShellJoin(core.HandoffArgv(bin, p.Host)),
+			Note: "This machine is not in the configured list of machines abacus may contact, so its sessions were not read. Run the command to open it yourself."}
+	case p.Host != "":
+		argv := core.HandoffArgv(bin, p.Host)
+		return core.OpenPlan{Rungs: []core.OpenRung{{Name: RungHandoff, Argv: argv, Interactive: true}}, Copy: core.ShellJoin(argv)}
+	}
+	if bin == "" {
+		bin = core.RexBin
+	}
+	return core.OpenPlan{Rungs: []core.OpenRung{}, Copy: core.ShellJoin([]string{bin}), Note: "Open the terminal workspace on this machine. " + which}
 }
-
-// HandoffArgv is the command that hands a machine to Rex.
-func HandoffArgv(host string) []string { return []string{"rex", "-S", host} }

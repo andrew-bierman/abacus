@@ -32,6 +32,10 @@ type fake struct {
 	resp  map[string]resp
 	calls []string
 	hang  bool // block until the context ends, like a hung rex
+	// barrier, when positive, makes a call wait until that many calls are in flight at once (or
+	// the context ends), so a test can prove reads run concurrently without timing.
+	barrier  int
+	inflight int
 }
 
 func (f *fake) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
@@ -40,7 +44,25 @@ func (f *fake) Run(ctx context.Context, name string, args ...string) ([]byte, in
 	f.calls = append(f.calls, key)
 	r, ok := f.resp[key]
 	hang := f.hang
+	f.inflight++
+	waiting := f.barrier > 0
 	f.mu.Unlock()
+	if waiting {
+		deadline := time.After(3 * time.Second)
+		for {
+			f.mu.Lock()
+			n := f.inflight
+			f.mu.Unlock()
+			if n >= f.barrier {
+				break
+			}
+			select {
+			case <-deadline:
+				return nil, -1, errors.New("calls were not concurrent")
+			case <-time.After(time.Millisecond):
+			}
+		}
+	}
 	if hang {
 		<-ctx.Done()
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
@@ -74,12 +96,18 @@ const (
 	verLocal = "--autostart=false version --json"
 )
 
+// testHosts are the machines the tests configure; CacheTTL -1 keeps every read fresh unless a
+// test is about the cache.
+var testHosts = []string{"mbp", "down", "bad", "h0", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10", "h11"}
+
 func newMod(f *fake, env map[string]string) *Module {
 	return New(Options{
 		LookPath: func(string) (string, error) { return "/fake/rex", nil },
 		Getenv:   func(k string) string { return env[k] },
 		Runner:   f,
 		Hostname: func() string { return "me" },
+		Hosts:    testHosts,
+		CacheTTL: -1,
 	})
 }
 
@@ -748,23 +776,66 @@ func TestHungRexIsBoundedAndCancelReturnsTheContextError(t *testing.T) {
 	}
 }
 
-func TestOpenPlanIsTheExistingHandoffThenTheCommandToCopy(t *testing.T) {
-	m := newMod(&fake{}, nil)
+func TestOpenPlanIsTheHandoffThenTheCommandToCopy(t *testing.T) {
+	m := newMod(&fake{}, nil) // not detected yet: no located binary, so the bare name
 	plan := m.Open(core.Placement{Host: "mbp", Label: "Lambe · LAM-1", Session: "s"})
-	if len(plan.Rungs) != 1 || plan.Rungs[0].Name != RungHandoff || strings.Join(plan.Rungs[0].Argv, " ") != "rex -S mbp" || plan.Copy != "rex -S mbp" {
+	if len(plan.Rungs) != 1 || plan.Rungs[0].Name != "handoff" || !plan.Rungs[0].Interactive || strings.Join(plan.Rungs[0].Argv, " ") != "rex -S mbp" || plan.Copy != "rex -S mbp" {
 		t.Fatalf("%+v", plan)
 	}
 	if got := m.Open(core.Placement{Host: "me@host.local"}); got.Copy != "rex -S me@host.local" {
 		t.Fatalf("%+v", got)
 	}
-	for _, h := range []string{"", "-x", "a b", "a;b"} {
+	// With a located binary, the handoff and the copy line use it.
+	d := readyMod(t, fleetFake(t), nil)
+	plan = d.Open(core.Placement{Host: "mbp"})
+	if strings.Join(plan.Rungs[0].Argv, " ") != "/fake/rex -S mbp" || plan.Copy != "/fake/rex -S mbp" {
+		t.Fatalf("the located binary must be used: %+v", plan)
+	}
+	for _, h := range []string{"-x", "a b", "a;b"} {
 		plan := m.Open(core.Placement{Host: h, Label: "work"})
-		if len(plan.Rungs) != 0 || plan.Copy != "" || !strings.Contains(plan.Note, "work") || plan.Rungs == nil {
+		if len(plan.Rungs) != 0 || plan.Copy != "" || plan.Note == "" || plan.Rungs == nil {
 			t.Errorf("host %q: %+v", h, plan)
 		}
 	}
 	if f := (&fake{}); len(f.called()) != 0 {
 		t.Fatal("Open must not run anything")
+	}
+}
+
+func TestOpenPlanForASessionOnThisMachineIsACopyPathNotARung(t *testing.T) {
+	m := newMod(&fake{}, nil)
+	plan := m.Open(core.Placement{Label: "Lambe · LAM-1"})
+	if plan.Rungs == nil || len(plan.Rungs) != 0 || plan.Copy != "rex" || !strings.Contains(plan.Note, "Lambe · LAM-1") {
+		t.Fatalf("%+v", plan)
+	}
+	if plan := m.Open(core.Placement{}); plan.Copy != "rex" || !strings.Contains(plan.Note, "this item") {
+		t.Fatalf("no label: %+v", plan)
+	}
+	d := readyMod(t, fleetFake(t), nil)
+	if plan := d.Open(core.Placement{Label: "x"}); plan.Copy != "/fake/rex" {
+		t.Fatalf("the located binary: %+v", plan)
+	}
+	// A label with quotes and control characters stays inside the note, never in the command.
+	plan = m.Open(core.Placement{Label: "a\x1b[2J\"; rm -rf /"})
+	if strings.ContainsRune(plan.Note, 0x1b) || strings.Contains(plan.Copy, "rm") {
+		t.Fatalf("%+v", plan)
+	}
+}
+
+func TestNoToolNamesInTheOpenPlanText(t *testing.T) {
+	m := newMod(&fake{}, nil)
+	for _, p := range []core.Placement{{Label: "x"}, {Host: "-x"}, {Host: "mbp", Match: core.MatchHostNotConfigured}} {
+		plan := m.Open(p)
+		for _, tool := range []string{"rex", "lambe", "beads", "board", "bd "} {
+			if strings.Contains(strings.ToLower(plan.Note), tool) {
+				t.Errorf("%+v: the note names %q: %q", p, tool, plan.Note)
+			}
+		}
+		for _, r := range plan.Rungs {
+			if strings.Contains(r.Name, "rex") {
+				t.Errorf("rung name %q", r.Name)
+			}
+		}
 	}
 }
 
@@ -936,5 +1007,261 @@ func TestLabelConventionsComeFromOptions(t *testing.T) {
 	}
 	if p, _ := rep.For(b); p == nil || p.Match != core.MatchLabel {
 		t.Fatalf("the default Lambe form is not exact under a custom list: %+v", p)
+	}
+}
+
+func TestValidHost(t *testing.T) {
+	for _, h := range []string{"mbp", "h0", "me@mbp.local", "host:22", "a-b.c_d", "user.name@host-1:65535", "10.0.0.1", "a", "Mbp", "u_1@h:1",
+		strings.Repeat("a", 63) + "." + strings.Repeat("b", 63) + "." + strings.Repeat("c", 63) + "." + strings.Repeat("d", 61)} { // 253 characters
+		if !ValidHost(h) {
+			t.Errorf("%q should be valid", h)
+		}
+	}
+	long := strings.Repeat("a", 63) + "." + strings.Repeat("b", 63) + "." + strings.Repeat("c", 63) + "." + strings.Repeat("d", 62)
+	for _, h := range []string{"", "a@b@c", "a:b:c", "host:", "host:0", "host:65536", "host:99999", "host:000000", ":22", "@host", "user@", "-h", "-oProxyCommand=x",
+		".h", "h.", "h..x", "h-", "-h-", "a b", "a;b", "a\nb", "a/b", "[::1]", "::1", "é", "h:a", "-u@h", "u@@h", "u@-h", "host:22:22", "a@:22",
+		strings.Repeat("u", 33) + "@h", long, "ssh://h", "h?x", "h#x", "h%20", "a\x00b", "h:+22"} {
+		if ValidHost(h) {
+			t.Errorf("%q should be invalid", h)
+		}
+	}
+	if len(long) != core.MaxHostRunes+1 {
+		t.Fatalf("test host is %d long", len(long))
+	}
+}
+
+func TestParseHostsAndPassEnvDropWhatIsInvalid(t *testing.T) {
+	if got := ParseHosts(" mbp , bad host,MBP,-x, me@h:22 ,,srv"); strings.Join(got, "|") != "mbp|me@h:22|srv" {
+		t.Fatalf("%q", got)
+	}
+	if got := ParseHosts(""); len(got) != 0 {
+		t.Fatalf("%q", got)
+	}
+	var many []string
+	for i := 0; i < 40; i++ {
+		many = append(many, fmt.Sprintf("h%d", i))
+	}
+	if got := ParseHosts(strings.Join(many, ",")); len(got) != 16 {
+		t.Fatalf("%d hosts", len(got))
+	}
+	if got := ParsePassEnv("SSH_AUTH_SOCK, LD_PRELOAD,DYLD_X,BASH_ENV,ENV,lower,A B,SSH_AUTH_SOCK,HTTPS_PROXY,1X,"); strings.Join(got, "|") != "SSH_AUTH_SOCK|HTTPS_PROXY" {
+		t.Fatalf("%q", got)
+	}
+	many = nil
+	for i := 0; i < 20; i++ {
+		many = append(many, fmt.Sprintf("V%d", i))
+	}
+	if got := ParsePassEnv(strings.Join(many, ",")); len(got) != 8 {
+		t.Fatalf("%d names", len(got))
+	}
+}
+
+func TestScrubEnvWithOptInKeepsOnlyNamedExtras(t *testing.T) {
+	in := []string{"HOME=/h", "SSH_AUTH_SOCK=/s", "HTTPS_PROXY=p", "DISPLAY=:0", "LD_PRELOAD=/x", "XDG_CURRENT_DESKTOP=d", "XDG_SESSION_ID=3", "XDG_CACHE_HOME=/c", "XDG_STATE_HOME=/st", "XDG_DATA_HOME=/d"}
+	if got := strings.Join(ScrubEnv(in), " "); got != "HOME=/h XDG_CACHE_HOME=/c XDG_STATE_HOME=/st XDG_DATA_HOME=/d" {
+		t.Fatalf("default: %s", got)
+	}
+	got := strings.Join(ScrubEnvWith([]string{"SSH_AUTH_SOCK", "LD_PRELOAD", "bad name"})(in), " ")
+	if got != "HOME=/h SSH_AUTH_SOCK=/s XDG_CACHE_HOME=/c XDG_STATE_HOME=/st XDG_DATA_HOME=/d" {
+		t.Fatalf("opt-in: %s", got)
+	}
+}
+
+func TestPassEnvReachesARealProcessOnlyWhenOptedIn(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "env.txt")
+	stub := filepath.Join(dir, "stub-not-rex")
+	script := "#!/bin/sh\n/usr/bin/env > \"$REX_TEST_OUT\"\ncase \"$*\" in *version*) echo '{\"api_revision\":13}';; *) echo '{\"sessions\":[]}';; esac\n"
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("REX_TEST_OUT", out)
+	t.Setenv("SSH_AUTH_SOCK", "/tmp/agent.sock")
+	for _, pass := range [][]string{nil, {"SSH_AUTH_SOCK"}} {
+		m := New(Options{Bin: stub, Getenv: func(string) string { return "" }, PassEnv: pass})
+		if d := m.Detect(context.Background()); d.State != core.Ready {
+			t.Fatalf("%+v", d)
+		}
+		b, _ := os.ReadFile(out)
+		if has := strings.Contains(string(b), "SSH_AUTH_SOCK=/tmp/agent.sock"); has != (pass != nil) {
+			t.Errorf("pass %v: SSH_AUTH_SOCK present = %v", pass, has)
+		}
+	}
+}
+
+func TestOnlyReadArgvsWithTheAutostartGuardInEveryPositionRun(t *testing.T) {
+	for _, a := range [][]string{
+		{"-S", "mbp", "--autostart=true", "ls", "--json"},
+		{"-S", "mbp", "--autostart", "ls", "--json"},
+		{"-S", "mbp", "--autostart=", "ls", "--json"},
+		{"-S", "mbp", "-autostart=false", "ls", "--json"},
+		{"-S", "mbp", "ls", "--autostart=false", "--json"},
+		{"-S", "mbp", "--autostart=false", "ls", "--json "},
+		{"-s", "mbp", "--autostart=false", "ls", "--json"},
+		{"-S", "mbp", "--autostart=false", "ls", "-json"},
+		{"-S", "mbp", "--autostart=false", "ls", "--json", ""},
+		{"--autostart=false", "ls", "--json", "x"},
+	} {
+		if allowedArgv(a) {
+			t.Errorf("%q must be refused", a)
+		}
+	}
+	if !allowedArgv([]string{"-S", "mbp", "--autostart=false", "ls", "--json"}) {
+		t.Error("the one remote read must stay allowed")
+	}
+}
+
+func TestOnlyThisMachineAndConfiguredHostsAreEverContacted(t *testing.T) {
+	f := fleetFake(t)
+	f.resp["-S mbp "+lsLocal] = resp{out: `{"sessions":[{"session_id":"r1","label":"Lambe · LAM-5"}]}`}
+	m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f,
+		Hostname: func() string { return "me" }, Hosts: []string{"MBP", "-bad", "a b"}, CacheTTL: -1})
+	detect(m)
+	f.calls = nil
+	items := []core.WorkspaceItem{
+		{Kind: core.WorkspaceRun, ID: "LAM-5", Host: "mbp"},          // configured (any case)
+		{Kind: core.WorkspaceRun, ID: "LAM-1", Host: "ME"},           // this machine
+		{Kind: core.WorkspaceRun, ID: "LAM-7", Host: "evil.example"}, // well-formed but nobody configured it
+		{Kind: core.WorkspaceRun, ID: "LAM-8", Host: "a b"},          // not even a name
+	}
+	rep, err := m.Workspace(context.Background(), items)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range f.called() {
+		if c != "-S MBP "+lsLocal && c != lsLocal {
+			t.Fatalf("contacted %q; the allowlist's spelling and this machine are all that may be", c)
+		}
+	}
+	if len(f.called()) != 2 {
+		t.Fatalf("%v", f.called())
+	}
+	p, _ := rep.For(items[2])
+	if p == nil || p.Match != core.MatchHostNotConfigured || p.Session != "" || p.Host != "evil.example" || p.ID == "" {
+		t.Fatalf("an unconfigured host is a placement that says so: %+v", p)
+	}
+	if p, _ := rep.For(items[3]); p != nil {
+		t.Fatalf("an invalid host is not placed: %+v", p)
+	}
+	if rep.State != core.Degraded || !strings.Contains(rep.Reason, "not safe") {
+		t.Fatalf("%+v", rep)
+	}
+	plan := m.Open(*p)
+	if len(plan.Rungs) != 0 || plan.Rungs == nil || plan.Copy != "/fake/rex -S evil.example" || !strings.Contains(plan.Note, "configured") {
+		t.Fatalf("copy-string handoff only, no rung: %+v", plan)
+	}
+	// no allowlist at all: every remote machine is "not configured"
+	m = New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f, Hostname: func() string { return "me" }, CacheTTL: -1})
+	detect(m)
+	f.calls = nil
+	rep, _ = m.Workspace(context.Background(), items[:1])
+	if len(f.called()) != 0 || len(rep.Placements) != 1 || rep.Placements[0].Match != core.MatchHostNotConfigured {
+		t.Fatalf("%v %+v", f.called(), rep)
+	}
+}
+
+func TestHostReadsRunConcurrently(t *testing.T) {
+	f := fleetFake(t)
+	for _, h := range []string{"h0", "h1", "h2"} {
+		f.resp["-S "+h+" "+lsLocal] = resp{out: `{"sessions":[]}`}
+	}
+	m := readyMod(t, f, nil)
+	f.mu.Lock()
+	f.calls, f.barrier, f.inflight = nil, 4, 0
+	f.mu.Unlock()
+	items := []core.WorkspaceItem{{ID: "LAM-1"}, {ID: "LAM-1", Host: "h0"}, {ID: "LAM-1", Host: "h1"}, {ID: "LAM-1", Host: "h2"}}
+	rep, err := m.Workspace(context.Background(), items)
+	if err != nil || rep.State != core.Connected {
+		t.Fatalf("four hosts must be read at the same time: %v %+v", err, rep)
+	}
+}
+
+func TestSessionListsAreCachedForAShortTTLAndMarkedStale(t *testing.T) {
+	now := time.Unix(1000, 0)
+	f := fleetFake(t)
+	m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f, Hostname: func() string { return "me" },
+		CacheTTL: 3 * time.Second, Now: func() time.Time { return now }})
+	detect(m)
+	f.calls = nil
+	it := []core.WorkspaceItem{{ID: "LAM-1"}}
+	first, _ := m.Workspace(context.Background(), it)
+	if first.Stale || len(f.called()) != 1 {
+		t.Fatalf("first read is fresh: %+v %v", first, f.called())
+	}
+	now = now.Add(2999 * time.Millisecond)
+	again, _ := m.Workspace(context.Background(), it)
+	m.Status(context.Background())
+	if !again.Stale || len(f.called()) != 1 || len(again.Placements) != 1 {
+		t.Fatalf("within the TTL the cached list is reused and marked stale: %+v %v", again, f.called())
+	}
+	now = now.Add(2 * time.Millisecond) // 3.001 s
+	fresh, _ := m.Workspace(context.Background(), it)
+	if fresh.Stale || len(f.called()) != 2 {
+		t.Fatalf("after the TTL it is read again: %+v %v", fresh, f.called())
+	}
+	// a new detection forgets the cache
+	detect(m)
+	f.calls = nil
+	m.Workspace(context.Background(), it)
+	if len(f.called()) != 1 {
+		t.Fatal("detect must clear the cache")
+	}
+}
+
+func TestASlowRexIsPaidForOncePerTTLAndACanceledReadIsNotCached(t *testing.T) {
+	now := time.Unix(1000, 0)
+	f := fleetFake(t)
+	m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f, Hostname: func() string { return "me" },
+		CallTimeout: 10 * time.Millisecond, CacheTTL: time.Minute, Now: func() time.Time { return now }})
+	detect(m)
+	f.mu.Lock()
+	f.hang, f.calls = true, nil
+	f.mu.Unlock()
+	it := []core.WorkspaceItem{{ID: "LAM-1"}}
+	for i := 0; i < 3; i++ {
+		rep, _ := m.Workspace(context.Background(), it)
+		if rep.State != core.Degraded {
+			t.Fatalf("%+v", rep)
+		}
+	}
+	if n := len(f.called()); n != 1 {
+		t.Fatalf("a hung rex must cost one call per TTL, not one per read: %d", n)
+	}
+	// a canceled read says nothing about rex and is not remembered
+	g := fleetFake(t)
+	m2 := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: g, Hostname: func() string { return "me" }, CacheTTL: time.Minute})
+	detect(m2)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	m2.Workspace(ctx, it)
+	g.calls = nil
+	if rep, _ := m2.Workspace(context.Background(), it); rep.State != core.Connected || len(g.called()) != 1 {
+		t.Fatalf("%+v %v", rep, g.called())
+	}
+}
+
+func TestTruncationIsSurfacedAsAMarker(t *testing.T) {
+	for _, tc := range []struct {
+		n     int
+		trunc bool
+	}{{500, false}, {501, true}} {
+		f := &fake{resp: map[string]resp{lsLocal: {out: sessionsJSON(tc.n)}, verLocal: {out: fixture(t, "version-13.json")}}}
+		m := readyMod(t, f, nil)
+		rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{{ID: "LAM-1"}})
+		if rep.Truncated != tc.trunc {
+			t.Errorf("%d sessions: truncated = %v", tc.n, rep.Truncated)
+		}
+		if st := m.Status(context.Background()); (st.Summary == "500+ sessions") != tc.trunc || st.Summary == "" {
+			t.Errorf("%d sessions: status %q", tc.n, st.Summary)
+		}
+	}
+}
+
+func TestStatusSaysSessionInTheSingular(t *testing.T) {
+	for n, want := range map[int]string{0: "0 sessions", 1: "1 session", 2: "2 sessions"} {
+		f := &fake{resp: map[string]resp{lsLocal: {out: sessionsJSON(n)}, verLocal: {out: fixture(t, "version-13.json")}}}
+		if st := readyMod(t, f, nil).Status(context.Background()); st.Summary != want {
+			t.Errorf("%d: %q, want %q", n, st.Summary, want)
+		}
 	}
 }

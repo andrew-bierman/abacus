@@ -10,7 +10,6 @@ import (
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/lambe"
-	"github.com/andrew-bierman/abacus/internal/rex"
 )
 
 // stubRex writes a script that is not Rex: it answers the two reads from fixed text, so no real
@@ -147,7 +146,7 @@ func TestStatusGainsAWorkspaceOnlyWhenRexPlacesSomething(t *testing.T) {
 func TestTheFirstRungIsTheExistingRexHandoff(t *testing.T) {
 	m := lambe.New(lambe.Options{})
 	for _, host := range []string{"mbp", "me@host.local"} {
-		if a, b := strings.Join(m.RexArgv(host), " "), strings.Join(rex.HandoffArgv(host), " "); a != b {
+		if a, b := strings.Join(m.RexArgv(host), " "), strings.Join(core.HandoffArgv("", host), " "); a != b {
 			t.Errorf("%q != %q", a, b)
 		}
 	}
@@ -172,5 +171,17 @@ func TestDemoRegistryProvidesDemoPlacementsWithoutRex(t *testing.T) {
 	}
 	if plan := p.Open(rep.Placements[0]); len(plan.Rungs) != 0 || plan.Copy != "rex -S operators-mac" {
 		t.Fatalf("a demo plan runs nothing: %+v", plan)
+	}
+}
+
+// A machine a run carries is only contacted when the user listed it in ABACUS_REX_HOSTS.
+func TestABACUS_REX_HOSTSIsTheOnlyWayToContactAnotherMachine(t *testing.T) {
+	items := []core.WorkspaceItem{{Kind: core.WorkspaceRun, ID: "T-1", Host: "mbp"}}
+	for hosts, want := range map[string]core.PlacementMatch{"": core.MatchHostNotConfigured, "other": core.MatchHostNotConfigured, "mbp": core.MatchExact, "x, MBP": core.MatchExact} {
+		e := env(t, map[string]string{"ABACUS_REX_BIN": stubRex(t, "up"), "ABACUS_REX_HOSTS": hosts})
+		rep := core.ReadWorkspace(context.Background(), Build(cli.Options{}, e).Detect(context.Background()), items)
+		if len(rep.Placements) != 1 || rep.Placements[0].Match != want {
+			t.Errorf("hosts %q: %+v, want %s", hosts, rep, want)
+		}
 	}
 }
