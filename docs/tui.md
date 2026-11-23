@@ -3,7 +3,7 @@
 The TUI renders core's typed domain reports and holds no logic of its own. It is the fleet
 cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. Tasks is abacus's own work
 browser: every task listed, sorted and filtered, with a detail pane (see "Tasks" below); the
-kanban, graph and tree views are planned in `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`.
+the dependency graph is the Graph view (below); the kanban and tree views are planned in `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`.
 The `o` handoff to the full b9s view stays as an optional extra. The Board is a message board for agents: channels,
 recent threads and open tasks, with the selected thread or task shown in full below the list. Providers (the tools behind each domain)
 are named only in Doctor and in "how to connect" or error messages, never in navigation.
@@ -32,7 +32,8 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues and Tasks, narrow layout only: open the detail; `esc` closes it, a second `esc` clears the filter. Tasks, wide layout: `enter` focuses the detail to scroll it, `esc` leaves |
 | `/` | Queues: filter runs by issue, state, phase, machine or workflow. Tasks: the query (below); `enter` keeps it, `esc` clears it |
-| `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Insights) |
+| `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Graph, Insights) |
+| `g` | Tasks list: open the dependency graph on the selected task. In the Graph view: switch between the task's neighborhood and the whole graph. `[` `]` change the depth, `h` `l` step to a sibling (a layer in the whole graph), `enter` refocuses on the selected node (on the focus itself, or in the whole graph, it opens that task in the list), `esc` returns to the list |
 | `ctrl+k` | global search from any tab (see "Global search"); not offered while a form, the confirm screen or a filter is open |
 | `?` | full help overlay; `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
@@ -108,6 +109,17 @@ differ by a refresh.)
   notice says `tracker too large to load quickly` and the next try is five minutes later, or at once on
   `r` or after a write. A write that lands while a read is in flight triggers one more read at once,
   and until it lands the notice says the list may not show your last change.
+- **Graph.** `g` on a list row (or `v`) shows what blocks the task and what it blocks, from the same
+  snapshot. From 100 columns the neighborhood is boxes with connectors (the focus in a double
+  border, the selected node heavy, closed work muted) beside a Chain panel; below 100 columns it is
+  an indented outline that never overflows. `g` again shows the whole graph: every task with a blocking
+  link in topological layers (layer 0 is what nothing blocks), the longest chain of unfinished work
+  marked `*`, cycles listed explicitly (`~`), a task that depends on itself (`!`) and a blocker that
+  is not in the tracker (`?`). A task with many links collapses into `+N more`. Layout is
+  `internal/taskview/graphlayout.go`: deterministic (the same tasks in any order draw the same), ids
+  break every tie, connectors are drawn only between neighboring layers (other links are counted),
+  and the graph engine's bottlenecks are marked `^`. `abacus tasks graph [ID | --whole] [--depth N]
+  [--json]` prints the same view.
 - **Insights view.** `n` works from any view; `e`, `x` and the workspace key act on the list's task,
   which this view does not show, so they only say `switch to the List view (v)`.
 - **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e` and `x` forms and

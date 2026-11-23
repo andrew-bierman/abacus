@@ -51,8 +51,8 @@ and isolation as above, prefix `gr`, captured 2026-11-23). It was built with the
 diamond (`Snapshot reader` closed, then `Parse export` in progress and `Sanitize text` blocking
 `Graph layout`, which blocks `Graph view` and `Graph docs`), a chain of eight steps (the first two
 closed, the third in progress), a hub that blocks twelve tasks, a disconnected pair, a lone task,
-a task with ANSI escape and bidi characters in its title, and a wide-rune title. The only thing
-changed after capture is nothing: the file is the export as written.
+a task with ANSI escape and bidi characters in its title, and a wide-rune title. The file is the
+export exactly as `bd` wrote it.
 
 `graph-export-edges.jsonl` is **not** a bd capture of those edges. bd 1.3.4 refuses to create
 them, so the file is `graph-export.jsonl` with three dependency records added by hand (the same

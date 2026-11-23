@@ -8,6 +8,14 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Dependency graph view in Tasks (U5 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): `g` on
+  a task (or `v`) shows what blocks it and what it blocks, as boxes with connectors from 100 columns
+  and an indented outline below; `g` again shows the whole graph in topological layers with the
+  longest chain of unfinished work, cycles, self-dependencies and missing blockers marked. `[` `]`
+  depth, `h` `l` siblings or layers, `enter` refocuses or opens the task in the list. The layout is
+  pure and deterministic (`internal/taskview/graphlayout.go`, typed `core.GraphView`); the engine's
+  bottlenecks are marked on the nodes. `abacus tasks graph [ID | --whole] [--json]` prints the same
+  view. The Tasks view strip is now `List Graph Insights`.
 - Tasks is a real work browser (U1 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): every
   task listed (no 8-row cap) with a full-row cursor, status mark, priority, blocked-by and blocks
   marks, type, age, assignee and (from 140 columns) labels; a detail pane with the description,
