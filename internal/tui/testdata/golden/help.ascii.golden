@@ -5,11 +5,11 @@ Keys
   tab/→         next tab
   shift+tab/←   prev tab
   1-9           jump to tab
+  ctrl+k        search everything
   ?             help
   q             quit
 
   ↑/↓           move
-  enter         details
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  [Board]  Tasks  Leases  Queues  Doctor
@@ -18,6 +18,7 @@ Keys
 │ tab/→         next tab               │
 │ shift+tab/←   prev tab               │
 │ 1-9           jump to tab            │
+│ ctrl+k        search everything      │
 │ ?             help                   │
 │ q             quit                   │
 │                                      │
@@ -40,7 +41,6 @@ Keys
 
 
 
-
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
@@ -49,11 +49,11 @@ Keys
   tab/→         next tab
   shift+tab/←   prev tab
   1-9           jump to tab
+  ctrl+k        search everything
   ?             help
   q             quit
 
   ↑/↓           move
-  enter         details
 ? help · q quit · tab/→ next tab · ↑/↓ move · enter details · r refresh
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
@@ -62,6 +62,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ tab/→         next tab                                                       │
 │ shift+tab/←   prev tab                                                       │
 │ 1-9           jump to tab                                                    │
+│ ctrl+k        search everything                                              │
 │ ?             help                                                           │
 │ q             quit                                                           │
 │                                                                              │
@@ -84,7 +85,6 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 
 
-
 ? help · q quit · tab/→ next tab · ↑/↓ move · enter details · r refresh
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
@@ -93,11 +93,11 @@ Keys
   tab/→         next tab
   shift+tab/←   prev tab
   1-9           jump to tab
+  ctrl+k        search everything
   ?             help
   q             quit
 
   ↑/↓           move
-  r             refresh
 ? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
@@ -106,6 +106,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ tab/→         next tab                                                                                               │
 │ shift+tab/←   prev tab                                                                                               │
 │ 1-9           jump to tab                                                                                            │
+│ ctrl+k        search everything                                                                                      │
 │ ?             help                                                                                                   │
 │ q             quit                                                                                                   │
 │                                                                                                                      │
@@ -114,7 +115,6 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                                                                                      │
 │ ? or esc closes                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 

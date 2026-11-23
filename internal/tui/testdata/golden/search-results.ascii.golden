@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────╮
+│ search task▏                  6 hits │
+│ Tasks (2)                            │
+│ ▸ ac-01  Fleet wor…  open · P1 · mei │
+│   ac-12  wire the …  in progress · … │
+│                                      │
+│ Queues (4)                           │
+│   H-2    gate red …  history         │
+│   ↕ +3 more                          │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 40x30 ===
+ [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────╮
+│ search task▏                  6 hits │
+│ Tasks (2)                            │
+│ ▸ ac-01  Fleet wor…  open · P1 · mei │
+│   ac-12  wire the …  in progress · … │
+│                                      │
+│ Queues (4)                           │
+│   H-2    gate red …  history         │
+│   H-1    restart i…  history         │
+│   Q-1    ready task  queued · ready  │
+│   Q-2    blocked t…  queued · block… │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search task▏                                                          6 hits │
+│ Tasks (2)                                                                    │
+│ ▸ ac-01  Fleet workspace · …at is running - tasks s…  open · P1 · mei        │
+│   ac-12  wire the lease heartbeat                     in progress · P0 · ada │
+│                                                                              │
+│ Queues (4)                                                                   │
+│   H-2    gate red task                                history                │
+│   ↕ +3 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
+│ search task▏                                                          6 hits │
+│ Tasks (2)                                                                    │
+│ ▸ ac-01  Fleet workspace · …at is running - tasks s…  open · P1 · mei        │
+│   ac-12  wire the lease heartbeat                     in progress · P0 · ada │
+│                                                                              │
+│ Queues (4)                                                                   │
+│   H-2    gate red task                                history                │
+│   H-1    restart interrupted task                     history                │
+│   Q-1    ready task                                   queued · ready         │
+│   Q-2    blocked task                                 queued · blocked       │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search task▏                                                                                                  6 hits │
+│ Tasks (2)                                                                                                            │
+│ ▸ ac-01  Fleet workspace · …at is running - tasks show what is next Keep eve…                 open · P1 · mei        │
+│   ac-12  wire the lease heartbeat                                                             in progress · P0 · ada │
+│                                                                                                                      │
+│ Queues (4)                                                                                                           │
+│   H-2    gate red task                                                                        history                │
+│   ↕ +3 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ search task▏                                                                                                  6 hits │
+│ Tasks (2)                                                                                                            │
+│ ▸ ac-01  Fleet workspace · …at is running - tasks show what is next Keep eve…                 open · P1 · mei        │
+│   ac-12  wire the lease heartbeat                                                             in progress · P0 · ada │
+│                                                                                                                      │
+│ Queues (4)                                                                                                           │
+│   H-2    gate red task                                                                        history                │
+│   H-1    restart interrupted task                                                             history                │
+│   Q-1    ready task                                                                           queued · ready         │
+│   Q-2    blocked task                                                                         queued · blocked       │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────╮
+│ search task▏                                      6 hits │
+│ Tasks (2)                                                │
+│ ▸ ac-01  Fleet workspace          open · P1 · mei        │
+│   ac-12  wire the lease heartbe…  in progress · P0 · ada │
+│                                                          │
+│ Queues (4)                                               │
+│   H-2    gate red task            history                │
+│   H-1    restart interrupted ta…  history                │
+│   Q-1    ready task               queued · ready         │
+│   Q-2    blocked task             queued · blocked       │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
+│ search task▏                                                                              6 hits │
+│ Tasks (2)                                                                                        │
+│ ▸ ac-01  Fleet workspace · …at is running - tasks show what is next Kee…  open · P1 · mei        │
+│   ac-12  wire the lease heartbeat                                         in progress · P0 · ada │
+│                                                                                                  │
+│ Queues (4)                                                                                       │
+│   H-2    gate red task                                                    history                │
+│   H-1    restart interrupted task                                         history                │
+│   Q-1    ready task                                                       queued · ready         │
+│   Q-2    blocked task                                                     queued · blocked       │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
