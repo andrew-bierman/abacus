@@ -147,6 +147,9 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
 	out, exit, err := m.o.Runner.Run(ctx, bin, "version", "--json")
+	if p := core.BuiltInExecProblem(bin, exit, err); p != "" {
+		return core.Detection{State: core.Broken, Detail: p}
+	}
 	if err != nil {
 		return core.Detection{State: core.Broken, Detail: "lambe version --json could not run: " + core.Sanitize(err.Error())}
 	}

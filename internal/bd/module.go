@@ -152,6 +152,9 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	cctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
 	out, exit, err := m.o.Runner.Run(cctx, m.Bin(), readVersion...)
+	if p := core.BuiltInExecProblem(m.Bin(), exit, err); p != "" {
+		return core.Detection{State: core.Broken, Detail: p}
+	}
 	if err != nil {
 		return core.Detection{State: core.Broken, Detail: "bd version could not run: " + core.Sanitize(err.Error())}
 	}

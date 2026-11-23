@@ -84,6 +84,9 @@ func (c *capBuf) Write(p []byte) (int, error) {
 }
 
 func (r ExecRunner) RunSplit(ctx context.Context, name string, args ...string) ([]byte, []byte, int, error) {
+	if err := CheckBuiltIn(name); err != nil { // a built-in copy replaced since it was checked is not run
+		return nil, nil, -1, err
+	}
 	timeout := r.Timeout
 	if timeout <= 0 {
 		timeout = DefaultExecTimeout

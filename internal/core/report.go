@@ -93,6 +93,7 @@ func VersionReport(version string, entries []Entry) Report {
 // check; an incompatible tool is a warn.
 func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 	r := newReport(version)
+	ClearEmbeddedFailures() // a Doctor run tries a failed built-in tool again
 	dom := readDomainsLite(ctx, entries)
 	ov := overviewFrom(entries, dom)
 	r.Overview = &ov

@@ -48,6 +48,10 @@ func Run(args []string, d Deps) int {
 		return core.ExitUsage
 	}
 	cmd, rest := args[0], args[1:]
+	// The first start unpacks the built-in tools (a few seconds): say so on stderr rather than
+	// leaving a blank terminal. Nothing is printed when they are already unpacked.
+	core.PrepareNotice = func() { fmt.Fprintln(d.Err, "Preparing built-in tools (first run only)…") }
+	defer func() { core.PrepareNotice = nil }()
 	switch cmd {
 	case "version", "doctor", "status", "tui":
 	case "tasks", "leases", "queues", "board":

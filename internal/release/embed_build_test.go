@@ -57,9 +57,17 @@ func TestTheEmbedtoolsBuildCompilesWithAFixtureSetAndRunsIt(t *testing.T) {
 	}
 	ver := run("version")
 	// The fixture tools do not speak the tools' protocols, so they read as incompatible; what this
-	// checks is where they ran from and that this is an embedded build.
-	if !strings.Contains(ver, filepath.Join("d", "abacus", "tools")) || !strings.Contains(ver, "Built-in tools: ") {
-		t.Fatalf("the tools must run from the private cache:\n%s", ver)
+	// checks is that this is an embedded build, that the tools it needs were unpacked into the private
+	// cache, and that the Board CLI was not (it is unpacked on first use).
+	if !strings.Contains(ver, "Built-in tools: ") {
+		t.Fatalf("not an embedded build:\n%s", ver)
+	}
+	dirs, _ := filepath.Glob(filepath.Join(tmp, "d", "abacus", "tools", "*", "bd"))
+	if len(dirs) != 1 {
+		t.Fatalf("bd was not unpacked into the private cache:\n%s", ver)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(dirs[0]), "board")); err == nil {
+		t.Fatal("the Board CLI must not be unpacked by `abacus version`")
 	}
 	if strings.Contains(ver, "Development build") {
 		t.Fatalf("an embedtools build is not a development build:\n%s", ver)

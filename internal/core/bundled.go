@@ -1,8 +1,13 @@
 package core
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"syscall"
 )
 
 // abacus carries its own bd, lambe, beads-lease and Vercel Board CLI inside the binary (see
@@ -56,6 +61,9 @@ func bundledFix(refused string) string {
 	}
 	return "Choose a folder you can write to with " + ToolsDirEnv + "=<folder>, then press r."
 }
+
+// BuiltInFix is the one user-level fix for an absent built-in tool whose detail is given.
+func BuiltInFix(detail string) string { return bundledFix(refusedReason(detail)) }
 
 // BundledProblem is the sentence for a built-in tool abacus cannot use.
 func BundledProblem(tool, refused string) string {
@@ -180,4 +188,35 @@ func bundledNote(id string, d Detection) string {
 		return "the copy next to abacus was not used (" + d.Ignored + ")"
 	}
 	return ""
+}
+
+// BuiltInExecProblem says, in plain words, why a built-in tool could not even be started: the
+// folder it was unpacked into does not allow running programs (a noexec mount), or the system
+// blocked it (macOS quarantine or Gatekeeper, a security tool), or the system killed it with a
+// signal right away. "" when path is not a built-in copy or the failure is something else (a timeout,
+// a normal exit code). The one shared wording; every module's Detect uses it.
+func BuiltInExecProblem(path string, exit int, err error) string {
+	if !IsBuiltInPath(path) || errors.Is(err, ErrTimedOut) || errors.Is(err, ErrCanceled) || errors.Is(err, ErrOutputTooLarge) {
+		return ""
+	}
+	var why string
+	switch {
+	case err != nil:
+		low := strings.ToLower(err.Error())
+		if !(errors.Is(err, fs.ErrPermission) || errors.Is(err, syscall.EACCES) || errors.Is(err, syscall.EPERM) || errors.Is(err, syscall.ENOEXEC) ||
+			strings.Contains(low, "permission denied") || strings.Contains(low, "not permitted") || strings.Contains(low, "exec format")) {
+			return ""
+		}
+		why = plainWhy(err)
+	case exit < 0:
+		why = "it was stopped by a signal"
+	default:
+		return ""
+	}
+	dir := filepath.Dir(path)
+	msg := fmt.Sprintf("The built-in %s could not be started from %s (%s). This folder may not allow running programs, or the system blocked it: choose another folder with %s=<folder>, then press r.", filepath.Base(path), dir, why, ToolsDirEnv)
+	if runtime.GOOS == "darwin" {
+		msg += " If macOS blocked it, you can also run: xattr -dr com.apple.quarantine " + dir
+	}
+	return msg
 }

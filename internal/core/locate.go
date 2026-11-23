@@ -246,8 +246,7 @@ func CleanupSidecarEnv() {
 // the sidecar. "" when there is none.
 func toolPath(t string) string {
 	if EmbeddedEnabled() {
-		p, _ := ResolveEmbedded(t)
-		return p
+		return ResolvedEmbedded(t) // only what is already set up: a child's PATH never forces an extraction
 	}
 	p, _ := sidecar(t)
 	return p

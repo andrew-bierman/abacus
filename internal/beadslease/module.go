@@ -110,7 +110,11 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	m.hasDoctor = false
 	// Only non-JSON or api_version-less output (an older binary) takes the legacy path; an
 	// explicit unsupported api_version is incompatible.
-	if out, exit, err := m.run.Run(ctx, bin, "version", "--json"); err == nil && exit == 0 {
+	vout, vexit, verr := m.run.Run(ctx, bin, "version", "--json")
+	if p := core.BuiltInExecProblem(bin, vexit, verr); p != "" {
+		return core.Detection{State: core.Broken, Detail: p}
+	}
+	if out, exit, err := vout, vexit, verr; err == nil && exit == 0 {
 		var v versionInfo
 		if json.Unmarshal(out, &v) == nil && v.APIVersion != nil {
 			ver := core.Sanitize(v.Version)

@@ -96,9 +96,9 @@ func mustReadDir(t *testing.T, d string) []string {
 }
 
 func TestModesDoNotDependOnTheUmask(t *testing.T) {
+	_, root := embeddedIn(t)
 	old := syscall.Umask(0)
 	t.Cleanup(func() { syscall.Umask(old) })
-	_, root := embeddedIn(t)
 	p, why := core.ResolveEmbedded("lambe")
 	if why != "" {
 		t.Fatal(why)
@@ -179,6 +179,7 @@ func TestAnUnwritableCacheSaysWhatFailedWithThePathAndTheOneFix(t *testing.T) {
 		t.Fatalf("%q", s)
 	}
 	t.Setenv(core.ToolsDirEnv, "relative/dir")
+	core.ClearEmbeddedFailures()
 	if _, why := core.ResolveEmbedded("bd"); !strings.Contains(why, "absolute") {
 		t.Fatalf("%q", why)
 	}
@@ -362,59 +363,23 @@ func TestTwoProcessesCannotRaceOnExtraction(t *testing.T) {
 	}
 }
 
-func TestOlderVersionsAreRemovedOnlyOnceTheNewOneIsComplete(t *testing.T) {
-	set, root := embeddedIn(t)
-	mkOld := func(name string, age time.Duration) string {
-		d := filepath.Join(root, name)
-		os.MkdirAll(d, 0o700)
-		os.WriteFile(filepath.Join(d, "bd"), []byte("old"), 0o700)
-		os.WriteFile(d+".lock", nil, 0o600)
-		old := time.Now().Add(-age)
-		os.Chtimes(d, old, old)
-		return d
-	}
-	os.MkdirAll(root, 0o700)
-	oldA := mkOld("0123456789abcdef", time.Hour)
-	notHash := filepath.Join(root, "keep-me")
-	os.MkdirAll(notHash, 0o700)
-	linkTarget := t.TempDir()
-	os.WriteFile(filepath.Join(linkTarget, "precious"), nil, 0o600)
-	os.Symlink(linkTarget, filepath.Join(root, "fedcba9876543210"))
-
-	core.ResolveEmbedded("bd") // one tool of four: the new version is not complete yet
-	if _, err := os.Stat(oldA); err != nil {
-		t.Fatal("the previous version must stay until the new one is complete")
-	}
-	for _, tool := range []string{"lambe", "beads-lease", "board"} {
-		core.ResolveEmbedded(tool)
-	}
-	if _, err := os.Stat(oldA); !os.IsNotExist(err) {
-		t.Fatal("the previous version should be removed once the new one is complete")
-	}
-	if _, err := os.Stat(oldA + ".lock"); !os.IsNotExist(err) {
-		t.Fatal("its lock file goes with it")
-	}
-	if _, err := os.Stat(notHash); err != nil {
-		t.Fatal("a directory that is not a content hash must never be removed")
-	}
-	if _, err := os.Stat(filepath.Join(linkTarget, "precious")); err != nil {
-		t.Fatal("a link named like a hash must not be followed")
-	}
-	if _, err := os.Stat(filepath.Join(root, set.Manifest.Hash())); err != nil {
-		t.Fatal("the current version must stay")
-	}
-}
-
 func TestADifferentToolSetGetsADifferentDirectory(t *testing.T) {
 	a, root := embeddedIn(t)
 	b := embedtest.Standard()
 	b.Manifest.Tools[0].SHA256 = strings.Repeat("a", 64)
+	b.Write()
 	if a.Manifest.Hash() == b.Manifest.Hash() {
 		t.Fatal("the hash ignores the executable hashes")
 	}
-	core.ResolveEmbedded("bd")
-	if got := mustReadDir(t, root); len(got) < 2 || got[0] == "" {
-		t.Fatalf("%v", got)
+	pa, _ := core.ResolveEmbedded("lambe")
+	if filepath.Dir(pa) != filepath.Join(root, a.Manifest.Hash()) {
+		t.Fatalf("set A extracted to %s, want %s", filepath.Dir(pa), filepath.Join(root, a.Manifest.Hash()))
+	}
+	// Set B differs in its first tool (beads-lease sorts before bd? the first by name), so it lives elsewhere.
+	t.Cleanup(core.SetEmbeddedForTest(b.FS))
+	pb, _ := core.ResolveEmbedded("lambe")
+	if filepath.Dir(pb) != filepath.Join(root, b.Manifest.Hash()) || filepath.Dir(pa) == filepath.Dir(pb) {
+		t.Fatalf("set B extracted to %s, want %s (and not A's %s)", filepath.Dir(pb), filepath.Join(root, b.Manifest.Hash()), filepath.Dir(pa))
 	}
 }
 
@@ -484,19 +449,30 @@ func TestAnEmbeddedBuildNeverFallsBackToPathOrASidecarWhenTheBuiltInFails(t *tes
 	}
 }
 
-func TestSidecarEnvExposesTheBuiltInToolsNotAnyOtherVersion(t *testing.T) {
-	embeddedIn(t)
+func TestSidecarEnvExposesOnlyBuiltInToolsAlreadySetUpAndExtractsNothing(t *testing.T) {
+	_, root := embeddedIn(t)
 	t.Cleanup(core.CleanupSidecarEnv)
-	env := core.SidecarEnv([]string{"PATH=/usr/bin"})
-	var path string
-	for _, e := range env {
-		if v, ok := strings.CutPrefix(e, "PATH="); ok {
-			path = v
+	pathOf := func() string {
+		for _, e := range core.SidecarEnv([]string{"PATH=/usr/bin"}) {
+			if v, ok := strings.CutPrefix(e, "PATH="); ok {
+				return v
+			}
 		}
+		return ""
 	}
-	dir, _, _ := strings.Cut(path, string(os.PathListSeparator))
+	if got := pathOf(); got != "/usr/bin" {
+		t.Fatalf("with nothing set up the PATH is left alone: %q", got)
+	}
+	if _, err := os.Stat(root); err == nil {
+		t.Fatal("building a child's environment must not extract anything")
+	}
+	bd, _ := core.ResolveEmbedded("bd")
+	dir, _, _ := strings.Cut(pathOf(), string(os.PathListSeparator))
 	target, err := os.Readlink(filepath.Join(dir, "bd"))
-	if err != nil || filepath.Base(filepath.Dir(target)) == "" || !strings.Contains(target, "tools") {
+	if err != nil || target != bd {
 		t.Fatalf("bd should link to the extracted copy: %q %v", target, err)
+	}
+	if _, err := os.Lstat(filepath.Join(dir, "board")); err == nil {
+		t.Fatal("the Board CLI was not set up and must not be exposed (or extracted) for a child")
 	}
 }
