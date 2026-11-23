@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -32,10 +33,12 @@ type Deps struct {
 	Setup func(entries []core.Entry) *core.Setup
 	// Config is the abacus config file; the zero value means the default path.
 	Config core.ConfigStore
+	// Now is the clock for ages in the task views; nil means time.Now.
+	Now func() time.Time
 }
 
 func usage(d Deps) {
-	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks create|update|close change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n\nfirst run:\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
+	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show browse; tasks create|update|close change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n\nfirst run:\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
 }
 
 // Run dispatches a command and returns the process exit code.
