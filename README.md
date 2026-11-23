@@ -52,7 +52,8 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
 `abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders, and
-`abacus tasks list|show` print the task list and one task in full (`--query`, `--sort`, `--json`).
+`abacus tasks list|show` print the task list and one task in full (`--query`, `--sort`, `--json`), and
+`abacus search "QUERY"` (or `ctrl+k` in the TUI) searches every domain at once.
 
 ## First run
 
@@ -268,6 +269,7 @@ abacus board|tasks|leases|queues [--json]
 abacus tasks create [--title T] [--description D] [--priority N] [--type X] [--yes] [--dry-run]
 abacus tasks update ID [--title T] [--description D] [--priority N] [--status S] [--yes] [--dry-run]
 abacus tasks close  ID [--reason R] [--yes] [--dry-run]
+abacus search QUERY [--domain D] [--limit N] [--json]   search tasks, board, leases and queues
 abacus tui     [--demo]
 abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
 abacus config  show [--json] | get KEY | set KEY VALUE | path

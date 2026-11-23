@@ -33,6 +33,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `enter`, `esc` | Queues and Tasks, narrow layout only: open the detail; `esc` closes it, a second `esc` clears the filter. Tasks, wide layout: `enter` focuses the detail to scroll it, `esc` leaves |
 | `/` | Queues: filter runs by issue, state, phase, machine or workflow. Tasks: the query (below); `enter` keeps it, `esc` clears it |
 | `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Insights) |
+| `ctrl+k` | global search from any tab (see "Global search"); not offered while a form, the confirm screen or a filter is open |
 | `?` | full help overlay; `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
@@ -131,6 +132,34 @@ control character is shown quoted, as an escape, so nothing is hidden between th
 runs. While a form or confirm screen is open, its own keys lead the footer, so a narrow footer cuts
 "? help" and the tab hint first. None of this changes the gate: nothing writes before `y` on the
 confirm screen, and a state that hides a screen still blocks keys.
+
+## Global search
+
+`ctrl+k` opens a search box over every domain: Tasks (id, title, labels, description and comment
+text), Board (threads, their latest reply and open tasks), Leases and Queues (runs, queued items,
+what needs attention, history). It is live as you type, groups the hits by domain (best 20 each,
+`+N more` for the rest) and uses the same query grammar as the Tasks `/` filter: words, `"a phrase"`,
+`field:value`, `!field:value`, `status:open,blocked`, `priority:<=1`, `updated>7d`, `in:board`,
+`who:ada` (also `assignee:`, `author:`, `holder:`, `machine:`), `is:blocked`, `is:ready`,
+`is:stale`. A field a domain does not have excludes that domain, so `label:ui` finds tasks only.
+
+| Key (while the box is open) | Action |
+| --- | --- |
+| type, `backspace`, `ctrl+u` | edit the query (up to 256 characters) |
+| `up` `down` | move the cursor over the hits |
+| `tab` `shift+tab` | next, previous domain group |
+| `enter` | jump to the hit's tab with the row selected; if that tab's own filter hides it, the filter is cleared and the footer says so |
+| `ctrl+p` `ctrl+n` | step through earlier queries (with an empty query the box lists them: `enter` reuses one) |
+| `esc`, `ctrl+k` | close |
+
+Search reads what each tab already holds; opening it runs nothing, except one read of a domain
+that never loaded (the Board, until its tab is first shown). A domain read longer ago than twice
+its refresh interval is marked "may be out of date". A domain that is not connected, still loading
+or unreadable is named in one muted line. The last 100 queries that led to a jump are kept in the
+abacus state directory (`search-history.json`, mode 0600, never in a tracker directory; a demo
+session keeps none). `abacus search "QUERY" [--domain D] [--limit N] [--json]` prints the same hits
+(exit 0 with an answer, 1 when no domain could be searched, 2 for a bad invocation or query; nothing
+on stdout on a failure under `--json`).
 
 ## Board
 
