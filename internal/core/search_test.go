@@ -419,3 +419,35 @@ func FuzzSnippetAround(f *testing.F) {
 		}
 	})
 }
+
+// A multi-megabyte one-line message is cut before it is lower-cased or scanned, and shown cut.
+func TestSearchCutsHugeTitlesBeforeScanning(t *testing.T) {
+	huge := strings.Repeat("Ⱥ", 2_000_000) + " tail"
+	docs := make([]core.SearchDoc, 50)
+	for i := range docs {
+		docs[i] = core.SearchDoc{Domain: core.DomainBoard, Kind: core.KindThread, ID: fmt.Sprint("t:", i), Ref: fmt.Sprint(i), Title: huge, Body: huge}
+	}
+	start := time.Now()
+	ix := core.NewSearchIndex(core.SearchFeed{Domain: core.DomainBoard, Docs: docs})
+	r, _ := ix.Search("Ⱥ", core.SearchOptions{Now: searchNow})
+	if d := time.Since(start); d > time.Second {
+		t.Errorf("indexing and searching 50 huge messages took %v", d)
+	}
+	if n := len([]rune(r.Groups[0].Results[0].Title)); n > core.MaxSearchTitle {
+		t.Errorf("a result title of %d characters", n)
+	}
+	if r2, _ := ix.Search("tail", core.SearchOptions{Now: searchNow}); r2.Total != 0 {
+		t.Error("text past the cut is not searched")
+	}
+}
+
+// Replace prepares one domain only, so a poll of one domain never re-prepares the others.
+func TestSearchReplaceSwapsOneDomain(t *testing.T) {
+	ix := core.NewSearchIndex(searchFixtures()...)
+	before, _ := ix.Search("heartbeat", core.SearchOptions{Now: searchNow})
+	ix.Replace(core.SearchFeed{Domain: core.DomainLeases, Docs: []core.SearchDoc{{Domain: core.DomainLeases, Kind: core.KindLease, ID: "heartbeat-lock", Ref: "heartbeat-lock", Title: "heartbeat-lock"}}})
+	after, _ := ix.Search("heartbeat", core.SearchOptions{Now: searchNow})
+	if after.Total != before.Total+1 || len(idsOf(after)) != len(idsOf(before))+1 {
+		t.Errorf("before %v after %v", idsOf(before), idsOf(after))
+	}
+}

@@ -24,6 +24,8 @@ const (
 	MaxSearchLimit = 200
 	// MaxSearchDocs is how many documents of one domain a scan covers.
 	MaxSearchDocs = 20000
+	// MaxSearchTitle is how many characters of a title, id or label are searched and shown.
+	MaxSearchTitle = 500
 	// MaxSearchBody is how many characters of a document's body are searched.
 	MaxSearchBody = 2000
 	// TaskStaleAfter is how long an unfinished task may go untouched before `is:stale` holds.
@@ -96,17 +98,29 @@ type SearchDoc struct {
 	lower []string // id, title, labels, body: lower-cased once, what free words search
 }
 
-// prepare lower-cases the free-text fields once, so a scan does not allocate per word.
+// cutRunes is s cut to at most n characters (a string no longer than n bytes needs no counting).
+func cutRunes(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	count := 0
+	for i := range s { // stops at the n-th character: a huge string is never converted whole
+		if count == n {
+			return s[:i]
+		}
+		count++
+	}
+	return s
+}
+
+// prepare lower-cases the free-text fields once, so a scan does not allocate per word. Every
+// field is cut first: a multi-megabyte one-line message is not lower-cased or scanned whole.
 func (d *SearchDoc) prepare() {
-	body := d.Body
-	if r := []rune(body); len(r) > MaxSearchBody {
-		body = string(r[:MaxSearchBody])
-	}
-	d.lower = append(d.lower[:0], strings.ToLower(d.Ref), strings.ToLower(d.Title))
+	d.lower = append(d.lower[:0], strings.ToLower(cutRunes(d.Ref, MaxSearchTitle)), strings.ToLower(cutRunes(d.Title, MaxSearchTitle)))
 	for _, l := range d.Labels {
-		d.lower = append(d.lower, strings.ToLower(l))
+		d.lower = append(d.lower, strings.ToLower(cutRunes(l, MaxSearchTitle)))
 	}
-	d.lower = append(d.lower, strings.ToLower(body))
+	d.lower = append(d.lower, strings.ToLower(cutRunes(d.Body, MaxSearchBody)))
 }
 
 // Text is what free words search: id, title, labels and body.
@@ -282,19 +296,33 @@ type SearchIndex struct{ feeds map[DomainID]SearchFeed }
 func NewSearchIndex(feeds ...SearchFeed) *SearchIndex {
 	ix := &SearchIndex{feeds: map[DomainID]SearchFeed{}}
 	for _, f := range feeds {
-		docs := f.Docs
-		if len(docs) > MaxSearchDocs {
-			docs = docs[:MaxSearchDocs]
-			f.Reason = fmt.Sprintf("only the first %d are searched", MaxSearchDocs)
-		}
-		f.Docs = make([]SearchDoc, len(docs))
-		copy(f.Docs, docs)
-		for i := range f.Docs {
-			f.Docs[i].prepare()
-		}
-		ix.feeds[f.Domain] = f
+		ix.Replace(f)
 	}
 	return ix
+}
+
+// Replace swaps one domain's feed, preparing only that feed: a front-end whose one domain was
+// just re-read does not re-prepare the others.
+func (ix *SearchIndex) Replace(f SearchFeed) {
+	docs := f.Docs
+	if len(docs) > MaxSearchDocs {
+		docs = docs[:MaxSearchDocs]
+		f.Reason = JoinSearchReasons(f.Reason, fmt.Sprintf("only the first %d were searched", MaxSearchDocs))
+	}
+	f.Docs = make([]SearchDoc, len(docs))
+	copy(f.Docs, docs)
+	for i := range f.Docs {
+		f.Docs[i].prepare()
+	}
+	ix.feeds[f.Domain] = f
+}
+
+// JoinSearchReasons joins two reasons for one domain.
+func JoinSearchReasons(a, b string) string {
+	if a == "" {
+		return b
+	}
+	return a + "; " + b
 }
 
 // SearchStale is the staleness rule: a read older than twice its poll interval. A feed with no
@@ -464,7 +492,7 @@ func rankOf(q query.Query, d *SearchDoc) int {
 
 func resultOf(q query.Query, h hit, st SearchDomain) SearchResult {
 	d := h.doc
-	r := SearchResult{Domain: d.Domain, Kind: d.Kind, ID: d.ID, Label: d.Label(), Title: Sanitize(d.Title), Meta: Sanitize(d.Meta),
+	r := SearchResult{Domain: d.Domain, Kind: d.Kind, ID: d.ID, Label: d.Label(), Title: Sanitize(cutRunes(d.Title, MaxSearchTitle)), Meta: Sanitize(cutRunes(d.Meta, MaxSearchTitle)),
 		Status: Sanitize(d.Status), Rank: h.rank, Stale: st.Stale, Age: ""}
 	if d.Target != "" && d.Target != d.ID {
 		r.Target = d.Target
