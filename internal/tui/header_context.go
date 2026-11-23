@@ -27,8 +27,12 @@ func (m *Model) contextLine() core.ContextLine {
 	return c
 }
 
-// contextMinRoom is the least room, in cells, worth drawing context in.
-const contextMinRoom = 8
+// contextMinRoom is the least room, in cells, worth drawing context in; contextMinName the least
+// worth keeping of a tracker name that has to be cut to leave room for the count.
+const (
+	contextMinRoom = 8
+	contextMinName = 4
+)
 
 // withContext right-aligns the context on the tab-bar line when there is room for it.
 func (m *Model) withContext(line string, w int) string {
@@ -39,8 +43,15 @@ func (m *Model) withContext(line string, w int) string {
 	if room < contextMinRoom {
 		return line
 	}
-	parts := m.contextLine().Parts()
+	c := m.contextLine()
+	parts := c.Parts()
 	for len(parts) > 1 && lipgloss.Width(strings.Join(parts, " · ")) > room {
+		if len(parts) == 2 && strings.TrimSpace(c.Tracker) != "" { // the tracker name gives way before the count does
+			if keep := room - lipgloss.Width(" · "+parts[1]); keep >= contextMinName {
+				parts[0] = trunc(parts[0], keep)
+				break
+			}
+		}
 		parts = parts[:len(parts)-1]
 	}
 	if len(parts) == 0 {

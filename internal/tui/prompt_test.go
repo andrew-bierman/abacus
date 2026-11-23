@@ -330,13 +330,13 @@ func TestPromptCapturesEveryKey(t *testing.T) {
 
 func TestPromptNeverOpensOverAScreenThatOwnsTheKeys(t *testing.T) {
 	cases := map[string]func(tea.Model) tea.Model{
-		"a form":         func(m tea.Model) tea.Model { return press(press(m, "2"), "n") },
-		"an edit form":   func(m tea.Model) tea.Model { return press(press(m, "2"), "e") },
-		"the filter":     func(m tea.Model) tea.Model { return press(press(m, "2"), "/") },
+		"a form":            func(m tea.Model) tea.Model { return press(press(m, "2"), "n") },
+		"an edit form":      func(m tea.Model) tea.Model { return press(press(m, "2"), "e") },
+		"the filter":        func(m tea.Model) tea.Model { return press(press(m, "2"), "/") },
 		"the queues filter": func(m tea.Model) tea.Model { return press(press(m, "4"), "/") },
-		"search":         func(m tea.Model) tea.Model { return press(m, "ctrl+k") },
-		"help":           func(m tea.Model) tea.Model { return press(m, "?") },
-		"a describe":     func(m tea.Model) tea.Model { return press(press(m, "2"), "d") },
+		"search":            func(m tea.Model) tea.Model { return press(m, "ctrl+k") },
+		"help":              func(m tea.Model) tea.Model { return press(m, "?") },
+		"a describe":        func(m tea.Model) tea.Model { return press(press(m, "2"), "d") },
 		"the confirm": func(m tea.Model) tea.Model {
 			m = press(press(m, "2"), "x")
 			m, _ = m.Update(taskVerifiedMsg{id: "ac-12", task: fixtureTasks().Recent[0]})

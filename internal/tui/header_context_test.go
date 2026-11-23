@@ -106,8 +106,8 @@ func TestHeaderContextTruncatesALongTrackerNameWithAnEllipsis(t *testing.T) {
 		if len(l) > 32 || lipgloss.Width(l[0]) > w || !strings.Contains(l[0], "Board") {
 			t.Errorf("%d: header %q", w, l[0])
 		}
-		if w == 100 && !strings.Contains(l[0], "…") {
-			t.Errorf("a long name is cut with an ellipsis: %q", l[0])
+		if w == 100 && (!strings.Contains(l[0], "…") || !strings.Contains(l[0], "14 tasks")) {
+			t.Errorf("a long name is cut with an ellipsis and the count stays: %q", l[0])
 		}
 	}
 }
