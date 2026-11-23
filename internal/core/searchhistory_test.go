@@ -126,3 +126,31 @@ func TestSearchHistoryWritesAreAtomicUnderConcurrency(t *testing.T) {
 		t.Errorf("after a corrupt file: %v %v", err, h.Load(core.HistoryGlobal))
 	}
 }
+
+func TestSearchHistoryRefusesTrackerDirsInAnyCase(t *testing.T) {
+	for _, name := range []string{".beads", ".BEADS", ".Beads"} {
+		h := core.SearchHistory{Path: filepath.Join(t.TempDir(), "proj", name, "sub", "search-history.json")}
+		if h.Add(core.HistoryGlobal, "x") == nil {
+			t.Errorf("%s accepted", name)
+		}
+		if _, err := os.Stat(filepath.Join(filepath.Dir(h.Path), "..")); err == nil {
+			t.Errorf("%s: a directory was created", name)
+		}
+	}
+}
+
+func TestSearchHistoryTightensALooseDirectory(t *testing.T) {
+	h, p := histAt(t)
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Add(core.HistoryGlobal, "x"); err != nil {
+		t.Fatal(err)
+	}
+	if st, _ := os.Stat(filepath.Dir(p)); st.Mode().Perm() != 0o700 {
+		t.Errorf("dir mode %v, want 0700", st.Mode().Perm())
+	}
+}

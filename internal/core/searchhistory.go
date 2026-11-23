@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/andrew-bierman/abacus/internal/query"
@@ -22,6 +23,15 @@ const (
 	// MaxSearchHistory is how many queries each list keeps.
 	MaxSearchHistory = 100
 )
+
+// HistoryLockWait is how long Add waits for another writer before giving up. It runs on the
+// UI's goroutine, so it is short.
+var HistoryLockWait = 500 * time.Millisecond
+
+// ErrHistoryBusy is a history file another process holds: the query is not saved.
+var ErrHistoryBusy = errors.New("search history is busy, so this query was not saved")
+
+var errLockBusy = errors.New("lock busy")
 
 // SearchHistory reads and writes the history file at Path. The zero value (no path) keeps
 // nothing: Add does nothing and Load is empty, as in a demo session.
@@ -79,14 +89,20 @@ func (h SearchHistory) Add(kind, q string) error {
 	if !filepath.IsAbs(h.Path) {
 		return errors.New("search history: the path must be absolute")
 	}
-	if slices.Contains(strings.Split(filepath.ToSlash(h.Path), "/"), ".beads") {
+	if underTrackerDir(h.Path) {
 		return errors.New("search history: abacus does not write into a tracker directory")
 	}
 	dir := filepath.Dir(h.Path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("search history: %w", err)
 	}
-	unlock, err := lockConfig(h.Path)
+	if err := os.Chmod(dir, 0o700); err != nil { // a directory made earlier, or by another tool, may be looser
+		return fmt.Errorf("search history: %w", err)
+	}
+	unlock, err := lockWithin(h.Path, HistoryLockWait)
+	if errors.Is(err, errLockBusy) {
+		return ErrHistoryBusy
+	}
 	if err != nil {
 		return fmt.Errorf("search history: %w", err)
 	}
@@ -102,6 +118,34 @@ func (h SearchHistory) Add(kind, q string) error {
 	}
 	f[kind] = list
 	return writeJSONAtomic(h.Path, f)
+}
+
+// underTrackerDir is whether any component of path, as written or with symlinks resolved, is a
+// tracker directory (.beads, in any case).
+func underTrackerDir(path string) bool {
+	for _, p := range []string{path, resolveExisting(path)} {
+		for _, c := range strings.Split(filepath.ToSlash(p), "/") {
+			if strings.EqualFold(c, ".beads") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// resolveExisting resolves the symlinks of the deepest part of path that exists and appends the rest.
+func resolveExisting(path string) string {
+	rest, cur := "", path
+	for {
+		if r, err := filepath.EvalSymlinks(cur); err == nil {
+			return filepath.Join(r, rest)
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			return path
+		}
+		rest, cur = filepath.Join(filepath.Base(cur), rest), parent
+	}
 }
 
 // writeJSONAtomic replaces path with v's JSON: a temp file in the same directory, fsynced, then

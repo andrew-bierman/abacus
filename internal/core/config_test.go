@@ -171,3 +171,23 @@ func TestConfigCheckModuleReportsAnUnreadableFileInDoctor(t *testing.T) {
 		t.Fatalf("%+v", c)
 	}
 }
+
+func TestConfigSearchHistoryKey(t *testing.T) {
+	var c core.Config
+	if v, _ := c.Get("search_history"); v != "on" {
+		t.Errorf("default %q", v)
+	}
+	if err := c.Set("search_history", "off"); err != nil || c.SearchHistory != "off" {
+		t.Fatalf("%v %q", err, c.SearchHistory)
+	}
+	if v, _ := c.Get("search_history"); v != "off" {
+		t.Errorf("got %q", v)
+	}
+	if c.Set("search_history", "maybe") == nil {
+		t.Error("only on and off")
+	}
+	_ = c.Set("search_history", "on")
+	if c.SearchHistory != "" {
+		t.Error("on is the default and stores nothing")
+	}
+}
