@@ -4,6 +4,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -218,7 +219,7 @@ func (m *Model) width() int {
 
 // headerHeight is the tab line, plus a rule when there is height to spare.
 func (m *Model) headerHeight() int {
-	if m.h == 0 || m.h >= 16 {
+	if m.h == 0 || m.h >= hRule {
 		return 2
 	}
 	return 1
@@ -310,7 +311,7 @@ func (m *Model) FullHelp() [][]key.Binding {
 // fit it shrinks to the active tab and a position marker, so the active tab is never cut.
 func (m *Model) headerLines(w int) []string {
 	brandPrefix := ""
-	if w >= 60 {
+	if w >= bpCompact {
 		brandPrefix = m.th.Title.Render(brand.Name) + "  "
 	}
 	parts := make([]string, len(m.tabs))
@@ -333,34 +334,54 @@ func (m *Model) headerLines(w int) []string {
 	return out
 }
 
-func (m *Model) overlayLines(w int) []string {
-	out := []string{m.th.Header.Render("Keys"), ""}
-	groups := m.FullHelp()
-	for gi, g := range groups {
+// helpCols lays the help overlay out: the key name, then what it does.
+var helpCols = []column{{min: 13, max: 13, prio: 0}, {min: 1, prio: 1}}
+
+// overlayLines is the help overlay for a body w wide and h tall (h <= 0: unknown). It is a
+// focused panel when the whole text fits inside one, and a plain indented list when a frame
+// would cost rows the text needs.
+func (m *Model) overlayLines(w, h int) []string {
+	var rows []string // blank lines separate the key groups
+	widths := fitColumns(helpCols, max(w-4, 1), 1)
+	for gi, g := range m.FullHelp() {
 		if gi > 0 {
-			out = append(out, "")
+			rows = append(rows, "")
 		}
 		for _, b := range g {
 			if b.Enabled() {
-				h := b.Help()
-				out = append(out, "  "+m.th.Key(padTo(h.Key, 13))+" "+h.Desc)
+				hp := b.Help()
+				rows = append(rows, formatRow(helpCols, widths, []string{m.th.Key(hp.Key), hp.Desc}, 1))
 			}
 		}
 	}
-	return append(out, "", m.th.Text(KindMuted, "? or esc closes"))
+	hint := m.th.Text(KindMuted, "? or esc closes")
+	if w >= 4 && (h <= 0 || len(rows)+2+2 <= h) {
+		return panel(m.th, "Keys", append(rows, "", hint), w, 0, true)
+	}
+	out := []string{m.th.Header.Render("Keys"), ""}
+	for _, r := range rows {
+		if r != "" {
+			r = "  " + r
+		}
+		out = append(out, r)
+	}
+	return append(out, "", hint)
 }
 
 func (m *Model) View() string {
 	w := m.width()
 	head := m.headerLines(w)
+	_, bh := m.bodySize()
 	var body []string
-	if m.showHelp {
-		body = m.overlayLines(w)
-	} else {
+	switch {
+	case tooSmall(w, m.h):
+		body = tooSmallLines(m.th, w, m.h)
+	case m.showHelp:
+		body = m.overlayLines(w, bh)
+	default:
 		body = strings.Split(strings.TrimRight(m.active().View(), "\n"), "\n")
 	}
 	if m.h > 0 { // known height: clip to what is left, even when that is nothing
-		_, bh := m.bodySize()
 		body = body[:min(len(body), bh)]
 	}
 	m.help.Width = w
@@ -386,4 +407,13 @@ func (m *Model) fit(lines []string, w, h int) []string {
 		out = out[:h]
 	}
 	return out
+}
+
+// tooSmallLines is the body shown when the terminal cannot hold the layout. The tab bar and
+// footer still frame it, so the user can see where they are and quit.
+func tooSmallLines(th Theme, w, h int) []string {
+	return []string{
+		th.Text(KindWarn, "Terminal too small"),
+		th.Text(KindMuted, fmt.Sprintf("needs %dx%d, has %dx%d", bpMin, hMin, w, max(h, 0))),
+	}
 }

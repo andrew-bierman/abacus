@@ -155,3 +155,68 @@ func TestActiveTabIsMarkedEvenWithoutColor(t *testing.T) {
 		t.Fatalf("header %q", h)
 	}
 }
+
+func TestTooSmallBodyReplacesOnlyTheBody(t *testing.T) {
+	for _, tc := range []struct {
+		w, h  int
+		small bool
+	}{{40, 12, false}, {100, 12, false}, {39, 30, true}, {40, 11, true}, {100, 11, true}, {60, 5, true}} {
+		var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+		m = sized(m, tc.w, tc.h)
+		out := lines(m)
+		got := strings.Contains(m.View(), "Terminal too small")
+		if got != tc.small {
+			t.Fatalf("%dx%d: too-small message shown = %v, want %v:\n%s", tc.w, tc.h, got, tc.small, m.View())
+		}
+		if !tc.small {
+			continue
+		}
+		if tc.w >= 40 && tc.h >= 3 {
+			if !strings.Contains(out[0], "Board") || !strings.Contains(out[len(out)-1], "? help") {
+				t.Errorf("%dx%d: chrome must stay around the message:\n%s", tc.w, tc.h, m.View())
+			}
+		}
+		if tc.w >= 40 && tc.h >= 6 && !strings.Contains(m.View(), "40x12") {
+			t.Errorf("%dx%d: the message must say what is needed:\n%s", tc.w, tc.h, m.View())
+		}
+	}
+}
+
+func TestTooSmallNamesNoTool(t *testing.T) {
+	var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+	m = sized(m, 39, 30)
+	for _, bad := range toolNames {
+		if strings.Contains(m.View(), bad) {
+			t.Errorf("too-small screen names %q:\n%s", bad, m.View())
+		}
+	}
+}
+
+func TestHelpOverlayIsAFocusedPanelWhenItFits(t *testing.T) {
+	var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+	m = sized(m, 100, 30)
+	m = press(m, "?")
+	out := lines(m)
+	if !strings.Contains(out[2], "╭─ ▸ Keys") {
+		t.Fatalf("help must be a framed, focused panel under the header:\n%s", m.View())
+	}
+	cell := func(l, sub string) int { return lipgloss.Width(l[:strings.Index(l, sub)]) }
+	var key, desc int
+	for _, l := range out {
+		if strings.HasPrefix(l, "│") && strings.Contains(l, "next tab") {
+			key, desc = cell(l, "tab/→"), cell(l, "next tab")
+		}
+	}
+	if key == 0 || desc-key != 14 {
+		t.Fatalf("keys and descriptions must stay in aligned columns (key at %d, desc at %d):\n%s", key, desc, m.View())
+	}
+}
+
+func TestHelpOverlayDropsItsFrameRatherThanLoseRowsWhenShort(t *testing.T) {
+	var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+	m = sized(m, 100, 12) // body of 10 rows: the help text needs 9, a frame would need 11
+	m = press(m, "?")
+	if strings.Contains(m.View(), "╭") || !strings.Contains(m.View(), "quit") {
+		t.Fatalf("a short help overlay must stay a plain list:\n%s", m.View())
+	}
+}
