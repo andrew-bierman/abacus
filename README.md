@@ -11,28 +11,32 @@ the tools that supply the data are providers behind each view (see Providers).
 
 ## Install
 
-Download the archive for your platform from the releases page (`abacus_VERSION_OS_ARCH.tar.gz`,
-for darwin or linux on amd64 or arm64), extract it and run it:
+abacus is one self-contained file. Every tool it needs (`bd`, Lambe, beads-lease and the Vercel
+Board CLI) is built into it: you never install, fetch or run anything else. Download the archive
+for your platform from the releases page (`abacus_VERSION_OS_ARCH.tar.gz`, for darwin or linux on
+amd64 or arm64), extract it and run the one file; you can move or copy `abacus` anywhere:
 
 ```
 tar -xzf abacus_VERSION_darwin_arm64.tar.gz
-cd abacus_VERSION_darwin_arm64
-./abacus
+./abacus_VERSION_darwin_arm64/abacus
 ```
+
+The archive holds `abacus`, `LICENSE`, `THIRD_PARTY_NOTICES.md` and `third_party/<tool>/LICENSE`
+and nothing else (`abacus licenses` prints the same notices and license texts from inside the
+binary, so a lone copy of the file still carries them).
 
 ### Supported platforms
 
 | Platform | Status |
 | --- | --- |
-| Linux, amd64 | Release archive; run end to end on Arch Linux (doctor, setup, the TUI in tmux) with only the bundled tools on `PATH` |
+| Linux, amd64 | Release archive; run end to end on Arch Linux (doctor, setup, the TUI in tmux) with an empty `PATH`, the tools coming from the binary itself |
 | Linux, arm64 | Release archive; cross-compiles, not yet run on real hardware |
 | macOS, arm64 and amd64 | Release archive (the primary development platform) |
 | Windows | Not supported yet. It compiles, but its safety checks are placeholders; see `docs/plans/2026-11-22-1900-plan-windows-support.md` |
 
-Nothing else needs to be installed. The archive carries the tools abacus talks to (`bd`,
-Lambe and beads-lease) in `bundled/`, and abacus finds them there. Keep the folder together: if
-you copy `abacus` somewhere else, copy `bundled/` with it (or symlink `abacus`; the link is
-followed to the real folder).
+The size is the price of that: the file is about 80 to 90 MB, because the tools are inside it
+(see Built-in tools). On first run abacus unpacks them once into a private folder; later starts
+only check them.
 
 On first run each tab that needs one-time setup says so in one line and offers a key for it, and
 shows the exact command before anything happens (see First run below). Press `Tab` to move
@@ -81,83 +85,122 @@ or above the working directory, `tracker_dir` from the config, an existing manag
 An empty tracker is not an error: Insights reads "no tasks yet" and nothing is analyzed. If the
 analysis fails on a tracker that has tasks, the tab says so in one plain line and the reason is in Doctor.
 
-## Bundled tools
+## Built-in tools
 
-The release archive is built by `scripts/package-release.sh VERSION` from the pins in
-`bundled-tools.json`: each tool's repository, version, per-platform asset name and sha256, and
-the sha256 of its license. The script downloads each asset with `gh`, checks the sha256 against
-the pin (any mismatch fails the build), extracts only the one executable into `bundled/`, copies
-each tool's license verbatim into `third_party/<tool>/LICENSE` and writes
-`THIRD_PARTY_NOTICES.md`. It publishes nothing. The tools run as separate programs, unmodified;
-bv is not one of them: the `abacus` binary statically links parts of bv's Go packages (bv v0.27.0
-`pkg/analysis` and dependencies) for the graph insights, always, under bv's license. Because no bv
-program ships, that license is copied verbatim from the pinned Go module into
-`third_party/bv/LICENSE` (the `linked_licenses` entry in `bundled-tools.json`; its sha256 is
-pinned and the build fails closed on a mismatch). The notices list bv as a linked library and end
-with every Go module linked into the binary and its license text, generated offline from
-`go list -deps` (`scripts/lib/golicenses.sh`). The owner has reviewed bv's license and accepts it.
+abacus is a single binary. The tools it composes are inside it, pinned and sha256-verified at
+build time, compressed with zstd, and unpacked on first use. Nothing is fetched at run time and
+nothing is installed.
 
-| Tool | Version | License |
-| --- | --- | --- |
-| bd, [Beads](https://github.com/steveyegge/beads) | 1.3.4 | MIT |
-| [Lambe](https://github.com/andrew-bierman/lambe) | 0.10.1 | GPL-3.0 |
-| [beads-lease](https://github.com/andrew-bierman/beads-lease), installed as `beads-lease` | 0.1.0 | MIT |
+| Tool | Version | License | Built in as |
+| --- | --- | --- | --- |
+| bd, [Beads](https://github.com/steveyegge/beads) | 1.3.4 | MIT | the upstream release executable |
+| [Lambe](https://github.com/andrew-bierman/lambe) | 0.10.1 | GPL-3.0 | the upstream release executable |
+| [beads-lease](https://github.com/andrew-bierman/beads-lease) | 0.1.0 | MIT | the release executable |
+| Vercel Board CLI, [`@vercel/board`](https://github.com/vercel/board) | 0.54.0 | Apache-2.0 | compiled with bun from the npm package at a pinned integrity |
 
-Linked into the binary, not bundled:
+Linked into the binary as a Go library, not run as a program:
 
 | Library | Version | License |
 | --- | --- | --- |
 | bv, [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (`pkg/analysis` and dependencies) | 0.27.0 | MIT with an OpenAI/Anthropic rider; the license is shipped unmodified |
 
-The bundled tools stay separate programs run as subprocesses; abacus imports none of their code.
-Read `THIRD_PARTY_NOTICES.md` and `third_party/bv/LICENSE` before redistributing the archive.
+The tools stay separate programs run as subprocesses, unmodified; abacus imports none of their
+code. bv is different: the `abacus` binary statically links parts of its Go packages for the graph
+insights, so its license is copied verbatim from the pinned Go module (the `linked_licenses` entry
+in `bundled-tools.json`, sha256 pinned, the build fails closed on a mismatch). The Board CLI
+executable also contains the bun runtime (MIT, with LGPL-2 JavaScriptCore) and its npm dependency
+tree; their license texts ship too. `THIRD_PARTY_NOTICES.md`, every license text and the license
+of each linked Go module are inside the binary: run `abacus licenses`.
 
-**Where abacus looks for a tool**, first match wins: an explicit `ABACUS_*_BIN`; then the
-directory of the abacus executable (symlinks resolved), `../libexec/abacus/` and `bundled/`
-next to it; then your `PATH`. A bundled copy is run only if it resolves (through symlinks) to a regular,
-executable file that is not group- or world-writable, is owned by you or root, and sits (with its
-link, if any) in a directory nobody else can write to. Doctor shows, for every tool,
-whether it is `bundled`, from `PATH` or an override, or `unavailable` (abacus's own copy is damaged
-or was moved), with its version, and leads with "Bundled tools: 3 of 3 verified". Doctor is
-`Ready` only when bd, lambe and beads-lease are usable; the Vercel Board CLI is reported separately as
-`optional`. Child tools see the sidecar directories first on `PATH`, so a tool that runs another finds the bundled one.
+**Where a tool comes from**, first match wins, one resolver for all of them:
 
-A missing bundled tool is never your job. In a release, abacus says its own copy is damaged or was
-moved (with the reason when a copy was refused: world-writable, not executable, ...) and to
-re-extract the archive and keep the folder together. In a locally built binary it says to run
-`scripts/dev-bundle.sh`, below. Only tools abacus does not ship (the Vercel Board CLI, Rex, b9s)
-are optional extras, and each says what it adds.
+1. an explicit `ABACUS_BD_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_BEADSLEASE_BIN` or `ABACUS_BOARD_BIN`
+   (a path); you chose it, so abacus runs it as is;
+2. the built-in copy, extracted to `$ABACUS_TOOLS_DIR/<content hash>/<name>`, which defaults to
+   `$XDG_DATA_HOME/abacus/tools` (`~/.local/share/abacus/tools`);
+3. a development build only: a sidecar folder next to the executable (`bundled/`, `../libexec/abacus`),
+   then the `PATH`.
 
-**Local builds: `scripts/dev-bundle.sh`.** `go build` leaves no `bundled/` beside the binary, so
-the tools would look unavailable. `scripts/dev-bundle.sh` (or `make bundle`; `make dev` builds and
-bundles) downloads the same pinned assets with `gh` for this OS and CPU (`--platform linux-amd64`
-for another), checks every sha256 against `bundled-tools.json` (any mismatch aborts and changes
-nothing), and puts the four executables, their licenses and `THIRD_PARTY_NOTICES.md` in
-`bin/bundled/`, where `bin/abacus` finds them. It builds in a temp directory and moves it into
-place, is idempotent (a tool that still matches its install record is kept, not downloaded), and
-`--check` only verifies. `--out` must be new, empty or a previous install (anything else is refused
-untouched, because the directory is replaced as a whole). Linux and macOS on amd64 and arm64 are bundled; Windows is out of scope
-for now (see `docs/plans/2026-11-22-1900-plan-windows-support.md`) and has no pins.
+A binary that has its tools built in never falls back to a `bd` (or any other built-in tool) of
+another version, whatever is on `PATH`; if the built-in copy cannot be set up, the tool is
+unavailable and Doctor says why.
 
-**The manifest, field by field.** Hand-edited: `schema`, `note`, and per tool `name` (the file
-name in `bundled/`; it must equal the tool names abacus looks for, a test checks it), `repo`,
-`license` (display name), `tag_template`, `asset_template` and `member` (with `{version}`, `{os}`
-and `{arch}` placeholders), `checksums_asset`, `license_source` (`{from: archive, member}` or
-`{from: tag, path}`). Written only by `scripts/update-bundled-tools.sh`: `version`, `assets`
-(platform to asset, sha256 and member) and `license_sha256`. The same list is at the top of
-`scripts/lib/bundle.sh`, which both scripts share.
+**The private cache.** The folder is mode 0700 and owned by you, and so is every file in it (0700).
+Extraction writes a temp file in the same folder, checks its length and sha256 against the manifest
+inside the binary, syncs it and renames it into place; a lock file keeps two abacus processes from
+racing. Names come from a closed manifest (lowercase letters, digits and dashes), so an extraction
+path cannot escape the folder. A link, a file or folder owned by someone else, a folder others can
+write to, or a file with other permissions is refused, never used and never "repaired" in place.
+Every start does stat checks (type, owner, mode, size); the sha256 is computed at extraction and
+again whenever the size or modification time no longer matches a marker written beside the file,
+because hashing a 144 MB file on every start would add about a quarter of a second to each one.
+Changing a file without changing its size and mtime takes your own account, which could change
+abacus itself. When a new version of abacus carries different tools, older folders are removed
+once the new one is complete. The hashes come from the binary; no environment variable can replace
+them. First use takes about 3 seconds for the roughly 250 MB of tools (about 0.2 s on later starts).
+If the cache folder cannot be used, Doctor says what failed and the path; set `ABACUS_TOOLS_DIR` to
+a folder you can write to (it must be an absolute path), or, if the message says this copy of
+abacus is damaged, download it again.
 
-**Refreshing a pin:** `scripts/update-bundled-tools.sh TOOL VERSION` (or `--all` to re-pin the
-current versions). It reads each platform's sha256 from the tool's upstream checksum file,
-downloads the asset with your `gh` login and fails unless the download matches. If upstream
-published no checksum for an asset it stops; `--trust-first-download` pins the hash of that one
-download instead (say so in the PR; all four tools publish checksums today, so none needed it).
-Then run `scripts/package-release.sh VERSION --platforms darwin-arm64 --out DIR` to check the
-result. Both scripts need `jq` (and `gh` to download), and read `ABACUS_BUNDLE_CACHE` (default
-`.cache/bundle`) and `ABACUS_BUNDLE_MANIFEST` (default `bundled-tools.json`). Archives are built
-in a work directory and moved into the output directory only after every platform succeeded;
-tar members that are links, absolute or contain `..` are refused before anything is read. The
-scripts are tested offline (`internal/release`) with fake archives and a fake `gh`.
+**Doctor** shows each tool as `built in` with its version and leads with `Built-in tools: 4 of 4
+ready`. It is Ready when bd, lambe and beads-lease are usable; the Board CLI is built in too but
+never blocks Ready: the Board tab works once a board is configured (`abacus config set board_url
+URL`, then `vercel login` or `BOARD_TOKEN`) and otherwise says how to point it at one.
+
+**Development builds.** A plain `go build` has no tools built in (so it is quick to compile), and
+Doctor says so in one line: "Development build: tools are not built in; build with make build".
+It then looks for tools next to the executable and on the `PATH`, which is for working on abacus.
+`make build` makes the single binary (below). Only Rex and b9s are not built in; they are
+optional separate programs abacus can hand off to, and say so.
+
+### How the binary is built
+
+`bundled-tools.json` pins every tool. `scripts/embed-tools.sh` (run by `make build` and by the
+release) fetches each release asset with `gh` (your login, so the private beads-lease repo works),
+fails unless its sha256 equals the pin, extracts only the one executable, builds the Board CLI
+(`npm ci --ignore-scripts` from the committed `scripts/board/package-lock.json`, whose sha256 and
+the package's npm integrity are pinned; then `bun build --compile` for the platform), compresses
+them with zstd into `internal/embedtools/blobs/<os>-<arch>/` (git-ignored: these are tens of
+megabytes and are never committed) and writes the complete notices. `go build -tags embedtools`
+embeds that folder. The Board executable is compiled, and bun's output need not be reproducible,
+so it is pinned by its inputs and the sha256 of each compiled output is recorded for the release
+notes (`EMBEDDED_TOOLS.md`, written next to the archives).
+
+```
+make build                    # bin/abacus, one file, tools inside (needs gh, npm, bun)
+make build-dev                # plain go build: quick, no tools built in
+make release VERSION=0.1.0    # dist/: four archives, SHA256SUMS, EMBEDDED_TOOLS.md
+make check-tools              # verify the fetched tools still match their pins
+```
+
+`scripts/package-release.sh VERSION [--platforms ...] [--out DIR]` builds darwin and linux on
+amd64 and arm64, each with its own pinned tools. It publishes, tags and uploads nothing. Windows
+is out of scope for now (see `docs/plans/2026-11-22-1900-plan-windows-support.md`).
+
+**The manifest, field by field.** The list is at the top of `scripts/lib/bundle.sh`, which the
+scripts share. Hand-edited: `schema`, `note`, and per tool `name` (the file name when extracted;
+it must equal the tool names abacus looks for, a test checks it), `repo`, `license`, `tag_template`,
+`asset_template`, `member`, `checksums_asset`, `license_source`; for the Board CLI `kind`,
+`package`, `bun_version`, `entry`, `runtime_license` and the bun target of each platform. Written
+only by `scripts/update-bundled-tools.sh`: `version`, `assets`, `license_sha256`, and for the Board
+CLI `npm_integrity` and `lockfile_sha256`.
+
+**Refreshing a pin:** `scripts/update-bundled-tools.sh TOOL VERSION` (or `--all`). It reads each
+platform's sha256 from the tool's upstream checksum file, downloads the asset with your `gh` login
+and fails unless the download matches; `--trust-first-download` pins the hash of one download when
+upstream publishes none (say so in the PR). For `board` it re-resolves the npm package into the
+committed lockfile and pins the integrity and license. The scripts need `jq` (plus `gh`, and `npm`
+and `bun` for the Board CLI), and read `ABACUS_BUNDLE_CACHE` (downloads and Board builds, default
+`.cache/bundle`) and `ABACUS_BUNDLE_MANIFEST`. Output directories are built next to themselves and
+swapped in only when complete; archive members that are links, absolute or contain `..` are
+refused. The scripts are tested offline (`internal/release`) with fake archives, a fake `gh`,
+`npm` and `bun`.
+
+**Size tradeoff.** The tools are the size: bd alone is 144 MB uncompressed, the Board CLI 90 MB
+(the bun runtime is most of it), so the single file is about 87 MB on darwin-arm64 (see
+CHANGELOG for the figures per platform) against 10 MB for a build without them. zstd was chosen
+over xz: xz (`-9e`) made the embedded set about 15% smaller, but zstd unpacks the biggest tool in
+about 0.1 s.
 
 ## Architecture
 
@@ -188,15 +231,15 @@ or error messages that help you fix one.
   find or run.
 - **b9s**: an optional extra for its full tree and graph view: press `o` on Tasks to open it in the
   tracker directory (probes for it first). abacus's own Tasks list and detail do not need it: without
-  it `o` says what b9s adds and where to get it.
-- **Board** (optional, not bundled): composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`, same CLI),
+  it `o` says that b9s is an optional separate program abacus did not find.
+- **Board** (built in): composes the Vercel Board CLI (`@vercel/board`, binary `board`),
   run as a subprocess only: bounded `channels list`, `read` and `tasks` reads with `--json`,
   `--limit` and a deadline, behind an argv allowlist and a scrubbed environment (only `HOME`,
   `PATH`, the XDG dirs, `BOARD_*`, `VERCEL_AUTH_TOKEN`, `VERCEL_ORG_ID`, proxy and CA variables
-  are passed on). It never runs `serve`, `tail` or `wait`. To turn the Board on, install it with
-  `npm i -g @vercel/board`, never `npx vb` or `npm i vb`: **`vb` on npm is an unrelated
-  package**, so a binary is trusted only after its own `--help` identifies Vercel Board
-  (`ABACUS_BOARD_BIN` overrides the lookup, which prefers `board` over `vb`). Without a board
+  are passed on). It never runs `serve`, `tail` or `wait`. The extracted binary is trusted only
+  after its own `--help`, run with a token-free environment, identifies Vercel Board at 0.54.0 or
+  newer (`ABACUS_BOARD_BIN` overrides the built-in copy). The npm package named `vb` is an
+  unrelated project and is never looked for. Without a board
   setting it uses the CLI's own default (a linked Vercel project, `BOARD_URL`, or your team's
   board after `vercel login`); point it elsewhere with `abacus config set board_url URL` or
   `ABACUS_BOARD_URL` (passed as `--url`), for example a local board from `vb serve`. On the
@@ -248,14 +291,13 @@ or error messages that help you fix one.
 ### Building from source
 
 ```
-go build -o bin/abacus ./cmd/abacus
-scripts/dev-bundle.sh        # or: make dev (build + bundle)
-./bin/abacus doctor          # leads with: Bundled tools: 4 of 4 verified
+make build-dev               # go build -o bin/abacus ./cmd/abacus: quick, no tools built in
+make build                   # bin/abacus with every tool inside (needs gh, npm, bun)
+./bin/abacus doctor          # leads with: Built-in tools: 4 of 4 ready
 ```
 
-The bundle step needs `gh` (logged in) and `jq`; it fetches the pinned tools into `bin/bundled/`
-(git-ignored). Run it again after `bundled-tools.json` changes; `scripts/dev-bundle.sh --check`
-verifies without downloading.
+`make build` fetches and verifies the pinned tools into `.cache/` and `internal/embedtools/blobs/`
+(both git-ignored), so `make build-dev` and `go test ./...` need none of that.
 
 Note: the two `signalZero` bodies under `internal/lambe` are kept separate on purpose; they port
 Lambe's own process-liveness logic per platform, and merging them would drift from it.

@@ -38,6 +38,24 @@ may change behavior, and patch versions are fixes and small additions.
   pure and deterministic (`internal/taskview/graphlayout.go`, typed `core.GraphView`); the engine's
   bottlenecks are marked on the nodes. `abacus tasks graph [ID | --whole] [--json]` prints the same
   view. The Tasks view strip is now `List Graph Insights`.
+
+- **abacus is one self-contained binary.** bd, Lambe, beads-lease and the Vercel Board CLI are built
+  into it (pinned and sha256-verified at build time, zstd-compressed with `-tags embedtools`) and
+  unpacked on first use into a private per-user folder (`$XDG_DATA_HOME/abacus/tools/<content
+  hash>/`, mode 0700; `ABACUS_TOOLS_DIR` chooses another). The user never installs, fetches or runs
+  a script. One resolver in core: an `ABACUS_*_BIN` override, then the built-in copy, then (development
+  builds only) sidecar folders and `PATH`. A binary with its tools built in never runs another
+  version from `PATH`. Extraction is atomic and locked, refuses links and files that are not private
+  to the user, and fails closed on a hash mismatch. Doctor shows each tool as `built in` with its
+  version; a failure says what failed, the path and the one fix (a folder to write to, or download
+  abacus again).
+- The Board CLI is built from its npm package at a pinned integrity (`scripts/board/package-lock.json`,
+  `npm ci --ignore-scripts`, then `bun build --compile` per platform) and shipped inside the binary;
+  the sha256 of each compiled output is recorded in `EMBEDDED_TOOLS.md` next to the release archives.
+- `abacus licenses` prints the third-party notices and every license text carried in the binary.
+- `make build` (embedded), `make build-dev`, `make release VERSION=x`, `make check-tools`;
+  `scripts/embed-tools.sh` replaces `scripts/dev-bundle.sh`.
+
 - Tasks is a real work browser (U1 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): every
   task listed (no 8-row cap) with a full-row cursor, status mark, priority, blocked-by and blocks
   marks, type, age, assignee and (from 140 columns) labels; a detail pane with the description,
@@ -88,6 +106,15 @@ may change behavior, and patch versions are fixes and small additions.
   `abacus tasks update --status` read the task first and send it, and the write allowlist refuses a
   status update without that guard (and `--force`). `abacus tasks update --status` therefore needs a
   readable tracker. The view strip is now List, Kanban, Insights (`V` from List still reaches Insights).
+- The release archive is `abacus`, `LICENSE`, `THIRD_PARTY_NOTICES.md` and `third_party/<tool>/LICENSE`;
+  the `bundled/` folder and the shipped manifest are gone. The binary is about 87 MB (darwin-arm64) because
+  the tools are inside it.
+- No message tells the user to install a tool, run a script or put anything on `PATH` (a tripwire test
+  scans doctor, status, setup, every domain command and every TUI render). A plain `go build` says
+  "Development build: tools are not built in; build with make build" once, in Doctor only. The Board tab
+  says how to point it at a board, never how to install anything. The Board CLI is looked up as `board`
+  only; the unrelated npm package `vb` is never run.
+
 - abacus no longer says it has no issue browser: the Tasks tab is its own list and detail view. The
   summary counts and the graph insights moved from beside the list to a second view (`v`), the
   `o` handoff to b9s stays as an optional extra, and the demo tracker is now fourteen tasks with an
