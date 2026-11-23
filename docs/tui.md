@@ -126,7 +126,7 @@ A provider that was found but cannot be used (`broken`, `incompatible`) leaves i
 detected provider.
 
 The Doctor tab (the one place providers are listed by name) leads with "Ready" or "Needs attention",
-one line per area, and each tool with where it was found (`bundled`, `PATH`, `override` or
+one line per area, and each tool with where it was found (`bundled`, `PATH`, `override`, `demo` or
 `missing`) and its version, then the detailed checks. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
@@ -146,6 +146,22 @@ appears in any other file.
   `[Lambe]`, the selected run has a `▸` marker, and dimmed tabs carry their state in text.
 - Badges: doctor `ok` `warn` `fail` `skip`, lease `held` `stale` `free`, `stalled`, `blocked`,
   `not connected` and the source labels (`tracker subset`, `graph analysis`).
+
+## Visual language
+
+Color means something, and every color is backed by a word or glyph so `NO_COLOR` loses nothing.
+
+- **Red, amber, green** are states only: failed or blocked or P0, attention or deferred, ok or
+  running. Names never use them: the tints for a person or machine come from a separate set (purple,
+  teal, magenta, lilac; just the first two on a 16-color terminal), chosen by a hash of the name, so
+  `ada` is the same color as a lease holder, a board author or claimant and a run's machine. Channels
+  are not tinted, so a channel and a person never share a color by accident.
+- **Accent** (blue) marks focus (the focused panel's border and title), section headings and the
+  in-progress state.
+- **Tasks bar**: the states in proportion across the panel, one glyph per state (`▒` open, `█` in
+  progress, `▓` blocked, `░` deferred, `·` closed), so it reads in monochrome.
+- **Queues mark**: a shape per state before its name (`●` running, `✕` failed, `◐` deferred, `◌` pending, `○` settled or canceled), colored by its tone.
+- The selected row is drawn plain on the highlight so the highlight stays whole.
 
 ## Demo
 

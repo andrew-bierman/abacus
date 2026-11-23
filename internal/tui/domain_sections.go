@@ -344,7 +344,7 @@ func (s *boardSection) connectedView() string {
 	if r.Truncated != "" {
 		lines = append(lines, wrap(th.Text(KindMuted, san(r.Truncated)), iw)...)
 	}
-	lines = append(lines, "", th.Header.Render("Channels"))
+	lines = append(lines, "", th.Section("Channels"))
 	if len(r.Channels) == 0 {
 		lines = append(lines, th.Text(KindMuted, "none yet: the first post makes one"))
 	}
@@ -360,26 +360,28 @@ func (s *boardSection) connectedView() string {
 		lines = append(lines, wrap(strings.Join(chans, " · "), iw)...)
 	}
 
-	lines = append(lines, "", th.Header.Render("Recent threads"))
+	lines = append(lines, "", th.Section("Recent threads"))
 	if len(r.Threads) == 0 {
 		lines = append(lines, th.Text(KindMuted, "no threads yet"))
 	}
-	var trows [][]string
+	var trows, tplain [][]string
 	for _, t := range r.Threads {
-		trows = append(trows, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), san(firstLine(t.Root.Text))})
+		tplain = append(tplain, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), san(firstLine(t.Root.Text))})
+		trows = append(trows, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), th.Tint(t.Root.Author, orDash(t.Root.Author)), san(firstLine(t.Root.Text))})
 	}
 	first := len(lines)
-	lines = append(lines, renderRows(th, threadCols, iw, trows, trows, s.cursor)...)
-	lines = append(lines, "", th.Header.Render("Tasks"))
+	lines = append(lines, renderRows(th, threadCols, iw, trows, tplain, s.cursor)...)
+	lines = append(lines, "", th.Section("Tasks"))
 	if len(r.Tasks) == 0 {
 		lines = append(lines, th.Text(KindMuted, "no open tasks"))
 	}
-	var krows [][]string
+	var krows, kplain [][]string
 	for _, t := range r.Tasks {
-		krows = append(krows, []string{hash + san(t.ID), orDash(t.State), orDash(t.Claimant), san(firstLine(t.Text))})
+		kplain = append(kplain, []string{hash + san(t.ID), orDash(t.State), orDash(t.Claimant), san(firstLine(t.Text))})
+		krows = append(krows, []string{hash + san(t.ID), orDash(t.State), th.Tint(t.Claimant, orDash(t.Claimant)), san(firstLine(t.Text))})
 	}
 	// the cursor runs over threads then tasks: draw the task rows with the cursor shifted past the threads
-	lines = append(lines, renderRows(th, taskCols, iw, krows, krows, s.cursor-len(r.Threads))...)
+	lines = append(lines, renderRows(th, taskCols, iw, krows, kplain, s.cursor-len(r.Threads))...)
 	var cursorLine int
 	if s.cursor < len(r.Threads) {
 		cursorLine = first + s.cursor
@@ -929,6 +931,33 @@ func (s *tasksSection) insightParts(iw int) (string, []string) {
 // title takes the slack and is cut last.
 var taskTable = table{cols: []column{{min: 12, max: 12, prio: 0}, {min: 11, max: 11, prio: 0}, {min: 2, max: 3, prio: 1}, {min: 8, prio: 1}}, gap: 2}
 
+// taskStatusKind is the color role of a task status; a plain status (open) is not colored.
+func taskStatusKind(status string) (Kind, bool) {
+	switch status {
+	case "blocked":
+		return KindFail, true
+	case "in_progress":
+		return KindAccent, true
+	case "deferred":
+		return KindWarn, true
+	case "closed":
+		return KindMuted, true
+	}
+	return 0, false
+}
+
+// taskPriorityKind is the color role of a priority: P0 calls for attention and P4 is quiet; the rest
+// are plain, so amber still means one thing (deferred).
+func taskPriorityKind(p int) (Kind, bool) {
+	switch p {
+	case 0:
+		return KindFail, true
+	case 4:
+		return KindMuted, true
+	}
+	return 0, false
+}
+
 // panelView is the Tasks list: the counts and a table of recent changes in a framed list panel and
 // the graph insights in a panel of their own, beside it from bpWide columns and below it under that.
 // The forms and the confirm screen are not drawn here.
@@ -944,8 +973,12 @@ func (s *tasksSection) panelView() string {
 
 	title := titled("Tasks", s.report.Source)
 	c := s.report.Counts
-	lines := wrap(fmt.Sprintf("%d tasks: %d open · %d in progress · %d blocked · %d deferred · %d closed", c.Total, c.Open, c.InProgress, c.Blocked, c.Deferred, c.Closed), iw)
-	lines = append(lines, "ready "+th.Text(KindOK, fmt.Sprint(c.Ready)), "", th.Header.Render("Recent changes"))
+	var lines []string
+	if bar := th.stackBar(min(iw, taskBarMax), taskBarSegments(c)); bar != "" {
+		lines = append(lines, bar)
+	}
+	lines = append(lines, wrap(fmt.Sprintf("%d tasks: %d open · %d in progress · %d blocked · %d deferred · %d closed", c.Total, c.Open, c.InProgress, c.Blocked, c.Deferred, c.Closed), iw)...)
+	lines = append(lines, "ready "+th.Text(KindOK, fmt.Sprint(c.Ready)), "", th.Section("Recent changes"))
 	cursorLine := len(lines)
 	if len(s.recent()) == 0 {
 		if c.Total == 0 {
@@ -954,11 +987,19 @@ func (s *tasksSection) panelView() string {
 			lines = append(lines, th.Text(KindMuted, "none"))
 		}
 	}
-	var rows [][]string
+	var styled, plain [][]string
 	for _, t := range s.recent() {
-		rows = append(rows, []string{san(t.ID), orDash(t.Status), fmt.Sprintf("P%d", t.Priority), san(t.Title)})
+		status, prio := orDash(t.Status), fmt.Sprintf("P%d", t.Priority)
+		plain = append(plain, []string{san(t.ID), status, prio, san(t.Title)})
+		if k, ok := taskStatusKind(t.Status); ok {
+			status = th.Text(k, status)
+		}
+		if k, ok := taskPriorityKind(t.Priority); ok {
+			prio = th.Text(k, prio)
+		}
+		styled = append(styled, []string{san(t.ID), status, prio, san(t.Title)})
 	}
-	lines = append(lines, renderRows(th, taskTable, iw, rows, rows, s.cursor)...)
+	lines = append(lines, renderRows(th, taskTable, iw, styled, plain, s.cursor)...)
 	cursorLine += s.cursor
 
 	sub, ins := s.insightParts(insW)

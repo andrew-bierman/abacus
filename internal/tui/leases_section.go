@@ -166,7 +166,7 @@ func (s *leasesSection) listLines(g duoGeom) []string {
 		if i == s.cursor {
 			resource = th.Header.Render(resource)
 		}
-		rows[i] = []string{th.Badge(toneKind(l.Tone()), san(string(l.State))), resource, san(l.Holder), san(l.Expiry())}
+		rows[i] = []string{th.Badge(toneKind(l.Tone()), san(string(l.State))), resource, th.Tint(l.Holder, san(l.Holder)), san(l.Expiry())}
 	}
 	widths := leaseCols.fitRows(max(g.listInner()-2, 1), rows) // two cells for the selection marker
 	lines := make([]string, len(rows))

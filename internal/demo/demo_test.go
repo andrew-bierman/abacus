@@ -76,3 +76,12 @@ func TestDemoReportsCoverEveryStateTheTabsDraw(t *testing.T) {
 		t.Fatalf("insight fixtures must fill every section: %+v", i)
 	}
 }
+
+// A demo provider says it is demo data, so Doctor does not call it a missing tool.
+func TestDemoProvidersDetectWithTheDemoSource(t *testing.T) {
+	for _, m := range []core.Module{NewTasks(), NewLeases(), NewBoard()} {
+		if d := m.Detect(context.Background()); d.Source != core.SourceDemo {
+			t.Errorf("%s: source %q, want %q", m.ID(), d.Source, core.SourceDemo)
+		}
+	}
+}

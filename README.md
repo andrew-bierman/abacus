@@ -255,6 +255,7 @@ using data from fixture providers:
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
 │ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
 │ ready 4                                                                      │
 │                                                                              │
@@ -262,7 +263,6 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ▸ ac-12  in_progress  P1  wire the lease heartbeat                           │
 │   ac-09  open         P2  queue attention digest                             │
 │   ac-03  closed       P3  retire the old poller                              │
-│                                                                              │
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯

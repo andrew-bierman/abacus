@@ -2,9 +2,9 @@
  Board  Tasks  Leases  [Queues]  Doctor
 ╭─ ▸ Runs 3 · tracker subset · demo … ─╮
 │ no live daemon, no phases or queue   │
-│ ▸ T-1  running              gating   │
-│   T-2  deferred             deferred │
-│   T-3  running   (stalled)  running  │
+│ ▸ T-1  ● running                     │
+│   T-2  ◐ deferred                    │
+│   T-3  ● running   (stalled)         │
 │                                      │
 │ Needs attention 1                    │
 │   T-2  gate_failed  gh:pr rejected:… │
@@ -16,9 +16,9 @@
 ────────────────────────────────────────
 ╭─ ▸ Runs 3 · tracker subset · demo … ─╮
 │ no live daemon, no phases or queue   │
-│ ▸ T-1  running              gating   │
-│   T-2  deferred             deferred │
-│   T-3  running   (stalled)  running  │
+│ ▸ T-1  ● running                     │
+│   T-2  ◐ deferred                    │
+│   T-3  ● running   (stalled)         │
 │                                      │
 │ Needs attention 1                    │
 │   T-2  gate_failed  gh:pr rejected:… │
@@ -46,9 +46,9 @@
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────────────╮
 │ no live daemon, no phases or queue                                           │
-│ ▸ T-1  running              gating    operators-mac  general  30s            │
-│   T-2  deferred             deferred  operators-mac  -        n/a            │
-│   T-3  running   (stalled)  running   operators-mac  review   12m            │
+│ ▸ T-1  ● running              gating    operators-mac  general  30s          │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a          │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m          │
 │                                                                              │
 │ Needs attention 1                                                            │
 │   T-2  gate_failed  gh:pr rejected: merge conflict                           │
@@ -60,9 +60,9 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────────────╮
 │ no live daemon, no phases or queue                                           │
-│ ▸ T-1  running              gating    operators-mac  general  30s            │
-│   T-2  deferred             deferred  operators-mac  -        n/a            │
-│   T-3  running   (stalled)  running   operators-mac  review   12m            │
+│ ▸ T-1  ● running              gating    operators-mac  general  30s          │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a          │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m          │
 │                                                                              │
 │ Needs attention 1                                                            │
 │   T-2  gate_failed  gh:pr rejected: merge conflict                           │
@@ -90,9 +90,9 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ no live daemon, no phases or queue                                   │ │ T-1 (running)                               │
-│ ▸ T-1  running              gating    operators-mac  general  30s    │ │                                             │
-│   T-2  deferred             deferred  operators-mac  -        n/a    │ │ phase      gating                           │
-│   T-3  running   (stalled)  running   operators-mac  review   12m    │ │ workflow   general                          │
+│ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │                                             │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │ phase      gating                           │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m  │ │ workflow   general                          │
 │                                                                      │ │ session    ses-t1                           │
 │ Needs attention 1                                                    │ │ attempt    2                                │
 │   T-2  gate_failed  gh:pr rejected: merge conflict                   │ │ machine    operators-mac                    │
@@ -104,9 +104,9 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ no live daemon, no phases or queue                                   │ │ T-1 (running)                               │
-│ ▸ T-1  running              gating    operators-mac  general  30s    │ │                                             │
-│   T-2  deferred             deferred  operators-mac  -        n/a    │ │ phase      gating                           │
-│   T-3  running   (stalled)  running   operators-mac  review   12m    │ │ workflow   general                          │
+│ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │                                             │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │ phase      gating                           │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m  │ │ workflow   general                          │
 │                                                                      │ │ session    ses-t1                           │
 │ Needs attention 1                                                    │ │ attempt    2                                │
 │   T-2  gate_failed  gh:pr rejected: merge conflict                   │ │ machine    operators-mac                    │

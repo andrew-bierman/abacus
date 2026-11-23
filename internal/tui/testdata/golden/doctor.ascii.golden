@@ -29,7 +29,7 @@ running doctor…
 ╰──────────────────────────────────────╯
 ╭─ Tools ──────────────────────────────╮
 │ board        (missing) 0.54.0        │
-│ lambe        (missing) demo          │
+│ lambe        (demo)                  │
 │ beads-lease  (missing) 1.0.0         │
 │ bd           (missing) 1.3.4         │
 │ ghost        (missing)               │
@@ -70,7 +70,7 @@ running doctor…
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Tools ──────────────────────────────────────────────────────────────────────╮
 │ board        (missing) 0.54.0                                                │
-│ lambe        (missing) demo                                                  │
+│ lambe        (demo)                                                          │
 │ beads-lease  (missing) 1.0.0                                                 │
 │ bd           (missing) 1.3.4                                                 │
 │ ghost        (missing)                                                       │
@@ -94,7 +94,7 @@ running doctor…
 
 ╭─ Areas ─────────────────────────────────────────────────╮ ╭─ Tools ──────────────────────────────────────────────────╮
 │ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4   │ │ board        (missing) 0.54.0                            │
-│         ready                                           │ │ lambe        (missing) demo                              │
+│         ready                                           │ │ lambe        (demo)                                      │
 │ Leases  2 held, 1 stale, 1 free                         │ │ beads-lease  (missing) 1.0.0                             │
 │ Queues  demo data: fixtures, no live daemon             │ │ bd           (missing) 1.3.4                             │
   ↕ +22 more
@@ -108,7 +108,7 @@ running doctor…
 
 ╭─ Areas ─────────────────────────────────────────────────╮ ╭─ Tools ──────────────────────────────────────────────────╮
 │ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 4   │ │ board        (missing) 0.54.0                            │
-│         ready                                           │ │ lambe        (missing) demo                              │
+│         ready                                           │ │ lambe        (demo)                                      │
 │ Leases  2 held, 1 stale, 1 free                         │ │ beads-lease  (missing) 1.0.0                             │
 │ Queues  demo data: fixtures, no live daemon             │ │ bd           (missing) 1.3.4                             │
 │ Board   4 channels, 2 recent threads, 2 open tasks      │ │ ghost        (missing)                                   │

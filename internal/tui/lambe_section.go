@@ -235,13 +235,30 @@ func (s *lambeSection) listTitle() string {
 // stalled, then phase, machine, workflow and last event. A higher prio number drops first as the
 // panel narrows, so the last two appear only on a wide terminal.
 func runCols(withFlag bool) []column {
-	cols := []column{{min: 14, max: 14, prio: 0}, {min: 10, max: 10, prio: 0}}
+	cols := []column{{min: 14, max: 14, prio: 0}, {min: 12, max: 12, prio: 0}}
 	if withFlag {
 		cols = append(cols, column{min: 9, max: 9, prio: 1})
 	}
 	return append(cols,
 		column{min: 8, max: 16, prio: 2}, column{min: 10, max: 20, prio: 3},
 		column{min: 8, max: 16, prio: 4}, column{min: 5, max: 8, prio: 5, right: true})
+}
+
+// runStateGlyph is a shape per run state, so the mark before the state says something without color.
+func runStateGlyph(state string) string {
+	switch core.RunState(strings.ToLower(state)) {
+	case core.RunRunning:
+		return "●"
+	case core.RunFailed:
+		return "✕"
+	case core.RunDeferred:
+		return "◐"
+	case core.RunPending:
+		return "◌"
+	case core.RunSettled, core.RunCanceled:
+		return "○"
+	}
+	return "·"
 }
 
 // listLines is the scrolling part of the list panel (the title carries the count) and the line the
@@ -276,15 +293,17 @@ func (s *lambeSection) listLines(iw int) ([]string, int) {
 		if r.Stalled {
 			flag, plainFlag = th.Badge(KindWarn, "stalled"), "(stalled)"
 		}
-		mk := func(state, flag string) []string {
+		mk := func(state, flag, machine string) []string {
 			cells := []string{san(r.Issue), state}
 			if stalled {
 				cells = append(cells, flag)
 			}
-			return append(cells, orDash(r.Phase), orDash(r.Machine), orDash(r.Workflow), orDash(r.LastEventAge))
+			return append(cells, orDash(r.Phase), machine, orDash(r.Workflow), orDash(r.LastEventAge))
 		}
-		styled = append(styled, mk(th.Text(stateKind(r.State), state), flag))
-		plain = append(plain, mk(state, plainFlag))
+		kind := stateKind(r.State)
+		glyph := runStateGlyph(r.State)
+		styled = append(styled, mk(th.Text(kind, glyph)+" "+th.Text(kind, state), flag, th.Tint(r.Machine, orDash(r.Machine))))
+		plain = append(plain, mk(glyph+" "+state, plainFlag, orDash(r.Machine)))
 	}
 	out = append(out, renderRows(th, tb, iw, styled, plain, s.cursor)...)
 	if s.view.Source != lambe.SourceTracker {

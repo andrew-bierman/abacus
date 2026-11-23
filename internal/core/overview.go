@@ -14,7 +14,7 @@ type ToolLine struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	State   State  `json:"state"`
-	Where   string `json:"where"` // bundled, PATH, override or missing
+	Where   string `json:"where"` // bundled, PATH, override, demo or missing
 	Version string `json:"version,omitempty"`
 	Path    string `json:"path,omitempty"`
 	Detail  string `json:"detail,omitempty"`

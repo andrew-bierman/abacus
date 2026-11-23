@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -460,5 +461,23 @@ func TestLeasesDrilledAndLongListNeverOverflowAnySize(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// In a demo nothing is missing: every tool Doctor lists says it is demo data.
+func TestDoctorShowsDemoToolsAsDemoNotMissing(t *testing.T) {
+	d := newDoctorSection(demoEntries())
+	d.SetTheme(asciiTheme())
+	var m tea.Model = d
+	m, _ = m.Update(doctorMsg{report: core.DoctorReport(context.Background(), "", demoEntries()), seq: 0})
+	v := sized(m, 120, 60).View()
+	if strings.Contains(v, "missing") {
+		t.Fatalf("a demo has no missing tools:\n%s", v)
+	}
+	if strings.Count(v, "(demo)") < 4 {
+		t.Fatalf("every demo tool is labelled demo:\n%s", v)
+	}
+	if strings.Contains(v, "(demo) demo") {
+		t.Fatalf("the demo badge is not repeated as a version:\n%s", v)
 	}
 }

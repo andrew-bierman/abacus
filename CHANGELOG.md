@@ -26,6 +26,15 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- A visual pass over the tabs, restrained and meaningful: Tasks opens with a bar of the task states
+  in proportion (at most 40 cells; blocked in red, in progress in the accent color, closed quiet),
+  status is colored by meaning (blocked red, deferred amber, in progress accent) and only P0 is
+  alarmed, Queues states get a mark whose shape differs per state, section headings are accent
+  colored, and a person or machine (an agent, a lease holder, a run's machine) has one color on every
+  tab. Tints come from a palette that never resembles a state color; a 16-color terminal gets the
+  two hues it can tell apart. Each color is also carried by a glyph or word, so nothing depends on color:
+  the bar uses a different glyph per state and the dot is a character. Selected rows stay plain on
+  the highlight. In `--demo`, Doctor now lists the demo tools as demo instead of missing.
 - Tasks and Board are drawn in framed panels with aligned columns. Tasks shows the counts and an
   aligned task table in a list panel and the graph insights in their own panel, beside the list from
   100 columns and under it below that. Board shows the summary, channels and aligned thread and task
