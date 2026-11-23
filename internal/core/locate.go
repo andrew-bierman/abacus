@@ -174,7 +174,7 @@ func LocateFound(tool, explicit string, look func(string) (string, error)) (Foun
 	}
 	detail := fmt.Sprintf("%s not found on PATH", tool)
 	if ignored != "" {
-		detail += " (bundled copy ignored: " + ignored + ")"
+		detail += " " + refusedMarker + ignored + ")"
 	}
 	return Found{}, detail
 }

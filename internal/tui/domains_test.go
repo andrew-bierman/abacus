@@ -135,8 +135,8 @@ func TestTasksShowsCompactSummaryAndInsights(t *testing.T) {
 
 func TestInsightsNotConnectedShowsHowToInstall(t *testing.T) {
 	r := newTasksRig(t)
-	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights}}})
-	if v := m.View(); !strings.Contains(v, "brew install") || !strings.Contains(v, "tap/bv") || !strings.Contains(v, "not connected") {
+	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights()}}})
+	if v := m.View(); !strings.Contains(v, "own copy of") || strings.Contains(v, "brew install") || !strings.Contains(v, "not connected") {
 		t.Fatalf("%s", v)
 	}
 }
@@ -312,7 +312,7 @@ func TestFullViewHandoffOnlyOnOAndOnlyForTasks(t *testing.T) {
 func TestFullViewMissingIsAnErrorNoticeWithAnInstallHint(t *testing.T) {
 	r := newTasksRig(t)
 	m, _ := r.m.Update(fullViewDoneMsg{err: errors.New(core.FullViewInstallHint)})
-	if v := m.View(); !strings.Contains(v, "b9s is not installed") || !strings.Contains(v, "github.com/vanderheijden86/b9s") {
+	if v := m.View(); !strings.Contains(v, "b9s is optional") || !strings.Contains(v, "github.com/vanderheijden86/b9s") {
 		t.Fatalf("%s", v)
 	}
 	m = press(m, "j") // any key clears the notice

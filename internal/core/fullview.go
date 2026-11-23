@@ -12,7 +12,7 @@ import (
 const FullViewName = "b9s"
 
 // FullViewInstallHint is shown when the handoff cannot find the tool.
-const FullViewInstallHint = "b9s is not installed: install it from https://github.com/vanderheijden86/b9s (the full board, tree and graph view), then press o again"
+const FullViewInstallHint = "b9s is optional and not installed here: get it from https://github.com/vanderheijden86/b9s for the full board, tree and graph view, then press o again"
 
 // ProbeFullView finds the full-view tool: it must be on PATH and answer `-version` (the flag
 // its -help lists). It runs nothing else. Callers run it only on an explicit user action.

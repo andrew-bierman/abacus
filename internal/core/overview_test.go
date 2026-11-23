@@ -27,7 +27,8 @@ func TestOverviewLeadsWithReadyAndListsWhereEachToolCameFrom(t *testing.T) {
 		{Module: &modtest.Fake{IDStr: "lambe"}, Detection: core.Detection{State: core.Absent, Detail: "lambe not found on PATH"}},
 	}
 	o := core.BuildOverview(context.Background(), entries)
-	if !o.Ready || !strings.HasPrefix(o.Headline, "Ready") {
+	// abacus's own lambe is unavailable: that is abacus's problem, so it is not Ready.
+	if o.Ready || !strings.HasPrefix(o.Headline, "Needs attention: abacus's own copy of lambe") {
 		t.Fatalf("%+v", o)
 	}
 	var tools []string
@@ -74,7 +75,7 @@ func TestOverviewSaysWhenABundledToolWasIgnoredAndWhatRanInstead(t *testing.T) {
 	e := core.Entry{Module: bd, Detection: core.Detection{State: core.Ready, Version: "1.3.0", Source: core.SourcePATH, Path: "/usr/local/bin/bd",
 		Ignored: "world-writable (/app/bundled/bd)"}}
 	o := core.BuildOverview(context.Background(), []core.Entry{e})
-	want := "bundled bd ignored: world-writable (/app/bundled/bd); using PATH bd 1.3.0"
+	want := "abacus's own copy cannot be used (world-writable (/app/bundled/bd)); using the bd on your PATH 1.3.0 instead (re-extract the download to restore it)"
 	if o.Tools[0].Note != want {
 		t.Fatalf("note %q, want %q", o.Tools[0].Note, want)
 	}
