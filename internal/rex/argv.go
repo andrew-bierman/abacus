@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -30,28 +29,9 @@ func lsArgv(host string) []string {
 
 func versionArgv() []string { return []string{autostartOff, "version", "--json"} }
 
-// A -S host is a name, user@name or name:port: dot-separated labels of letters, digits, hyphens
-// and underscores (a label starts and ends with a letter or digit), an optional user of up to 32
-// characters that does not start with a dash, and an optional port from 1 to 65535. Never a
-// leading dash (it would be read as another option), a space, a bracketed address or any shell
-// metacharacter. IPv6 literals are not accepted: configure a name.
-var hostRE = regexp.MustCompile(`^(?:[A-Za-z0-9_][A-Za-z0-9._-]{0,31}@)?` +
-	`[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)*` +
-	`(?::([0-9]{1,5}))?$`)
-
-// ValidHost reports whether host is safe to hand to `rex -S`.
-func ValidHost(host string) bool {
-	m := hostRE.FindStringSubmatch(host)
-	if m == nil || len(host) > core.MaxHostRunes {
-		return false
-	}
-	if m[1] != "" {
-		if port, _ := strconv.Atoi(m[1]); port < 1 || port > 65535 {
-			return false
-		}
-	}
-	return true
-}
+// ValidHost reports whether host is safe to hand to `rex -S` (the one rule is core.ValidHandoffHost,
+// shared with the front-ends that run the handoff).
+func ValidHost(host string) bool { return core.ValidHandoffHost(host) }
 
 // maxConfiguredHosts bounds ABACUS_REX_HOSTS.
 const maxConfiguredHosts = 16

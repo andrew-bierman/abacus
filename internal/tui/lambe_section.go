@@ -135,7 +135,9 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.fit(s.width())
 	case tea.KeyMsg:
 		s.notice = ""
-		s.ws.clear()
+		if s.ws.swallow() {
+			return s, nil
+		}
 		if s.typing {
 			s.typeKey(msg)
 			return s, nil
@@ -164,16 +166,26 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s.ws.knows(it, ok) { // the workspace knows where this run is: its plan decides
 				return s, s.ws.jump(it, ok)
 			}
+			if s.ws.running() { // a handoff is open or has not reported back yet
+				return s, nil
+			}
 			machine := runs[s.cursor].Machine
 			if machine == "" {
 				s.notice = "no machine recorded for this run"
+				return s, nil
+			}
+			if !core.ValidHandoffHost(machine) { // never put a provider's text in a command
+				s.notice = "this run's machine name is not safe to pass on, so nothing was opened"
 				return s, nil
 			}
 			if s.ws.isDemo() { // fixtures: show the command, never run it
 				s.ws.noteCopy("Demo data: nothing is opened.", s.m.RexArgv(machine))
 				return s, nil
 			}
-			return s, s.handoff(s.m.RexArgv(machine))
+			if s.ws == nil {
+				return s, s.handoff(s.m.RexArgv(machine))
+			}
+			return s, s.ws.start(s.m.RexArgv(machine))
 		}
 	}
 	return s, nil

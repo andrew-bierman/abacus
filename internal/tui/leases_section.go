@@ -138,7 +138,9 @@ func (s *leasesSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.resize(m)
 		s.fit(s.width())
 	case tea.KeyMsg:
-		s.ws.clear()
+		if s.ws.swallow() { // the key that closes the notice does nothing else
+			return s, nil
+		}
 		switch {
 		case key.Matches(m, keyWorkspace):
 			it, ok := s.selectedItem()

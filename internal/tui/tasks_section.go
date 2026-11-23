@@ -308,7 +308,9 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return s, nil
 	}
 	s.notice = ""
-	s.ws.clear()
+	if s.ws.swallow() {
+		return s, nil
+	}
 	switch {
 	case key.Matches(k, keyWorkspace):
 		it, ok := s.selectedItem()

@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,6 +34,7 @@ type wsLayer struct {
 	tag     string
 	prov    core.WorkspaceProvider // nil: nothing to read
 	demo    bool                   // fixtures: show the command, never run it
+	bin     string                 // the located workspace tool a plan's command must start with
 	handoff func([]string) tea.Cmd // hands the terminal to argv; the same runner `o` uses
 	rep     *core.WorkspaceReport  // nil: no workspace data, so nothing is shown anywhere
 	busy    bool
@@ -43,7 +43,11 @@ type wsLayer struct {
 }
 
 func newWsLayer(tag string, prov core.WorkspaceProvider, demo bool, handoff func([]string) tea.Cmd) *wsLayer {
-	return &wsLayer{tag: tag, prov: prov, demo: demo, handoff: handoff}
+	w := &wsLayer{tag: tag, prov: prov, demo: demo, handoff: handoff, bin: core.RexBin}
+	if b, ok := prov.(interface{ Bin() string }); ok && b.Bin() != "" {
+		w.bin = b.Bin()
+	}
+	return w
 }
 
 // workspaceHost is implemented by the sections that can show the layer.
@@ -261,9 +265,30 @@ func (w *wsLayer) jumpBinding(it core.WorkspaceItem, ok bool) key.Binding {
 // runnable reports whether a plan's first step may be handed the terminal. It must be an
 // interactive step core produced for this placement: the located workspace tool, "-S" and the
 // placement's own machine, nothing else. Anything else is shown for the user to copy.
-func runnable(p *core.Placement, r core.OpenRung) bool {
-	return r.Interactive && p.Host != "" && p.Match != core.MatchHostNotConfigured &&
-		len(r.Argv) == 3 && filepath.Base(r.Argv[0]) == core.RexBin && r.Argv[1] == "-S" && r.Argv[2] == p.Host
+func (w *wsLayer) runnable(p *core.Placement, r core.OpenRung) bool {
+	return r.Interactive && p.Host != "" && p.Match != core.MatchHostNotConfigured && core.ValidHandoffHost(p.Host) &&
+		len(r.Argv) == 3 && r.Argv[0] == w.bin && r.Argv[1] == "-S" && r.Argv[2] == p.Host
+}
+
+// start hands the terminal to argv and remembers that this layer did, so a second press while it
+// is open (or before it reports back) does nothing. Nothing is remembered for a runner that gave
+// no command, because no done message will come.
+func (w *wsLayer) start(argv []string) tea.Cmd {
+	cmd := w.handoff(append([]string(nil), argv...))
+	w.pending = cmd != nil
+	return cmd
+}
+
+// running reports that a handoff this layer started has not finished.
+func (w *wsLayer) running() bool { return w != nil && w.pending }
+
+// swallow closes an open notice and reports whether it did: the key that closes it does nothing else.
+func (w *wsLayer) swallow() bool {
+	if w == nil || len(w.note) == 0 {
+		return false
+	}
+	w.note = nil
+	return true
 }
 
 // jump is an explicit keypress on a row. When the placement is unambiguous and its plan's first
@@ -271,7 +296,7 @@ func runnable(p *core.Placement, r core.OpenRung) bool {
 // Every other outcome is a framed notice: ambiguous with the candidates, or the command to copy.
 // Nothing here ever tries a second step.
 func (w *wsLayer) jump(it core.WorkspaceItem, ok bool) tea.Cmd {
-	if !w.knows(it, ok) {
+	if w.running() || !w.knows(it, ok) {
 		return nil
 	}
 	p, cands, more := w.find(it)
@@ -296,9 +321,8 @@ func (w *wsLayer) jump(it core.WorkspaceItem, ok bool) tea.Cmd {
 	if plan == nil {
 		plan = &core.OpenPlan{}
 	}
-	if !w.demo && w.handoff != nil && len(plan.Rungs) > 0 && runnable(p, plan.Rungs[0]) {
-		w.pending = true
-		return w.handoff(append([]string(nil), plan.Rungs[0].Argv...))
+	if !w.demo && w.handoff != nil && len(plan.Rungs) > 0 && w.runnable(p, plan.Rungs[0]) {
+		return w.start(plan.Rungs[0].Argv)
 	}
 	var lines []string
 	switch {

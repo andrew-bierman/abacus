@@ -208,7 +208,9 @@ where the selected item lives. Nothing changes anywhere without workspace data.
 - **Jump.** `o` on Queues (as before) and `w` on Leases and Tasks use the open plan core built. On
   the keypress, and only when the placement is unambiguous and the plan's first step is an
   interactive `<workspace tool> -S <that placement's machine>`, that one step is run with the same
-  runner `o` always used; no later step is tried. Anything else is a framed notice that any key
+  runner `o` always used; no later step is tried, the command must be the located workspace tool
+  with a safe machine name (the same check the adapter uses), and a second press while the handoff
+  is open does nothing. Anything else is a framed notice that any key
   closes: the candidates when ambiguous, or the command to copy (machine not configured, a session
   on this machine, a step that cannot run from here). The key is absent from the footer and does
   nothing when there is no workspace data or the row has no placement. Like every section key it

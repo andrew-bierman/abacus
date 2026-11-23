@@ -26,12 +26,18 @@ func (f fakeWS) Workspace(context.Context, []core.WorkspaceItem) (core.Workspace
 func (f fakeWS) Open(p core.Placement) core.OpenPlan { return f.open(p) }
 
 // wsRecorder is the fake runner: it records what the TUI would hand the terminal to.
-type wsRecorder struct{ calls [][]string }
+type wsRecorder struct {
+	calls [][]string
+	ret   tea.Cmd // what the runner hands back; a real one always returns a command
+}
 
 func (r *wsRecorder) handoff(argv []string) tea.Cmd {
 	r.calls = append(r.calls, argv)
-	return nil
+	return r.ret
 }
+
+// opens is a runner command that is never run: it stands for the terminal being handed over.
+func opens() tea.Cmd { return func() tea.Msg { return nil } }
 
 func leaseIt(id string) core.WorkspaceItem {
 	return core.WorkspaceItem{Kind: core.WorkspaceLease, ID: id}
@@ -378,7 +384,7 @@ func TestQueuesOKeepsItsBehaviorWithoutWorkspaceDataAndUsesThePlanWithIt(t *test
 
 func TestHandoffErrorOfAJumpIsShownOnlyToTheSectionThatStartedIt(t *testing.T) {
 	prov := fakeWS{rep: okReport(placement("ac-1", "mac-one", "x", core.MatchExact)), open: func(core.Placement) core.OpenPlan { return rungPlan("mac-one") }}
-	rec := &wsRecorder{}
+	rec := &wsRecorder{ret: opens()}
 	_, m := loadedLeases(t, prov, false, rec)
 	m, _ = m.Update(handoffDoneMsg{err: context.Canceled}) // not ours: no jump was started
 	if strings.Contains(m.View(), "did not open") {
@@ -475,5 +481,264 @@ func TestQueuesOOnAnAmbiguousRunShowsCandidatesNotTheLegacyHandoff(t *testing.T)
 	s, _ = s.Update(runeKey("o"))
 	if v := s.View(); len(rec.calls) != 0 || !strings.Contains(v, "2 places claim A-1") {
 		t.Fatalf("calls %v:\n%s", rec.calls, v)
+	}
+}
+
+// ---- review fixes: double press, hostile hosts, located binary, swallowed key, stale data ----
+
+func TestSecondPressWhileTheHandoffIsOpenDoesNothingAndAfterItReportsRunsAgain(t *testing.T) {
+	prov := fakeWS{rep: okReport(placement("ac-1", "mac-one", "x", core.MatchExact)), open: func(core.Placement) core.OpenPlan { return rungPlan("mac-one") }}
+	rec := &wsRecorder{ret: opens()}
+	_, m := loadedLeases(t, prov, false, rec)
+	m, _ = m.Update(runeKey("w"))
+	m, _ = m.Update(runeKey("w"))
+	if len(rec.calls) != 1 {
+		t.Fatalf("double press ran %d times", len(rec.calls))
+	}
+	m, _ = m.Update(handoffDoneMsg{})
+	m.Update(runeKey("w"))
+	if len(rec.calls) != 2 {
+		t.Fatalf("after the handoff reported, calls = %d", len(rec.calls))
+	}
+}
+
+func TestQueuesODoublePressRunsOnceKnownPlacementAndLegacy(t *testing.T) {
+	it := core.WorkspaceItem{Kind: core.WorkspaceRun, ID: "A-1", Host: "mac-one"}
+	pl := core.Placement{ID: "p", Item: it, Host: "mac-one", Session: "s", Label: "l", Match: core.MatchExact}
+	for name, prov := range map[string]core.WorkspaceProvider{
+		"known placement": fakeWS{rep: okReport(pl), open: func(core.Placement) core.OpenPlan { return rungPlan("mac-one") }},
+		"legacy":          nil,
+	} {
+		rec := &wsRecorder{ret: opens()}
+		ls := newLambeSection(lambe.NewDemo(), rec.handoff)
+		ls.setWorkspace(newWsLayer("Queues", prov, false, rec.handoff))
+		var s tea.Model = ls
+		s, cmd := s.Update(lambeViewMsg{view: lambe.View{Snapshot: lambe.Snapshot{Runs: []lambe.Run{{Issue: "A-1", Machine: "mac-one"}}}}})
+		s = drive(t, s, cmd)
+		s, _ = s.Update(runeKey("o"))
+		s, _ = s.Update(runeKey("o"))
+		if len(rec.calls) != 1 {
+			t.Fatalf("%s: double o ran %d times", name, len(rec.calls))
+		}
+		s, _ = s.Update(handoffDoneMsg{})
+		s.Update(runeKey("o"))
+		if len(rec.calls) != 2 {
+			t.Fatalf("%s: after done, calls = %d", name, len(rec.calls))
+		}
+	}
+}
+
+func TestLegacyQueuesORefusesAnUnsafeMachineName(t *testing.T) {
+	for _, bad := range []string{"mac\x1b[2J --evil", "-oProxyCommand=x", "mac one", "mac\n", "a;b", "-S"} {
+		rec := &wsRecorder{ret: opens()}
+		ls := newLambeSection(lambe.NewDemo(), rec.handoff)
+		ls.setWorkspace(newWsLayer("Queues", nil, false, rec.handoff))
+		var s tea.Model = ls
+		s, _ = s.Update(lambeViewMsg{view: lambe.View{Snapshot: lambe.Snapshot{Runs: []lambe.Run{{Issue: "A-1", Machine: bad}}}}})
+		s, _ = s.Update(runeKey("o"))
+		if len(rec.calls) != 0 || !strings.Contains(s.View(), "not safe to pass on") || strings.Contains(s.View(), "\x1b") {
+			t.Fatalf("%q: calls %v\n%s", bad, rec.calls, s.View())
+		}
+	}
+}
+
+func TestRunnableRefusesUnsafeHostsAndAnotherBinary(t *testing.T) {
+	for name, c := range map[string]struct {
+		host string
+		argv []string
+	}{
+		"leading dash":  {"-x", []string{"rex", "-S", "-x"}},
+		"space":         {"a b", []string{"rex", "-S", "a b"}},
+		"escape":        {"a\x1bb", []string{"rex", "-S", "a\x1bb"}},
+		"other path":    {"mac", []string{"/x/rex", "-S", "mac"}},
+		"other program": {"mac", []string{"rexx", "-S", "mac"}},
+	} {
+		c := c
+		plan := core.OpenPlan{Rungs: []core.OpenRung{{Name: "h", Argv: c.argv, Interactive: true}}, Copy: "c"}
+		prov := fakeWS{rep: okReport(placement("ac-1", c.host, "x", core.MatchExact)), open: func(core.Placement) core.OpenPlan { return plan }}
+		rec := &wsRecorder{ret: opens()}
+		_, m := loadedLeases(t, prov, false, rec)
+		m.Update(runeKey("w"))
+		if len(rec.calls) != 0 {
+			t.Errorf("%s: ran %v", name, rec.calls)
+		}
+	}
+}
+
+// The layer runs the located binary its provider reports, and only that.
+type binWS struct {
+	fakeWS
+	bin string
+}
+
+func (b binWS) Bin() string { return b.bin }
+
+func TestRunnableRequiresTheLocatedBinary(t *testing.T) {
+	plan := func(bin string) core.OpenPlan {
+		argv := core.HandoffArgv(bin, "mac")
+		return core.OpenPlan{Rungs: []core.OpenRung{{Name: "h", Argv: argv, Interactive: true}}, Copy: core.ShellJoin(argv)}
+	}
+	for _, c := range []struct {
+		located, inPlan string
+		runs            int
+	}{{"/opt/bin/rex", "/opt/bin/rex", 1}, {"/opt/bin/rex", "/tmp/rex", 0}, {"/opt/bin/rex", "rex", 0}, {"", "rex", 1}, {"", "/tmp/rex", 0}} {
+		c := c
+		prov := binWS{fakeWS{rep: okReport(placement("ac-1", "mac", "x", core.MatchExact)), open: func(core.Placement) core.OpenPlan { return plan(c.inPlan) }}, c.located}
+		rec := &wsRecorder{ret: opens()}
+		_, m := loadedLeases(t, prov, false, rec)
+		m.Update(runeKey("w"))
+		if len(rec.calls) != c.runs {
+			t.Errorf("located %q plan %q: %d runs, want %d", c.located, c.inPlan, len(rec.calls), c.runs)
+		}
+	}
+}
+
+func TestArgvHostIsTheDisplayedHostForALabelMatch(t *testing.T) {
+	prov := fakeWS{rep: okReport(placement("ac-1", "mac-two", "review ac-1 notes", core.MatchLabel)), open: func(p core.Placement) core.OpenPlan { return rungPlan(p.Host) }}
+	rec := &wsRecorder{ret: opens()}
+	_, m := loadedLeases(t, prov, false, rec)
+	if v := m.View(); !strings.Contains(v, "mac-two") || !strings.Contains(v, "by label") {
+		t.Fatalf("detail:\n%s", v)
+	}
+	m.Update(runeKey("w"))
+	if len(rec.calls) != 1 || rec.calls[0][2] != "mac-two" {
+		t.Fatalf("calls %v", rec.calls)
+	}
+}
+
+func TestStaleDataBetweenViewAndKeyActsOnTheNewData(t *testing.T) {
+	old := fakeWS{rep: okReport(placement("ac-1", "old-host", "x", core.MatchExact)), open: func(p core.Placement) core.OpenPlan { return rungPlan(p.Host) }}
+	rec := &wsRecorder{ret: opens()}
+	_, m := loadedLeases(t, old, false, rec)
+	_ = m.View() // the user saw old-host
+	rep := okReport(placement("ac-1", "new-host", "x", core.MatchExact))
+	rep.Placements[0].Open = &core.OpenPlan{Rungs: []core.OpenRung{{Name: "h", Argv: core.HandoffArgv("", "new-host"), Interactive: true}}}
+	m, _ = m.Update(workspaceMsg{tag: "Leases", rep: rep})
+	m.Update(runeKey("w"))
+	if len(rec.calls) != 1 || rec.calls[0][2] != "new-host" {
+		t.Fatalf("calls %v", rec.calls)
+	}
+	// Data that no longer places the row: the key is a no-op.
+	rec2 := &wsRecorder{ret: opens()}
+	_, m = loadedLeases(t, old, false, rec2)
+	m, _ = m.Update(workspaceMsg{tag: "Leases", rep: okReport(placement("other", "h", "x", core.MatchExact))})
+	m.Update(runeKey("w"))
+	if len(rec2.calls) != 0 {
+		t.Fatalf("ran on data that no longer places the row: %v", rec2.calls)
+	}
+}
+
+func TestSelectionIdentityHoldsWhenTheListReordersUnderTheCursor(t *testing.T) {
+	mk := func(id string) core.Placement { return placement(id, "host-"+id, "x", core.MatchExact) }
+	prov := fakeWS{rep: okReport(mk("ac-1"), mk("ac-2")), open: func(p core.Placement) core.OpenPlan { return rungPlan(p.Host) }}
+	rec := &wsRecorder{ret: opens()}
+	r := leasesReport(core.Lease{Resource: "ac-1", State: core.LeaseHeld}, core.Lease{Resource: "ac-2", State: core.LeaseHeld})
+	s := leasesWith(&r)
+	s.tick = func() tea.Cmd { return nil }
+	s.setWorkspace(newWsLayer("Leases", prov, false, rec.handoff))
+	var m tea.Model = s
+	m = drive(t, m, s.fetch())
+	m, _ = m.Update(runeKey("j")) // on ac-2
+	r = leasesReport(core.Lease{Resource: "ac-2", State: core.LeaseHeld}, core.Lease{Resource: "ac-1", State: core.LeaseHeld})
+	m = drive(t, m, s.fetch()) // the order flips under the cursor
+	m.Update(runeKey("w"))
+	if len(rec.calls) != 1 || rec.calls[0][2] != "host-ac-2" {
+		t.Fatalf("calls %v, want the handoff of ac-2", rec.calls)
+	}
+}
+
+func TestJumpKeyIsDroppedWhenTheBodyIsTooSmall(t *testing.T) {
+	for _, tab := range []string{"2", "3", "4"} {
+		for _, sz := range [][2]int{{30, 30}, {100, 8}} {
+			rec := &wsRecorder{ret: opens()}
+			m := demoWorkspaceModel(t, asciiTheme(), rec, 100, 32)
+			m = press(m, tab)
+			m = sized(m, sz[0], sz[1])
+			key := "w"
+			if tab == "4" {
+				key = "o"
+			}
+			if tab == "2" {
+				m = press(m, "j")
+			}
+			m = press(m, key)
+			if len(rec.calls) != 0 || strings.Contains(m.View(), "any key closes") {
+				t.Errorf("tab %s %v: key acted on a hidden screen", tab, sz)
+			}
+		}
+	}
+}
+
+func TestHandoffDoneOwnershipForTasksQueuesAndAHiddenStarter(t *testing.T) {
+	// Tasks: the error is shown only to the section that started it, even after leaving its tab.
+	p := tasksFake()
+	rec := &wsRecorder{ret: opens()}
+	var m tea.Model = NewWithHandoff([]core.Entry{{Module: p, Detection: p.Det}}, rec.handoff, WithTheme(asciiTheme()), WithAudit(&memAudit{}), WithFullView(noFullView))
+	it := core.WorkspaceItem{Kind: core.WorkspaceTask, ID: "ac-09"}
+	pl := core.Placement{ID: "p", Item: it, Host: "mac-one", Session: "s", Label: "l", Match: core.MatchExact}
+	ts := m.(*Model).tabs[1].sec.(*tasksSection)
+	ts.setWorkspace(newWsLayer("Tasks", fakeWS{rep: okReport(pl), open: func(core.Placement) core.OpenPlan { return rungPlan("mac-one") }}, false, rec.handoff))
+	m = sized(m, 100, 32)
+	m, cmd := m.Update(tasksMsg{report: fixtureTasks()})
+	m = drive(t, m, cmd)
+	m = press(press(m, "2"), "j")
+	m, _ = m.Update(handoffDoneMsg{err: context.Canceled}) // nobody started one
+	if strings.Contains(m.View(), "did not open") {
+		t.Fatal("tasks showed a foreign error")
+	}
+	m = press(m, "w")
+	m = press(m, "1") // leave the tab before the handoff reports
+	m, _ = m.Update(handoffDoneMsg{err: context.Canceled})
+	m = press(m, "2")
+	if !strings.Contains(m.View(), "did not open") {
+		t.Fatalf("tasks lost its own error:\n%s", m.View())
+	}
+	// Queues: a handoff started on Queues is not claimed by Leases or Tasks.
+	rec2 := &wsRecorder{ret: opens()}
+	d := demoWorkspaceModel(t, asciiTheme(), rec2, 100, 32)
+	d, _ = d.Update(handoffDoneMsg{err: context.Canceled})
+	for _, tab := range []string{"2", "3"} {
+		if strings.Contains(press(d, tab).View(), "did not open") {
+			t.Errorf("tab %s claimed a foreign handoff", tab)
+		}
+	}
+}
+
+func TestTheKeyThatClosesTheNoticeDoesNothingElse(t *testing.T) {
+	prov := fakeWS{rep: okReport(placement("ac-1", "far", "x", core.MatchHostNotConfigured), placement("ac-2", "far", "y", core.MatchHostNotConfigured)), open: func(core.Placement) core.OpenPlan { return core.OpenPlan{Copy: "rex -S far"} }}
+	rec := &wsRecorder{ret: opens()}
+	s, m := loadedLeases(t, prov, false, rec)
+	m, _ = m.Update(runeKey("w"))
+	m, _ = m.Update(runeKey("j")) // closes the notice, must not also move
+	if strings.Contains(m.View(), "any key closes") || s.cursor != 0 {
+		t.Fatalf("j moved the cursor (%d) or left the notice", s.cursor)
+	}
+	m, _ = m.Update(runeKey("j"))
+	if s.cursor != 1 {
+		t.Fatalf("second j did not move: %d", s.cursor)
+	}
+	// And w while a notice is open closes it without opening another.
+	m, _ = m.Update(runeKey("w"))
+	m, _ = m.Update(runeKey("w"))
+	if strings.Contains(m.View(), "any key closes") {
+		t.Fatal("the closing w opened a new notice")
+	}
+}
+
+func TestClosingKeyIsSwallowedOnTasksAndQueuesToo(t *testing.T) {
+	for _, c := range []struct{ tab, pre, key, row string }{{"2", "j", "w", "▸ ac-09"}, {"4", "", "o", "▸ T-1"}} {
+		m := demoWorkspaceModel(t, asciiTheme(), &wsRecorder{}, 100, 32)
+		m = press(m, c.tab)
+		if c.pre != "" {
+			m = press(m, c.pre)
+		}
+		m = press(m, c.key)
+		if !strings.Contains(m.View(), "any key closes") {
+			t.Fatalf("tab %s: no notice:\n%s", c.tab, m.View())
+		}
+		m = press(m, "j")
+		if v := m.View(); strings.Contains(v, "any key closes") || !strings.Contains(v, c.row) {
+			t.Errorf("tab %s: j moved the cursor or left the notice:\n%s", c.tab, v)
+		}
 	}
 }
