@@ -629,10 +629,15 @@ type Providers struct {
 	// Source reads the whole tracker for the Tasks list and detail; nil means only the compact
 	// summary is available.
 	Source TaskSource
-	Leases LeaseProvider
-	Queues QueueProvider
-	Board  BoardProvider
-	Writer TaskWriter // the module that can write tasks, if any
+	// History reads one task's event log; Fingerprint is the cheap change check behind live refresh;
+	// Switcher re-points Tasks at another tracker. Each is nil when the provider has no such ability.
+	History     TaskHistorySource
+	Fingerprint TaskFingerprinter
+	Switcher    TrackerSwitcher
+	Leases      LeaseProvider
+	Queues      QueueProvider
+	Board       BoardProvider
+	Writer      TaskWriter // the module that can write tasks, if any
 	// BoardWriter is the module that can post and reply to the board, if any.
 	BoardWriter BoardWriter
 	Reader      TaskReader // re-reads one task before a write is confirmed
@@ -669,6 +674,9 @@ func ResolveProviders(entries []Entry) Providers {
 		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
 	}
 	p.Source, _, _ = pick[TaskSource](entries)
+	p.History, _, _ = pick[TaskHistorySource](entries)
+	p.Fingerprint, _, _ = pick[TaskFingerprinter](entries)
+	p.Switcher, _, _ = pick[TrackerSwitcher](entries)
 	p.Writer, _, _ = pick[TaskWriter](entries)
 	p.BoardWriter, _, _ = pick[BoardWriter](entries)
 	p.Reader, _, _ = pick[TaskReader](entries)
