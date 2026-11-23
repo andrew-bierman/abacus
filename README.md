@@ -128,19 +128,51 @@ unavailable and Doctor says why.
 **The private cache.** The folder is mode 0700 and owned by you, and so is every file in it (0700).
 Extraction writes a temp file in the same folder, checks its length and sha256 against the manifest
 inside the binary, syncs it and renames it into place; a lock file keeps two abacus processes from
-racing. Names come from a closed manifest (lowercase letters, digits and dashes), so an extraction
-path cannot escape the folder. A link, a file or folder owned by someone else, a folder others can
-write to, or a file with other permissions is refused, never used and never "repaired" in place.
+racing (a start waits up to 30 seconds for another abacus that is preparing the tools, then says
+which lock file to delete). Names come from a closed manifest (lowercase letters, digits and
+dashes), so an extraction path cannot escape the folder. A link, a file or folder owned by someone
+else, a folder others can write to, or a file with other permissions is refused, never used and never
+"repaired" in place; so is a tools folder below a directory that others can write to (a sticky one
+such as `/tmp` is fine) or that another user owns. A folder chosen with `ABACUS_TOOLS_DIR` must be
+private to you: its ancestors may not be group- or world-writable either. The default folder under
+your data directory is checked for the owner and world-write only.
+
 Every start does stat checks (type, owner, mode, size); the sha256 is computed at extraction and
 again whenever the size or modification time no longer matches a marker written beside the file,
-because hashing a 144 MB file on every start would add about a quarter of a second to each one.
-Changing a file without changing its size and mtime takes your own account, which could change
-abacus itself. When a new version of abacus carries different tools, older folders are removed
-once the new one is complete. The hashes come from the binary; no environment variable can replace
-them. First use takes about 3 seconds for the roughly 250 MB of tools (about 0.2 s on later starts).
-If the cache folder cannot be used, Doctor says what failed and the path; set `ABACUS_TOOLS_DIR` to
-a folder you can write to (it must be an absolute path), or, if the message says this copy of
-abacus is damaged, download it again.
+because hashing a 144 MB file on every start would add about a quarter of a second to each one. The
+path is checked again (one stat) right before each program is run, so a copy that was replaced,
+deleted or loosened after it was verified is not run; a deleted one is unpacked again. Interrupted
+extractions leave nothing (a Ctrl-C removes the partial file; the leftover of a killed process is
+removed by the next extraction), a failed extraction is remembered for the rest of the run (a
+refresh, which Doctor does, tries again), and a full disk is reported as a write failure with the
+folder, not as a damaged download.
+
+Older versions are removed only when all of these hold: the new version is complete; the old one is
+not among the two most recently used others; it has not been used for 14 days (every start stamps the
+folder it runs from); and nobody is preparing it or running from it (a non-blocking lock on each of
+its two lock files, which a running abacus holds for its life). Lock files themselves are never
+removed. The hashes come from the binary; no environment variable can replace them. The Board CLI
+is the largest tool and the optional one, so it is unpacked the first time the Board is read (or
+Doctor runs), not at start: `abacus tasks` never unpacks it. The very first start prints "Preparing
+built-in tools (first run only)…" to stderr; it takes about 3 seconds in total for the roughly
+250 MB of tools, about 0.2 s on later starts.
+
+If the cache folder cannot be used, Doctor says what failed and the path; set `ABACUS_TOOLS_DIR` to a
+folder you can write to (an absolute path), or, if the message says this copy of abacus is damaged,
+download it again. If the system refuses to run the unpacked programs (a folder on a mount that
+forbids running programs, or macOS blocking them), Doctor says so with the folder, and `ABACUS_TOOLS_DIR`
+chooses one that allows it; on macOS the message also gives `xattr -dr com.apple.quarantine <folder>`.
+
+**Threat model, honestly.** The cache is a private folder of one user, so the protection is against
+other users, other processes of other users and a swapped folder, not against the same user: an
+attacker who is already you can change abacus itself. Two consequences are accepted by design: a
+file changed in place without changing its size and modification time is not noticed by a start
+(only a full hash would, see above), and a program is started by path, not by an already-open file
+handle, so a replacement between the one-stat check and the start is a same-user race. Setting
+`ABACUS_BD_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_BEADSLEASE_BIN` or `ABACUS_BOARD_BIN` runs that file
+**without any of these checks** (you chose it): it is unverified code, and abacus runs it with your
+rights. The Board CLI's `--help` identity check still runs on an override, with a token-free
+environment, before it is trusted.
 
 **Doctor** shows each tool as `built in` with its version and leads with `Built-in tools: 4 of 4
 ready`. It is Ready when bd, lambe and beads-lease are usable; the Board CLI is built in too but
@@ -309,6 +341,15 @@ make build                   # bin/abacus with every tool inside (needs gh, npm,
 
 `make build` fetches and verifies the pinned tools into `.cache/` and `internal/embedtools/blobs/`
 (both git-ignored), so `make build-dev` and `go test ./...` need none of that.
+
+The tagged build is checked too: `make check` runs gofmt, vet, shellcheck and the tests, then
+`scripts/check-embedtools.sh`, which (when `internal/embedtools/blobs/<os>-<arch>/` exists, that is
+after `make build`) runs `go vet -tags embedtools ./...`, builds `-tags embedtools` for every platform
+that has blobs, and runs `go test -tags embedtools` for the core, embedtools and board packages.
+Without blobs it says so and skips (hosted CI does this). The unit tests describe a development build
+(each package's `TestMain` sets the tool set to none) and use fake tool sets, so they pass with or
+without the tag. `ABACUS_REAL_SIZE=1 go test ./internal/core -run RealSize -v` runs a 100 MB blob
+through the real extraction path and logs its timings.
 
 Note: the two `signalZero` bodies under `internal/lambe` are kept separate on purpose; they port
 Lambe's own process-liveness logic per platform, and merging them would drift from it.

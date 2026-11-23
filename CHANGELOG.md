@@ -52,6 +52,13 @@ may change behavior, and patch versions are fixes and small additions.
 - The Board CLI is built from its npm package at a pinned integrity (`scripts/board/package-lock.json`,
   `npm ci --ignore-scripts`, then `bun build --compile` per platform) and shipped inside the binary;
   the sha256 of each compiled output is recorded in `EMBEDDED_TOOLS.md` next to the release archives.
+- Review fixes: other versions are pruned only under non-blocking locks, by last use (14 days), keeping
+  the newest two; a built-in path is re-checked before every run and unpacked again if it vanished;
+  interrupted or killed extractions leave nothing; failures are remembered per run and a full disk is a
+  write failure; a tools folder under a directory others can write to is refused; a start waits at most
+  30 s for another abacus and prints "Preparing built-in tools (first run only)…"; the Board CLI is
+  unpacked on first use; a program the system refuses to start gets a plain message with the folder and
+  the fix; the bun runtime inside the Board CLI is the sha256-pinned official release.
 - `abacus licenses` prints the third-party notices and every license text carried in the binary.
 - `make build` (embedded), `make build-dev`, `make release VERSION=x`, `make check-tools`;
   `scripts/embed-tools.sh` replaces `scripts/dev-bundle.sh`.

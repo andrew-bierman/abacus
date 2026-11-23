@@ -39,7 +39,7 @@ Detection has four states, and one exit-code rule covers all of them:
 | State | Meaning | `doctor` shows | Exit |
 |---|---|---|---|
 | `absent` | the binary is not found | nothing (listed by `version` only) | 0 |
-| `broken` | found, but `version` errors, exits non-zero or times out | a failing `installation` check | 1 |
+| `broken` | found, but `version` errors, exits non-zero or times out | a failing `tool` check | 1 |
 | `incompatible` | runs, but the `api_version` is unsupported or the output is unreadable | a `compatibility` warning | 0 |
 | `ready` | usable | the tool's own checks | 1 only if one is `fail` |
 
