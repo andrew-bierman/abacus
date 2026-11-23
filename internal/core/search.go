@@ -507,23 +507,29 @@ func (d *SearchDoc) Label() string {
 }
 
 // snippetAround is about 48 characters of body around the first occurrence of word, on one line.
+// It works on one rune slice and folds case per rune, so a character whose lower-case form has a
+// different byte length can never skew a position: no offset of one string indexes another.
 func snippetAround(body, word string) string {
-	flat := strings.Join(strings.Fields(Sanitize(body)), " ")
-	r := []rune(flat)
-	i := strings.Index(strings.ToLower(flat), word)
-	at := 0
-	if i >= 0 {
-		at = len([]rune(flat[:i]))
+	br := []rune(body)
+	if len(br) > MaxSearchBody { // what is searched is what is excerpted
+		br = br[:MaxSearchBody]
 	}
+	r := []rune(strings.Join(strings.Fields(Sanitize(string(br))), " "))
+	w := foldRunes([]rune(word))
+	at := indexRunes(foldRunes(r), w)
+	if at < 0 {
+		at = 0
+	}
+	mend := min(len(r), at+len(w))
 	start := max(0, at-16)
-	end := min(len(r), start+48)
-	end = max(end, min(len(r), at+len([]rune(word))))  // never cut the match itself
+	end := max(min(len(r), start+48), mend)            // never cut the match itself
 	for start > 0 && start < at && r[start-1] != ' ' { // begin and end on word boundaries
 		start++
 	}
-	for end < len(r) && end > at+len([]rune(word)) && r[end] != ' ' {
+	for end < len(r) && end > mend && r[end] != ' ' {
 		end--
 	}
+	start = min(start, end)
 	s := strings.TrimSpace(string(r[start:end]))
 	if start > 0 {
 		s = "…" + s
@@ -532,6 +538,27 @@ func snippetAround(body, word string) string {
 		s += "…"
 	}
 	return s
+}
+
+func foldRunes(r []rune) []rune {
+	out := make([]rune, len(r))
+	for i, c := range r {
+		out[i] = unicode.ToLower(c)
+	}
+	return out
+}
+
+// indexRunes is the index of the first occurrence of sub in s, or -1.
+func indexRunes(s, sub []rune) int {
+	if len(sub) == 0 {
+		return -1
+	}
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if slices.Equal(s[i:i+len(sub)], sub) {
+			return i
+		}
+	}
+	return -1
 }
 
 // firstLineOf is the first non-empty line of s.
