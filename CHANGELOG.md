@@ -8,6 +8,13 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- An opt-in in-process graph engine for the Tasks insights: set `ABACUS_GRAPH_ENGINE=library` and
+  abacus runs bv's analysis package inside its own process (new `internal/graph`) over the
+  tracker's `.beads/issues.jsonl` export, with no `bv` binary and no subprocess. The default is
+  unchanged (the bv subprocess), `--demo` never uses it, and an unknown value keeps the default
+  and shows a Doctor warning. Doctor says which engine is active. The report has the same shape,
+  so the Tasks tab and JSON output do not change. How the two differ is in
+  `docs/tool-contract.md` ("Graph engine"). The assessment is marked "prototype built".
 - Assessment of bv and b9s as importable Go packages for the Tasks graph insights
   (`docs/plans/2026-11-22-graph-core-assessment.md`): measurements, a decision and the bv license
   rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
@@ -31,6 +38,11 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- The minimum Go version is now 1.26.11 (it follows `github.com/Dicklesworthstone/beads_viewer`
+  v0.27.0, pinned exactly), and lipgloss moves from v1.1.0 to the pseudo-version
+  `v1.1.1-0.20250404203927-76690c660834` that bv's module requires, with `x/ansi`,
+  `colorprofile`, `displaywidth` and a few smaller modules following. Every TUI golden is
+  unchanged. The release binary grows by about 1.8 MB (linux/amd64, 8.39 MB to 10.19 MB).
 - A visual pass over the tabs, restrained and meaningful: Tasks opens with a bar of the task states
   in proportion (at most 40 cells; blocked in red, in progress in the accent color, closed quiet),
   status is colored by meaning (blocked red, deferred amber, in progress accent) and only P0 is

@@ -3,9 +3,26 @@ title: Graph Core - Assessment of bv and b9s as Go packages
 type: assessment
 date: 2026-11-22
 execution: none
+status: prototype built
 ---
 
 # Graph Core - Assessment of bv and b9s as Go packages
+
+**Status: prototype built.** The owner cleared the Go directive bump (`go 1.26.11`), accepted the
+license rider and chose to use bv as a package. The opt-in library engine is `internal/graph`
+(selected with `ABACUS_GRAPH_ENGINE=library`; the bv subprocess stays the default; see "Graph
+engine" in `docs/tool-contract.md`). Final measured numbers, release flags, `CGO_ENABLED=0`:
+
+| Measure | Probe (this assessment) | Prototype as built |
+|---|---|---|
+| linux/amd64 binary | 8,388,770 to 9,404,578 (+1.0 MB) | 8,388,770 to 10,186,914 (+1,798,144 bytes, +21 percent) |
+| linux/arm64, darwin/arm64, darwin/amd64, windows/amd64 | 8.7 to 9.8 MB | 9,502,882, 9,651,538, 10,392,160, 10,576,896 (all build) |
+| `go vet`, `go test ./...` | pass | pass, every TUI golden, theme and color test unchanged |
+| 200-issue graph, whole analysis | n/a | about 5 ms |
+
+The growth is larger than the probe because the prototype calls the full insights, plan and triage
+paths. It is still well inside the 6 MB budget. The text below is the original assessment and is
+left as written.
 
 **Decision: STOP at the assessment. No prototype was built. One budget item tripped: the Go
 directive bump.** Everything else measured inside budget. This is a "yes, with one toolchain step"
