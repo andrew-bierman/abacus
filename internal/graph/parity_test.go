@@ -13,8 +13,14 @@ package graph_test
 //     the probe table in docs/plans/2026-11-22-graph-core-assessment.md). It was not captured
 //     from a bv run.
 //
-// What agrees: actionable and blocked counts, graph size, cycles, the critical-path scores, the
-// critical-path note, the first top pick and the first blocker.
+// What is compared (assertParity), field by field: actionable and blocked counts, graph size,
+// cycles, the critical-path scores and note, the first top pick with its unblock count, the number
+// of tracks, and the ORDER of the blockers, the bottlenecks and the top picks (the picks as far as
+// the document lists them). Not compared: pick scores and reasons (they depend on fields the
+// export does not carry, see 4 below), track membership, and the order inside a track. The
+// hand-written documents hold orders worked out from the graph by hand; only fx_cyclic and
+// fx_acyclic are recorded bv output, so a hand-written order proves the engine matches the
+// author's reading of bv, not bv itself.
 //
 // Where bv's own definitions differ from what a reader may expect (also in docs/tool-contract.md,
 // "Graph engine"):
@@ -218,6 +224,18 @@ func assertParity(t *testing.T, lib, sub core.InsightsReport) {
 	if len(lib.Blockers) == 0 || len(sub.Blockers) == 0 || lib.Blockers[0].ID != sub.Blockers[0].ID {
 		t.Errorf("first blocker: library %+v, bv %+v", lib.Blockers, sub.Blockers)
 	}
+	// Ranking order, not just the first item: the blockers and the bottlenecks must match bv's
+	// document element for element, and the picks must match as far as the document lists them
+	// (the hand-written big200 document lists only its first pick).
+	if n := len(sub.TopPicks); len(lib.TopPicks) < n || !slices.Equal(ids(lib.TopPicks[:n]), ids(sub.TopPicks)) {
+		t.Errorf("ordered top picks: library %v, bv %v", ids(lib.TopPicks), ids(sub.TopPicks))
+	}
+	if !slices.Equal(ids(lib.Blockers), ids(sub.Blockers)) {
+		t.Errorf("ordered blockers: library %v, bv %v", ids(lib.Blockers), ids(sub.Blockers))
+	}
+	if !slices.Equal(rids(lib.Bottlenecks), rids(sub.Bottlenecks)) {
+		t.Errorf("ordered bottlenecks: library %v, bv %v", rids(lib.Bottlenecks), rids(sub.Bottlenecks))
+	}
 	if len(lib.Tracks) != len(sub.Tracks) {
 		t.Errorf("tracks: library %d, bv %d", len(lib.Tracks), len(sub.Tracks))
 	}
@@ -343,4 +361,20 @@ func TestDocumentedDifferences(t *testing.T) {
 			t.Fatalf("%+v", r)
 		}
 	})
+}
+
+func ids(ps []core.Pick) []string {
+	var o []string
+	for _, p := range ps {
+		o = append(o, p.ID)
+	}
+	return o
+}
+
+func rids(ps []core.Ranked) []string {
+	var o []string
+	for _, p := range ps {
+		o = append(o, p.ID)
+	}
+	return o
 }
