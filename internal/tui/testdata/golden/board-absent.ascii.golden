@@ -1,32 +1,32 @@
 === 40x12 ===
  [Board]  Tasks  Leases  Queues  Doctor
-Board (not connected)
-
-how to connect: The Board tab is
-optional: it adds channels, threads and
-tasks from a Vercel Board, and nothing
-else needs it. To turn it on, install
-the Vercel Board CLI with: npm i -g
-@vercel/board (never `npm i vb` or `npx
-vb`: that is a different package). Docs:
-https://github.com/vercel/board
+╭─ ▸ Board ────────────────────────────╮
+│ (not connected)                      │
+│                                      │
+│ how to connect: The Board tab is     │
+│ optional: it adds channels, threads  │
+│ and tasks from a Vercel Board, and   │
+│ nothing else needs it. To turn it    │
+│ on, install the Vercel Board CLI     │
+│   ↕ +4 more                          │
+╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────
-Board (not connected)
-
-how to connect: The Board tab is
-optional: it adds channels, threads and
-tasks from a Vercel Board, and nothing
-else needs it. To turn it on, install
-the Vercel Board CLI with: npm i -g
-@vercel/board (never `npm i vb` or `npx
-vb`: that is a different package). Docs:
-https://github.com/vercel/board
-
-
-
+╭─ ▸ Board ────────────────────────────╮
+│ (not connected)                      │
+│                                      │
+│ how to connect: The Board tab is     │
+│ optional: it adds channels, threads  │
+│ and tasks from a Vercel Board, and   │
+│ nothing else needs it. To turn it    │
+│ on, install the Vercel Board CLI     │
+│ with: npm i -g @vercel/board (never  │
+│ `npm i vb` or `npx vb`: that is a    │
+│ different package). Docs:            │
+│ https://github.com/vercel/board      │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,28 +44,28 @@ https://github.com/vercel/board
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
-Board (not connected)
-
-how to connect: The Board tab is optional: it adds channels, threads and tasks
-from a Vercel Board, and nothing else needs it. To turn it on, install the
-Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`:
-that is a different package). Docs: https://github.com/vercel/board
-
-
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                              │
+│                                                                              │
+│ how to connect: The Board tab is optional: it adds channels, threads and     │
+│ tasks from a Vercel Board, and nothing else needs it. To turn it on, install │
+│ the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx  │
+│ vb`: that is a different package). Docs: https://github.com/vercel/board     │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 ? help · q quit · tab/→ next tab · ↑/↓ move
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Board (not connected)
-
-how to connect: The Board tab is optional: it adds channels, threads and tasks
-from a Vercel Board, and nothing else needs it. To turn it on, install the
-Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`:
-that is a different package). Docs: https://github.com/vercel/board
-
-
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                              │
+│                                                                              │
+│ how to connect: The Board tab is optional: it adds channels, threads and     │
+│ tasks from a Vercel Board, and nothing else needs it. To turn it on, install │
+│ the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx  │
+│ vb`: that is a different package). Docs: https://github.com/vercel/board     │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,13 +88,13 @@ that is a different package). Docs: https://github.com/vercel/board
 ? help · q quit · tab/→ next tab · ↑/↓ move
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
-Board (not connected)
-
-how to connect: The Board tab is optional: it adds channels, threads and tasks from a Vercel Board, and nothing else
-needs it. To turn it on, install the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`: that
-is a different package). Docs: https://github.com/vercel/board
-
-
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                                      │
+│                                                                                                                      │
+│ how to connect: The Board tab is optional: it adds channels, threads and tasks from a Vercel Board, and nothing else │
+│ needs it. To turn it on, install the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`:    │
+│ that is a different package). Docs: https://github.com/vercel/board                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -102,12 +102,70 @@ is a different package). Docs: https://github.com/vercel/board
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Board (not connected)
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                                      │
+│                                                                                                                      │
+│ how to connect: The Board tab is optional: it adds channels, threads and tasks from a Vercel Board, and nothing else │
+│ needs it. To turn it on, install the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`:    │
+│ that is a different package). Docs: https://github.com/vercel/board                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-how to connect: The Board tab is optional: it adds channels, threads and tasks from a Vercel Board, and nothing else
-needs it. To turn it on, install the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`: that
-is a different package). Docs: https://github.com/vercel/board
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮
+│ (not connected)                                          │
+│                                                          │
+│ how to connect: The Board tab is optional: it adds       │
+│ channels, threads and tasks from a Vercel Board, and     │
+│ nothing else needs it. To turn it on, install the Vercel │
+│ Board CLI with: npm i -g @vercel/board (never `npm i vb` │
+│ or `npx vb`: that is a different package). Docs:         │
+│ https://github.com/vercel/board                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                  │
+│                                                                                                  │
+│ how to connect: The Board tab is optional: it adds channels, threads and tasks from a Vercel     │
+│ Board, and nothing else needs it. To turn it on, install the Vercel Board CLI with: npm i -g     │
+│ @vercel/board (never `npm i vb` or `npx vb`: that is a different package). Docs:                 │
+│ https://github.com/vercel/board                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 

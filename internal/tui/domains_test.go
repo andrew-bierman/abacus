@@ -444,10 +444,17 @@ func TestQueuesLabelsDemoDataAndTheTrackerSubset(t *testing.T) {
 	}
 }
 
+// blankRow reports a row with no text in it: spaces, or only the glyphs of a panel's frame.
+func blankRow(l string) bool {
+	return strings.Trim(l, " │╭╮╰╯─") == ""
+}
+
 // outsideAllowlist drops the regions where a provider may be named: a "how to connect" fix
 // message (including the wrapped lines under it), and the exact command on a confirm screen.
 // Everything else on a domain tab is domain language.
 func outsideAllowlist(view string) []string {
+	// (A framed panel's empty row and its bottom edge count as blank, so the exempt block ends
+	// there instead of running to the end of the screen.)
 	var out []string
 	skip := false
 	for _, l := range strings.Split(view, "\n") {
@@ -456,7 +463,7 @@ func outsideAllowlist(view string) []string {
 			skip = true
 		case strings.Contains(l, "exact command:"):
 			skip = true
-		case strings.TrimSpace(l) == "":
+		case blankRow(l):
 			skip = false
 		}
 		// The daemon's own actor identity (for example lambe@host) is data, not a label.

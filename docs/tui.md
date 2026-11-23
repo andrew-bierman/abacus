@@ -44,8 +44,23 @@ issues that block the most, the critical path and dependency cycles. From 100 co
 sit beside the list; below that they sit under it (the list keeps two thirds of the rows). Insights
 are read on start and on `r`, not on a timer, because they run several processes. Without an
 insights provider the panel says it is not connected and what is wrong with abacus's own bv (a
-release: damaged or moved, re-extract; a dev build: run `scripts/dev-bundle.sh`). The forms and the
-confirm screen are drawn as before and are not framed yet.
+release: damaged or moved, re-extract; a dev build: run `scripts/dev-bundle.sh`).
+
+The new and edit forms, the "Checking the current state…" screen, the confirm screen and its
+"applying…" state are each one framed panel with the title in the border. The form is a table: a
+marker column (`▸` on the focused field, with the caret `▏` at the end of its value, so focus
+shows without color), the label column, then the value column; a long value wraps in its column.
+When the value column would be narrower than 12 cells (the edit form below 45 columns) the label sits above its value instead. The form error is a row under the fields.
+The confirm screen shows the "changed since you opened it" note when there is one, the plan lines
+and "exact command:" with the command wrapped in full, never cut. Only a body taller than the
+terminal is clipped, and then a `↕ +N more` row says so. A confirm that is clipped cannot be
+answered with `y`: the row reads "enlarge the terminal to review", `y apply` leaves the footer, and
+the key does nothing until the whole plan and command are on screen (the same for the first-run
+setup confirm). The command shown is the command run: an argument with an invisible, bidi or
+control character is shown quoted, as an escape, so nothing is hidden between the screen and what
+runs. While a form or confirm screen is open, its own keys lead the footer, so a narrow footer cuts
+"? help" and the tab hint first. None of this changes the gate: nothing writes before `y` on the
+confirm screen, and a state that hides a screen still blocks keys.
 
 ## Board
 
@@ -93,7 +108,9 @@ terminal:
 
 Rule for any state that hides a screen (too small, an overlay, a collapsed pane): it must also stop
 input reaching that screen, because a key pressed on a screen the user cannot see can still act
-on it (a hidden confirm answered with `y` would apply a change unseen). Global keys (tabs, help,
+on it (a hidden confirm answered with `y` would apply a change unseen). A clipped confirm is a
+partly hidden screen: it blocks `y` the same way (`TestConfirmAppliesOnlyWhenTheWholeCommandIsVisible`).
+Global keys (tabs, help,
 quit) keep working; keys for the hidden section are dropped. Each input path needs its own test,
 capturing and non-capturing, since a guard on one path alone survives mutation of the other
 (`TestTooSmallTerminalCannotApplyAHiddenConfirm`, `TestTooSmallTerminalGivesAHiddenListNoKeys`).
@@ -116,7 +133,9 @@ ID). When the selected row disappears on a refresh, Leases and Queues keep the s
 it (it is selected again if the row comes back) and Board and Tasks select the clamped row now
 under the cursor. Tasks has no detail panel to drill into.
 
-Not-connected and unavailable states stay plain unframed lines with their "how to connect" text.
+Not-connected and unavailable states (and the first-run setup prompt) are one framed panel with the
+domain in the border; the "how to connect:" text is a block of its own, set off by blank rows, which
+the tool-name test exempts. Loading is a plain line.
 
 The help overlay was the first user of the helpers: a focused panel with aligned key columns, and a
 plain indented list when the frame would cost rows the text needs.

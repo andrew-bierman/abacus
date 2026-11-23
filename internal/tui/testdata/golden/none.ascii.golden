@@ -1,27 +1,27 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-Tasks (not connected)
-
-how to connect: abacus's own copy of bd
-is damaged or was moved. Re-extract the
-download and keep the folder together.
-
-
-
+╭─ ▸ Tasks ────────────────────────────╮
+│ (not connected)                      │
+│                                      │
+│ how to connect: abacus's own copy of │
+│ bd is damaged or was moved. Re-      │
+│ extract the download and keep the    │
+│ folder together.                     │
+╰──────────────────────────────────────╯
 
 
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-Tasks (not connected)
-
-how to connect: abacus's own copy of bd
-is damaged or was moved. Re-extract the
-download and keep the folder together.
-
-
-
+╭─ ▸ Tasks ────────────────────────────╮
+│ (not connected)                      │
+│                                      │
+│ how to connect: abacus's own copy of │
+│ bd is damaged or was moved. Re-      │
+│ extract the download and keep the    │
+│ folder together.                     │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,12 +44,12 @@ download and keep the folder together.
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Tasks (not connected)
-
-how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the
-download and keep the folder together.
-
-
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                              │
+│                                                                              │
+│ how to connect: abacus's own copy of bd is damaged or was moved. Re-extract  │
+│ the download and keep the folder together.                                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -58,12 +58,12 @@ download and keep the folder together.
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Tasks (not connected)
-
-how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the
-download and keep the folder together.
-
-
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                              │
+│                                                                              │
+│ how to connect: abacus's own copy of bd is damaged or was moved. Re-extract  │
+│ the download and keep the folder together.                                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,12 +88,12 @@ download and keep the folder together.
 ? help · q quit · tab/→ next tab · ↑/↓ move · o full view
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-Tasks (not connected)
-
-how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the download and keep the folder together.
-
-
-
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                                      │
+│                                                                                                                      │
+│ how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the download and keep the folder         │
+│ together.                                                                                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -102,10 +102,68 @@ how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the 
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Tasks (not connected)
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                                      │
+│                                                                                                                      │
+│ how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the download and keep the folder         │
+│ together.                                                                                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the download and keep the folder together.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Tasks ────────────────────────────────────────────────╮
+│ (not connected)                                          │
+│                                                          │
+│ how to connect: abacus's own copy of bd is damaged or    │
+│ was moved. Re-extract the download and keep the folder   │
+│ together.                                                │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · o full view
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────────────────────────╮
+│ (not connected)                                                                                  │
+│                                                                                                  │
+│ how to connect: abacus's own copy of bd is damaged or was moved. Re-extract the download and     │
+│ keep the folder together.                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 

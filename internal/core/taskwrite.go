@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 // TaskOp is a Tasks write verb. Delete is deliberately not offered.
@@ -313,11 +315,14 @@ func (a *Applier) Apply(ctx context.Context, p WritePlan) (TaskResult, error) {
 	return res, err
 }
 
-// DisplayArgv renders an argv for a person: arguments with spaces or quotes are quoted.
+// DisplayArgv renders an argv for a person: arguments with spaces or quotes are quoted, and so is
+// any argument holding a rune that is not printable (a bidi override, a zero-width joiner, a
+// control character), which %q writes as an escape. The command a person reads is then the argv
+// that runs: Sanitize has nothing left to strip from it.
 func DisplayArgv(argv []string) string {
 	out := make([]string, len(argv))
 	for i, a := range argv {
-		if a == "" || strings.ContainsAny(a, " \t\n\"'\\$`") {
+		if a == "" || strings.ContainsAny(a, " \t\n\"'\\$`") || !utf8.ValidString(a) || strings.ContainsFunc(a, func(r rune) bool { return !strconv.IsPrint(r) }) {
 			a = fmt.Sprintf("%q", a)
 		}
 		out[i] = a

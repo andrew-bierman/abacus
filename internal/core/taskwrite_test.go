@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -214,5 +215,30 @@ func TestUpdateRejectsBlankTitleAndDescriptionLikeCreate(t *testing.T) {
 		if _, err := core.PlanTaskChange(w, ch); err == nil {
 			t.Errorf("%+v must be refused", ch)
 		}
+	}
+}
+
+// The command a person reads is the argv that runs: an argument with a rune that is not printable
+// is quoted (escaped), so Sanitize has nothing to strip from the displayed command.
+func TestDisplayArgvQuotesArgumentsWithNonPrintableRunes(t *testing.T) {
+	for name, arg := range map[string]string{
+		"bidi override":  "pay‮evil",
+		"zero-width":     "a‍b",
+		"zero-width sp":  "a​b",
+		"bell":           "x\ay",
+		"nbsp":           "a b",
+		"invalid utf-8":  "a\xffb",
+		"line separator": "a b",
+	} {
+		got := core.DisplayArgv([]string{"bd", "create", arg})
+		if core.Sanitize(got) != got {
+			t.Errorf("%s: the displayed command changes under Sanitize: %q", name, got)
+		}
+		if strings.ContainsFunc(got, func(r rune) bool { return !unicode.IsPrint(r) }) {
+			t.Errorf("%s: the displayed command still holds a raw non-printable rune: %q", name, got)
+		}
+	}
+	if got := core.DisplayArgv([]string{"bd", "create", "plain-title", "héllo", "日本"}); got != "bd create plain-title héllo 日本" {
+		t.Errorf("printable arguments stay unquoted: %q", got)
 	}
 }
