@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -28,9 +29,11 @@ const (
 	tasksSlowPollMax   = 120 * time.Second
 	// changedFor is how long the "changed" marker stays on the panel title.
 	changedFor = 30 * time.Second
-	// fingerprintTimeout bounds one fingerprint read (a stat and a 150-byte read).
-	fingerprintTimeout = 2 * time.Second
 )
+
+// fingerprintTimeout bounds one fingerprint read (a stat and a 150-byte read); a variable so a test
+// can shorten it.
+var fingerprintTimeout = 2 * time.Second
 
 var keyFollow = key.NewBinding(key.WithKeys("F"), key.WithHelp("F", "follow change"))
 
@@ -61,6 +64,9 @@ type liveState struct {
 	changedAt time.Time
 	removed   int
 	newest    string // the most recently changed task, where F goes
+	// own: the user's own write just landed, so the snapshot that answers it shows their change, which
+	// is not "changed by someone else". It holds until the last read of a chain started by the write.
+	own bool
 }
 
 func newLiveState(fps core.TaskFingerprinter) liveState {
@@ -125,10 +131,15 @@ func (s *tasksSection) livePolled(m tasksPollMsg) tea.Cmd {
 			l.poll.Base, l.poll.Max = tasksSlowPollEvery, tasksSlowPollMax
 		}
 		return s.liveRead(now)
-	case m.err != nil:
+	case m.err != nil: // this read failed (I/O, timeout): back off, and do not give up on cheap checks
 		l.poll.Done(now, now.Sub(l.started), false)
 		return nil
-	case taskview.Changed(l.fp, m.fp):
+	}
+	if l.noFP { // a fingerprint worked after all: back to the cheap rhythm
+		l.noFP = false
+		l.poll.Base, l.poll.Max = tasksPollEvery, tasksPollMax
+	}
+	if taskview.Changed(l.fp, m.fp) {
 		return s.liveRead(now)
 	}
 	l.poll.Done(now, now.Sub(l.started), true)
@@ -163,7 +174,11 @@ func (s *tasksSection) liveSnapshot(m taskSnapshotMsg) {
 		l.fp = m.fp
 	}
 	s.rememberTracker(m.snap)
-	if l.have && m.snap.ReadAt.After(l.snap.ReadAt) { // a read that is not later than the last is not a later state
+	own := l.own
+	if l.own && !s.snapDirty { // another read follows while snapDirty: the flag stays for it
+		l.own = false
+	}
+	if l.have && !own && m.snap.ReadAt.After(l.snap.ReadAt) { // a read that is not later than the last is not a later state
 		if d := taskview.Diff(l.snap, m.snap); !d.Empty() {
 			l.changed = map[string]bool{}
 			for _, id := range d.Touched() {
@@ -224,7 +239,35 @@ func (s *tasksSection) follow() {
 			return
 		}
 	}
+	if s.treeOn() && s.unfoldTo(id) { // it sits inside a folded parent: open the way to it
+		s.follow()
+		if s.notice != "" && !strings.HasPrefix(s.notice, "following") {
+			return
+		}
+		s.notice = "following " + san(id) + " (unfolded its parents)"
+		return
+	}
 	s.notice = san(id) + " changed but is not in this list: esc clears the query, f changes the quick filter"
+}
+
+// unfoldTo unfolds every folded ancestor of task id and reports whether it changed anything.
+func (s *tasksSection) unfoldTo(id string) bool {
+	l, changed := &s.list, false
+	for n := 0; n < 1000 && l.view != nil; n++ {
+		r, ok := l.view.Row(id)
+		if !ok || r.Parent == "" {
+			break
+		}
+		if l.tree.folded[r.Parent] {
+			delete(l.tree.folded, r.Parent)
+			changed = true
+		}
+		id = r.Parent
+	}
+	if changed {
+		s.recompute()
+	}
+	return changed
 }
 
 // drain returns the commands queued by code that cannot return one (the recent-trackers write).
@@ -243,8 +286,38 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m, ok := msg.(tasksPollMsg); ok {
 		return s, tea.Batch(s.livePolled(m), s.drain())
 	}
+	if cmd, stale := s.dropStale(msg); stale {
+		return s, tea.Batch(cmd, s.drain())
+	}
 	mm, cmd := s.update(msg)
 	return mm, tea.Batch(cmd, s.histEnsure(), s.drain())
+}
+
+// dropStale discards an answer started for a tracker the section has since switched away from, so old
+// data is never painted under the new tracker's title and never compared with its snapshots. The
+// bookkeeping a read leaves behind is still cleared: the snapshot read is over, and a read asked for
+// while it was in flight (snapDirty) is started now.
+func (s *tasksSection) dropStale(msg tea.Msg) (tea.Cmd, bool) {
+	switch m := msg.(type) {
+	case taskSnapshotMsg:
+		if m.gen == s.gen {
+			return nil, false
+		}
+		s.snapBusy = false
+		dirty := s.snapDirty
+		s.snapDirty = false
+		if dirty {
+			return s.fetchSnapshot(), true
+		}
+		return nil, true
+	case tasksMsg:
+		return nil, m.gen != s.gen
+	case insightsMsg:
+		return nil, m.gen != s.gen
+	case histMsg:
+		return nil, m.gen != s.gen
+	}
+	return nil, false
 }
 
 // liveBindings are the keys of this unit, shown after the section's own.

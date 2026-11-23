@@ -60,7 +60,9 @@ func failedFeed(d core.DomainID, err error, poll time.Duration) core.SearchFeed 
 func (s *tasksSection) searchStamp() string {
 	switch {
 	case s.list.view != nil:
-		return stamp(core.SearchSearched, s.list.readAt, strconv.FormatBool(s.list.fallback))
+		// seenAt, not readAt: a check that finds the tracker unchanged moves it, and the open overlay must
+		// follow, or its Tasks hits would turn stale while the list is current
+		return stamp(core.SearchSearched, s.seenAt(), strconv.FormatBool(s.list.fallback)+"|"+s.pollEvery().String())
 	case !s.loaded:
 		return stamp(core.SearchLoading, time.Time{}, "")
 	case s.err != nil:

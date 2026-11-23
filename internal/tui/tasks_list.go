@@ -28,6 +28,7 @@ type taskSnapshotMsg struct {
 	snap core.TaskSnapshot
 	err  error
 	fp   string // the tracker's change fingerprint just before the read ("" when it has none)
+	gen  int    // the tracker generation the read was started for
 }
 
 // tasksList is the state of the Tasks list view: the snapshot and what is derived from it, the

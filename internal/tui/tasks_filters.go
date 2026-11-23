@@ -171,15 +171,15 @@ func (s *tasksSection) filterOverlayKey(k tea.KeyMsg) tea.Cmd {
 // applyFilter makes a saved query the one in force.
 func (s *tasksSection) applyFilter(sf core.SavedFilter) {
 	l := &s.list
-	l.text = sf.Query
-	if q, err := query.Parse(sf.Query); err == nil {
-		l.q, l.qerr = q, nil
-		s.recompute()
-		s.moved()
-		s.notice = fmt.Sprintf("applied filter %q", san(sf.Name))
+	q, err := query.Parse(sf.Query)
+	if err != nil { // parse first: a query that no longer parses must not replace the one in force
+		s.notice = fmt.Sprintf("filter %q no longer parses", san(sf.Name))
 		return
 	}
-	s.notice = fmt.Sprintf("filter %q no longer parses", san(sf.Name))
+	l.text, l.q, l.qerr = sf.Query, q, nil
+	s.recompute()
+	s.moved()
+	s.notice = fmt.Sprintf("applied filter %q", san(sf.Name))
 }
 
 func (s *tasksSection) filterBindings() []key.Binding {

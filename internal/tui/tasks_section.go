@@ -17,11 +17,17 @@ import (
 // slowRetry is how long the list waits to read the whole tracker again after a read timed out.
 const slowRetry = 5 * time.Minute
 
+// The read answers carry gen, the generation of the tracker they were started for: an answer from a
+// tracker the section has since switched away from is dropped (see resetForTracker).
 type tasksMsg struct {
 	report core.TasksReport
 	err    error
+	gen    int
 }
-type insightsMsg struct{ report core.InsightsReport }
+type insightsMsg struct {
+	report core.InsightsReport
+	gen    int
+}
 type tasksTickMsg struct{}
 
 // taskVerifiedMsg is the answer to the re-read of an issue before its confirm screen opens.
@@ -91,6 +97,7 @@ type tasksSection struct {
 	formErr     string
 	pending     core.TaskChange // the change waiting for the re-read
 	changedNote string          // on the confirm screen: the issue changed, or could not be checked
+	gen         int             // bumped when the tracker is switched; answers of an older one are dropped
 	tasksBusy   bool            // a refresh is in flight: r is ignored
 	insBusy     bool
 	wantIns     bool // insights are read after the next tasks read: an empty tracker skips the analysis
@@ -189,11 +196,12 @@ func (s *tasksSection) baseBindings() []key.Binding {
 
 func (s *tasksSection) fetchTasks() tea.Cmd {
 	s.tasksBusy = true
+	prov, gen := s.prov, s.gen // locals: the goroutine never reads the section
 	return tea.Batch(func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
-		r, err := s.prov.Tasks(ctx)
-		return tasksMsg{r, err}
+		r, err := prov.Tasks(ctx)
+		return tasksMsg{report: r, err: err, gen: gen}
 	}, s.fetchSnapshot())
 }
 
@@ -213,15 +221,18 @@ func (s *tasksSection) fetchSnapshot() tea.Cmd {
 		return nil
 	}
 	s.snapBusy = true
+	src, fps, gen := s.src, s.live.fps, s.gen // locals: the goroutine never reads the section
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), snapshotTimeout)
 		defer cancel()
 		fp := ""
-		if s.live.fps != nil { // read before the export: a write that lands during it still moves the next one
-			fp, _ = s.live.fps.Fingerprint(ctx)
+		if fps != nil { // read before the export: a write that lands during it still moves the next one
+			fctx, fcancel := context.WithTimeout(ctx, fingerprintTimeout)
+			fp, _ = fps.Fingerprint(fctx) // an error means no fingerprint: the export goes ahead
+			fcancel()
 		}
-		snap, err := s.src.Snapshot(ctx)
-		return taskSnapshotMsg{snap: snap, err: err, fp: fp}
+		snap, err := src.Snapshot(ctx)
+		return taskSnapshotMsg{snap: snap, err: err, fp: fp, gen: gen}
 	}
 }
 
@@ -237,10 +248,11 @@ func (s *tasksSection) useFallback() {
 func (s *tasksSection) fetchInsights() tea.Cmd {
 	s.insBusy = true
 	s.graph.insStart = nowFn()
+	ins, why, gen := s.ins, s.insWhy, s.gen
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*fetchTimeout)
 		defer cancel()
-		return insightsMsg{core.ReadInsights(ctx, s.ins, s.insWhy)}
+		return insightsMsg{report: core.ReadInsights(ctx, ins, why), gen: gen}
 	}
 }
 
@@ -371,6 +383,9 @@ func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.notice = fmt.Sprintf("%s %s %s", opVerb(m.op), san(m.res.ID), san(m.res.Title))
 		}
 		s.list.slowUntil = time.Time{} // the tracker changed: look again now
+		if m.err == nil {
+			s.live.own = true // the snapshot that answers shows this write: not a change by someone else
+		}
 		return s, s.fetchTasks()
 	case fullViewDoneMsg:
 		if m.err != nil {

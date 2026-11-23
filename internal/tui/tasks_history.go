@@ -23,6 +23,7 @@ const (
 type histMsg struct {
 	id  string
 	key time.Time // the snapshot the cursor task belonged to when the read began
+	gen int       // the tracker generation the read was started for
 	rep core.TaskHistoryReport
 	err error
 }
@@ -84,12 +85,12 @@ func (s *tasksSection) histEnsure() tea.Cmd {
 		return nil
 	}
 	h.busy = true
-	src, id, at := h.src, t.ID, h.key
+	src, id, at, gen := h.src, t.ID, h.key, s.gen
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
 		rep, err := src.History(ctx, id, core.HistoryDefaultLimit)
-		return histMsg{id: id, key: at, rep: rep, err: err}
+		return histMsg{id: id, key: at, rep: rep, err: err, gen: gen}
 	}
 }
 

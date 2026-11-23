@@ -121,6 +121,8 @@ func (s *tasksSection) switched(m trackerSwitchedMsg) tea.Cmd {
 // resetForTracker drops everything that described the old tracker, keeping the user's view choices.
 func (s *tasksSection) resetForTracker() {
 	old := s.list
+	s.gen++ // answers of reads started for the old tracker are dropped on arrival
+	s.insBusy = false
 	s.list = newTasksList()
 	s.list.tree.store = old.tree.store
 	s.list.sort, s.list.preset, s.list.presetSet = old.sort, old.preset, old.presetSet

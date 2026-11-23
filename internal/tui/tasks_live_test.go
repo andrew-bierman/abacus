@@ -293,8 +293,15 @@ func TestLiveSlowReadBacksOffThenRecovers(t *testing.T) {
 	if r.p.reads != reads+1 {
 		t.Errorf("not polled after the wait: %d", r.p.reads-reads)
 	}
+	if r.s.pollEvery() != 2*tasksPollEvery {
+		t.Errorf("one quick read is not recovery, got %v", r.s.pollEvery())
+	}
+	for i := 0; i < 2; i++ { // three quick reads in a row return to the base wait
+		r.p.fp = "fp-x" + string(rune('a'+i))
+		r.tick(2*tasksPollEvery + time.Second)
+	}
 	if r.s.pollEvery() != tasksPollEvery {
-		t.Errorf("a quick read returns to the base wait, got %v", r.s.pollEvery())
+		t.Errorf("three quick reads return to the base wait, got %v", r.s.pollEvery())
 	}
 }
 
@@ -308,24 +315,28 @@ func TestLiveFingerprintFailureBacksOffAndNeverReads(t *testing.T) {
 	}
 }
 
-func TestLiveHiddenTabNeverChecksAndResumesAtOnce(t *testing.T) {
+func TestLiveHiddenTabLooksSlowlyAndResumesAtOnce(t *testing.T) {
 	r := newLiveRig(t, 100, 32)
 	r.s.deactivate()
+	r.tick(tasksPollEvery) // the check that was already due
 	checks := r.p.fpCalls
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 5; i++ { // 25 s hidden: nothing more
 		r.tick(tasksPollEvery)
 	}
 	if r.p.fpCalls != checks {
-		t.Errorf("a hidden tab made %d checks", r.p.fpCalls-checks)
+		t.Errorf("a hidden tab made %d checks inside 30 s", r.p.fpCalls-checks)
 	}
 	r.p.fp = "fp-2"
+	r.tick(tasksPollEvery + time.Second) // 31 s: a hidden tab does look, so search is never frozen
+	if r.p.fpCalls == checks || r.p.reads < 2 {
+		t.Errorf("a hidden tab must still look every 30 s: checks %d reads %d", r.p.fpCalls-checks, r.p.reads)
+	}
+	r.p.fp = "fp-3"
 	r.c.advance(time.Second)
+	checks = r.p.fpCalls
 	r.run(r.s.activate())
 	if r.p.fpCalls == checks {
 		t.Errorf("showing the tab checks at once")
-	}
-	if r.p.reads < 2 {
-		t.Error("and reads the change it finds")
 	}
 }
 
