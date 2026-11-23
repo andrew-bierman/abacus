@@ -20,7 +20,7 @@ func stubRex(t *testing.T, mode string) string {
 	t.Helper()
 	body := `#!/bin/sh
 case "$*" in
-*version*) echo '{"rex_version":"1","platform":"x","dirty":false,"api_revision":` + map[string]string{"up": "13", "down": "13", "newer": "99"}[mode] + `}' ;;
+*version*) echo '{"rex_version":"1","platform":"x","dirty":false,"api_revision":` + map[string]string{"up": "13", "down": "13", "newer": "99"}[mode] + `,"api_min_revision":` + map[string]string{"up": "10", "down": "10", "newer": "99"}[mode] + `}' ;;
 *ls*) [ "` + mode + `" = down ] && exit 4; echo '{"sessions":[{"session_id":"s1","label":"Lambe · T-1"}]}' ;;
 esac
 `

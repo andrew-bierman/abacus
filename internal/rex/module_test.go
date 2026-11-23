@@ -199,7 +199,8 @@ func TestRevisionGate(t *testing.T) {
 		{"max", resp{out: ver("13")}, core.Ready},
 		{"below", resp{out: ver("9")}, core.Incompatible},
 		{"zero", resp{out: ver("0")}, core.Incompatible},
-		{"above", resp{out: ver("14")}, core.Incompatible},
+		{"newer server, still speaks 13", resp{out: ver("14")}, core.Ready},
+		{"newer server, oldest it speaks is 14", resp{out: `{"api_revision":14,"api_min_revision":14}`}, core.Incompatible},
 		{"no revision", resp{out: fixture(t, "version-no-revision.json")}, core.Incompatible},
 		{"garbage", resp{out: "nope"}, core.Incompatible},
 		{"exit 1", resp{exit: 1}, core.Incompatible},
@@ -223,6 +224,224 @@ func TestRevisionGate(t *testing.T) {
 				t.Errorf("%s: an incompatible Rex must provide no workspace: %+v", tc.name, got)
 			}
 		}
+	}
+}
+
+// help.json: api_revision is the newest revision the server supports, api_min_revision the oldest.
+// The two ranges must overlap: compatible iff api_revision >= 10 and api_min_revision <= 13.
+func TestRevisionGateIsAnIntervalOverlap(t *testing.T) {
+	for _, tc := range []struct {
+		body string
+		want core.State
+	}{
+		{`{"api_revision":14,"api_min_revision":10}`, core.Ready},
+		{`{"api_revision":14,"api_min_revision":13}`, core.Ready}, // min == 13: boundary, overlaps
+		{`{"api_revision":14,"api_min_revision":14}`, core.Incompatible},
+		{`{"api_revision":99,"api_min_revision":99}`, core.Incompatible},
+		{`{"api_revision":99}`, core.Ready}, // no min means 0
+		{`{"api_revision":10,"api_min_revision":0}`, core.Ready},
+		{`{"api_revision":9,"api_min_revision":0}`, core.Incompatible},
+		{`{"api_revision":13,"api_min_revision":13}`, core.Ready},
+	} {
+		f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: tc.body}}}
+		if d := detect(newMod(f, nil)); d.State != tc.want {
+			t.Errorf("%s: %+v, want %s", tc.body, d, tc.want)
+		}
+	}
+	// The detail names the cause.
+	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":14,"api_min_revision":14}`}}}
+	if d := detect(newMod(f, nil)); !strings.Contains(d.Detail, "14 or newer") || d.APIVersion != 14 {
+		t.Errorf("%+v", d)
+	}
+	f.resp[verLocal] = resp{out: `{"api_revision":9}`}
+	if d := detect(newMod(f, nil)); !strings.Contains(d.Detail, "9") || !strings.Contains(d.Detail, "older") {
+		t.Errorf("%+v", d)
+	}
+}
+
+func TestMalformedRevisionsGetAPreciseMessage(t *testing.T) {
+	for _, body := range []string{
+		`{"api_revision":"13"}`, `{"api_revision":13.5}`, `{"api_revision":13.0}`, `{"api_revision":null}`, `{"api_revision":-1}`,
+		`{"api_revision":true}`, `{"api_revision":[13]}`, `{"api_revision":99999999999999999999}`,
+		`{"api_revision":13,"api_min_revision":"10"}`, `{"api_revision":13,"api_min_revision":null}`, `{"api_revision":13,"api_min_revision":-2}`,
+	} {
+		f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: body}}}
+		d := detect(newMod(f, nil))
+		if d.State != core.Incompatible || !strings.Contains(d.Detail, "whole number") || strings.Contains(d.Detail, "no api_revision") {
+			t.Errorf("%s: %+v", body, d)
+		}
+	}
+	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":13,"api_min_revision":"\u001b[31mx"}`}}}
+	if d := detect(newMod(f, nil)); strings.ContainsRune(d.Detail, 0x1b) {
+		t.Errorf("a malformed value must be sanitized in the detail: %q", d.Detail)
+	}
+	f.resp[verLocal] = resp{out: `{"rex_version":"1"}`}
+	if d := detect(newMod(f, nil)); !strings.Contains(d.Detail, "no api_revision") {
+		t.Errorf("a missing revision keeps its own message: %+v", d)
+	}
+}
+
+func TestExitCodesWithValidJSONAreStillErrors(t *testing.T) {
+	ok := fixture(t, "ls-null.json")
+	// probe: valid JSON with a non-zero exit
+	for _, exit := range []int{1, 2, 130} {
+		f := &fake{resp: map[string]resp{lsLocal: {out: ok, exit: exit}, verLocal: {out: fixture(t, "version-13.json")}}}
+		if d := detect(newMod(f, nil)); d.State != core.Incompatible || !strings.Contains(d.Detail, fmt.Sprint(exit)) {
+			t.Errorf("probe exit %d with valid JSON: %+v", exit, d)
+		}
+	}
+	// version: valid JSON with a non-zero exit
+	f := &fake{resp: map[string]resp{lsLocal: {out: ok}, verLocal: {out: fixture(t, "version-13.json"), exit: 1}}}
+	if d := detect(newMod(f, nil)); d.State != core.Incompatible || !strings.Contains(d.Detail, "exited 1") {
+		t.Errorf("version exit 1: %+v", d)
+	}
+	// ls: valid JSON with a non-zero exit is an error, not a healthy list
+	f = fleetFake(t)
+	m := readyMod(t, f, nil)
+	f.resp[lsLocal] = resp{out: fixture(t, "ls-fleet.json"), exit: 1}
+	rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{{ID: "LAM-1"}})
+	if rep.State != core.Degraded || len(rep.Placements) != 0 {
+		t.Errorf("ls exit 1 with valid JSON: %+v", rep)
+	}
+	if st := m.Status(context.Background()); st.Unavailable == "" || st.Summary != "" {
+		t.Errorf("status: %+v", st)
+	}
+}
+
+// Exit 4 is "no server", wherever it shows up; exit 3 is Rex saying more than one server answers.
+func TestNoServerAndAmbiguousServerExitsOnTheVersionCall(t *testing.T) {
+	env := map[string]string{"REX_SESSION": "s"}
+	f := &fake{resp: map[string]resp{verLocal: {exit: 4}}}
+	m := newMod(f, env)
+	d := detect(m)
+	if d.State != core.Ready || d.Detail != "no Rex server running" || m.Quiet() {
+		t.Fatalf("version exit 4 is no server, not incompatible: %+v", d)
+	}
+	if c := m.Doctor(context.Background()); c[0].Status != core.StatusSkip {
+		t.Fatalf("%+v", c)
+	}
+	f = &fake{resp: map[string]resp{verLocal: {exit: 3}}}
+	d = detect(newMod(f, env))
+	if d.State != core.Incompatible || !strings.Contains(d.Detail, "more than one") {
+		t.Fatalf("version exit 3: %+v", d)
+	}
+	f = &fake{resp: map[string]resp{lsLocal: {exit: 3}}}
+	d = detect(newMod(f, nil))
+	if d.State != core.Incompatible || !strings.Contains(d.Detail, "more than one") {
+		t.Fatalf("probe exit 3: %+v", d)
+	}
+	f = fleetFake(t)
+	m = readyMod(t, f, nil)
+	f.resp[lsLocal] = resp{exit: 3}
+	rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{{ID: "LAM-1"}})
+	if rep.State != core.Degraded || !strings.Contains(rep.Reason, "more than one") {
+		t.Fatalf("ls exit 3: %+v", rep)
+	}
+}
+
+func TestAnIncompatibleRexIsListedByVersionAndDoctorAsAWarning(t *testing.T) {
+	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":14,"api_min_revision":14}`}}}
+	m := newMod(f, nil)
+	entries := core.NewRegistry(m).Detect(context.Background())
+	if m.Quiet() {
+		t.Fatal("an incompatible Rex is there, so it is not quiet")
+	}
+	if got := core.VersionReport("t", entries); len(got.Modules) != 1 || got.Modules[0].ID != "rex" {
+		t.Fatalf("version must list an incompatible Rex: %+v", got.Modules)
+	}
+	doc := core.DoctorReport(context.Background(), "t", entries)
+	if len(doc.Modules) != 1 || doc.Modules[0].Checks[0].Status != core.StatusWarn || doc.ExitCode() != 0 {
+		t.Fatalf("%+v exit %d", doc.Modules, doc.ExitCode())
+	}
+}
+
+func TestAnAbsentRexIsNotListedByDoctorOrQuiet(t *testing.T) {
+	gone := New(Options{LookPath: func(string) (string, error) { return "", errors.New("x") }, Getenv: func(string) string { return "" }, Runner: &fake{}})
+	entries := core.NewRegistry(gone).Detect(context.Background())
+	if doc := core.DoctorReport(context.Background(), "t", entries); len(doc.Modules) != 0 {
+		t.Fatalf("an absent Rex must not be in Doctor: %+v", doc.Modules)
+	}
+}
+
+// A Rex that disappears between two detections must go quiet again: Detect resets first.
+func TestDetectAfterRexVanishesIsAbsentAndQuiet(t *testing.T) {
+	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: fixture(t, "version-13.json")}}}
+	present := true
+	m := New(Options{LookPath: func(string) (string, error) {
+		if present {
+			return "/fake/rex", nil
+		}
+		return "", errors.New("gone")
+	}, Getenv: func(string) string { return "" }, Runner: f})
+	if d := detect(m); d.State != core.Ready || m.Quiet() {
+		t.Fatalf("%+v", d)
+	}
+	present = false
+	if d := detect(m); d.State != core.Absent || !m.Quiet() {
+		t.Fatalf("a vanished rex must be absent and quiet: %+v quiet=%v", d, m.Quiet())
+	}
+	if c := m.Doctor(context.Background()); c[0].Status != core.StatusSkip || !strings.Contains(c[0].Detail, "not found") {
+		t.Fatalf("%+v", c)
+	}
+}
+
+func TestTimeoutDetailsSayTimedOutNotAContextError(t *testing.T) {
+	f := &fake{hang: true}
+	m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f, ProbeTimeout: 10 * time.Millisecond})
+	d := detect(m)
+	if !strings.Contains(d.Detail, "timed out") || strings.Contains(d.Detail, "context") || strings.Contains(d.Detail, "deadline") {
+		t.Fatalf("probe: %q", d.Detail)
+	}
+	m = New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(k string) string { return map[string]string{"REX_SESSION": "s"}[k] }, Runner: f, CallTimeout: 10 * time.Millisecond})
+	if d := detect(m); !strings.Contains(d.Detail, "timed out") || strings.Contains(d.Detail, "deadline") {
+		t.Fatalf("version: %q", d.Detail)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	m = New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f})
+	if d := m.Detect(ctx); !strings.Contains(d.Detail, "canceled") || strings.Contains(d.Detail, "context") {
+		t.Fatalf("cancel: %q", d.Detail)
+	}
+}
+
+// The module sanitizes and bounds everything it hands out itself, not only through core.
+func TestModuleOutputsAreSanitizedAndBoundedAtTheSource(t *testing.T) {
+	evil := `\u001b[31m` + strings.Repeat("v", 500) // a JSON escape, decoded to a real ESC
+	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":13,"rex_version":"` + evil + `"}`}}}
+	d := detect(newMod(f, nil))
+	if d.State != core.Ready || strings.ContainsRune(d.Version, 0x1b) || len([]rune(d.Version)) != 64 {
+		t.Fatalf("version: %q", d.Version)
+	}
+	f.resp[verLocal] = resp{out: `{"api_revision":13,"version":"` + evil + `"}`}
+	if d := detect(newMod(f, nil)); strings.ContainsRune(d.Version, 0x1b) || len([]rune(d.Version)) != 64 {
+		t.Fatalf("fallback version: %q", d.Version)
+	}
+	f = &fake{resp: map[string]resp{lsLocal: {err: errors.New("boom\x1b[31m" + strings.Repeat("e", 500))}}}
+	d = detect(newMod(f, nil))
+	if strings.ContainsRune(d.Detail, 0x1b) || len([]rune(d.Detail)) > 260 || !strings.Contains(d.Detail, "boom") {
+		t.Fatalf("probe error: %q", d.Detail)
+	}
+	g := fleetFake(t)
+	m := readyMod(t, g, nil)
+	g.resp[lsLocal] = resp{err: errors.New("bang\x1b[31m" + strings.Repeat("r", 600))}
+	st := m.Status(context.Background())
+	if strings.ContainsRune(st.Unavailable, 0x1b) || len([]rune(st.Unavailable)) > 200 || !strings.Contains(st.Unavailable, "bang") {
+		t.Fatalf("status: %q", st.Unavailable)
+	}
+	rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{{ID: "LAM-1"}})
+	if strings.ContainsRune(rep.Reason, 0x1b) || len([]rune(rep.Reason)) > 300 || !strings.Contains(rep.Reason, "bang") {
+		t.Fatalf("reason: %q (%d runes)", rep.Reason, len([]rune(rep.Reason)))
+	}
+}
+
+func TestDefaultTimeoutsArePinned(t *testing.T) {
+	m := New(Options{})
+	if m.o.ProbeTimeout != 500*time.Millisecond || m.o.CallTimeout != 2*time.Second {
+		t.Fatalf("probe %s, call %s", m.o.ProbeTimeout, m.o.CallTimeout)
+	}
+	m = New(Options{ProbeTimeout: time.Second, CallTimeout: 3 * time.Second})
+	if m.o.ProbeTimeout != time.Second || m.o.CallTimeout != 3*time.Second {
+		t.Fatal("explicit timeouts must be kept")
 	}
 }
 
@@ -618,11 +837,11 @@ func TestStatusSummarizesSessions(t *testing.T) {
 }
 
 func TestLsFixtureFromTheHelpExampleParses(t *testing.T) {
-	ss, err := parseLS([]byte(fixture(t, "ls-help-example.json")))
+	ss, _, err := parseLS([]byte(fixture(t, "ls-help-example.json")))
 	if err != nil || len(ss) != 1 || ss[0].Label != "work" || ss[0].ID != "session:<uuid>" {
 		t.Fatalf("%+v %v", ss, err)
 	}
-	if ss, err := parseLS([]byte(fixture(t, "ls-null.json"))); err != nil || len(ss) != 0 {
+	if ss, _, err := parseLS([]byte(fixture(t, "ls-null.json"))); err != nil || len(ss) != 0 {
 		t.Fatalf("%+v %v", ss, err)
 	}
 }
@@ -637,8 +856,8 @@ func TestSessionListIsBounded(t *testing.T) {
 		fmt.Fprintf(&b, `{"session_id":"s%d","label":"x"}`, i)
 	}
 	b.WriteString(`]}`)
-	if ss, _ := parseLS([]byte(b.String())); len(ss) != maxSessions {
-		t.Fatalf("%d", len(ss))
+	if ss, trunc, err := parseLS([]byte(b.String())); len(ss) != maxSessions || !trunc || err != nil {
+		t.Fatalf("%d %v %v", len(ss), trunc, err)
 	}
 }
 
@@ -650,5 +869,60 @@ func TestDetectResetsStateEachRun(t *testing.T) {
 	f.resp[lsLocal] = resp{exit: 1}
 	if d := detect(m); d.State != core.Incompatible {
 		t.Fatalf("%+v", d)
+	}
+}
+
+func TestSchemaDriftInLsIsAnErrorNotAHealthyEmptyList(t *testing.T) {
+	for _, body := range []string{``, `null`, `{}`, `[]`, `"x"`, `{"items":[]}`, `{"sessions":{}}`, `{"sessions":"x"}`, `{"sessions":[1]}`,
+		`{"sessions":[{"label":"x"}]}`, `{"sessions":[{"session_id":""}]}`, `{"sessions":[{"session_id":5}]}`, `{"sessions":[{"session_id":"a","label":7}]}`} {
+		if ss, _, err := parseLS([]byte(body)); err == nil || ss != nil || err.Error() != "unrecognized rex ls output" {
+			t.Errorf("%q: %v %v", body, ss, err)
+		}
+	}
+	for _, body := range []string{`{"sessions":null}`, `{"sessions":[]}`, `{"sessions":[{"session_id":"a"}],"x":1}`} {
+		if _, _, err := parseLS([]byte(body)); err != nil {
+			t.Errorf("%q: %v", body, err)
+		}
+	}
+	// Through the module: a drifted shape is Degraded with the reason, and Status is unavailable.
+	f := fleetFake(t)
+	m := readyMod(t, f, nil)
+	f.resp[lsLocal] = resp{out: `{"data":{"sessions":[]}}`}
+	rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{{ID: "LAM-1"}})
+	if rep.State != core.Degraded || !strings.Contains(rep.Reason, "unrecognized rex ls output") {
+		t.Fatalf("%+v", rep)
+	}
+	if st := m.Status(context.Background()); !strings.Contains(st.Unavailable, "unrecognized rex ls output") {
+		t.Fatalf("%+v", st)
+	}
+	// and at detection time the probe says so
+	f = &fake{resp: map[string]resp{lsLocal: {out: `{}`}}}
+	if d := detect(newMod(f, nil)); d.State != core.Incompatible || !strings.Contains(d.Detail, "unrecognized rex ls output") {
+		t.Fatalf("%+v", d)
+	}
+}
+
+func sessionsJSON(n int) string {
+	var b strings.Builder
+	b.WriteString(`{"sessions":[`)
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		fmt.Fprintf(&b, `{"session_id":"s%d","label":"x"}`, i)
+	}
+	return b.String() + `]}`
+}
+
+func TestTheSessionLimitIsExactlyMaxSessions(t *testing.T) {
+	for _, tc := range []struct {
+		n     int
+		kept  int
+		trunc bool
+	}{{499, 499, false}, {500, 500, false}, {501, 500, true}} {
+		ss, trunc, err := parseLS([]byte(sessionsJSON(tc.n)))
+		if err != nil || len(ss) != tc.kept || trunc != tc.trunc {
+			t.Errorf("%d sessions: kept %d truncated %v err %v", tc.n, len(ss), trunc, err)
+		}
 	}
 }
