@@ -78,7 +78,7 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	m.help.ShortSeparator = " · "
 	prov := core.ResolveProviders(entries)
 	if cfg.audit == nil {
-		cfg.audit = core.DefaultAudit()
+		cfg.audit = auditFor(entries)
 	}
 	if cfg.setup == nil {
 		o := core.DefaultSetupOptions()
@@ -422,4 +422,23 @@ func tooSmallLines(th Theme, w, h int) []string {
 		th.Text(KindWarn, "Terminal too small"),
 		th.Text(KindMuted, fmt.Sprintf("needs %dx%d, has %dx%d", bpMin, hMin, w, max(h, 0))),
 	}
+}
+
+// demoModule is implemented by fixture providers (the demo): a session made of them must not
+// write to the real audit log.
+type demoModule interface{ IsDemo() bool }
+
+type discardAudit struct{}
+
+func (discardAudit) Record(core.AuditEntry) error { return nil }
+
+// auditFor is the audit a session writes to when none was injected: the abacus state dir, except
+// for a demo session, which changes nothing and so records nothing.
+func auditFor(entries []core.Entry) core.Audit {
+	for _, e := range entries {
+		if d, ok := e.Module.(demoModule); ok && d.IsDemo() {
+			return discardAudit{}
+		}
+	}
+	return core.DefaultAudit()
 }
