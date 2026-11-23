@@ -152,6 +152,23 @@ func TestProbeTimeoutAndCancelAreBoundedAndWarn(t *testing.T) {
 	}
 }
 
+func TestTheVersionCallHasItsOwnBound(t *testing.T) {
+	f := &fake{hang: true}
+	m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(k string) string {
+		if k == "REX_SESSION" {
+			return "s"
+		}
+		return ""
+	}, Runner: f, CallTimeout: 20 * time.Millisecond})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	start := time.Now()
+	d := m.Detect(ctx)
+	if d.State != core.Incompatible || time.Since(start) > 500*time.Millisecond {
+		t.Fatalf("%+v after %s", d, time.Since(start))
+	}
+}
+
 func TestEnvironmentDetectionSkipsTheProbeButStillGatesTheRevision(t *testing.T) {
 	for _, env := range []map[string]string{{"REX_SESSION": "session:x"}, {"REX_SERVER": "unix:///x"}} {
 		f := &fake{resp: map[string]resp{verLocal: {out: fixture(t, "version-13.json")}}}
