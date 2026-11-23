@@ -1265,3 +1265,41 @@ func TestStatusSaysSessionInTheSingular(t *testing.T) {
 		}
 	}
 }
+
+// The default runner caps one call's output at exactly 1 MiB (the literal is deliberate: the
+// limit is part of the contract documented in docs/tool-contract.md).
+func TestTheDefaultRunnerCapsOutputAtOneMebibyte(t *testing.T) {
+	dir := t.TempDir()
+	for _, tc := range []struct {
+		n      int
+		tooBig bool
+	}{{1048576 - 1, false}, {1048576, false}, {1048576 + 1, true}} {
+		stub := filepath.Join(dir, fmt.Sprintf("stub-not-rex-%d", tc.n))
+		if err := os.WriteFile(stub, []byte(fmt.Sprintf("#!/bin/sh\n/usr/bin/head -c %d /dev/zero\n", tc.n)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		out, exit, err := defaultRunner(nil).Run(context.Background(), stub, "--autostart=false", "ls", "--json")
+		if tc.tooBig {
+			if !errors.Is(err, core.ErrOutputTooLarge) {
+				t.Errorf("%d bytes: err = %v, want output too large", tc.n, err)
+			}
+			continue
+		}
+		if err != nil || exit != 0 || len(out) != tc.n {
+			t.Errorf("%d bytes: got %d bytes, exit %d, err %v", tc.n, len(out), exit, err)
+		}
+	}
+	// and through the module an oversized list is a degraded read, not a crash
+	stub := filepath.Join(dir, "stub-big")
+	script := "#!/bin/sh\ncase \"$*\" in *version*) echo '{\"api_revision\":13}';; *) /usr/bin/head -c 1048577 /dev/zero;; esac\n"
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	m := New(Options{Bin: stub, Getenv: func(k string) string { return map[string]string{"REX_SESSION": "s"}[k] }, CacheTTL: -1})
+	if d := m.Detect(context.Background()); d.State != core.Ready {
+		t.Fatalf("%+v", d)
+	}
+	if rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{{ID: "LAM-1"}}); rep.State != core.Degraded || !strings.Contains(rep.Reason, "reading sessions") {
+		t.Fatalf("%+v", rep)
+	}
+}

@@ -74,7 +74,7 @@ func TestStatusJSONGainsWorkspaceAdditivelyWhenThereAreFindings(t *testing.T) {
 	ws := fleetWS{fleetMod{&modtest.Fake{IDStr: "ws", Det: core.Detection{State: core.Ready, Version: "v1"}}},
 		core.WorkspaceReport{State: core.Connected, Placements: []core.Placement{{ID: "p1", Item: core.WorkspaceItem{Kind: "run", ID: "t-1", Host: "mbp"}, Host: "mbp", Session: "s1", Label: "Lambe · t-1", Match: core.MatchExact}}}}
 	_, got, _ := run(t, []core.Module{newFleet(), ws}, "status", "--json")
-	for _, want := range []string{`"schema_version": 1`, `"workspace": {`, `"placements"`, `"session": "s1"`} {
+	for _, want := range []string{`"schema_version": 1`, `"workspace": {`, `"placements"`, `"session": "s1"`, `"open": {`, `"rungs": []`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %s in:\n%s", want, got)
 		}

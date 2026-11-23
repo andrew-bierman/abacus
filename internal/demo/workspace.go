@@ -17,14 +17,17 @@ type WorkspaceProvider struct{}
 // NewWorkspace returns the demo workspace provider.
 func NewWorkspace() WorkspaceProvider { return WorkspaceProvider{} }
 
-// demoSessions says which demo item lives where. Two sessions claim "ac-1k2" so the ambiguous
-// case is visible too; "T-2" and the rest have no session.
-var demoSessions = map[string][]struct{ session, label string }{
-	"T-1":    {{"demo:s1", "Lambe · T-1"}},
-	"T-3":    {{"demo:s3", "review T-3 notes"}},
-	"ac-zoj": {{"demo:s4", "Lambe · ac-zoj"}},
-	"ac-00h": {{"demo:s5", "ac-00h"}},
-	"ac-1k2": {{"demo:s6", "Lambe · ac-1k2"}, {"demo:s7", "retry ac-1k2"}},
+// demoSessions are the sessions the demo "server" has, matched to items by the same core matcher
+// the real adapter uses, so the demo shows exactly what a real read would. Two sessions claim
+// "ac-1k2" so the ambiguous case is visible, "T-3" is found only by a word in a label, and "T-2"
+// and the rest have no session.
+var demoSessions = []struct{ id, label string }{
+	{"demo:s1", "Lambe · T-1"},
+	{"demo:s3", "review T-3 notes"},
+	{"demo:s4", "Lambe · ac-zoj"},
+	{"demo:s5", "ac-00h"},
+	{"demo:s6", "Lambe · ac-1k2"},
+	{"demo:s7", "retry ac-1k2"},
 }
 
 // Workspace places the demo items it knows.
@@ -32,12 +35,10 @@ func (WorkspaceProvider) Workspace(_ context.Context, items []core.WorkspaceItem
 	rep := core.WorkspaceReport{State: core.Connected}
 	for _, it := range items {
 		var cands []core.Placement
-		for _, s := range demoSessions[it.ID] {
-			m := core.MatchLabel
-			if s.label == it.ID || s.label == "Lambe · "+it.ID {
-				m = core.MatchExact
+		for _, s := range demoSessions {
+			if m, ok := core.MatchSessionLabel(s.label, it.ID, nil); ok {
+				cands = append(cands, core.Placement{ID: core.PlacementID(it, it.Host, s.id), Item: it, Host: it.Host, Session: s.id, Label: s.label, Match: m})
 			}
-			cands = append(cands, core.Placement{ID: core.PlacementID(it, it.Host, s.session), Item: it, Host: it.Host, Session: s.session, Label: s.label, Match: m})
 		}
 		switch len(cands) {
 		case 0:
@@ -51,11 +52,11 @@ func (WorkspaceProvider) Workspace(_ context.Context, items []core.WorkspaceItem
 }
 
 // Open is a plan with no rung: a demo never runs a command. The copy line is what a real one
-// would show.
+// would show: the handoff to the machine, or the bare command for a session on this one.
 func (WorkspaceProvider) Open(p core.Placement) core.OpenPlan {
-	plan := core.OpenPlan{Rungs: []core.OpenRung{}, Note: "Demo data: nothing is run."}
+	argv := []string{core.RexBin}
 	if p.Host != "" {
-		plan.Copy = core.ShellJoin([]string{"rex", "-S", p.Host})
+		argv = core.HandoffArgv("", p.Host)
 	}
-	return plan
+	return core.OpenPlan{Rungs: []core.OpenRung{}, Copy: core.ShellJoin(argv), Note: "Demo data: nothing is run."}
 }
