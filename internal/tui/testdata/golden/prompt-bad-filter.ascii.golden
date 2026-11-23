@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+[List] Graph  Insights
+[open] / to… 12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────╮
+│   id    title                  st P  │
+│   ac-01 ▾ Fleet workspace 1/5  ○  P1 │
+│ ▸ ac-12 ├── wire the lease he… ◐  P0 │
+│   ac-15 ├── lease holder colu… ○  P1 │
+│   ac-09 ├── queue attention d… ○  P2 │
+│   ↕ +8 more                          │
+╰──────────────────────────────────────╯
+bad filter: unknown field "nosuch" (col…
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+[List] Graph  Insights
+[open] / to… 12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────╮
+│   id    title                  st P  │
+│   ac-01 ▾ Fleet workspace 1/5  ○  P1 │
+│ ▸ ac-12 ├── wire the lease he… ◐  P0 │
+│   ac-15 ├── lease holder colu… ○  P1 │
+│   ac-09 ├── queue attention d… ○  P2 │
+│   ac-16 └── stale lease warni… ○  P2 │
+│   ac-20   split graph source … ◐  P1 │
+│   ac-21   export reader        ○  P2 │
+│   ac-25   doctor: stale expor… ●  P2 │
+│   ac-27   board thread digest  ●  P3 │
+│   ac-30   saved filters        ○  P3 │
+│   ac-33   help overlay per vi… ◐  P3 │
+│   ac-36   verify tool flags a… ◇  P3 │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│ ▾ open ▹ folded                      │
+│ ⊘N held by N · →N holds N · ⊘↑ held… │
+│ ○ open ◐ active ● blocked ✓ closed … │
+╰──────────────────────────────────────╯
+bad filter: unknown field "nosuch" (col…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Graph  Insights                                        14 tasks · 3 ready
+[open] / to filter                                   12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│   id    title                                  done st P  dep  type  age who │
+│   ac-01 ▾ Fleet workspace 1/5                  ▰▱▱▱ ○  P1      epic  30d mei │
+│ ▸ ac-12 ├── wire the lease heartbeat                ◐  P0 →1   bug   9d  ada │
+│   ac-15 ├── lease holder column                     ○  P1 →1   feat  6d  mei │
+│   ac-09 ├── queue attention digest                  ○  P2 ⊘1   feat  12d -   │
+│   ↕ +8 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+bad filter: unknown field "nosuch" (column 1)
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+[List] Graph  Insights                                        14 tasks · 3 ready
+[open] / to filter                                   12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│   id    title                                  done st P  dep  type  age who │
+│   ac-01 ▾ Fleet workspace 1/5                  ▰▱▱▱ ○  P1      epic  30d mei │
+│ ▸ ac-12 ├── wire the lease heartbeat                ◐  P0 →1   bug   9d  ada │
+│   ac-15 ├── lease holder column                     ○  P1 →1   feat  6d  mei │
+│   ac-09 ├── queue attention digest                  ○  P2 ⊘1   feat  12d -   │
+│   ac-16 └── stale lease warning                     ○  P2 ⊘1   task  5d  -   │
+│   ac-20   split graph source from export            ◐  P1 ⊘1→1 task  4d  ada │
+│   ac-21   export reader                             ○  P2 ⊘1→1 task  4d  -   │
+│   ac-25   doctor: stale export warning              ●  P2      bug   3d  ada │
+│   ac-27   board thread digest                       ●  P3      feat  2d  -   │
+│   ac-30   saved filters                             ○  P3      feat  2d  -   │
+│   ac-33   help overlay per view                     ◐  P3      task  1d  mei │
+│   ac-36   verify tool flags against help            ◇  P3      chore 40d mei │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ▾ open ▹ folded                                                              │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+bad filter: unknown field "nosuch" (column 1)
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+[List] Graph  Insights                                                                                14 tasks · 3 ready
+[open] / to filter                                                                           12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
+│   id    title                          done st P  dep  type  age who │ │ ac-12  bug                                  │
+│   ac-01 ▾ Fleet workspace 1/5          ▰▱▱▱ ○  P1      epic  30d mei │ │ wire the lease heartbeat                    │
+│ ▸ ac-12 ├── wire the lease heartbeat        ◐  P0 →1   bug   9d  ada │ │ ◐ in progress  P0  ada                      │
+│   ac-15 ├── lease holder column             ○  P1 →1   feat  6d  mei │ │ created 9d ago · updated 3d ago             │
+│   ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │ labels  core, leases                        │
+│   ↕ +8 more                                                          │ │   ↕ +31 more                                │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+bad filter: unknown field "nosuch" (column 1)
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Graph  Insights                                                                                14 tasks · 3 ready
+[open] / to filter                                                                           12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
+│   id    title                          done st P  dep  type  age who │ │ ac-12  bug                                  │
+│   ac-01 ▾ Fleet workspace 1/5          ▰▱▱▱ ○  P1      epic  30d mei │ │ wire the lease heartbeat                    │
+│ ▸ ac-12 ├── wire the lease heartbeat        ◐  P0 →1   bug   9d  ada │ │ ◐ in progress  P0  ada                      │
+│   ac-15 ├── lease holder column             ○  P1 →1   feat  6d  mei │ │ created 9d ago · updated 3d ago             │
+│   ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │ labels  core, leases                        │
+│   ac-16 └── stale lease warning             ○  P2 ⊘1   task  5d  -   │ │ parent  ○ ac-01 Fleet workspace             │
+│   ac-20   split graph source from exp…      ◐  P1 ⊘1→1 task  4d  ada │ │                                             │
+│   ac-21   export reader                     ○  P2 ⊘1→1 task  4d  -   │ │ Blocked by (0)                              │
+│   ac-25   doctor: stale export warning      ●  P2      bug   3d  ada │ │   none                                      │
+│   ac-27   board thread digest               ●  P3      feat  2d  -   │ │                                             │
+│   ac-30   saved filters                     ○  P3      feat  2d  -   │ │ Blocks (1)                                  │
+│   ac-33   help overlay per view             ◐  P3      task  1d  mei │ │   ○ ac-09 queue attention digest            │
+│   ac-36   verify tool flags against h…      ◇  P3      chore 40d mei │ │                                             │
+│                                                                      │ │ The heartbeat misses a beat when a session  │
+│                                                                      │ │ resumes, so a live lease looks stale for up │
+│                                                                      │ │ to a minute.                                │
+│                                                                      │ │                                             │
+│                                                                      │ │ Plan                                        │
+│                                                                      │ │                                             │
+│                                                                      │ │ • renew on resume, not on the next tick     │
+│ ▾ open ▹ folded                                                      │ │ • show the miss in Doctor                   │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +14 more                                │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+bad filter: unknown field "nosuch" (column 1)
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+[List] Graph  Insights                    14 tasks · 3 ready
+[open] / to filter               12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
+│   id    title              done st P  dep  type  age who │
+│   ac-01 ▾ Fleet workspace… ▰▱▱▱ ○  P1      epic  30d mei │
+│ ▸ ac-12 ├── wire the leas…      ◐  P0 →1   bug   9d  ada │
+│   ac-15 ├── lease holder …      ○  P1 →1   feat  6d  mei │
+│   ac-09 ├── queue attenti…      ○  P2 ⊘1   feat  12d -   │
+│   ac-16 └── stale lease w…      ○  P2 ⊘1   task  5d  -   │
+│   ac-20   split graph sou…      ◐  P1 ⊘1→1 task  4d  ada │
+│   ac-21   export reader         ○  P2 ⊘1→1 task  4d  -   │
+│   ac-25   doctor: stale e…      ●  P2      bug   3d  ada │
+│   ac-27   board thread di…      ●  P3      feat  2d  -   │
+│   ac-30   saved filters         ○  P3      feat  2d  -   │
+│   ac-33   help overlay pe…      ◐  P3      task  1d  mei │
+│   ac-36   verify tool fla…      ◇  P3      chore 40d mei │
+│                                                          │
+│                                                          │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
+╰──────────────────────────────────────────────────────────╯
+bad filter: unknown field "nosuch" (column 1)
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Graph  Insights                                                            14 tasks · 3 ready
+[open] / to filter                                                       12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────╮
+│   id    title              done st P  dep  type  age who │ │ ac-12  bug                          │
+│   ac-01 ▾ Fleet workspace… ▰▱▱▱ ○  P1      epic  30d mei │ │ wire the lease heartbeat            │
+│ ▸ ac-12 ├── wire the leas…      ◐  P0 →1   bug   9d  ada │ │ ◐ in progress  P0  ada              │
+│   ac-15 ├── lease holder …      ○  P1 →1   feat  6d  mei │ │ created 9d ago · updated 3d ago     │
+│   ac-09 ├── queue attenti…      ○  P2 ⊘1   feat  12d -   │ │ labels  core, leases                │
+│   ac-16 └── stale lease w…      ○  P2 ⊘1   task  5d  -   │ │ parent  ○ ac-01 Fleet workspace     │
+│   ac-20   split graph sou…      ◐  P1 ⊘1→1 task  4d  ada │ │                                     │
+│   ac-21   export reader         ○  P2 ⊘1→1 task  4d  -   │ │ Blocked by (0)                      │
+│   ac-25   doctor: stale e…      ●  P2      bug   3d  ada │ │   none                              │
+│   ac-27   board thread di…      ●  P3      feat  2d  -   │ │                                     │
+│   ac-30   saved filters         ○  P3      feat  2d  -   │ │ Blocks (1)                          │
+│   ac-33   help overlay pe…      ◐  P3      task  1d  mei │ │   ○ ac-09 queue attention digest    │
+│   ac-36   verify tool fla…      ◇  P3      chore 40d mei │ │                                     │
+│                                                          │ │ The heartbeat misses a beat when a  │
+│                                                          │ │ session resumes, so a live lease    │
+│                                                          │ │ looks stale for up to a minute.     │
+│                                                          │ │                                     │
+│                                                          │ │ Plan                                │
+│                                                          │ │                                     │
+│                                                          │ │ • renew on resume, not on the next  │
+│                                                          │ │   tick                              │
+│                                                          │ │ • show the miss in Doctor           │
+│ ▾ open ▹ folded                                          │ │                                     │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │   renew --lease ac-zoj --now        │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +14 more                        │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+bad filter: unknown field "nosuch" (column 1)

@@ -54,7 +54,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ move · esc back · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · esc back · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
 │ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
 │                                                                      │ │ checkout times out for carts over 40 items, │
@@ -98,9 +98,9 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ ▸ #15  dev/web  ada  checkout times out for carts over 40 items, st… │ │ rate                                        │
 │   ↕ +5 more                                                          │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
 │ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
@@ -129,4 +129,4 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh

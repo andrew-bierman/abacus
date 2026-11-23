@@ -51,6 +51,11 @@ type scenario struct {
 	// overlay: a capturing overlay owns the footer (its own keys, no q quit), so the footer's
 	// quit and help hints are not required.
 	overlay bool
+	// footHas, when set, is what the footer must hold instead (a prompt that shows an error has no hints).
+	footHas []string
+	// hiddenOK: on a screen too small to draw, the keys that need the prompt open are ignored (a
+	// prompt that is not drawn must not take keys), so the tab and footer rules do not apply there.
+	hiddenOK bool
 }
 
 // typed is a string as the key presses that type it.
@@ -334,7 +339,7 @@ func scenarios() []scenario {
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
-	}, append(searchScenarios(), treeScenarios()...)...)
+	}, append(append(searchScenarios(), treeScenarios()...), promptScenarios()...)...)
 }
 
 func render(t *testing.T, sc scenario, th Theme, w, h int) string {
@@ -429,7 +434,7 @@ func invariantErrs(sc scenario, out string, w, h int) []string {
 			}
 		}
 	}
-	if sc.empty || w < 40 || h < 3 {
+	if sc.empty || w < 40 || h < 3 || (sc.hiddenOK && tooSmall(w, h)) {
 		return errs
 	}
 	if !strings.Contains(ls[0], sc.tab) {
@@ -440,7 +445,9 @@ func invariantErrs(sc scenario, out string, w, h int) []string {
 	}
 	last := ls[len(ls)-1]
 	hints := []string{"? help", "q quit"}
-	if sc.overlay && !tooSmall(w, h) { // too small to draw, the overlay never opens
+	if sc.footHas != nil && !tooSmall(w, h) {
+		hints = sc.footHas
+	} else if sc.overlay && !tooSmall(w, h) { // too small to draw, the overlay never opens
 		hints = []string{"esc close"}
 	} else if !strings.HasPrefix(last, "? help") {
 		// A screen that asks for a decision leads its footer with its own keys (y apply, n cancel),

@@ -349,5 +349,5 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 ```

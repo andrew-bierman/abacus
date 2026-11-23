@@ -54,7 +54,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details
 === 80x30 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details
 === 120x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
 │   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
@@ -98,9 +98,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ move
+? help · q quit · tab/→ next tab · : command · ↑/↓ move
 === 120x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
@@ -129,4 +129,4 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move
+? help · q quit · tab/→ next tab · : command · ↑/↓ move

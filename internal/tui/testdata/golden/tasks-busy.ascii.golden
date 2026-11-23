@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 q quit · ? help · tab/→ next tab
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Applying this change ─────────────────────────────────────────────────────────────────────────────────────────────╮
 │   close task ac-12                                                                                                   │
 │   title: "wire the lease heartbeat"                                                                                  │
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 q quit · ? help · tab/→ next tab
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Applying this change ─────────────────────────────────────────────────────────────────────────────────────────────╮
 │   close task ac-12                                                                                                   │
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 q quit · ? help · tab/→ next tab
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Applying this change ─────────────────────────────────────────────────────────────────────────╮
 │   close task ac-12                                                                               │

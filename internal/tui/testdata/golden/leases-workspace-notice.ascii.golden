@@ -54,7 +54,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details · w workspace
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 80x30 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details · w workspace
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Doctor                                                                 14 tasks
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ Demo data: nothing is opened.                                                                                        │
 │ copy: rex                                                                                                            │
@@ -98,9 +98,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · w workspace
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace
 === 120x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Doctor                                                                 14 tasks
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ Demo data: nothing is opened.                                                                                        │
@@ -129,7 +129,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · w workspace
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace
 === 60x24 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,9 +154,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · enter details…
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
 === 140x32 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Doctor                                                                                     14 tasks
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ Demo data: nothing is opened.                                                                                                            │
@@ -187,4 +187,4 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · ↑/↓ move · w workspace
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace

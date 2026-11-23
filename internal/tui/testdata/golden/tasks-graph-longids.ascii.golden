@@ -1,5 +1,5 @@
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           shapes · 7 tasks · 2 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                                     7 tasks · 2 ready
 focus tr-jbt.1.2.1 · depth 2 · blocking links
@@ -30,7 +30,7 @@ focus tr-jbt.1.2.1 · depth 2 · blocking links
 │                                                                │ │                               │
 │                                                                │ │                               │
 ╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
-? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth · ↑/↓ move …
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ focus tr-jbt.1.2.1 · depth 2 · blocking links
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -80,4 +80,4 @@ focus tr-jbt.1.2.1 · depth 2 · blocking links
 │ cycle tr-jbt.1.1.3 → tr-jbt.1.1.4 → tr-jbt.1.1.3         │
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · g whole · enter open …
+? help · q quit · tab/→ next tab · : command · g whole …
