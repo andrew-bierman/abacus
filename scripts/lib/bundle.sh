@@ -36,6 +36,15 @@ expand() {
 # tool_field TOOL JQ_EXPR  (the expression is applied to that tool's object)
 tool_field() { jq -r --arg t "$1" ".tools[] | select(.name==\$t) | $2" "$manifest"; }
 
+# check_tool_names NAME...: the names become file names under bundled/ and .pins/, so only
+# lowercase letters, digits and dashes are accepted (no path separators, no leading surprises).
+check_tool_names() {
+  local n
+  for n in "$@"; do
+    [[ "$n" =~ ^[a-z0-9-]+$ ]] || die "unsafe tool name '$n' in the manifest (allowed: lowercase letters, digits and dashes)"
+  done
+}
+
 # tag_for TOOL VERSION
 tag_for() { expand "$(tool_field "$1" .tag_template)" "$2" x x; }
 

@@ -47,6 +47,7 @@ trap 'rm -rf "$work"' EXIT
 mkdir "$work/out"
 tools=()
 while IFS= read -r t; do tools+=("$t"); done < <(jq -r '.tools[].name' "$manifest")
+check_tool_names "${tools[@]}"
 
 for p in $platforms; do
   os="${p%-*}"; arch="${p#*-}"
@@ -72,7 +73,8 @@ for p in $platforms; do
   notices_footer >>"$notices"
   # Every manifest tool must have landed as a non-empty executable; a release never ships a gap.
   for tool in "${tools[@]}"; do
-    [ -s "$stage/bundled/$tool" ] && [ -x "$stage/bundled/$tool" ] || die "$tool is missing from bundled/ in $name"
+    f="$stage/bundled/$tool"
+    [ -f "$f" ] && [ ! -L "$f" ] && [ -s "$f" ] && [ -x "$f" ] || die "$tool is missing from bundled/ in $name"
   done
 
   cp "$root/LICENSE" "$root/README.md" "$stage/"

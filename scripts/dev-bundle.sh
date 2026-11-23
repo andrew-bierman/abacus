@@ -15,7 +15,11 @@
 #   .pins/<tool>               what was installed: platform, asset sha256, executable sha256
 #
 # Idempotent: a tool whose executable still matches its pin (and the manifest's current pin) is
-# kept and not downloaded again. The new DIR is built in a temp directory next to it and moved
+# kept and not downloaded again. Tools the manifest no longer lists are dropped by the rebuild.
+# --out must not exist, be empty, or be a previous install of this script (it holds
+# THIRD_PARTY_NOTICES.md and .pins/); any other directory is refused untouched, because the swap
+# replaces the whole directory. A run killed with SIGKILL can leave a .bundled.* stage directory
+# next to --out; that is accepted (it holds only downloads of verified files) and safe to delete. The new DIR is built in a temp directory next to it and moved
 # into place only when every tool succeeded, so DIR is never left half written.
 # --check downloads nothing and changes nothing: it exits non-zero unless every tool is verified.
 #
@@ -39,7 +43,7 @@ while [ $# -gt 0 ]; do
     --platform) platform="${2:?}"; shift 2 ;;
     --out) out="${2:?}"; shift 2 ;;
     --check) check=1; shift ;;
-    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
     *) die "unknown argument $1 (usage: $0 [--platform OS-ARCH] [--out DIR] [--check])" ;;
   esac
 done
@@ -55,21 +59,45 @@ fi
 tools=()
 while IFS= read -r t; do tools+=("$t"); done < <(jq -r '.tools[].name' "$manifest")
 [ "${#tools[@]}" -gt 0 ] || die "the manifest lists no tools"
+check_tool_names "${tools[@]}"
+
+# writable_by_others PATH: true when group or other may write to PATH (the same refusal abacus
+# itself applies to a bundled tool, so a copy that passes here is accepted at run time).
+writable_by_others() {
+  local perms
+  perms="$(ls -ld "$1" | cut -c1-10)"
+  [ "${perms:5:1}" = w ] || [ "${perms:8:1}" = w ]
+}
 
 # verified TOOL DIR: succeeds when DIR/TOOL is the executable installed from the manifest's
-# current pin for $platform; otherwise prints why on stdout and fails.
+# current pin for $platform, its license still matches license_sha256 and the modes are ones abacus
+# accepts; otherwise prints why on stdout and fails.
 verified() {
-  local tool="$1" dir="$2" asset want rec
+  local tool="$1" dir="$2" asset want rec lic
   asset="$(tool_field "$tool" ".assets[\"$platform\"].asset")"; want="$(tool_field "$tool" ".assets[\"$platform\"].sha256")"
   if [ -z "$asset" ] || [ "$asset" = null ] || [ -z "$want" ] || [ "$want" = null ]; then
     echo "no pin for $platform in the manifest"; return 1
   fi
   if [ -L "$dir/$tool" ] || [ ! -f "$dir/$tool" ]; then echo "not installed"; return 1; fi
   if [ ! -x "$dir/$tool" ]; then echo "not executable"; return 1; fi
-  [ -f "$dir/.pins/$tool" ] && [ -f "$dir/third_party/$tool/LICENSE" ] || { echo "no install record"; return 1; }
+  if writable_by_others "$dir" || writable_by_others "$dir/$tool"; then echo "writable by group or others (abacus would refuse it)"; return 1; fi
+  lic="$dir/third_party/$tool/LICENSE"
+  [ -f "$dir/.pins/$tool" ] && [ -f "$lic" ] && [ ! -L "$lic" ] || { echo "no install record"; return 1; }
   rec="$want $platform $(sha "$dir/$tool")"
   [ "$(cat "$dir/.pins/$tool")" = "$rec" ] || { echo "does not match the pin (changed, or a different version or platform)"; return 1; }
+  [ "$(sha "$lic")" = "$(tool_field "$tool" .license_sha256)" ] || { echo "license does not match license_sha256 in the manifest"; return 1; }
 }
+
+# stale_tools DIR: install records for tools the manifest no longer lists, one per line.
+stale_tools() {
+  local f n
+  for f in "$1"/.pins/*; do
+    [ -e "$f" ] || continue
+    n="$(basename "$f")"
+    contains_tool "$n" || echo "$n"
+  done
+}
+contains_tool() { local t; for t in "${tools[@]}"; do [ "$t" = "$1" ] && return 0; done; return 1; }
 
 if [ "$check" = 1 ]; then
   bad=0
@@ -77,14 +105,24 @@ if [ "$check" = 1 ]; then
     if why="$(verified "$tool" "$out")"; then echo "ok       $tool $(tool_field "$tool" .version) ($platform)"
     else echo "PROBLEM  $tool: $why" >&2; bad=1; fi
   done
+  while IFS= read -r n; do [ -n "$n" ] || continue; echo "PROBLEM  $n: installed, but no longer in the manifest" >&2; bad=1; done < <(stale_tools "$out")
   [ "$bad" = 0 ] || die "bundled tools in $out are not verified; run scripts/dev-bundle.sh"
   echo "Bundled tools: ${#tools[@]} of ${#tools[@]} verified in $out"
   exit 0
 fi
 
 mkdir -p "$(dirname "$out")"
+# The swap below replaces DIR wholesale, so DIR must be empty or one of our own installs.
+if [ -L "$out" ]; then die "$out is a symlink; pass the real directory"; fi
+if [ -e "$out" ]; then
+  [ -d "$out" ] || die "$out exists and is not a directory"
+  if [ -n "$(ls -A "$out")" ] && { [ ! -f "$out/THIRD_PARTY_NOTICES.md" ] || [ ! -d "$out/.pins" ]; }; then
+    die "$out is not empty and does not look like an abacus bundle (no THIRD_PARTY_NOTICES.md and .pins/); refusing to replace it. Pass an empty or new --out directory."
+  fi
+fi
 if [ -f "$out/THIRD_PARTY_NOTICES.md" ]; then
   pending=0
+  [ -z "$(stale_tools "$out")" ] || pending=1 # the rebuild below drops tools the manifest no longer lists
   for tool in "${tools[@]}"; do verified "$tool" "$out" >/dev/null || pending=1; done
   if [ "$pending" = 0 ]; then
     echo "Bundled tools: ${#tools[@]} of ${#tools[@]} already verified in $out (nothing to do)"
