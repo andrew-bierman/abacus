@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 // taskGlyph is the status mark of a task: bd's own icons for the first four, a diamond for
@@ -123,15 +125,26 @@ func (s *tasksSection) detailLines(d core.TaskDetailReport, w int) []string {
 	if r.Assignee != "" {
 		facts = append(facts, san(r.Assignee))
 	}
-	if r.Age != "" {
-		facts = append(facts, th.Text(KindMuted, r.Age))
-	}
 	add(wrap(strings.Join(facts, "  "), w)...)
 	switch {
-	case r.Blocked:
+	case r.BlockedBy > 0:
 		add(wrap(th.Text(KindFail, fmt.Sprintf("held by %d unfinished", r.BlockedBy))+th.Text(KindMuted, "  (blocked)"), w)...)
+	case r.HeldBy != "":
+		add(wrap(th.Text(KindFail, "held by parent "+san(r.HeldBy))+th.Text(KindMuted, "  (blocked)"), w)...)
 	case r.Ready:
 		add(th.Text(KindOK, "ready"))
+	}
+	when := []string{}
+	if r.Age != "" {
+		when = append(when, "created "+r.Age+" ago")
+	}
+	if u, err := time.Parse(time.RFC3339, r.UpdatedAt); err == nil {
+		if a := taskview.Age(u, nowFn()); a != "" {
+			when = append(when, "updated "+a+" ago")
+		}
+	}
+	if len(when) > 0 {
+		add(wrap(th.Text(KindMuted, strings.Join(when, " · ")), w)...)
 	}
 	if len(r.Labels) > 0 {
 		add(hang("labels  ", san(strings.Join(r.Labels, ", ")), w)...)
@@ -140,21 +153,26 @@ func (s *tasksSection) detailLines(d core.TaskDetailReport, w int) []string {
 		add(hang("parent  ", s.glyph(d.Parent.Status)+" "+san(d.Parent.ID)+" "+san(d.Parent.Title), w)...)
 	}
 	refs := func(title string, rs []core.TaskRef) {
-		if len(rs) == 0 {
-			return
-		}
 		add("", th.Section(fmt.Sprintf("%s (%d)", title, len(rs))))
+		if len(rs) == 0 {
+			add(th.Text(KindMuted, "  none"))
+		}
 		for _, x := range rs {
 			add(hang("  "+s.glyph(x.Status)+" ", san(x.ID)+" "+san(x.Title), w)...)
 		}
 	}
-	refs("Blocked by", d.BlockedBy)
-	refs("Blocks", d.Blocks)
+	if !s.list.depsUnknown { // a recent-changes list read no dependencies: it does not say "none"
+		refs("Blocked by", d.BlockedBy)
+		refs("Blocks", d.Blocks)
+	}
 	if r.ChildTotal > 0 {
 		add("", th.Section("Children"), "  "+progressBar(r.ChildDone, r.ChildTotal))
 		for _, x := range d.Children {
 			add(hang("  "+s.glyph(x.Status)+" ", san(x.ID)+" "+san(x.Title), w)...)
 		}
+	}
+	if d.Description == "" && !s.list.depsUnknown {
+		add("", th.Text(KindMuted, "no description"))
 	}
 	for _, sec := range []struct{ name, text string }{{"", d.Description}, {"Design", d.Design}, {"Notes", d.Notes}, {"Acceptance", d.Acceptance}} {
 		if sec.text == "" {

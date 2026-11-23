@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights        3 tasks · 1 ready
+[List] Insights                  3 tasks
 [all] / to fi… 3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────╮
 │   id    title              st P  dep │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Insights        3 tasks · 1 ready
+[List] Insights                  3 tasks
 [all] / to fi… 3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────╮
 │   id    title              st P  dep │
@@ -27,24 +27,24 @@
 │                                      │
 │                                      │
 │                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│ ○ open ◐ active ● blocked ✓ closed … │
 ╰──────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                3 tasks · 1 ready
+[List] Insights                                                          3 tasks
 [all] / to filter                                      3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────────────╮
 │   id    title                                         st P  dep type age who │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                3 tasks · 1 ready
+[List] Insights                                                          3 tasks
 [all] / to filter                                      3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────────────╮
 │   id    title                                         st P  dep type age who │
@@ -71,69 +71,69 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 │                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                                                        3 tasks · 1 ready
+[List] Insights                                                                                                  3 tasks
 [all] / to filter                                                                              3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────╮ ╭─ ac-09 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-09                                       │
 │   ac-12 wire the lease heartbeat              ◐  P0     -    -   -   │ │ queue attention digest                      │
 │ ▸ ac-09 queue attention digest                ○  P2     -    -   -   │ │ ○ open  P2                                  │
-│   ac-03 retire the old poller                 ✓  P3     -    -   -   │ │ ready                                       │
-│                                                                      │ │                                             │
-│                                                                      │ │   ↕ +4 more                                 │
+│   ac-03 retire the old poller                 ✓  P3     -    -   -   │ │                                             │
+│                                                                      │ │ Workspace                                   │
+│                                                                      │ │   ↕ +3 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                        3 tasks · 1 ready
+[List] Insights                                                                                                  3 tasks
 [all] / to filter                                                                              3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────╮ ╭─ ac-09 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-09                                       │
 │   ac-12 wire the lease heartbeat              ◐  P0     -    -   -   │ │ queue attention digest                      │
 │ ▸ ac-09 queue attention digest                ○  P2     -    -   -   │ │ ○ open  P2                                  │
-│   ac-03 retire the old poller                 ✓  P3     -    -   -   │ │ ready                                       │
-│                                                                      │ │                                             │
+│   ac-03 retire the old poller                 ✓  P3     -    -   -   │ │                                             │
 │                                                                      │ │ Workspace                                   │
 │                                                                      │ │ where   Lambe · ac-09                       │
 │                                                                      │ │ session demo:s8                             │
 │                                                                      │ │ match   exact                               │
 │                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Insights                            3 tasks · 1 ready
+[List] Insights                                      3 tasks
 [all] / to filter                  3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────╮
 │   id    title                     st P  dep type age who │
@@ -146,45 +146,45 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │                                                          │
 │                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort …
 === 140x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                                            3 tasks · 1 ready
+[List] Insights                                                                                                                      3 tasks
 [all] / to filter                                                                                                  3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────────────────╮ ╭─ ac-09 ─────────────────────────────────────────────╮
 │   id    title                                      st P  dep type age who labels │ │ ac-09                                               │
 │   ac-12 wire the lease heartbeat                   ◐  P0     -    -   -          │ │ queue attention digest                              │
 │ ▸ ac-09 queue attention digest                     ○  P2     -    -   -          │ │ ○ open  P2                                          │
-│   ac-03 retire the old poller                      ✓  P3     -    -   -          │ │ ready                                               │
-│                                                                                  │ │                                                     │
+│   ac-03 retire the old poller                      ✓  P3     -    -   -          │ │                                                     │
 │                                                                                  │ │ Workspace                                           │
 │                                                                                  │ │ where   Lambe · ac-09                               │
 │                                                                                  │ │ session demo:s8                                     │
 │                                                                                  │ │ match   exact                                       │
 │                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                    │ │                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new · e edit · x close task…

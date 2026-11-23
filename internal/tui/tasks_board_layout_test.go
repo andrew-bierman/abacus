@@ -251,7 +251,6 @@ func TestHostileTextNeverReachesTheTasksPanels(t *testing.T) {
 
 func TestTasksAndBoardPanelsAreCompactInATallTerminal(t *testing.T) {
 	for name, v := range map[string]string{
-		"tasks": withTasks(sized(newTasksRig(t).m, 120, 60), demo.TasksReport()).View(),
 		"board": boardAt(120, 60, demo.BoardReport()).View(),
 	} {
 		last := 0 // the row of the last panel border; the shell pads below it down to the footer

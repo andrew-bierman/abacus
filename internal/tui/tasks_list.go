@@ -36,8 +36,13 @@ type tasksList struct {
 	view     *taskview.View
 	readAt   time.Time
 	fallback bool // the list is the recent-changes summary, not the whole tracker
-	snapErr  error
-	warnings []string
+	// depsUnknown: no dependency data (recent changes), so nothing is ready or blocked.
+	depsUnknown bool
+	snapErr     error
+	slow        bool      // the last read timed out or was too large: back off
+	slowUntil   time.Time // no timed read before this
+	behind      bool      // a read that may predate the user's last write is on screen; a fresh one is out
+	warnings    []string
 
 	preset    taskview.Preset
 	presetSet bool // the user chose a quick filter, so a new snapshot leaves it alone
@@ -59,15 +64,12 @@ func newTasksList() tasksList {
 
 // setSnapshot builds the views from a new snapshot and refreshes the list, keeping the cursor on
 // the same task by id.
-func (s *tasksSection) setSnapshot(snap core.TaskSnapshot, fallback bool) {
+func (s *tasksSection) setSnapshot(snap core.TaskSnapshot) {
 	l := &s.list
 	l.view = taskview.Build(snap, nowFn())
-	l.readAt, l.fallback, l.warnings = snap.ReadAt, fallback, snap.Warnings
-	if !l.presetSet { // until the user picks one: all for a recent-changes list (it has closed tasks by design), else open
-		l.preset = taskview.PresetOpen
-		if fallback {
-			l.preset = taskview.PresetAll
-		}
+	l.readAt, l.fallback, l.depsUnknown, l.warnings = snap.ReadAt, snap.DepsUnknown, snap.DepsUnknown, snap.Warnings
+	if !l.presetSet { // until the user picks one: all for a recent-changes list, else open
+		l.preset = taskview.DefaultPreset(snap)
 	}
 	s.recompute()
 }
@@ -85,20 +87,6 @@ func (s *tasksSection) recompute() {
 	if len(l.rep.Rows) == 0 {
 		l.detailFocus = false
 	}
-}
-
-// fallbackSnapshot turns the compact summary's recent changes into a snapshot, for a provider
-// that cannot read the whole tracker.
-func fallbackSnapshot(rec []core.Task, at time.Time) core.TaskSnapshot {
-	snap := core.TaskSnapshot{ReadAt: at}
-	for _, t := range rec {
-		it := core.TaskIssue{ID: t.ID, Title: t.Title, Status: t.Status, Priority: t.Priority, Type: t.Type, Assignee: t.Assignee}
-		if ts, err := time.Parse(time.RFC3339, t.UpdatedAt); err == nil {
-			it.UpdatedAt, it.CreatedAt = ts, ts
-		}
-		snap.Issues = append(snap.Issues, it)
-	}
-	return snap
 }
 
 // rowTask is a list row as the write forms know a task.
@@ -142,6 +130,11 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		return nil, true
 	}
 	if l.cur != viewList {
+		// e, x and the workspace jump act on the list's current task, which this view does not show.
+		if key.Matches(k, keyEdit, keyClose, keyWorkspace) {
+			s.notice = "switch to the List view (v) to edit, close or open a task"
+			return nil, true
+		}
 		return nil, false
 	}
 	switch {
@@ -156,7 +149,10 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		s.recompute()
 		s.moved()
 	case key.Matches(k, keyPreset):
-		l.preset, l.presetSet = l.preset.Next(), true
+		l.preset, l.presetSet = l.preset.Next(l.depsUnknown), true
+		if l.depsUnknown {
+			s.notice = "ready and blocked need the whole tracker: not available in recent changes"
+		}
 		s.recompute()
 		s.moved()
 	case key.Matches(k, keyEnter):
@@ -278,8 +274,11 @@ func (s *tasksSection) typeLabel(t string) string {
 // depCell is the blocked-by and blocks marks of a row: ⊘N held by N unfinished tasks, →N holds N.
 func depCell(r core.TaskRow) string {
 	var p string
-	if r.BlockedBy > 0 {
+	switch {
+	case r.BlockedBy > 0:
 		p = fmt.Sprintf("⊘%d", r.BlockedBy)
+	case r.HeldBy != "":
+		p = "⊘↑"
 	}
 	if r.Blocks > 0 {
 		p += fmt.Sprintf("→%d", r.Blocks)
@@ -311,7 +310,7 @@ func (s *tasksSection) listCells(r core.TaskRow) (styled, plain []string) {
 	for _, l := range r.Labels {
 		labels = append(labels, san(l))
 	}
-	plain = []string{san(r.ID), title, taskGlyph(r.Status), prio, depCell(r), s.typeLabel(orDashText2(san(r.Type))), orDashText2(san(r.Age)), orDashText2(san(r.Assignee)), strings.Join(labels, ",")}
+	plain = []string{san(r.ID), title, taskGlyph(r.Status), prio, depCell(r), s.typeLabel(orDash(r.Type)), orDash(r.Age), orDash(r.Assignee), strings.Join(labels, ",")}
 	styled = append([]string(nil), plain...)
 	styled[2] = s.glyph(r.Status)
 	if k, ok := taskPriorityKind(r.Priority); ok {
@@ -326,13 +325,6 @@ func (s *tasksSection) listCells(r core.TaskRow) (styled, plain []string) {
 		styled[1] = th.Text(KindMuted, title)
 	}
 	return styled, plain
-}
-
-func orDashText2(s string) string {
-	if s == "" {
-		return "-"
-	}
-	return s
 }
 
 // listLines is the list panel's content: a header row, then the rows with the cursor row drawn
@@ -423,6 +415,7 @@ func (s *tasksSection) listView() string {
 		panelH = max(h-2, 1)
 	}
 	g := duoLayout(w, panelH)
+	g.fill = true
 	title := "Tasks"
 	if t := san(l.rep.Tracker); t != "" {
 		title += " · " + t
@@ -448,7 +441,11 @@ func (s *tasksSection) listView() string {
 	if rows <= 0 && h > 0 {
 		rows = max(h-4, 1)
 	}
-	list = windowLines(th, list, cursorLine, rows, &s.top)
+	legend := s.legend(iw, rows)
+	list = windowLines(th, list, cursorLine, rows-len(legend), &s.top)
+	if len(legend) > 0 { // the legend sits on the last rows of the panel, under the list
+		list = append(padRows(list, rows-len(legend)), legend...)
+	}
 
 	detailTitle, detail := "Task", []string(nil)
 	if d, ok := s.detail(); ok {
@@ -476,11 +473,32 @@ func (s *tasksSection) listView() string {
 	return joinLines(body)
 }
 
+// legend explains the marks of the list in two muted rows at the foot of the panel, when the panel
+// is tall enough to spare them.
+func (s *tasksSection) legend(iw, rows int) []string {
+	if rows < 10 || s.list.rep.Total == 0 || len(s.rows()) == 0 {
+		return nil
+	}
+	th := s.th
+	status := trunc(th.Text(KindMuted, "○ open ◐ active ● blocked ✓ closed ◇ deferred"), iw)
+	if s.list.depsUnknown {
+		return []string{status}
+	}
+	return []string{trunc(th.Text(KindMuted, "⊘N held by N · →N holds N · ⊘↑ held by parent"), iw), status}
+}
+
 // noticeText is the row under the panels: what just happened, else a read problem.
 func (s *tasksSection) noticeText() string {
+	behind := "this list may not show your last change yet: reading again"
 	switch {
+	case s.notice != "" && s.list.behind:
+		return s.notice + " · " + behind
 	case s.notice != "":
 		return s.notice
+	case s.list.behind:
+		return behind
+	case s.list.slow:
+		return "tracker too large to load quickly: showing recent changes only, trying again every 5 minutes (r tries now)"
 	case s.list.snapErr != nil && !s.list.fallback:
 		return "refresh failed: " + core.Sanitize(s.list.snapErr.Error()) + " (showing the last read)"
 	case s.list.snapErr != nil:

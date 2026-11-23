@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights        3 tasks · 1 ready
+[List] Insights                  3 tasks
 [all] / to fi… 3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────╮
 │   id    title              st P  dep │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Insights        3 tasks · 1 ready
+[List] Insights                  3 tasks
 [all] / to fi… 3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────╮
 │   id    title              st P  dep │
@@ -27,24 +27,24 @@
 │                                      │
 │                                      │
 │                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│ ○ open ◐ active ● blocked ✓ closed … │
 ╰──────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                3 tasks · 1 ready
+[List] Insights                                                          3 tasks
 [all] / to filter                                      3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────────────╮
 │   id    title                                         st P  dep type age who │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                3 tasks · 1 ready
+[List] Insights                                                          3 tasks
 [all] / to filter                                      3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────────────╮
 │   id    title                                         st P  dep type age who │
@@ -71,24 +71,24 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 │                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                                                        3 tasks · 1 ready
+[List] Insights                                                                                                  3 tasks
 [all] / to filter                                                                              3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-12                                       │
@@ -102,7 +102,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                        3 tasks · 1 ready
+[List] Insights                                                                                                  3 tasks
 [all] / to filter                                                                              3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-12                                       │
@@ -115,25 +115,25 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Insights                            3 tasks · 1 ready
+[List] Insights                                      3 tasks
 [all] / to filter                  3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────╮
 │   id    title                     st P  dep type age who │
@@ -146,19 +146,19 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │                                                          │
 │                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                    3 tasks · 1 ready
+[List] Insights                                                                              3 tasks
 [all] / to filter                                                          3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────╮
 │   id    title                     st P  dep type age who │ │ ac-12                               │
@@ -171,20 +171,20 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │                                     │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter …

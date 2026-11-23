@@ -27,20 +27,20 @@
 │                                      │
 │                                      │
 │                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│ ⊘N held by N · →N holds N · ⊘↑ held… │
+│ ○ open ◐ active ● blocked ✓ closed … │
 ╰──────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
@@ -71,20 +71,20 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 │                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
-
-
-
-
-
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
@@ -93,10 +93,10 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-01  epic                                 │
 │ ▸ ac-01 Fleet workspace 1/5                   ○  P1     epic 30d mei │ │ Fleet workspace                             │
-│   ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei  30d                        │
+│   ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
 │   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ready                                       │
-│                                                                      │ │ labels  workspace                           │
-│                                                                      │ │   ↕ +18 more                                │
+│                                                                      │ │ created 30d ago · updated 10d ago           │
+│                                                                      │ │   ↕ +25 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
 === 120x30 ===
@@ -107,9 +107,16 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
 │   id    title                                 st P  dep type age who │ │ ac-01  epic                                 │
 │ ▸ ac-01 Fleet workspace 1/5                   ○  P1     epic 30d mei │ │ Fleet workspace                             │
-│   ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei  30d                        │
+│   ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
 │   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ready                                       │
+│                                                                      │ │ created 30d ago · updated 10d ago           │
 │                                                                      │ │ labels  workspace                           │
+│                                                                      │ │                                             │
+│                                                                      │ │ Blocked by (0)                              │
+│                                                                      │ │   none                                      │
+│                                                                      │ │                                             │
+│                                                                      │ │ Blocks (0)                                  │
+│                                                                      │ │   none                                      │
 │                                                                      │ │                                             │
 │                                                                      │ │ Children                                    │
 │                                                                      │ │   ██░░░░░░░░ 1/5                            │
@@ -119,15 +126,8 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │   ○ ac-15 lease holder column               │
 │                                                                      │ │   ○ ac-16 stale lease warning               │
 │                                                                      │ │                                             │
-│                                                                      │ │ Goal                                        │
-│                                                                      │ │                                             │
-│                                                                      │ │ One place to see and steer the fleet.       │
-│                                                                      │ │                                             │
-│                                                                      │ │ • leases show who holds what                │
-│                                                                      │ │ • queues show what is running               │
-│                                                                      │ │ • tasks show what is next                   │
-│                                                                      │ │                                             │
-│                                                                      │ │ Keep every screen readable at 60x24.        │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │ Goal                                        │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +8 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new …
 === 60x24 ===
@@ -146,14 +146,14 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │                                                          │
 │                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-
-
-
-
-
-
-
 ? help · q quit · tab/→ next tab · / filter · s/S sort …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
@@ -163,9 +163,16 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────╮
 │   id    title                     st P  dep type age who │ │ ac-01  epic                         │
 │ ▸ ac-01 Fleet workspace 1/5       ○  P1     epic 30d mei │ │ Fleet workspace                     │
-│   ac-15 lease holder column       ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei  30d                │
+│   ac-15 lease holder column       ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                     │
 │   ac-30 saved filters             ○  P3     feat 2d  -   │ │ ready                               │
+│                                                          │ │ created 30d ago · updated 10d ago   │
 │                                                          │ │ labels  workspace                   │
+│                                                          │ │                                     │
+│                                                          │ │ Blocked by (0)                      │
+│                                                          │ │   none                              │
+│                                                          │ │                                     │
+│                                                          │ │ Blocks (0)                          │
+│                                                          │ │   none                              │
 │                                                          │ │                                     │
 │                                                          │ │ Children                            │
 │                                                          │ │   ██░░░░░░░░ 1/5                    │
@@ -177,14 +184,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │                                     │
 │                                                          │ │ Goal                                │
 │                                                          │ │                                     │
-│                                                          │ │ One place to see and steer the      │
-│                                                          │ │ fleet.                              │
-│                                                          │ │                                     │
-│                                                          │ │ • leases show who holds what        │
-│                                                          │ │ • queues show what is running       │
-│                                                          │ │ • tasks show what is next           │
-│                                                          │ │                                     │
-│                                                          │ │ Keep every screen readable at       │
-│                                                          │ │ 60x24.                              │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │ One place to see and steer the      │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +8 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter …

@@ -48,7 +48,11 @@ func (s *tasksSection) strip(w int) string {
 	left := strings.Join(parts, "")
 	ctx := ""
 	if s.list.view != nil {
-		ctx = th.Text(KindMuted, fmt.Sprintf("%d tasks · %d ready", s.list.rep.Total, s.list.rep.Ready))
+		ctx = fmt.Sprintf("%d tasks · %d ready", s.list.rep.Total, s.list.rep.Ready)
+		if s.list.depsUnknown { // dependencies were not read: nothing can be called ready
+			ctx = fmt.Sprintf("%d tasks", s.list.rep.Total)
+		}
+		ctx = th.Text(KindMuted, ctx)
 	}
 	if ctx == "" || lipgloss.Width(left)+2+lipgloss.Width(ctx) > w {
 		return trunc(left, w)
@@ -63,6 +67,9 @@ func (s *tasksSection) insightsView() string {
 	h := s.bodyH(s.noticeText())
 	iw := innerW(w)
 	c := s.report.Counts
+	if s.list.view != nil && !s.list.depsUnknown { // the snapshot's counts, so the strip, list and this agree
+		c = s.list.view.Counts()
+	}
 	var lines []string
 	if bar := th.stackBar(min(iw, taskBarMax), taskBarSegments(c)); bar != "" {
 		lines = append(lines, bar)

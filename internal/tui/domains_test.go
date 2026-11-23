@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 var toolNames = []string{"Lambe", "lambe", "beads-lease", "board-beads", "b9s", "Rex", "bv", "bd"}
@@ -113,7 +114,7 @@ func newTasksRig(t *testing.T) tasksRig {
 // withTasks feeds a model a summary and, as the snapshot, the same tasks as the whole tracker.
 func withTasks(m tea.Model, rep core.TasksReport) tea.Model {
 	m, _ = m.Update(tasksMsg{report: rep})
-	m, _ = m.Update(taskSnapshotMsg{snap: fallbackSnapshot(rep.Recent, goldenNow)})
+	m, _ = m.Update(taskSnapshotMsg{snap: fallbackAsSnapshot(rep.Recent)})
 	return m
 }
 
@@ -591,4 +592,12 @@ func TestTooSmallTerminalGivesAHiddenListNoKeys(t *testing.T) {
 	if len(*r.full) != 1 {
 		t.Fatalf("o works again at a usable size, ran %v", *r.full)
 	}
+}
+
+// fallbackAsSnapshot is the summary's tasks as a whole-tracker snapshot (dependencies known and
+// empty), for tests that need a real snapshot with chosen rows.
+func fallbackAsSnapshot(rec []core.Task) core.TaskSnapshot {
+	s := taskview.FromRecent(rec, goldenNow)
+	s.DepsUnknown = false
+	return s
 }

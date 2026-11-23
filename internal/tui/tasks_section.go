@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -14,6 +15,9 @@ import (
 )
 
 const tasksPollEvery = 30 * time.Second
+
+// slowRetry is how long the list waits to read the whole tracker again after a read timed out.
+const slowRetry = 5 * time.Minute
 
 type tasksMsg struct {
 	report core.TasksReport
@@ -72,6 +76,9 @@ type tasksSection struct {
 	listNav  // ids are the task IDs; below bpWide enter drills into the detail
 	list     tasksList
 	snapBusy bool // a snapshot read is in flight: another is not started
+	// snapDirty: a read was asked for while one was in flight (a write landed), so the answer that
+	// arrives may predate it and one more read follows at once.
+	snapDirty bool
 
 	mode        taskMode
 	op          core.TaskOp
@@ -171,7 +178,14 @@ const snapshotTimeout = 3 * fetchTimeout
 
 // fetchSnapshot reads the whole tracker, never two at once; nil without a source.
 func (s *tasksSection) fetchSnapshot() tea.Cmd {
-	if s.src == nil || s.snapBusy {
+	if s.src == nil {
+		return nil
+	}
+	if s.snapBusy {
+		s.snapDirty = true
+		return nil
+	}
+	if nowFn().Before(s.list.slowUntil) { // the last read timed out: not again for a few minutes
 		return nil
 	}
 	s.snapBusy = true
@@ -187,7 +201,7 @@ func (s *tasksSection) fetchSnapshot() tea.Cmd {
 // arrived: there is no source, or its read failed.
 func (s *tasksSection) useFallback() {
 	if s.loaded && s.err == nil && (s.list.view == nil || s.list.fallback) && (s.src == nil || s.list.snapErr != nil || !s.snapBusy) {
-		s.setSnapshot(fallbackSnapshot(s.report.Recent, nowFn()), true)
+		s.setSnapshot(taskview.FromRecent(s.report.Recent, nowFn()))
 	}
 }
 
@@ -244,12 +258,25 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return s, wsRead
 	case taskSnapshotMsg:
 		s.snapBusy = false
+		dirty := s.snapDirty
+		s.snapDirty = false
 		s.list.snapErr = m.err
 		if m.err != nil {
+			s.list.slow = errors.Is(m.err, core.ErrTimedOut) || errors.Is(m.err, taskview.ErrTooLarge)
+			s.list.slowUntil = time.Time{}
+			if s.list.slow {
+				s.list.slowUntil = nowFn().Add(slowRetry)
+			}
+			s.list.behind = false
 			s.useFallback()
 			return s, nil
 		}
-		s.setSnapshot(m.snap, false)
+		s.list.slow, s.list.slowUntil = false, time.Time{}
+		s.setSnapshot(m.snap)
+		s.list.behind = dirty // a write landed during this read: it may not show it, so read again now
+		if dirty {
+			return s, tea.Batch(s.ws.fetch(s.wsItems()), s.fetchSnapshot())
+		}
 		return s, s.ws.fetch(s.wsItems())
 	case workspaceMsg:
 		s.ws.receive(m)
@@ -293,6 +320,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			s.notice = fmt.Sprintf("%sd %s %s", m.op, san(m.res.ID), san(m.res.Title))
 		}
+		s.list.slowUntil = time.Time{} // the tracker changed: look again now
 		return s, s.fetchTasks()
 	case fullViewDoneMsg:
 		if m.err != nil {
@@ -300,6 +328,10 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
+		s.fit(m.Width) // a resize drops the drill when side by side...
+		if isStacked(m.Width) {
+			s.list.detailFocus = false // ...and the detail focus when stacked, so j and k move the list again
+		}
 	case tea.KeyMsg:
 		return s.key(m)
 	}
@@ -369,6 +401,7 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if s.tasksBusy {
 			return s, nil
 		}
+		s.list.slowUntil = time.Time{} // an explicit refresh always tries
 		s.wantIns = true
 		return s, s.fetchTasks()
 	case key.Matches(k, keyFull):
