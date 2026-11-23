@@ -6,6 +6,15 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// Panel geometry: a frame needs at least panelMinW x panelMinH cells, and costs panelChromeW
+// columns (two borders and two pad spaces) and panelChromeH rows (top and bottom edge).
+const (
+	panelMinW    = 4
+	panelMinH    = 3
+	panelChromeW = 4
+	panelChromeH = 2
+)
+
 // panel draws body inside a rounded frame with the title set into the top edge, w cells wide and
 // at most h tall (h <= 0: as tall as the body). Body lines are cut to the inner width and
 // clipped to the inner height; the caller owns any "more" marker. The focused panel is marked
@@ -15,7 +24,7 @@ func panel(th Theme, title string, body []string, w, h int, focused bool) []stri
 	if w <= 0 {
 		return nil
 	}
-	if w < 4 || (h > 0 && h < 3) {
+	if w < panelMinW || (h > 0 && h < panelMinH) {
 		lines := body
 		if title != "" {
 			lines = append([]string{title}, body...)
@@ -36,19 +45,19 @@ func panel(th Theme, title string, body []string, w, h int, focused bool) []stri
 			title = "▸ " + title
 		}
 	}
-	inner := w - 4
-	if h > 0 && len(body) > h-2 {
-		body = body[:h-2]
+	inner := w - panelChromeW
+	if h > 0 && len(body) > h-panelChromeH {
+		body = body[:h-panelChromeH]
 	}
 
 	span := w - 2 // between the corners
-	top := strings.Repeat("─", span)
+	var top string
 	if title != "" && span >= 5 {
-		t := trunc(title, span-4)            // "─ " + title + " " + at least one "─"
-		fill := span - 3 - lipgloss.Width(t) // "─", two spaces and the title are already placed
-		top = border.Render("─") + " " + titleStyle.Render(t) + " " + border.Render(strings.Repeat("─", max(fill, 0)))
+		t := trunc(title, span-4)              // "─ " + title + " " + at least one "─"
+		dashes := span - 3 - lipgloss.Width(t) // "─", two spaces and the title are already placed
+		top = border.Render("─") + " " + titleStyle.Render(t) + " " + border.Render(strings.Repeat("─", max(dashes, 0)))
 	} else {
-		top = border.Render(top)
+		top = border.Render(strings.Repeat("─", span))
 	}
 	out := make([]string, 0, len(body)+2)
 	out = append(out, border.Render("╭")+top+border.Render("╮"))

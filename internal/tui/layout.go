@@ -203,7 +203,7 @@ func split(total int, tracks ...track) []int {
 			given += share
 		}
 	}
-	for i := 0; given < rem && i < len(tracks); i++ { // hand the remainder out one cell at a time
+	for i := 0; given < rem && i < len(tracks); i++ {
 		if tracks[i].kind != trackLength {
 			out[i]++
 			given++

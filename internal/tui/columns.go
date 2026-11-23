@@ -27,14 +27,14 @@ func fitColumns(cols []column, w, gap int) []int {
 	}
 	gap = max(gap, 0)
 	mins := make([]int, len(cols))
-	order := make([]int, len(cols)) // most important first
+	order := make([]int, len(cols))
 	for i, c := range cols {
 		mins[i] = max(c.min, 1)
 		order[i] = i
 	}
 	sort.SliceStable(order, func(a, b int) bool { return cols[order[a]].prio < cols[order[b]].prio })
 
-	n := len(order) // order[:n] are kept
+	n := len(order)
 	need := func() int {
 		t := gap * (n - 1)
 		for _, i := range order[:n] {
@@ -54,7 +54,7 @@ func fitColumns(cols []column, w, gap int) []int {
 	for _, i := range order[:n] {
 		out[i] = mins[i]
 	}
-	for _, i := range order[:n] { // bounded columns grow to their max, most important first
+	for _, i := range order[:n] {
 		if cols[i].max > 0 && extra > 0 {
 			add := min(extra, max(cols[i].max, mins[i])-mins[i])
 			out[i] += add
@@ -91,12 +91,10 @@ func formatRow(cols []column, widths []int, cells []string, gap int) string {
 			cell = cells[i]
 		}
 		cell = trunc(cell, widths[i])
-		if pad := widths[i] - lipgloss.Width(cell); pad > 0 {
-			if c.right {
-				cell = strings.Repeat(" ", pad) + cell
-			} else {
-				cell += strings.Repeat(" ", pad)
-			}
+		if c.right {
+			cell = strings.Repeat(" ", max(widths[i]-lipgloss.Width(cell), 0)) + cell
+		} else {
+			cell = padTo(cell, widths[i])
 		}
 		parts = append(parts, cell)
 	}
