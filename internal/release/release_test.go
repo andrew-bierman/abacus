@@ -126,9 +126,20 @@ if [ -n "$outfile" ]; then cp "$src" "$outfile"; else cp "$src" "$outdir/$name";
 `), 0o755))
 	r.env = append(os.Environ(),
 		"PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"),
-		"HOME="+r.root, "FAKE_GH_REMOTE="+r.remote, "FAKE_GH_LOG="+filepath.Join(r.root, "gh.log"),
+		"HOME="+r.root, "GOMODCACHE="+goEnv(t, "GOMODCACHE"), "GOCACHE="+goEnv(t, "GOCACHE"),
+		"GOFLAGS=-mod=mod", "FAKE_GH_REMOTE="+r.remote, "FAKE_GH_LOG="+filepath.Join(r.root, "gh.log"),
 		"ABACUS_BUNDLE_MANIFEST="+r.manifest, "ABACUS_BUNDLE_CACHE="+r.cache, "ABACUS_PACKAGE_PREBUILT_BIN="+prebuilt)
 	return r
+}
+
+// goEnv reads a Go setting from the process running the tests, so the packaging script (which
+// lists linked modules) reuses the real module cache instead of building a read-only one under
+// the test's temporary HOME, which TempDir cleanup cannot remove.
+func goEnv(t *testing.T, key string) string {
+	t.Helper()
+	out, err := exec.Command("go", "env", key).Output()
+	must(t, err)
+	return strings.TrimSpace(string(out))
 }
 
 func must(t *testing.T, err error) {
@@ -204,6 +215,49 @@ func TestPackageUntouchedArchivePasses(t *testing.T) {
 	for _, f := range []string{"THIRD_PARTY_NOTICES.md", "LICENSE", "README.md", "abacus", "third_party/bundled-tools.json"} {
 		if _, err := os.Stat(filepath.Join(base, f)); err != nil {
 			t.Errorf("missing %s", f)
+		}
+	}
+}
+
+// The notices must say what is true: the tools are separate programs, and the binary also
+// links parts of bv's Go packages and other modules, each with its license text.
+func TestPackageNoticesAreTruthfulAboutLinkedGoCode(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go is not installed")
+	}
+	r := newRig(t, nil)
+	if out, err := r.pkg("--platforms", "linux-amd64"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	dir := t.TempDir()
+	must(t, exec.Command("tar", "-xzf", filepath.Join(r.out, "abacus_0.0.1_linux_amd64.tar.gz"), "-C", dir).Run())
+	b, err := os.ReadFile(filepath.Join(dir, "abacus_0.0.1_linux_amd64", "THIRD_PARTY_NOTICES.md"))
+	must(t, err)
+	n := string(b)
+	if strings.Contains(n, "does not link or import") {
+		t.Errorf("the notices still claim abacus links no tool code:\n%s", n)
+	}
+	for _, want := range []string{
+		"unmodified", "subprocesses",
+		"statically links parts of bv's Go packages (bv v", "pkg/analysis",
+		"third_party/bv/LICENSE",
+		"## Go modules linked into abacus",
+		"### gonum.org/v1/gonum v", "### github.com/goccy/go-json v", "### golang.org/x/sync v",
+		"### github.com/Dicklesworthstone/beads_viewer v",
+		"Gonum Authors", // a license text, verbatim
+	} {
+		if !strings.Contains(n, want) {
+			t.Errorf("notices lack %q", want)
+		}
+	}
+	// One section per module, however many of its packages are linked.
+	if c := strings.Count(n, "### gonum.org/v1/gonum v"); c != 1 {
+		t.Errorf("gonum has %d sections, want 1", c)
+	}
+	// Listed in go.mod but not linked on linux (x/text), and the main module, are not listed.
+	for _, not := range []string{"### golang.org/x/text v", "### github.com/andrew-bierman/abacus"} {
+		if strings.Contains(n, not) {
+			t.Errorf("lists %q, which is not a linked dependency", not)
 		}
 	}
 }

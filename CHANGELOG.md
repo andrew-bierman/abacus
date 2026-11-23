@@ -8,6 +8,22 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Release notices: `THIRD_PARTY_NOTICES.md` now says the bundled tools ship unmodified and run as
+  subprocesses, and that the `abacus` binary also statically links parts of bv's Go packages (bv
+  v0.27.0 `pkg/analysis` and dependencies) under bv's license (`third_party/bv/LICENSE`, verbatim).
+  It ends with every Go module linked into the binary and its license text, generated offline by
+  `scripts/lib/golicenses.sh` from `go list -deps`.
+- The library engine reports a stale export (older than `.beads/*.db` or the dolt directory) as a
+  degraded insights header and a Doctor warning, shows the export's age otherwise, never reads an
+  export above the tracker directory or through a symlink that leaves it, reports an export over
+  64 MiB as `export larger than 64 MiB`, and switches off bv's `BV_DEBUG` stderr logger.
+- An opt-in in-process graph engine for the Tasks insights: set `ABACUS_GRAPH_ENGINE=library` and
+  abacus runs bv's analysis package inside its own process (new `internal/graph`) over the
+  tracker's `.beads/issues.jsonl` export, with no `bv` binary and no subprocess. The default is
+  unchanged (the bv subprocess), `--demo` never uses it, and an unknown value keeps the default
+  and shows a Doctor warning. Doctor says which engine is active. The report has the same shape,
+  so the Tasks tab and JSON output do not change. How the two differ is in
+  `docs/tool-contract.md` ("Graph engine"). The assessment is marked "prototype built".
 - `scripts/dev-bundle.sh` (`make bundle`, `make dev`): a locally built binary gets abacus's own
   pinned, sha256-verified copies of bd, bv, lambe and beads-lease in `bin/bundled/`, so Doctor shows
   every tool as `bundled` and tabs are no longer "not connected" on a dev machine. It fails closed
@@ -58,6 +74,11 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- The minimum Go version is now 1.26.11 (it follows `github.com/Dicklesworthstone/beads_viewer`
+  v0.27.0, pinned exactly), and lipgloss moves from v1.1.0 to the pseudo-version
+  `v1.1.1-0.20250404203927-76690c660834` that bv's module requires, with `x/ansi`,
+  `colorprofile`, `displaywidth` and a few smaller modules following. Every TUI golden is
+  unchanged. The release binary grows by about 1.8 MB (linux/amd64, 8.39 MB to 10.19 MB).
 - A visual pass over the tabs, restrained and meaningful: Tasks opens with a bar of the task states
   in proportion (at most 40 cells; blocked in red, in progress in the accent color, closed quiet),
   status is colored by meaning (blocked red, deferred amber, in progress accent) and only P0 is

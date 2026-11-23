@@ -605,7 +605,13 @@ func ReadInsights(ctx context.Context, p InsightsProvider, whyNot string) Insigh
 	if body.Header.Reason != "" {
 		body.Header.State = Degraded
 	}
+	// A provider may leave a short note in Summary (the library engine's export age); it rides
+	// after the counts.
+	note := Sanitize(body.Header.Summary)
 	body.Header.Summary = body.Summarize()
+	if note != "" {
+		body.Header.Summary += " (" + note + ")"
+	}
 	return body
 }
 
