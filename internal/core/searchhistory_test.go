@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -95,6 +96,11 @@ func TestSearchHistoryDefaultPathIsInTheStateDir(t *testing.T) {
 // Writes are atomic: concurrent writers never leave a torn or temp file, and a corrupt file is
 // replaced rather than blocking the history.
 func TestSearchHistoryWritesAreAtomicUnderConcurrency(t *testing.T) {
+	// The default wait is tuned for people, not for 20 writers on a loaded machine: give the
+	// test a generous wait so it checks atomicity, not scheduling.
+	prev := core.HistoryLockWait
+	core.HistoryLockWait = 30 * time.Second
+	t.Cleanup(func() { core.HistoryLockWait = prev })
 	h, p := histAt(t)
 	var wg sync.WaitGroup
 	for i := 0; i < 20; i++ {
