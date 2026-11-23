@@ -1,0 +1,76 @@
+{
+  "domains": [
+    {
+      "domain": "tasks",
+      "title": "Tasks",
+      "state": "searched",
+      "docs": 9,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "board",
+      "title": "Board",
+      "state": "searched",
+      "docs": 4,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "leases",
+      "title": "Leases",
+      "state": "searched",
+      "docs": 2,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "queues",
+      "title": "Queues",
+      "state": "searched",
+      "docs": 1,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
+    }
+  ],
+  "groups": [
+    {
+      "domain": "board",
+      "title": "Board",
+      "total": 2,
+      "results": [
+        {
+          "domain": "board",
+          "kind": "message",
+          "id": "m:18",
+          "target": "t:17",
+          "label": "#18",
+          "title": "renewal looks fixed now",
+          "meta": "reply · ada · #17",
+          "matched": [
+            "title",
+            "in"
+          ],
+          "rank": 2
+        },
+        {
+          "domain": "board",
+          "kind": "thread",
+          "id": "t:17",
+          "label": "#17",
+          "title": "deploy notes",
+          "meta": "ops · mei · 1 replies",
+          "snippet": "…notes the renewal window shifted after the…",
+          "matched": [
+            "body",
+            "in"
+          ],
+          "rank": 5
+        }
+      ]
+    }
+  ],
+  "query": "renewal in:board",
+  "schema_version": 1,
+  "total": 2
+}

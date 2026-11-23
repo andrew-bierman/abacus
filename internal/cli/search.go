@@ -62,7 +62,7 @@ func runSearch(rest []string, d Deps) int {
 	fs.IntVar(&limit, "limit", core.DefaultSearchLimit, fmt.Sprintf("results per domain (1 to %d)", core.MaxSearchLimit))
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
 	fs.BoolVar(&o.Demo, "demo", false, "search fixtures instead of the real domains")
-	words := literal
+	var words []string
 	for len(rest) > 0 { // flags and words may be mixed: the flag package stops at the first word
 		if fs.Parse(rest) != nil {
 			return core.ExitUsage
@@ -70,9 +70,10 @@ func runSearch(rest []string, d Deps) int {
 		if fs.NArg() == 0 {
 			break
 		}
-		words = append([]string{fs.Arg(0)}, words...)
+		words = append(words, fs.Arg(0))
 		rest = fs.Args()[1:]
 	}
+	words = append(words, literal...)
 	text := strings.TrimSpace(strings.Join(words, " "))
 	if text == "" {
 		fmt.Fprintln(d.Err, `search needs a query, for example: search "status:open lease"`)
@@ -104,7 +105,7 @@ func runSearch(rest []string, d Deps) int {
 	}
 	searched := 0
 	for _, s := range rep.Domains {
-		if s.State == core.SearchSearched {
+		if s.Searched() {
 			searched++
 		}
 	}
@@ -127,6 +128,12 @@ func unsearched(r core.SearchReport) []string {
 	}
 	return out
 }
+
+// Why a domain was searched in part.
+const (
+	reasonRecentTasks = "only recent changes were searched: the full task list could not be read"
+	reasonBoardCapped = "only recent threads and open tasks were searched"
+)
 
 func searchStateWords(s core.SearchDomain) string {
 	w := strings.ReplaceAll(string(s.State), "_", " ")
@@ -198,9 +205,15 @@ func readSearchFeed(ctx context.Context, entries []core.Entry, now time.Time, id
 	case core.DomainTasks:
 		f.State, f.Reason = feedState(dom.Tasks.Header), dom.Tasks.Reason
 		f.Docs = taskview.Build(taskview.FromRecent(dom.Tasks.Recent, now), now).SearchDocs()
+		if f.State == core.SearchSearched { // searched, but only the summary's recent changes
+			f.State, f.Reason = core.SearchDegraded, joinReason(f.Reason, reasonRecentTasks)
+		}
 	case core.DomainBoard:
 		f.State, f.Reason = feedState(dom.Board.Header), dom.Board.Reason
 		f.Docs = core.BoardSearchDocs(dom.Board)
+		if dom.Board.Truncated != "" {
+			f.Reason = joinReason(f.Reason, reasonBoardCapped)
+		}
 	case core.DomainLeases:
 		f.State, f.Reason = feedState(dom.Leases.Header), dom.Leases.Reason
 		f.Docs = core.LeasesSearchDocs(dom.Leases)
@@ -208,10 +221,17 @@ func readSearchFeed(ctx context.Context, entries []core.Entry, now time.Time, id
 		f.State, f.Reason = feedState(dom.Queues.Header), dom.Queues.Reason
 		f.Docs = core.QueuesSearchDocs(dom.Queues)
 	}
-	if f.State != core.SearchSearched {
+	if f.State == core.SearchNotConnected || (f.State == core.SearchDegraded && id != core.DomainTasks) {
 		f.Docs = nil
 	}
 	return f
+}
+
+func joinReason(a, b string) string {
+	if a == "" {
+		return b
+	}
+	return a + "; " + b
 }
 
 func renderSearch(w io.Writer, r core.SearchReport) {
@@ -238,9 +258,14 @@ func renderSearch(w io.Writer, r core.SearchReport) {
 	if r.Total == 0 {
 		fmt.Fprintln(w, "\nno matches")
 	}
+	for _, s := range r.Domains {
+		if s.Reduced() {
+			fmt.Fprintf(w, "\nnote: %s: %s\n", s.Title, core.Sanitize(s.Reason))
+		}
+	}
 	var notes []string
 	for _, s := range r.Domains {
-		if s.State != core.SearchSearched {
+		if !s.Searched() {
 			notes = append(notes, s.Title+": "+searchStateWords(s))
 		}
 	}

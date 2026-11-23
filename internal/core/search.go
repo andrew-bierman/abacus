@@ -256,6 +256,15 @@ type SearchDomain struct {
 	Stale  bool        `json:"stale,omitempty"`
 }
 
+// Searched reports that the domain's documents were scanned: read normally, or read from a
+// reduced source (degraded with something to search).
+func (d SearchDomain) Searched() bool {
+	return d.State == SearchSearched || (d.State == SearchDegraded && d.Docs > 0)
+}
+
+// Reduced reports a domain that was searched but only in part; Reason says how.
+func (d SearchDomain) Reduced() bool { return d.Searched() && d.Reason != "" }
+
 // SearchReport is the result of one search: groups with hits, in SearchOrder, and a status per
 // domain, so a domain that was not searched is named rather than silently absent.
 type SearchReport struct {

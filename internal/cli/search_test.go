@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,11 +30,17 @@ func (m searchFleet) Leases(context.Context) (core.LeasesReport, error) {
 	return core.LeasesReport{Leases: []core.Lease{{Resource: "tracker-sync", State: core.LeaseHeld, Holder: "ada", ExpiresAt: "12m"}, {Resource: "lease-export", State: core.LeaseStale, Holder: "mei"}}}, nil
 }
 func (m searchFleet) Board(context.Context) (core.BoardReport, error) {
-	return core.BoardReport{Threads: []core.BoardThread{{Root: core.BoardMessage{ID: "15", Channel: "dev", Author: "ada", At: "2026-11-23T04:00:00Z", Text: "lease heartbeat keeps missing"}}},
+	return core.BoardReport{Threads: []core.BoardThread{{Root: core.BoardMessage{ID: "15", Channel: "dev", Author: "ada", At: "2026-11-23T04:00:00Z", Text: "lease heartbeat keeps missing"}},
+		{Root: core.BoardMessage{ID: "17", Channel: "ops", Author: "mei", At: "2026-11-23T03:00:00Z", Text: "deploy notes\nthe renewal window shifted after the deploy"}, Replies: 1,
+			Last: &core.BoardMessage{ID: "18", Author: "ada", At: "2026-11-23T03:30:00Z", Text: "renewal looks fixed now"}}},
 		Tasks: []core.BoardTask{{ID: "16", Channel: "work", Text: "review the heartbeat fix", State: "ready"}}}, nil
 }
 func (m searchFleet) Queues(context.Context) (core.QueuesReport, error) {
 	return core.QueuesReport{Runs: []core.QueueRun{{Issue: "tk-tbr", State: core.RunRunning, Phase: "build", Machine: "m2"}}}, nil
+}
+
+func searchSnapFleet() searchFleet {
+	return searchFleet{snapMod: snapMod{Fake: &modtest.Fake{IDStr: "fleet", Det: core.Detection{State: core.Ready, Version: "1"}}}}
 }
 
 func searchMods(leasesErr error) []core.Module {
@@ -154,6 +161,22 @@ func TestSearchJSONContract(t *testing.T) {
 	}
 }
 
+// The keys the first golden does not reach: snippet, target, truncated.
+func TestSearchJSONContractExcerptTargetAndTruncation(t *testing.T) {
+	_, out, _ := runSearch(t, searchMods(nil), "renewal", "in:board", "--json")
+	checkSearchGolden(t, "search-excerpt.golden.json", out)
+	for _, key := range []string{`"snippet"`, `"target"`} {
+		if !strings.Contains(out, key) {
+			t.Errorf("missing %s", key)
+		}
+	}
+	_, out, _ = runSearch(t, searchMods(nil), "renewal", "in:board", "--limit", "1", "--json")
+	checkSearchGolden(t, "search-limit.golden.json", out)
+	if !strings.Contains(out, `"truncated": 1`) {
+		t.Errorf("missing truncated:\n%s", out)
+	}
+}
+
 func checkSearchGolden(t *testing.T, name, got string) {
 	t.Helper()
 	path := filepath.Join("testdata", name)
@@ -169,5 +192,95 @@ func checkSearchGolden(t *testing.T, name, got string) {
 	}
 	if string(want) != got {
 		t.Errorf("%s differs (-update-golden accepts):\n--- want\n%s\n--- got\n%s", name, want, got)
+	}
+}
+
+// Unquoted words keep their order, so the echoed query and an error column are the ones typed.
+func TestSearchUnquotedWordsKeepTheirOrder(t *testing.T) {
+	_, out, _ := runSearch(t, searchMods(nil), "lease", "heartbeat", "in:board", "--json")
+	var rep core.SearchReport
+	if err := json.Unmarshal([]byte(out), &rep); err != nil || rep.Query != "lease heartbeat in:board" {
+		t.Errorf("query = %q (%v)", rep.Query, err)
+	}
+	_, out, _ = runSearch(t, searchMods(nil), "lease", "heartbeat", "--limit", "5", "in:board")
+	if !strings.Contains(out, "Search  lease heartbeat in:board") {
+		t.Errorf("echo:\n%s", out)
+	}
+	code, _, errOut := runSearch(t, searchMods(nil), "lease", "heartbeat", "nosuch:x")
+	if code != core.ExitUsage || !strings.Contains(errOut, "(column 17)") {
+		t.Errorf("code %d err %q, want column 17", code, errOut)
+	}
+}
+
+func TestSearchLimitAboveTheMaximumIsRefused(t *testing.T) {
+	for _, lim := range []string{"201", "-1", "abc"} {
+		if code, out, _ := runSearch(t, searchMods(nil), "x", "--limit", lim, "--json"); code != core.ExitUsage || out != "" {
+			t.Errorf("--limit %s: code %d out %q", lim, code, out)
+		}
+	}
+	if code, _, _ := runSearch(t, searchMods(nil), "x", "--limit", "200"); code != core.ExitOK {
+		t.Errorf("--limit 200: %d", code)
+	}
+}
+
+// reducedMod is a Tasks provider whose whole-tracker read fails, so only the summary's recent
+// changes can be searched.
+type reducedMod struct{ *taskMod }
+
+func (reducedMod) Snapshot(context.Context) (core.TaskSnapshot, error) {
+	return core.TaskSnapshot{}, errors.New("the export timed out")
+}
+
+func TestSearchSaysWhenOnlyRecentChangesWereSearched(t *testing.T) {
+	mods := []core.Module{reducedMod{newTaskMod()}}
+	code, out, _ := runSearch(t, mods, "newer")
+	if code != 0 || !strings.Contains(out, "Tasks (1)") || !strings.Contains(out, "Tasks: only recent changes were searched") {
+		t.Errorf("text (code %d):\n%s", code, out)
+	}
+	if strings.Contains(out, "Tasks: degraded") {
+		t.Errorf("a reduced domain was searched:\n%s", out)
+	}
+	_, js, _ := runSearch(t, mods, "newer", "--json")
+	var rep core.SearchReport
+	_ = json.Unmarshal([]byte(js), &rep)
+	var tasks core.SearchDomain
+	for _, d := range rep.Domains {
+		if d.Domain == core.DomainTasks {
+			tasks = d
+		}
+	}
+	if tasks.State != core.SearchDegraded || !strings.Contains(tasks.Reason, "recent changes") || tasks.Docs != 1 {
+		t.Errorf("tasks domain = %+v", tasks)
+	}
+	// and no hits for an old task: the full list was not searched
+	if _, out, _ := runSearch(t, mods, "zzzzzz"); !strings.Contains(out, "no matches") || !strings.Contains(out, "only recent changes") {
+		t.Errorf("a no-match must say what was searched:\n%s", out)
+	}
+}
+
+// brokenLeases fails its read; reducedBoard reads fine but says the read was partial.
+type brokenLeases struct{ searchFleet }
+
+func (brokenLeases) Leases(context.Context) (core.LeasesReport, error) {
+	return core.LeasesReport{}, errors.New("the hub timed out")
+}
+
+type reducedBoard struct{ searchFleet }
+
+func (reducedBoard) Board(context.Context) (core.BoardReport, error) {
+	return core.BoardReport{Header: core.Header{Reason: "showing the last page only"}, Threads: []core.BoardThread{{Root: core.BoardMessage{ID: "15", Text: "lease heartbeat keeps missing"}}}}, nil
+}
+
+func TestSearchDegradedFeedMapping(t *testing.T) {
+	base := searchSnapFleet()
+	// a read that failed: named under "not searched", no hits from it
+	code, out, _ := runSearch(t, []core.Module{brokenLeases{base}}, "lease")
+	if code != 0 || !strings.Contains(out, "not searched: Leases: degraded (the hub timed out)") || strings.Contains(out, "Leases (") {
+		t.Errorf("failed read (code %d):\n%s", code, out)
+	}
+	// a partial read keeps its hits and says why it is partial
+	code, out, _ = runSearch(t, []core.Module{reducedBoard{base}}, "heartbeat", "--domain", "board")
+	if code != 0 || !strings.Contains(out, "Board (1)") || !strings.Contains(out, "Board: showing the last page only") || strings.Contains(out, "not searched") {
+		t.Errorf("partial read (code %d):\n%s", code, out)
 	}
 }
