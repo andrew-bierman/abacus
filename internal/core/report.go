@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -168,7 +169,7 @@ func ReadDoctor(tool string, out []byte, exit int, err error) []Check {
 	}
 	failed := false
 	for i := range raw {
-		raw[i].Name, raw[i].Detail, raw[i].Fix = Sanitize(raw[i].Name), Sanitize(raw[i].Detail), Sanitize(raw[i].Fix)
+		raw[i].Name, raw[i].Detail, raw[i].Fix = Sanitize(raw[i].Name), Sanitize(raw[i].Detail), builtInFix(Sanitize(raw[i].Fix))
 		raw[i].Status = raw[i].Status.Normalize()
 		failed = failed || raw[i].Status == StatusFail
 	}
@@ -176,4 +177,11 @@ func ReadDoctor(tool string, out []byte, exit int, err error) []Check {
 		raw = append(raw, Check{Name: name, Status: StatusFail, Detail: fmt.Sprintf("exited %d without reporting a failed check", exit)})
 	}
 	return raw
+}
+
+// builtInFix rewrites a built-in tool's own advice to run one of its commands: the built-in tools
+// are not on the user's PATH, so the step to take is abacus's own setup.
+func builtInFix(fix string) string {
+	fix = strings.ReplaceAll(fix, " (or pass -config FILE)", "")
+	return strings.ReplaceAll(fix, "`lambe init`", "abacus setup")
 }

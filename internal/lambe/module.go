@@ -155,7 +155,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	}
 	var v versionInfo
 	if json.Unmarshal(out, &v) != nil || v.Version == "" {
-		return core.Detection{State: core.Incompatible, Detail: "lambe version --json: unparsable output (upgrade lambe)"}
+		return core.Detection{State: core.Incompatible, Detail: "lambe version --json: unparsable output"}
 	}
 	if v.APIVersion != SupportedAPIVersion {
 		return core.Detection{State: core.Incompatible, Version: v.Version, APIVersion: v.APIVersion,

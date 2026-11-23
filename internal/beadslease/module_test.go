@@ -157,7 +157,7 @@ func TestLegacyBinaryDoctorIsASkipThatNeverRuns(t *testing.T) {
 	m.Detect(context.Background())
 	f.calls = nil
 	checks := m.Doctor(context.Background())
-	if len(checks) != 1 || checks[0].Status != core.StatusSkip || !strings.Contains(checks[0].Detail, "upgrade") {
+	if len(checks) != 1 || checks[0].Status != core.StatusSkip || !strings.Contains(checks[0].Detail, "checks are skipped") {
 		t.Fatalf("doctor = %+v", checks)
 	}
 	if len(f.calls) != 0 {

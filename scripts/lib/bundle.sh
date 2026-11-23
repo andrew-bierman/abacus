@@ -6,8 +6,10 @@
 # must not be edited by hand; "hand" fields are the ones you edit to add or reshape a tool.
 #   schema                     hand    manifest format version (1)
 #   note                       hand    free text
-#   tools[].name               hand    the tool and the file name it is installed as in bundled/
+#   tools[].name               hand    the tool and the file name it is extracted as at run time
 #                                      (must equal core.KnownTools; a Go test checks it)
+#   tools[].kind               hand    "npm-bun" for the Vercel Board CLI: an npm package compiled to a
+#                                      standalone executable with bun; absent means a GitHub release asset
 #   tools[].repo               hand    GitHub owner/repo the release assets come from
 #   tools[].license            hand    license name shown in THIRD_PARTY_NOTICES.md
 #   tools[].tag_template       hand    release tag, {version} is replaced (for example v{version})
@@ -16,7 +18,16 @@
 #   tools[].member             hand    the one executable inside the asset (same placeholders)
 #   tools[].license_source     hand    {from: archive, member} or {from: tag, path}
 #   tools[].version            script  the pinned version
-#   tools[].assets             script  platform (os-arch) -> {asset, sha256, member}
+#   tools[].assets             script  platform (os-arch) -> {asset, sha256, member}; for npm-bun
+#                                      {bun_target}, hand-edited: the compiled output is not pinned by a
+#                                      hash (bun output need not be reproducible) but by its inputs:
+#   tools[].package, npm_integrity, lockfile, lockfile_sha256, bun_version, entry, runtime_license
+#                              npm-bun only. The whole npm tree comes from the committed lockfile
+#                              (npm ci --ignore-scripts); npm_integrity must equal the integrity the
+#                              lockfile records for the package; the lockfile hash and the bun version
+#                              are checked; runtime_license is {repo, tag, path, sha256} of the bun
+#                              runtime's license text. The sha256 of each compiled output is recorded
+#                              in the release notes instead.
 #   tools[].license_sha256     script  sha256 of the license file at the pin
 #   linked_licenses[]          Go modules linked into the binary whose license must ship verbatim
 #                              (no program is bundled for them; package-release.sh only)
@@ -89,6 +100,21 @@ install_linked_license() {
   chmod 0644 "$lic"
 }
 
+# is_npm TOOL: the Vercel Board CLI, built from an npm package instead of downloaded as an asset.
+is_npm() { [ "$(tool_field "$1" '.kind // "release"')" = npm-bun ]; }
+
+# pin_of TOOL PLATFORM: what the tool's install record is checked against: the asset sha256, or for
+# an npm-bun tool the npm integrity of the package. Prints nothing when the platform has no pin.
+pin_of() {
+  local v
+  if is_npm "$1"; then
+    v="$(tool_field "$1" ".assets[\"$2\"].bun_target // empty")"
+    [ -n "$v" ] && tool_field "$1" '.npm_integrity // empty'
+  else
+    v="$(tool_field "$1" ".assets[\"$2\"].sha256 // empty")"; echo "$v"
+  fi
+}
+
 # tag_for TOOL VERSION
 tag_for() { expand "$(tool_field "$1" .tag_template)" "$2" x x; }
 
@@ -122,6 +148,10 @@ extract_member() {
 # The caller sets `cache` (download directory).
 fetch() {
   local tool="$1" p="$2" asset want got
+  if is_npm "$tool"; then
+    [ -n "$(pin_of "$tool" "$p")" ] || die "$tool has no pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
+    echo "npm:$(tool_field "$tool" .package)@$(tool_field "$tool" .version)"; return 0
+  fi
   asset="$(tool_field "$tool" ".assets[\"$p\"].asset")"; want="$(tool_field "$tool" ".assets[\"$p\"].sha256")"
   [ -n "$asset" ] && [ "$asset" != null ] && [ -n "$want" ] && [ "$want" != null ] \
     || die "$tool has no pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
@@ -142,6 +172,10 @@ fetch() {
 install_tool() {
   local bindir="$1" licdir="$2" tool="$3" p="$4" asset_path="$5" lic
   mkdir -p "$bindir" "$licdir/$tool"
+  if is_npm "$tool"; then
+    install_board "$bindir" "$licdir" "$tool" "$p"
+    return 0
+  fi
   extract_member "$asset_path" "$(tool_field "$tool" ".assets[\"$p\"].member")" "$bindir/$tool"
   chmod 0755 "$bindir/$tool"
   lic="$licdir/$tool/LICENSE"
@@ -154,13 +188,101 @@ install_tool() {
   chmod 0644 "$lic"
 }
 
+# ensure_board_build TOOL PLATFORM -> prints the cache directory holding the compiled executable
+# and its licenses. Recipe (fail closed): copy the committed package.json and package-lock.json to a
+# temp dir; check the lockfile's sha256 and that the lockfile records the pinned npm integrity for the
+# package; `npm ci --ignore-scripts` (npm verifies every tarball against the lockfile); check bun's
+# version; `bun build --compile` for the platform's target. Never `npx vb` (unrelated package).
+# A cached build is reused only when its record says it came from the same inputs.
+ensure_board_build() {
+  local tool="$1" p="$2" version integ lock lock_sha bunv entry target pkg key rec work lockdir
+  version="$(tool_field "$tool" .version)"; integ="$(tool_field "$tool" .npm_integrity)"
+  lock="$root/$(tool_field "$tool" .lockfile)"; lock_sha="$(tool_field "$tool" .lockfile_sha256)"
+  bunv="$(tool_field "$tool" .bun_version)"; entry="$(tool_field "$tool" .entry)"
+  target="$(tool_field "$tool" ".assets[\"$p\"].bun_target")"; pkg="$(tool_field "$tool" .package)"
+  [[ "$target" =~ ^bun-[a-z0-9-]+$ ]] || die "$tool: unsafe bun target '$target' in the manifest"
+  [[ "$entry" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$entry" != *..* ]] || die "$tool: unsafe entry '$entry' in the manifest"
+  [ -f "$lock" ] && [ "$(sha "$lock")" = "$lock_sha" ] || die "$tool: $(tool_field "$tool" .lockfile) does not match its pin lockfile_sha256; review it, then re-pin"
+  jq -e --arg pkg "$pkg" --arg i "$integ" '.packages["node_modules/" + $pkg].integrity == $i' "$lock" >/dev/null \
+    || die "$tool: the lockfile does not record the pinned npm integrity for $pkg"
+  key="$cache/$tool/$version-$p"; rec="$integ $lock_sha $bunv $target"
+  if [ -f "$key/board.build" ] && [ "$(cut -d' ' -f1-4 "$key/board.build")" = "$rec" ] \
+     && [ "$(sha "$key/$tool")" = "$(cut -d' ' -f5 "$key/board.build")" ] && [ -f "$key/LICENSE" ] && [ -f "$key/DEPENDENCY_LICENSES.txt" ] && [ -f "$key/BUN_LICENSE.md" ]; then
+    echo "$key"; return 0
+  fi
+  need npm; need bun
+  [ "$(bun --version)" = "$bunv" ] || die "$tool: bun $(bun --version) is installed but the manifest pins bun $bunv"
+  work="$(mktemp -d "${TMPDIR:-/tmp}/abacus-board.XXXXXX")"
+  lockdir="$(dirname "$lock")"
+  cp "$lockdir/package.json" "$lockdir/package-lock.json" "$work/"
+  ( cd "$work" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null ) || { rm -rf "$work"; die "$tool: npm ci failed"; }
+  [ -f "$work/node_modules/$pkg/$entry" ] || { rm -rf "$work"; die "$tool: $pkg has no $entry"; }
+  bun build --compile --minify --no-compile-autoload-dotenv --no-compile-autoload-bunfig \
+    --target="$target" "$work/node_modules/$pkg/$entry" --outfile "$work/$tool.out" >/dev/null \
+    || { rm -rf "$work"; die "$tool: bun build failed"; }
+  [ -s "$work/$tool.out" ] || { rm -rf "$work"; die "$tool: bun produced no executable"; }
+  mkdir -p "$key.tmp"
+  cp "$work/$tool.out" "$key.tmp/$tool"
+  cp "$work/node_modules/$pkg/$(tool_field "$tool" .license_source.path)" "$key.tmp/LICENSE"
+  board_dependency_licenses "$work" >"$key.tmp/DEPENDENCY_LICENSES.txt"
+  fetch_runtime_license "$tool" >"$key.tmp/BUN_LICENSE.md" || { rm -rf "$work" "$key.tmp"; exit 1; }
+  echo "$rec $(sha "$key.tmp/$tool")" >"$key.tmp/board.build"
+  rm -rf "$work" "$key"; mv "$key.tmp" "$key"
+  echo "$key"
+}
+
+# board_dependency_licenses WORKDIR: every package npm installed (the whole tree is compiled in),
+# with its license field and license text, from the installed packages.
+board_dependency_licenses() {
+  local work="$1" pj dir name ver lic f
+  echo "Licenses of the npm packages compiled into the Board CLI executable (from the committed lockfile)."
+  for pj in "$work"/node_modules/*/package.json "$work"/node_modules/@*/*/package.json; do
+    [ -f "$pj" ] || continue
+    dir="$(dirname "$pj")"
+    name="$(jq -r .name "$pj")"; ver="$(jq -r .version "$pj")"
+    lic="$(jq -r 'if (.license|type)=="string" then .license else (.license.type // "see its license file") end' "$pj")"
+    echo
+    echo "================ $name $ver ($lic) ================"
+    for f in "$dir"/LICENSE* "$dir"/LICENCE* "$dir"/COPYING* "$dir"/NOTICE*; do
+      [ -f "$f" ] || continue
+      echo "--- $(basename "$f") ---"; cat "$f"; echo
+    done
+  done
+}
+
+# fetch_runtime_license TOOL: the bun runtime's license text at the pinned tag, checked against its pin.
+fetch_runtime_license() {
+  local tool="$1" tmp repo tag path want
+  need gh
+  repo="$(tool_field "$tool" .runtime_license.repo)"; tag="$(tool_field "$tool" .runtime_license.tag)"
+  path="$(tool_field "$tool" .runtime_license.path)"; want="$(tool_field "$tool" .runtime_license.sha256)"
+  tmp="$(mktemp)"
+  gh api -H 'Accept: application/vnd.github.raw' "repos/$repo/contents/$path?ref=$tag" >"$tmp" \
+    || { rm -f "$tmp"; die "$tool: cannot fetch the runtime license from $repo at $tag"; }
+  [ "$(sha "$tmp")" = "$want" ] || { rm -f "$tmp"; die "$tool: the runtime license changed from its pin; review it, then re-pin"; }
+  cat "$tmp"; rm -f "$tmp"
+}
+
+# install_board BINDIR LICDIR TOOL PLATFORM
+install_board() {
+  local bindir="$1" licdir="$2" tool="$3" p="$4" key
+  key="$(ensure_board_build "$tool" "$p")"
+  cp "$key/$tool" "$bindir/$tool"; chmod 0755 "$bindir/$tool"
+  cp "$key/LICENSE" "$licdir/$tool/LICENSE"
+  [ "$(sha "$licdir/$tool/LICENSE")" = "$(tool_field "$tool" .license_sha256)" ] || die "$tool: license changed from its pin; review it, then re-pin"
+  cp "$key/DEPENDENCY_LICENSES.txt" "$licdir/$tool/DEPENDENCY_LICENSES.txt"
+  cp "$key/BUN_LICENSE.md" "$licdir/$tool/BUN_LICENSE.md"
+  chmod 0644 "$licdir/$tool"/*
+}
+
 # The THIRD_PARTY_NOTICES.md text, in three pieces: header, one entry per tool, footer.
 notices_header() {
   echo "# Third-party notices"
   echo
-  echo "This archive ships these tools unmodified, as separate programs in \`bundled/\`. abacus runs"
-  echo "them as subprocesses. Each tool's own license is in \`third_party/<tool>/LICENSE\`, copied"
-  echo "verbatim from the pinned release."
+  echo "The abacus program is a single file. It carries these tools inside it, unmodified, and runs"
+  echo "each one as a separate program (a subprocess) after extracting it to a private folder. Each"
+  echo "tool's own license text is printed by \`abacus licenses\` and is in \`third_party/<tool>/\` in"
+  echo "the release archive, copied verbatim from the pinned release."
   echo
 }
 
@@ -170,7 +292,15 @@ notices_entry() {
   echo
   echo "- License: $(tool_field "$1" .license)"
   echo "- Source: https://github.com/$(tool_field "$1" .repo)"
-  echo "- Shipped as: \`bundled/$1\` (asset \`$(basename "$3")\`, sha256 \`$(tool_field "$1" ".assets[\"$2\"].sha256")\`)"
+  if is_npm "$1"; then
+    echo "- Built in as: a standalone executable compiled by bun $(tool_field "$1" .bun_version) from the npm package \`$(tool_field "$1" .package)\`"
+    echo "  at the pinned integrity \`$(tool_field "$1" .npm_integrity)\`, with every npm dependency taken from a"
+    echo "  committed lockfile. The executable includes the bun runtime (MIT, with LGPL-2 JavaScriptCore;"
+    echo "  its license is in \`third_party/$1/BUN_LICENSE.md\`) and the npm packages whose licenses are in"
+    echo "  \`third_party/$1/DEPENDENCY_LICENSES.txt\`."
+  else
+    echo "- Built in as: asset \`$(basename "$3")\`, sha256 \`$(tool_field "$1" ".assets[\"$2\"].sha256")\`"
+  fi
   echo "- License text: \`third_party/$1/LICENSE\`"
   echo
 }
@@ -191,6 +321,6 @@ linked_notices_entry() {
 }
 
 notices_footer() {
-  echo "abacus itself is GPL-3.0-or-later (\`LICENSE\`). lambe is GPL-3.0 and shipped as a separate program."
+  echo "abacus itself is GPL-3.0-or-later (\`LICENSE\`). lambe is GPL-3.0 and built in as a separate program."
   echo
 }

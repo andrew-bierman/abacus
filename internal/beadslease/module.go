@@ -145,7 +145,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 // check is itself a failure, so a red tool never reads green. Older binaries get a skip.
 func (m *Module) Doctor(ctx context.Context) []core.Check {
 	if !m.hasDoctor {
-		return []core.Check{{Name: "doctor", Status: core.StatusSkip, Detail: "this beads-lease predates `doctor --json`; upgrade to a build with api_version 1"}}
+		return []core.Check{{Name: "doctor", Status: core.StatusSkip, Detail: "this beads-lease has no `doctor --json` report, so its own checks are skipped"}}
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
