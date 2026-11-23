@@ -82,8 +82,33 @@ type tasksSection struct {
 	insBusy     bool
 	wantIns     bool // insights are read after the next tasks read: an empty tracker skips bv
 
+	ws *wsLayer // the optional workspace layer; nil without one
+
 	th Theme
 	geom
+}
+
+func (s *tasksSection) setWorkspace(w *wsLayer) { s.ws = w }
+
+// taskItem is the workspace item of a task: its id.
+func taskItem(t core.Task) (core.WorkspaceItem, bool) { return itemOf(core.WorkspaceTask, t.ID, "") }
+
+func (s *tasksSection) wsItems() []core.WorkspaceItem {
+	var items []core.WorkspaceItem
+	for _, t := range s.recent() {
+		if it, ok := taskItem(t); ok {
+			items = append(items, it)
+		}
+	}
+	return itemList(items...)
+}
+
+// selectedItem is the workspace item under the cursor.
+func (s *tasksSection) selectedItem() (core.WorkspaceItem, bool) {
+	if t, ok := s.current(); ok {
+		return taskItem(t)
+	}
+	return core.WorkspaceItem{}, false
 }
 
 func newTasksSection(p core.Providers, cfg *config) *tasksSection {
@@ -112,7 +137,8 @@ func (s *tasksSection) Bindings() []key.Binding {
 	case modeBusy:
 		return nil
 	}
-	return append(moveBindings(), keyNew, keyEdit, keyClose, keyFull, keyReload)
+	it, ok := s.selectedItem()
+	return append(moveBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload)
 }
 
 func (s *tasksSection) fetchTasks() tea.Cmd {
@@ -163,6 +189,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tasksMsg:
 		s.report, s.err, s.loaded, s.tasksBusy = m.report, m.err, true, false
 		s.reanchor(s.ids(), true) // follow: the clamped row under the cursor is selected
+		wsRead := s.ws.fetch(s.wsItems())
 		if s.err == nil {
 			wasEmpty := s.insights != nil && s.insights.Empty
 			switch {
@@ -172,9 +199,16 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case s.wantIns || wasEmpty: // first read, a refresh, or the first task just appeared
 				s.wantIns = false
 				if !s.insBusy {
-					return s, s.fetchInsights()
+					return s, tea.Batch(s.fetchInsights(), wsRead)
 				}
 			}
+		}
+		return s, wsRead
+	case workspaceMsg:
+		s.ws.receive(m)
+	case handoffDoneMsg:
+		if s.ws.done() && m.err != nil {
+			s.ws.note = []string{"The workspace did not open: " + core.Sanitize(m.err.Error())}
 		}
 	case insightsMsg:
 		s.insights, s.insBusy = &m.report, false
@@ -274,7 +308,11 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return s, nil
 	}
 	s.notice = ""
+	s.ws.clear()
 	switch {
+	case key.Matches(k, keyWorkspace):
+		it, ok := s.selectedItem()
+		return s, s.ws.jump(it, ok)
 	case key.Matches(k, keyUp):
 		s.up(s.ids())
 	case key.Matches(k, keyDown):
@@ -577,8 +615,28 @@ func (s *tasksSection) panelView() string {
 		}
 		styled = append(styled, []string{san(t.ID), status, prio, san(t.Title)})
 	}
-	lines = append(lines, renderRows(th, taskTable, iw, styled, plain, s.cursor)...)
+	tb := taskTable
+	if s.ws.has() {
+		cells, plainCells := make([]string, len(s.recent())), make([]string, len(s.recent()))
+		for i, t := range s.recent() {
+			it, ok := taskItem(t)
+			cells[i], plainCells[i] = s.ws.place(th, it, ok, false), s.ws.place(th, it, ok, true)
+		}
+		if wtb, ok := s.ws.whereCol(tb, w, iw, styled, cells); ok {
+			tb = wtb
+			for i := range styled {
+				styled[i], plain[i] = append(styled[i], cells[i]), append(plain[i], plainCells[i])
+			}
+		}
+	}
+	lines = append(lines, renderRows(th, tb, iw, styled, plain, s.cursor)...)
 	cursorLine += s.cursor
+	if it, ok := s.selectedItem(); s.ws.has() {
+		if det := s.ws.detail(th, it, ok, 8); len(det) > 1 {
+			lines = append(lines, "", th.Section("Workspace"))
+			lines = append(lines, det[1:]...)
+		}
+	}
 
 	sub, ins := s.insightParts(insW)
 	insTitle := "Insights"
@@ -600,6 +658,9 @@ func (s *tasksSection) panelView() string {
 
 func (s *tasksSection) View() string {
 	if s.mode == modeList && s.loaded && s.err == nil {
+		if box, ok := s.ws.noteBox(s.th, s.width(), s.h); ok {
+			return joinLines(box)
+		}
 		return s.panelView()
 	}
 	if s.mode != modeList {

@@ -28,6 +28,7 @@ var demoSessions = []struct{ id, label string }{
 	{"demo:s5", "ac-00h"},
 	{"demo:s6", "Lambe · ac-1k2"},
 	{"demo:s7", "retry ac-1k2"},
+	{"demo:s8", "Lambe · ac-09"},
 }
 
 // Workspace places the demo items it knows.
