@@ -56,6 +56,30 @@ may change behavior, and patch versions are fixes and small additions.
   rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
   dependency change.
 - `docs/plans/2026-11-22-board-bundling-assessment.md`: how to ship the Board domain without asking for Node (compiled binary measured, native client judged, trust model, recommendation).
+- An optional workspace layer. `internal/core` gains a `WorkspaceProvider` capability (not a fifth
+  domain; navigation stays four tabs plus Doctor): typed placements saying where a run, lease,
+  task or queue row lives as a terminal session, and an open plan (an ordered list of argv rungs
+  plus a command to copy) that core never runs. Unknown kinds pass through, text from the
+  workspace is sanitized and bounded, and no provider is an empty, non-error result. `status
+  --json` gains a `workspace` section only when there is something to report (additive;
+  `schema_version` stays 1, and the output is byte-identical without a provider).
+- `internal/rex`, the first workspace provider, composes only the `rex` CLI: `ls --json` and
+  `version --json` (always `--autostart=false`) behind an argv allowlist and a scrubbed
+  environment, gated on API revision overlap (compatible iff `api_revision >= 10` and
+  `api_min_revision <= 13`). Placement comes from session labels (conventions are data; `bd-1`
+  does not match `bd-1.2`), a label two sessions claim is reported as ambiguous and never picked.
+  Only this machine and hosts in `ABACUS_REX_HOSTS` are ever contacted (`-S` can open an ssh
+  connection; another machine gets a copy-only "host-not-configured" placement), the environment
+  passed on is `HOME`, `PATH`, the XDG dirs and `REX_*` (`ABACUS_REX_PASS_ENV` opts in to more),
+  and an unrecognized `ls` shape is a degraded read, never an empty one. No server is not an
+  error; an unsupported revision or a failed probe is a Doctor warning, never a failure, and an
+  absent Rex does not appear in Doctor or the tool list. `ABACUS_REX_BIN` overrides the lookup.
+  The open plan (in `status --json` as `open` on every placement, with `rungs` always a list and
+  an `interactive` flag) is the existing `rex -S <machine>` handoff, then the command to copy;
+  richer jumps are deferred until verified against a real Rex. The workspace read overlaps the
+  other reads with a one second budget, and the adapter caches per-host results for 3 s.
+- `tui --demo` has fixture placements (including an ambiguous one) from the demo Leases provider.
+  The TUI does not show the workspace yet.
 - `abacus tui --demo` shows every tab with invented data: Board, Tasks (with graph insights and the
   confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
   only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,
@@ -74,6 +98,9 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- `core.Sanitize` now also drops every Unicode format character (word joiner, soft hyphen, tag
+  characters and the like) and the blank Hangul fillers, not only bidi controls and zero-width
+  characters. `core.ShellJoin` now quotes words containing `=` or `%`.
 - The minimum Go version is now 1.26.11 (it follows `github.com/Dicklesworthstone/beads_viewer`
   v0.27.0, pinned exactly), and lipgloss moves from v1.1.0 to the pseudo-version
   `v1.1.1-0.20250404203927-76690c660834` that bv's module requires, with `x/ansi`,

@@ -68,10 +68,13 @@ func (m module) Status(context.Context) core.Status { return core.Status{Summary
 func (module) IsDemo() bool { return true }
 
 // Leases provides the Leases domain from fixtures.
-type Leases struct{ module }
+type Leases struct {
+	module
+	WorkspaceProvider // the demo workspace capability rides on the demo Leases provider
+}
 
 // NewLeases returns the demo Leases provider.
-func NewLeases() Leases { return Leases{module{"beads-lease", "Leases (demo)", "demo"}} }
+func NewLeases() Leases { return Leases{module: module{"beads-lease", "Leases (demo)", "demo"}} }
 
 func (Leases) Leases(context.Context) (core.LeasesReport, error) { return LeasesReport(), nil }
 

@@ -6,14 +6,16 @@ import (
 	"unicode/utf8"
 )
 
-// invisible reports bidi overrides/isolates and zero-width characters (including ZWJ, so a
-// ZWJ emoji sequence degrades to its parts): they can reorder or hide text on screen.
+// invisible reports characters that print as nothing or reorder what is around them: every
+// format character (Unicode category Cf: bidi overrides and isolates, zero-width space, joiners
+// including ZWJ so a ZWJ emoji sequence degrades to its parts, word joiner, soft hyphen, BOM,
+// tag characters) plus the combining grapheme joiner and the Hangul fillers that render blank.
 func invisible(r rune) bool {
-	switch {
-	case r >= 0x200b && r <= 0x200f, r >= 0x202a && r <= 0x202e, r >= 0x2066 && r <= 0x2069, r == 0xfeff:
+	switch r {
+	case 0x034f, 0x115f, 0x1160, 0x3164, 0xffa0:
 		return true
 	}
-	return false
+	return unicode.Is(unicode.Cf, r)
 }
 
 // Sanitize makes text from outside abacus (tracker titles, daemon messages, tool output)

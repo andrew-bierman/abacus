@@ -142,6 +142,130 @@ output (`internal/board/testdata`). Provides the Board domain (read) and Board p
 
 board-beads is only the beads-backed backend a board can use; it stays a library (board-beads#15).
 
+## Rex (`rex`), optional workspace
+
+Provides the workspace capability (`core.WorkspaceProvider`): where a run, lease, task or queue
+row lives as a terminal session. It is optional and pre-1.0 (the Rex CLI is closed source), and
+nothing else depends on it. The UI says "workspace"; "Rex" appears only in Doctor, how-to-connect
+and error text (and in commands you are shown to copy).
+
+**Verified** against the Rex server API reference (`help.json`, API revision 13) as a local file,
+never against a running Rex (no `rex` was run to write this):
+- `session.list` returns `{"sessions":[{"session_id","label"}]}` (fixture `ls-help-example.json` is
+  its response example, verbatim). `server.version` has `api_revision` (the newest revision the
+  server supports) and `api_min_revision` (the oldest).
+- Rex advertises API revisions 10 to 13 and the API has only added methods so far.
+
+**Unverified assumptions** (second-hand: Lambe's working code and research notes, never re-run
+here). Each is a place a real Rex could differ, so check them before relying on the layer:
+- `rex --autostart=false ls --json` prints exactly the `session.list` result and exits 0 when a
+  server answers and 4 when none is reachable; 3 means more than one server answers; any other
+  non-zero exit is an error even if it printed JSON.
+- `rex version --json` prints the `server.version` shape (`api_revision`, `api_min_revision`,
+  `rex_version`).
+- The argv order `rex -S HOST --autostart=false ls --json` (global flags before the subcommand,
+  `-S` first) is accepted, and `--autostart=false` is honored together with `-S`.
+- `REX_SESSION` and `REX_SERVER` are set in every Rex terminal; Lambe treats either as "inside
+  Rex" and otherwise probes with a 500 ms deadline. abacus does the same.
+- Session labels follow Lambe's conventions (a window is `Lambe · <ISSUE>`, a session is the
+  agent's name). The machine a run carries equals the Rex host name (not enforced anywhere).
+- A bare `rex` opens the workspace on this machine (used only as a command to copy).
+
+**What abacus runs**, element by element, nothing else (the argv allowlist test lists refused forms):
+`rex --autostart=false ls --json`, `rex --autostart=false version --json` and
+`rex -S HOST --autostart=false ls --json`. HOST is a name, `user@name` or `name:port`: dot-separated
+labels of letters, digits, hyphens and underscores (a label starts and ends with a letter or digit),
+an optional user of up to 32 characters, an optional port from 1 to 65535, at most 253 characters in
+all, never a leading dash, never an IPv6 literal. `--autostart=false` is always there, so a read can
+never start a server. Never `new`, `send`, `capture`, `api call`, `window`, `server`, `config`, `do`
+or `hosts`.
+
+**Network egress.** `rex -S HOST` makes Rex talk to HOST, which may mean opening an ssh connection
+to it. The machine names come from run data (any program can write them), so abacus contacts only
+(a) this machine (compared by short host name, read without `-S`) and (b) hosts you list in
+`ABACUS_REX_HOSTS` (comma-separated, validated as above, at most 16; an invalid entry is dropped,
+never widened). A run on any other machine gets a placement with match `host-not-configured`, no
+session, and a copy-only plan (the handoff command to run yourself). At most 8 hosts are read per
+call, in parallel.
+
+**Environment.** Rex runs with `HOME`, `PATH`, `XDG_RUNTIME_DIR`, `XDG_CONFIG_HOME`,
+`XDG_STATE_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` and `REX_*` only. Proxy settings,
+`SSH_AUTH_SOCK`, `DISPLAY`, `WAYLAND_DISPLAY` and every token are deliberately not passed, so `-S` to
+a host that needs a key from your ssh agent will not authenticate unless you opt in:
+`ABACUS_REX_PASS_ENV=SSH_AUTH_SOCK` (comma-separated upper-case names, at most 8; `LD_*`, `DYLD_*`,
+`BASH_ENV` and `ENV` are refused). Output is capped at exactly 1 MiB per call.
+
+**Time and ownership.** A workspace read has a one second budget for the whole call, however many
+hosts (core owns the budget). core runs it concurrently with the Board and insights reads, so a
+slow Rex cannot lengthen them; a read that runs out is a degraded report. Each call also has a
+2 s deadline (the probe 500 ms). The adapter owns caching: each host's session list is reused for
+3 s within one process (a TUI refresh, or several reads in one command), so a hung Rex costs one
+call per 3 s, not one per read; a reused list marks the report `stale`. A new detection clears it.
+
+**Detection and states.** No `rex` binary (`ABACUS_REX_BIN`, bundled, then PATH): absent, and quiet
+(not in `version`, Doctor or the tool list). Binary but no server (the probe, or `version`, exits 4):
+ready, with a `skip` check ("no Rex server running (optional)"); a read then says "not connected"
+with how to start one. Incompatible, which Doctor shows as a `warn` and `version` lists: a probe
+that cannot run, times out, exits other than 0 or 4 (including 3, more than one server), or prints
+an unrecognized shape; a failing or unreadable `version --json`; or an API revision range that does
+not overlap ours. The gate is on interval overlap: compatible iff `api_revision >= 10` and
+`api_min_revision` (0 when absent) `<= 13`. `{14, min 10}` is ready; `{14, min 14}` is incompatible.
+A revision or minimum that is a string, a fraction, null or negative is reported as "not a whole
+number", a missing `api_revision` as missing. Never `fail`, so Rex never changes the exit code or
+says "needs attention".
+
+**`ls --json` shape.** `{"sessions": null | [{"session_id": string, "label": string}]}`. Anything
+else (a missing or mistyped `sessions`, a session with no id) is "unrecognized rex ls output": the
+read is degraded, never a healthy empty list. At most 500 sessions per host are looked at; more
+sets `truncated` on the report and `500+ sessions` in status.
+
+**Placement.** Only `ls --json` is read, so only session labels are visible: window (tab) labels
+need `session.view` and are deferred, so `tab` is empty. A label matches an item id exactly (one of
+the label conventions, by default the id, `Lambe · <id>`, `Lambe: <id>` and `Lambe - <id>`, as
+`{id}` templates in `Options.LabelConventions`) or by containing it as a whole word (`LAM-1` does not
+match `LAM-12`, and `bd-1` does not match `bd-1.2`: a dot followed by a letter or digit continues an
+id). Ids of one character never match. Matching sees the whole sanitized label; only what is shown
+is cut to 64 characters. One claimant is a placement; two or more is an ambiguity with every
+candidate (up to 8, then `truncated`) and nothing is picked. Labels come from other programs: control,
+bidi, zero-width and every other Unicode format character are removed, in the adapter and again in
+core.
+
+### Workspace JSON
+
+`status --json` gains a top-level `domains.workspace` only when there is something to report
+(additive; `schema_version` stays 1; byte-identical without a provider):
+
+```
+"workspace": {
+  "state": "connected" | "not-connected" | "degraded",
+  "reason": "...", "how_to_connect": "...",          // clipped to 300 and 200 characters
+  "placements": [ { "id": "pl-<12 hex>", "item": {"kind","id","host"}, "host", "session", "tab",
+                    "label", "match": "exact" | "label" | "host-not-configured" | <future>,
+                    "open": { "rungs": [ {"name": "handoff", "argv": [...], "interactive": true} ],
+                              "copy": "...", "note": "..." } } ],
+  "ambiguous": [ { "item": {...}, "candidates": [ <placement> ], "truncated": true } ],
+  "stale": true,      // some of this is a short-lived cached read
+  "truncated": true   // something was cut: sessions, placements, or one with an unsafe host name
+}
+```
+
+`open.rungs` is always a list (never null), possibly empty. A rung is tried in order, only on an
+explicit keypress and never by core; `interactive` says it takes over the terminal. A rung or `copy`
+that sanitizing would change is dropped, never altered. Hosts are never clipped: one that is too
+long or would change is dropped with its placement and `truncated` is set. Unknown `kind` and `match`
+values pass through.
+
+**Open plan.** Rung `handoff`: `rex -S <machine>` (the located binary's path when found), the same
+argv Queues' `o` runs today, then the same command to copy. A machine that was not configured for
+reads: no rung, the command to copy, and a note. A session on this machine (no host recorded): no
+rung (focusing or selecting a session is unverified), the command to open the workspace as `copy`
+and a note naming the session to pick. Core and the adapter only build the plan; a front-end runs it
+on an explicit keypress.
+
+**Deferred** until someone runs them against a real Rex and records argv and JSON: `rex window
+focus`, `rex window new`, `session.select` (also needs a client with Remote control on; `rex-tui`
+support is unknown), window labels via `session.view`, `rex hosts`, program status, spawning. A
+rung is data (a name and an argv), so each is a new value, not a new type.
 ## Graph engine (bv subprocess or in-process library)
 
 The Tasks insights (top picks, blockers, critical path, cycles, actionable and blocked counts) have

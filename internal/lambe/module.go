@@ -316,7 +316,7 @@ func (m *Module) IsDemo() bool { return m.o.Demo }
 
 // RexArgv is the command that hands a machine to Rex. A front-end decides how to run it,
 // and only in response to an explicit user action.
-func (m *Module) RexArgv(machine string) []string { return []string{"rex", "-S", machine} }
+func (m *Module) RexArgv(machine string) []string { return core.HandoffArgv("", machine) }
 
 // Queues is the Queues domain read. The Source is provider-neutral: a demo is a snapshot,
 // the tracker-only fallback is labelled as such, a live daemon read is live.

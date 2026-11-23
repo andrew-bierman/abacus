@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "version": "test",
+  "modules": [
+    {
+      "id": "fleet",
+      "name": "Fake fleet",
+      "detection": {
+        "state": "ready",
+        "version": "v1"
+      },
+      "status": {
+        "summary": "2 tasks: 1 open, 0 in progress, 0 blocked, 1 ready"
+      }
+    }
+  ],
+  "domains": {
+    "board": {
+      "domain": "board",
+      "title": "Board",
+      "state": "not-connected",
+      "how_to_connect": "The Board tab is optional: it adds channels, threads and tasks from a Vercel Board, and nothing else needs it. To turn it on, install the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`: that is a different package). Docs: https://github.com/vercel/board"
+    },
+    "tasks": {
+      "domain": "tasks",
+      "title": "Tasks",
+      "state": "connected",
+      "source": "live",
+      "summary": "2 tasks: 1 open, 0 in progress, 0 blocked, 1 ready",
+      "counts": {
+        "total": 2,
+        "open": 1,
+        "in_progress": 0,
+        "blocked": 0,
+        "deferred": 0,
+        "closed": 0,
+        "ready": 1
+      },
+      "recent": [
+        {
+          "id": "t-1",
+          "title": "one",
+          "status": "open",
+          "priority": 1
+        }
+      ],
+      "insights": {
+        "domain": "tasks",
+        "title": "Insights",
+        "state": "not-connected",
+        "how_to_connect": "Graph insights need bv. abacus's own copy of bv is damaged or was moved. Re-extract the download and keep the folder together."
+      }
+    },
+    "leases": {
+      "domain": "leases",
+      "title": "Leases",
+      "state": "connected",
+      "source": "live",
+      "summary": "1 held, 0 stale, 0 free",
+      "leases": [
+        {
+          "resource": "t-1",
+          "state": "held",
+          "holder": "a"
+        }
+      ]
+    },
+    "queues": {
+      "domain": "queues",
+      "title": "Queues",
+      "state": "connected",
+      "source": "live",
+      "summary": "1 runs, 0 queued, 0 need attention",
+      "runs": [
+        {
+          "issue": "t-1",
+          "state": "running",
+          "machine": "mbp"
+        }
+      ]
+    }
+  }
+}

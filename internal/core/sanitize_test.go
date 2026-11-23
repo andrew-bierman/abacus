@@ -41,3 +41,31 @@ func TestSanitizeStripsBidiAndZeroWidthCharacters(t *testing.T) {
 		}
 	}
 }
+
+// Beyond bidi and zero-width space: word joiner and the invisible operators, soft hyphen, the
+// Arabic letter mark, Mongolian vowel separator, deprecated format characters, Hangul fillers,
+// the combining grapheme joiner, interlinear annotation and tag characters all print as nothing
+// (or reorder text) and are dropped. Visible text around them is kept.
+func TestSanitizeStripsEveryInvisibleFormatCharacter(t *testing.T) {
+	for name, r := range map[string]rune{
+		"word joiner": 0x2060, "function application": 0x2061, "invisible plus": 0x2064, "soft hyphen": 0x00ad, "arabic letter mark": 0x061c,
+		"mongolian vowel separator": 0x180e, "deprecated shaping": 0x206a, "deprecated digit shape": 0x206f, "hangul choseong filler": 0x115f,
+		"hangul jungseong filler": 0x1160, "hangul filler": 0x3164, "halfwidth hangul filler": 0xffa0, "grapheme joiner": 0x034f,
+		"interlinear anchor": 0xfff9, "interlinear terminator": 0xfffb, "tag space": 0xe0020, "tag latin a": 0xe0041, "cancel tag": 0xe007f,
+		"bom": 0xfeff, "zwsp": 0x200b, "zwj": 0x200d, "lrm": 0x200e, "rlo": 0x202e, "isolate": 0x2066, "pop isolate": 0x2069,
+		"arabic number sign": 0x0600, "left-to-right mark": 0x200e,
+	} {
+		in := "a" + string(r) + "b"
+		if got := core.Sanitize(in); got != "ab" {
+			t.Errorf("%s (%U): %q", name, r, got)
+		}
+		if got := core.SanitizeText("x\n" + in); got != "x\nab" {
+			t.Errorf("%s (%U) in text: %q", name, r, got)
+		}
+	}
+	for _, keep := range []string{"日本語", "ünï", "é", "😀", "·", "–", "©", " ", "a b", "ﬁ"} {
+		if got := core.Sanitize(keep); got != keep {
+			t.Errorf("%q was changed to %q", keep, got)
+		}
+	}
+}

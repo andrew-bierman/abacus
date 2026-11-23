@@ -1,0 +1,8 @@
+{
+  "sessions": [
+    {
+      "session_id": "session:<uuid>",
+      "label": "work"
+    }
+  ]
+}
