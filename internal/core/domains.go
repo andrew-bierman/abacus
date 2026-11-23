@@ -306,6 +306,9 @@ type DomainsReport struct {
 	Tasks  TasksReport  `json:"tasks"`
 	Leases LeasesReport `json:"leases"`
 	Queues QueuesReport `json:"queues"`
+	// Workspace is where items live as terminal sessions, from the optional workspace
+	// provider. Additive: omitted when there is no provider or nothing to report.
+	Workspace *WorkspaceReport `json:"workspace,omitempty"`
 }
 
 // Providers. A module opts into a domain by implementing the interface; the provider fills
@@ -584,6 +587,7 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	r.readBoard(ctx, entries)
 	ins := readInsightsFor(ctx, entries, r.Tasks)
 	r.Tasks.Insights = &ins
+	r.readWorkspace(ctx, entries)
 	return r
 }
 
@@ -635,6 +639,8 @@ type Providers struct {
 	// Insights is the graph-analysis provider; nil means insights are not connected.
 	Insights    InsightsProvider
 	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
+	// Workspace is the optional terminal-workspace provider; nil means none is usable.
+	Workspace WorkspaceProvider
 	// Guiders are the ready providers that can say their domain needs setup.
 	Guiders map[DomainID]Guider
 	Missing map[DomainID]Header
@@ -666,6 +672,7 @@ func ResolveProviders(entries []Entry) Providers {
 	p.BoardWriter, _, _ = pick[BoardWriter](entries)
 	p.Reader, _, _ = pick[TaskReader](entries)
 	p.Insights, p.InsightsWhy, _ = pick[InsightsProvider](entries)
+	p.Workspace, _, _ = pick[WorkspaceProvider](entries)
 	return p
 }
 
