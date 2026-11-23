@@ -58,6 +58,9 @@ type Options struct {
 	Getenv   func(string) string // REX_SESSION and REX_SERVER detection; nil means os.Getenv
 	Runner   core.Runner         // wrapped by the read-only allowlist whatever it is
 	Hostname func() string       // this machine's name, so a run on it is read without -S
+	// LabelConventions are the labels that name an item exactly, as {id} templates; empty means
+	// core.DefaultLabelConventions.
+	LabelConventions []string
 	// ProbeTimeout bounds the detection probe, CallTimeout every other call.
 	ProbeTimeout time.Duration
 	CallTimeout  time.Duration
@@ -95,6 +98,7 @@ func New(o Options) *Module {
 	if o.CallTimeout <= 0 {
 		o.CallTimeout = 2 * time.Second
 	}
+	o.LabelConventions = core.ValidConventions(o.LabelConventions)
 	return &Module{run: readOnly{inner: o.Runner}, o: o}
 }
 
@@ -416,7 +420,7 @@ func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (cor
 		}
 		rep.State, rep.Reason, rep.HowToConnect = core.Connected, "", ""
 		for _, it := range r.items {
-			p, amb := place(it, r.sessions)
+			p, amb := place(it, r.sessions, m.o.LabelConventions)
 			if p != nil {
 				rep.Placements = append(rep.Placements, *p)
 			}

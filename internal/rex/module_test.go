@@ -503,34 +503,6 @@ func TestTwoSessionsClaimingOneItemIsAmbiguousNeverPicked(t *testing.T) {
 	}
 }
 
-func TestMatchLabel(t *testing.T) {
-	for _, tc := range []struct {
-		label, id string
-		want      core.PlacementMatch
-		ok        bool
-	}{
-		{"LAM-1", "lam-1", core.MatchExact, true},
-		{"Lambe · LAM-1", "LAM-1", core.MatchExact, true},
-		{"lambe: LAM-1", "LAM-1", core.MatchExact, true},
-		{"fix LAM-1 now", "LAM-1", core.MatchLabel, true},
-		{"(LAM-1)", "LAM-1", core.MatchLabel, true},
-		{"LAM-1.", "LAM-1", core.MatchLabel, true},
-		{"LAM-12", "LAM-1", "", false},
-		{"XLAM-1", "LAM-1", "", false},
-		{"LAM-1_x", "LAM-1", "", false},
-		{"pre-LAM-1", "LAM-1", "", false},
-		{"LAM-12 LAM-1", "LAM-1", core.MatchLabel, true},
-		{"anything", "", "", false},
-		{"a b c", "a", "", false}, // one-character ids never match
-		{"日本 LAM-1 語", "LAM-1", core.MatchLabel, true},
-	} {
-		got, ok := matchLabel(tc.label, tc.id)
-		if got != tc.want || ok != tc.ok {
-			t.Errorf("matchLabel(%q, %q) = %q, %v; want %q, %v", tc.label, tc.id, got, ok, tc.want, tc.ok)
-		}
-	}
-}
-
 func TestHostileLabelsAreSanitizedBoundedAndCannotForgeAMatch(t *testing.T) {
 	big := strings.Repeat("A", 10000)
 	wide := strings.Repeat("中", 10000)
@@ -924,5 +896,45 @@ func TestTheSessionLimitIsExactlyMaxSessions(t *testing.T) {
 		if err != nil || len(ss) != tc.kept || trunc != tc.trunc {
 			t.Errorf("%d sessions: kept %d truncated %v err %v", tc.n, len(ss), trunc, err)
 		}
+	}
+}
+
+func TestMatchingSeesTheWholeLabelWhileTheDisplayIsClipped(t *testing.T) {
+	long := strings.Repeat("x ", 100) + "LAM-1 at the end"
+	f := &fake{resp: map[string]resp{lsLocal: {out: fmt.Sprintf(`{"sessions":[{"session_id":"s1","label":%q}]}`, long)}, verLocal: {out: fixture(t, "version-13.json")}}}
+	m := readyMod(t, f, nil)
+	it := core.WorkspaceItem{Kind: core.WorkspaceRun, ID: "LAM-1"}
+	rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{it})
+	p, _ := rep.For(it)
+	if p == nil || p.Match != core.MatchLabel || len([]rune(p.Label)) != core.MaxLabelRunes {
+		t.Fatalf("an id past the clip must still match, with a clipped display: %+v", p)
+	}
+}
+
+func TestDottedChildIDsDoNotClaimTheirParent(t *testing.T) {
+	f := &fake{resp: map[string]resp{lsLocal: {out: `{"sessions":[{"session_id":"s1","label":"Lambe · bd-1.2"}]}`}, verLocal: {out: fixture(t, "version-13.json")}}}
+	m := readyMod(t, f, nil)
+	parent, child := core.WorkspaceItem{Kind: core.WorkspaceTask, ID: "bd-1"}, core.WorkspaceItem{Kind: core.WorkspaceTask, ID: "bd-1.2"}
+	rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{parent, child})
+	if p, _ := rep.For(parent); p != nil {
+		t.Fatalf("bd-1 must not match the window of bd-1.2: %+v", p)
+	}
+	if p, _ := rep.For(child); p == nil || p.Match != core.MatchExact {
+		t.Fatalf("%+v", p)
+	}
+}
+
+func TestLabelConventionsComeFromOptions(t *testing.T) {
+	f := &fake{resp: map[string]resp{lsLocal: {out: `{"sessions":[{"session_id":"s1","label":"agent/LAM-1"},{"session_id":"s2","label":"Lambe · LAM-2"}]}`}, verLocal: {out: fixture(t, "version-13.json")}}}
+	m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: f,
+		LabelConventions: []string{"agent/{id}"}})
+	detect(m)
+	a, b := core.WorkspaceItem{ID: "LAM-1"}, core.WorkspaceItem{ID: "LAM-2"}
+	rep, _ := m.Workspace(context.Background(), []core.WorkspaceItem{a, b})
+	if p, _ := rep.For(a); p == nil || p.Match != core.MatchExact {
+		t.Fatalf("%+v", p)
+	}
+	if p, _ := rep.For(b); p == nil || p.Match != core.MatchLabel {
+		t.Fatalf("the default Lambe form is not exact under a custom list: %+v", p)
 	}
 }
