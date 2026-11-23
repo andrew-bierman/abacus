@@ -93,10 +93,10 @@ type TaskRow struct {
 	Parent     string   `json:"parent,omitempty"`
 	// HeldBy is the ancestor whose unfinished blocker holds this task (the hold is inherited down
 	// parent-child links, as bd ready does); Blocked is then true with BlockedBy 0.
-	HeldBy     string   `json:"held_by,omitempty"`
-	ChildDone  int      `json:"child_done,omitempty"`
-	ChildTotal int      `json:"child_total,omitempty"`
-	Comments   int      `json:"comments,omitempty"`
+	HeldBy     string `json:"held_by,omitempty"`
+	ChildDone  int    `json:"child_done,omitempty"`
+	ChildTotal int    `json:"child_total,omitempty"`
+	Comments   int    `json:"comments,omitempty"`
 }
 
 // TaskListReport is the filtered, sorted task list. Matched of Total is what "N of M" shows.
@@ -112,10 +112,10 @@ type TaskListReport struct {
 	Ready      int       `json:"ready"` // ready tasks in the whole tracker
 	// DepsUnknown is set when the list is the summary's recent changes: dependencies were not read,
 	// so no task is ready or blocked and Ready is 0.
-	DepsUnknown bool `json:"deps_unknown,omitempty"`
-	Tracker    string    `json:"tracker,omitempty"`
-	ReadAt     string    `json:"read_at,omitempty"`
-	Warnings   []string  `json:"warnings,omitempty"`
+	DepsUnknown bool     `json:"deps_unknown,omitempty"`
+	Tracker     string   `json:"tracker,omitempty"`
+	ReadAt      string   `json:"read_at,omitempty"`
+	Warnings    []string `json:"warnings,omitempty"`
 }
 
 // TaskRef is a task named from another task: a blocker, a dependent, a child or the parent.
