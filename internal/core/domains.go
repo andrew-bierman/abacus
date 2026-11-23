@@ -623,7 +623,10 @@ func ReadInsights(ctx context.Context, p InsightsProvider, whyNot string) Insigh
 // Providers is what a front-end needs to drive each domain lazily: the provider for each
 // domain (nil when none is usable) and, for the others, the not-connected header to show.
 type Providers struct {
-	Tasks  TaskProvider
+	Tasks TaskProvider
+	// Source reads the whole tracker for the Tasks list and detail; nil means only the compact
+	// summary is available.
+	Source TaskSource
 	Leases LeaseProvider
 	Queues QueueProvider
 	Board  BoardProvider
@@ -663,6 +666,7 @@ func ResolveProviders(entries []Entry) Providers {
 	if p.Board, why, ok = pick[BoardProvider](entries); !ok {
 		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
 	}
+	p.Source, _, _ = pick[TaskSource](entries)
 	p.Writer, _, _ = pick[TaskWriter](entries)
 	p.BoardWriter, _, _ = pick[BoardWriter](entries)
 	p.Reader, _, _ = pick[TaskReader](entries)

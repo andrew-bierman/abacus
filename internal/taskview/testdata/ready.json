@@ -1,0 +1,82 @@
+[
+  {
+    "id": "tk-0at",
+    "title": "Tasks workspace",
+    "description": "Epic for the **tasks** workspace.\n\n- list\n- detail",
+    "status": "open",
+    "priority": 1,
+    "issue_type": "epic",
+    "created_at": "2026-11-23T04:09:46Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:09:46Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "tk-0at.2",
+    "title": "List view",
+    "description": "Render list.",
+    "status": "open",
+    "priority": 1,
+    "issue_type": "feature",
+    "assignee": "mei",
+    "created_at": "2026-11-23T04:09:49Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:09:49Z",
+    "labels": [
+      "ui"
+    ],
+    "dependencies": [
+      {
+        "issue_id": "tk-0at.2",
+        "depends_on_id": "tk-0at",
+        "type": "parent-child",
+        "created_at": "2026-11-23T04:09:49Z",
+        "created_by": "ada",
+        "metadata": "{}"
+      },
+      {
+        "issue_id": "tk-0at.2",
+        "depends_on_id": "tk-0at.1",
+        "type": "blocks",
+        "created_at": "2026-11-23T04:09:52Z",
+        "created_by": "ada",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 1,
+    "dependent_count": 1,
+    "comment_count": 2,
+    "parent": "tk-0at"
+  },
+  {
+    "id": "tk-o4w",
+    "title": "Rich fields",
+    "design": "Design **notes**",
+    "acceptance_criteria": "It works",
+    "notes": "Some notes",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:10:04Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:10:04Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "tk-1rz",
+    "title": "Closed child w/ ext",
+    "status": "open",
+    "priority": 4,
+    "issue_type": "bug",
+    "created_at": "2026-11-23T04:10:04Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:10:04Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  }
+]
