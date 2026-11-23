@@ -3,6 +3,7 @@ package taskview
 import (
 	"slices"
 	"sort"
+	"unicode/utf8"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -279,6 +280,16 @@ func (g *GraphIndex) components() {
 		}
 	}
 	g.comps = len(roots)
+}
+
+// MaxIDWidth is the widest task id in the tracker, in characters (ids are plain ASCII), so a view can size its boxes to show
+// an id whole.
+func (g *GraphIndex) MaxIDWidth() int {
+	w := 0
+	for _, id := range g.ids {
+		w = max(w, utf8.RuneCountInString(id))
+	}
+	return w
 }
 
 // View lays out the graph for o.
