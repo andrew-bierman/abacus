@@ -16,6 +16,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/demo"
 	"github.com/andrew-bierman/abacus/internal/lambe"
+	"github.com/andrew-bierman/abacus/internal/rex"
 )
 
 // Env is everything Build reads from the outside world, so tests can supply their own.
@@ -104,6 +105,9 @@ func Build(o cli.Options, e Env) *core.Registry {
 		}),
 		bv.New(bv.Options{Bin: e.Getenv("ABACUS_BV_BIN"), Ref: ref}),
 		board.New(boardOptions(e, cfg)),
+		// Rex is optional: ABACUS_REX_BIN overrides the lookup, and an absent Rex stays out of the
+		// tool list and Doctor. In --demo the demo Leases provider supplies the workspace instead.
+		rex.New(rex.Options{Bin: e.Getenv("ABACUS_REX_BIN"), Getenv: e.Getenv}),
 		core.NewConfigCheck(e.Config),
 	)
 }

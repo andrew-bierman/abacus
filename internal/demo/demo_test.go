@@ -10,13 +10,15 @@ import (
 
 // The demo providers plug into the domains they stand in for.
 var (
-	_ core.TaskProvider     = Tasks{}
-	_ core.InsightsProvider = Tasks{}
-	_ core.TaskWriter       = Tasks{}
-	_ core.TaskReader       = Tasks{}
-	_ core.LeaseProvider    = Leases{}
-	_ core.BoardProvider    = Board{}
-	_ core.Module           = Tasks{}
+	_ core.TaskProvider      = Tasks{}
+	_ core.InsightsProvider  = Tasks{}
+	_ core.TaskWriter        = Tasks{}
+	_ core.TaskReader        = Tasks{}
+	_ core.LeaseProvider     = Leases{}
+	_ core.WorkspaceProvider = Leases{}
+	_ core.WorkspaceProvider = WorkspaceProvider{}
+	_ core.BoardProvider     = Board{}
+	_ core.Module            = Tasks{}
 )
 
 func TestEveryDemoProviderIsReadyAndSaysItIsDemoData(t *testing.T) {
@@ -83,5 +85,23 @@ func TestDemoProvidersDetectWithTheDemoSource(t *testing.T) {
 		if d := m.Detect(context.Background()); d.Source != core.SourceDemo {
 			t.Errorf("%s: source %q, want %q", m.ID(), d.Source, core.SourceDemo)
 		}
+	}
+}
+
+func TestDemoWorkspacePlacesSomeItemsAmbiguouslyAndRunsNothing(t *testing.T) {
+	items := []core.WorkspaceItem{{Kind: core.WorkspaceRun, ID: "T-1", Host: "operators-mac"}, {Kind: core.WorkspaceRun, ID: "T-2"}, {Kind: core.WorkspaceLease, ID: "ac-1k2"}, {Kind: core.WorkspaceLease, ID: "ac-00h"}}
+	rep, err := NewWorkspace().Workspace(context.Background(), items)
+	if err != nil || rep.State != core.Connected || len(rep.Placements) != 2 || len(rep.Ambiguous) != 1 {
+		t.Fatalf("%+v %v", rep, err)
+	}
+	if p, _ := rep.For(items[0]); p == nil || p.Match != core.MatchExact || p.Host != "operators-mac" {
+		t.Fatalf("%+v", p)
+	}
+	if p, c := rep.For(items[1]); p != nil || c != nil {
+		t.Fatal("T-2 has no session")
+	}
+	plan := NewWorkspace().Open(rep.Placements[0])
+	if len(plan.Rungs) != 0 || plan.Copy != "rex -S operators-mac" {
+		t.Fatalf("%+v", plan)
 	}
 }
