@@ -37,6 +37,9 @@ func tooSmall(w, h int) bool { return w < bpMin || (h > 0 && h < hMin) }
 // defaultWidth stands in until the first tea.WindowSizeMsg arrives.
 const defaultWidth = 80
 
+// joinLines is a section's View: the lines, one per row, ending in a newline.
+func joinLines(lines []string) string { return strings.Join(lines, "\n") + "\n" }
+
 // trunc cuts s to w display cells, ending with an ellipsis when it had to cut. It measures
 // cells (wide runes, combining marks, SGR escapes), never bytes or runes.
 func trunc(s string, w int) string {

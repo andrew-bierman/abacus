@@ -125,7 +125,6 @@ func (s *doctorSection) lines() []string {
 	return out
 }
 
-// modulePanel is one tool's checks in a panel titled with its name.
 func (s *doctorSection) modulePanel(m core.ModuleReport, w int) []string {
 	th := s.th
 	iw := max(w-panelChromeW, 1)
@@ -187,14 +186,9 @@ func (s *doctorSection) overviewPanels(ov core.Overview, w int) []string {
 	}
 	left := panel(th, "Areas", pad(areas), lw, 0, false)
 	right := panel(th, "Tools", pad(tools), rw, 0, false)
-	out := make([]string, len(left))
-	for i := range left {
-		out[i] = left[i] + " " + right[i]
-	}
-	return out
+	return sideBySide(left, right)
 }
 
-// areaLines is each fleet area in one wrapped line under its label.
 func (s *doctorSection) areaLines(ov core.Overview, iw int) []string {
 	th := s.th
 	var out []string

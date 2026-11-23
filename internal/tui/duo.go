@@ -1,7 +1,5 @@
 package tui
 
-import "strings"
-
 // duoGeom is the geometry of a list panel with an optional detail panel beside it. From bpWide
 // columns the two sit side by side; below it only one is drawn, the list until the user drills in.
 type duoGeom struct {
@@ -11,10 +9,10 @@ type duoGeom struct {
 	inner  int // rows of content each panel holds; 0 means the body height is not known
 }
 
-// duoSplit is the share of a wide body the list panel takes, in fifths, and its minimum width.
 // duoMinRows is the fewest content rows a panel keeps when there is height to spare.
 const duoMinRows = 10
 
+// The list panel takes duoListFifths/5 of a wide body, but never less than duoListMinW cells.
 const (
 	duoListFifths = 3
 	duoListMinW   = 40
@@ -33,11 +31,7 @@ func duoLayout(w, h int) duoGeom {
 	return g
 }
 
-// listInner is the width the list panel's content gets.
 func (g duoGeom) listInner() int { return max(g.list-panelChromeW, 1) }
-
-// detailInner is the width the detail panel's content gets.
-func (g duoGeom) detailInner() int { return max(g.detail-panelChromeW, 1) }
 
 // draw frames the list and, when there is room or the user drilled in, the detail. The list panel
 // is the one focusable region; the detail is read-only. When the height is known both panels fill
@@ -72,8 +66,12 @@ func (g duoGeom) draw(th Theme, h int, listTitle string, list []string, detailTi
 		}
 		return panel(th, listTitle, fill(list), g.list, height, true)
 	}
-	left := panel(th, listTitle, fill(list), g.list, height, true)
-	right := panel(th, detailTitle, fill(detail), g.detail, height, false)
+	return sideBySide(panel(th, listTitle, fill(list), g.list, height, true), panel(th, detailTitle, fill(detail), g.detail, height, false))
+}
+
+// sideBySide joins two panels row by row with one blank column between them. The panels are the
+// same height; a shorter right one is padded with nothing rather than panicking.
+func sideBySide(left, right []string) []string {
 	out := make([]string, 0, len(left))
 	for i := range left {
 		r := ""
@@ -84,6 +82,3 @@ func (g duoGeom) draw(th Theme, h int, listTitle string, list []string, detailTi
 	}
 	return out
 }
-
-// joinLines is strings.Join for panel output, kept next to the code that produces it.
-func joinLines(lines []string) string { return strings.Join(lines, "\n") + "\n" }
