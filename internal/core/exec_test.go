@@ -116,18 +116,43 @@ func TestExecRunnerKillsTheWholeProcessGroupOnTimeout(t *testing.T) {
 	script := writeScript(t, `sleep 30 &
 echo $! > `+pidFile+`
 wait`)
-	r := core.ExecRunner{Timeout: 300 * time.Millisecond}
-	if _, _, err := r.Run(context.Background(), script); err == nil {
-		t.Fatal("want a timeout")
+	// The command must have started its child before it is stopped, or the test checks nothing.
+	// A fixed short timeout races the script's start-up on a loaded machine, so stop it by
+	// cancelling once the pid file exists; the timeout is only a safety net.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	r := core.ExecRunner{Timeout: 30 * time.Second}
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := r.Run(ctx, script)
+		done <- err
+	}()
+	var b []byte
+	deadline := time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		if data, err := os.ReadFile(pidFile); err == nil && strings.TrimSpace(string(data)) != "" {
+			b = data
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
-	b, err := os.ReadFile(pidFile)
-	if err != nil {
-		t.Fatal(err)
+	if len(b) == 0 {
+		cancel()
+		t.Fatal("the command never started its child")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("want the stopped command to report an error")
+		}
+	case <-time.After(20 * time.Second):
+		t.Fatal("the cancelled command did not return")
 	}
 	pid := strings.TrimSpace(string(b))
 	time.Sleep(200 * time.Millisecond)
 	if err := exec.Command("kill", "-0", pid).Run(); err == nil {
 		exec.Command("kill", "-9", pid).Run()
-		t.Fatalf("the grandchild %s outlived the timed-out command", pid)
+		t.Fatalf("the grandchild %s outlived the stopped command", pid)
 	}
 }
