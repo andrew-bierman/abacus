@@ -15,12 +15,20 @@ type column struct {
 	right    bool
 }
 
-// fitColumns returns a width per column for a table w cells wide with gap cells between kept
+// table is a set of columns and the gap between them. Keeping the two together means a caller
+// cannot lay a row out with a different gap than the one the widths were fitted for.
+type table struct {
+	cols []column
+	gap  int
+}
+
+// fit returns a width per column for a table w cells wide with gap cells between kept
 // columns; 0 means the column is dropped. Columns drop in reverse priority (ties: rightmost
 // first) until the minimums fit; the last column left is squeezed rather than dropped. The
 // slack then goes to bounded columns in priority order, and what is left to the unbounded ones.
 // Kept widths plus gaps never exceed w.
-func fitColumns(cols []column, w, gap int) []int {
+func (t table) fit(w int) []int {
+	cols, gap := t.cols, t.gap
 	out := make([]int, len(cols))
 	if w <= 0 || len(cols) == 0 {
 		return out
@@ -77,10 +85,11 @@ func fitColumns(cols []column, w, gap int) []int {
 	return out
 }
 
-// formatRow lays cells out in the widths fitColumns chose. Each cell is cut to its column (cells
+// row lays cells out in the widths fit chose. Each cell is cut to its column (cells
 // measure by display width, so styled and wide text is safe) and padded, right-aligned where the
 // column asks. Cells must already be sanitized.
-func formatRow(cols []column, widths []int, cells []string, gap int) string {
+func (t table) row(widths []int, cells []string) string {
+	cols, gap := t.cols, t.gap
 	var parts []string
 	for i, c := range cols {
 		if i >= len(widths) || widths[i] <= 0 {
