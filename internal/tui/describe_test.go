@@ -225,7 +225,7 @@ func TestDescribeAndJSONSurviveHostileAndHugeItems(t *testing.T) {
 				t.Errorf("%dx30 %s: %d lines kept", w, k, n)
 			}
 			cut := strings.Join(v.content(innerW(w)), "\n")
-			if !strings.Contains(cut, "more lines not shown") && !strings.Contains(cut, "cut here") {
+			if !strings.Contains(cut, "more lines not shown") && !strings.Contains(cut, "cut here") && !strings.Contains(cut, "the rest is not shown") {
 				t.Errorf("%dx30 %s: a huge item is cut without saying so", w, k)
 			}
 			m = press(m, "esc")
@@ -246,5 +246,33 @@ func TestViewerIsHiddenWhenTheTerminalIsTooSmall(t *testing.T) {
 	m = press(m, "esc")
 	if overOf(m) != nil {
 		t.Error("esc must still close it")
+	}
+}
+
+// A resize drag over a 5 MB description costs a few milliseconds a step, not the whole item's
+// wrapping each time (measured at about 1 ms for describe and 4 ms for JSON after the first open;
+// before the bound it was about 100 ms and 60 ms). The limit is loose so a loaded machine passes.
+func TestResizeDragOverAHugeDescriptionIsCheap(t *testing.T) {
+	snap := fixtureSnapshot()
+	desc := strings.Repeat("a line of a long description 0123456789 with some words to wrap around the panel\n", 65000)
+	snap.Issues = append(snap.Issues, core.TaskIssue{ID: "ac-huge", Title: "huge", Description: desc, Status: "open", Priority: 1, UpdatedAt: goldenNow, CreatedAt: goldenNow})
+	for _, k := range []string{"d", "y"} {
+		m := pm(t, 100, 30)
+		m, _ = m.Update(taskSnapshotMsg{snap: snap})
+		m = press(press(m, "2"), "T")
+		if !tasksSec(m).selectID("ac-huge") {
+			t.Fatal("not listed")
+		}
+		m = press(m, k)
+		_ = lines(m) // the first draw formats the item
+		start, n := time.Now(), 0
+		for w := 140; w >= 40; w-- {
+			m = sized(m, w, 30)
+			_ = lines(m)
+			n++
+		}
+		if avg := time.Since(start) / time.Duration(n); avg > 30*time.Millisecond {
+			t.Errorf("%s: a resize step costs %v on average", k, avg)
+		}
 	}
 }

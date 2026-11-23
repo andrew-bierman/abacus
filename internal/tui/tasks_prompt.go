@@ -101,7 +101,14 @@ func (s *tasksSection) describeSelected() (describeItem, string) {
 	if !ok {
 		return describeItem{}, "that task is no longer in the tracker"
 	}
-	return describeItem{title: "Task " + san(id), report: d, lines: func(w int) []string { return s.detailLines(d, w) }}, ""
+	shown, cut := capDetail(d)
+	return describeItem{title: "Task " + san(id), report: d, lines: func(w int) []string {
+		out := s.detailLines(shown, w)
+		if cut {
+			out = append(out, "", s.th.Text(KindMuted, "… the rest is not shown here (abacus tasks show "+san(id)+" prints all of it)"))
+		}
+		return out
+	}}, ""
 }
 
 // contextLine is what the header says about Tasks: the tracker and its size.
@@ -117,4 +124,39 @@ func (s *tasksSection) contextLine() core.ContextLine {
 		c = core.ContextLine{Tracker: s.list.rep.Tracker, Tasks: s.report.Counts.Total, HaveTasks: true}
 	}
 	return c
+}
+
+// Bounds on what the describe panel draws of one task, so a megabyte description costs the same at
+// every width of a resize drag: the typed JSON (and `tasks show`) still carry all of it.
+const (
+	describeTextMax     = 64 << 10
+	describeCommentsMax = 100
+)
+
+// capDetail is d with each long text cut at a line end and the comments limited, and whether anything
+// was cut.
+func capDetail(d core.TaskDetailReport) (core.TaskDetailReport, bool) {
+	cut := false
+	text := func(t string) string {
+		if len(t) <= describeTextMax {
+			return t
+		}
+		cut = true
+		t = t[:describeTextMax]
+		if i := strings.LastIndex(t, "\n"); i > 0 {
+			t = t[:i]
+		}
+		return strings.ToValidUTF8(t, "")
+	}
+	d.Description, d.Design, d.Notes, d.Acceptance = text(d.Description), text(d.Design), text(d.Notes), text(d.Acceptance)
+	if len(d.Comments) > describeCommentsMax {
+		d.Comments, cut = d.Comments[:describeCommentsMax], true
+	}
+	for i, c := range d.Comments {
+		if len(c.Text) > describeTextMax {
+			d.Comments = append([]core.TaskCommentView(nil), d.Comments...)
+			d.Comments[i].Text = text(c.Text)
+		}
+	}
+	return d, cut
 }

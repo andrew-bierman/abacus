@@ -14,14 +14,20 @@ const maxJSONBytes = 256 << 10
 // function), as lines wrapped to the panel's width. Each line passes the sanitizer again: JSON
 // escapes control characters, but invisible format characters are valid inside a JSON string.
 func jsonLines(report any) func(w int) []string {
+	var b []byte // formatted once: a resize only re-wraps it
+	var err error
+	cut := false
+	done := false
 	return func(w int) []string {
-		b, err := core.ReportJSON(report)
+		if !done {
+			b, err = core.ReportJSON(report)
+			if cut = len(b) > maxJSONBytes; cut {
+				b = b[:maxJSONBytes]
+			}
+			done = true
+		}
 		if err != nil {
 			return []string{"could not format this item as JSON"}
-		}
-		cut := len(b) > maxJSONBytes
-		if cut {
-			b = b[:maxJSONBytes]
 		}
 		var out []string
 		for _, ln := range strings.Split(strings.TrimRight(string(b), "\n"), "\n") {
