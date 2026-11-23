@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   4d   updated ada  assignee="mei"                                           │
 │   ↕ +4 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ scroll · esc back · n new · e edit …
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   7d   status_changed ada  status="in_progress"                              │
 │   8d   created ada                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ scroll · esc back · n new · e edit …
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new …
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
@@ -98,9 +98,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │        dependency: hs-yqf blocks hs-8md     │
 │   ↕ +8 more                                                          │ │   ↕ +8 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │        status="in_progress"                 │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   8d   created ada                          │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,9 +154,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   7d   status_changed ada  status="in_progress"          │
 │   8d   created ada                                       │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ scroll · esc back …
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                    14 tasks · 3 ready
 [open] / to filter                                                       12 of 14 · sort: priority ↑
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │        status="in_progress"         │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   8d   created ada                  │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details …
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view …

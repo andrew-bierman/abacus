@@ -130,13 +130,19 @@ differ by a refresh.)
 - **Live refresh.** Tasks checks the tracker about every 5 seconds without running anything: an
   embedded tracker keeps a small manifest file that changes on every write and never on a read, so
   abacus compares it with the one kept from the last full read and reads the whole tracker only when
-  it moved (measured against bd 1.3.4; see `internal/bd/testdata/README.md`). A tracker with no such
-  file (a server-mode store) is read in full every 30 seconds instead. There is never more than one
-  check or read in flight, none while the Tasks tab is hidden (showing it checks at once), and a read
-  slower than 2 seconds doubles the wait up to a minute. A change by someone else keeps the cursor and
-  marks on the same task ids, adds `● 3 changed just now` to the panel title for 30 seconds, and `F`
-  goes to the most recently changed one (a task the query hides is named instead). `stale` means no
-  check or read confirmed the list for twice the current wait.
+  it moved (measured against bd 1.3.4; see `internal/bd/testdata/README.md`). The file is read only if
+  it is a small regular file (a symlink, a FIFO or a directory is refused), under a 2-second
+  deadline. A tracker with no such file (a server-mode store) is read in full every 30 seconds
+  instead; a check that merely fails (an I/O error) backs off and tries again without giving up on
+  cheap checks. There is never more than one check or read in flight; a hidden Tasks tab still looks
+  every 30 seconds, so search never reads frozen data, and showing it checks at once. A read slower
+  than 2 seconds, or a failed check, doubles the wait up to a minute (never below the base wait), and
+  three quick checks in a row bring it back. A change by someone else keeps the cursor and marks on the
+  same task ids and adds `● 3 changed just now` to the panel title for 30 seconds; your own writes do
+  not count as changes. `F` goes to the most recently changed task, unfolding the parents it sits
+  under in the tree (a task the query hides is named instead). `stale` means no check or read
+  confirmed the list for twice the current wait. Switching tracker drops every answer of a read
+  that was started for the old tracker.
 - **History.** `H` adds a History section to the detail: what changed on the task and who did it,
   newest first, up to 12 events (the event log of the tracker, read with a bounded read-only
   command; adding a comment is not an event in bd 1.3.4). It reads one task at a time and keeps the
@@ -147,12 +153,16 @@ differ by a refresh.)
   characters, 50 filters, written atomically, mode 0600, never in a tracker directory). The last 100
   `/` queries are kept in the same search history file as global search (`search_history off` keeps
   none).
-- **Tracker switcher.** `P` lists the trackers you opened (remembered in `recent-trackers.json` in the
-  abacus state directory, 20 at most) and the saved `tracker_dir`, never a folder abacus found by
-  looking. Choosing one opens a confirm screen: it validates that the folder holds `.beads/metadata.json`,
-  saves `tracker_dir` in the abacus settings, points every Tasks view at it now, and writes an audit
-  line before and after, as a setup step does. No tool runs and no tracker is written. At the next
-  start `ABACUS_BD_DIR` or a tracker at or above the working directory still wins.
+- **Tracker switcher.** `P` (or `:ctx NAME`, which opens the same confirm screen for the known tracker
+  of that name) lists the trackers you opened (remembered in `recent-trackers.json` in the abacus
+  state directory, 20 at most) and the saved `tracker_dir`, never a folder abacus found by looking.
+  The disk work runs in the background under a 2-second deadline. Choosing one opens a confirm
+  screen: it validates that the folder holds `.beads/metadata.json` and that neither it nor `.beads`
+  is writable by other users or owned by another user, points every Tasks view at it, then saves
+  `tracker_dir` in the abacus settings (and undoes the first step if the save fails), and writes an
+  audit line before and after, as a setup step does. The step itself changes neither tracker; task
+  changes you confirm later are made in the new one. At the next start `ABACUS_BD_DIR` or a tracker at
+  or above the working directory still wins. Saved filters are global, not per tracker.
 - **Fallbacks.** A provider that cannot read the whole tracker, or a read that failed before the
   first snapshot, lists the summary's recent changes (`recent only` in the panel title) with the
   reason. Dependencies were not read, so that list shows no ready count, no `⊘` marks, no blockers

@@ -98,7 +98,7 @@ group: status · closed 2 hidden (Z) · / to filter                             
 │ created 30d ago · updated 10d ago                                                                                    │
 │   ↕ +25 more                                                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new · o full view · r refresh · d describe …
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new · o full view · r refresh …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ group: status · closed 2 hidden (Z) · / to filter                             
 │ Goal                                                                                                                 │
 │   ↕ +8 more                                                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new · o full view · r refresh · d describe …
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new · o full view · r refresh …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────

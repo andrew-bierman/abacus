@@ -226,7 +226,9 @@ type (
 	// filterer applies (or, with "", clears) the section's list filter.
 	filterer interface{ setFilter(text string) string }
 	// trackerSwitcher opens the confirm screen for switching to the tracker named; a non-empty note says why not.
-	trackerSwitcher interface{ switchTo(name string) string }
+	trackerSwitcher interface {
+		switchTo(name string) (tea.Cmd, string)
+	}
 	// contexter says what the header may show about this section.
 	contexter interface{ contextLine() core.ContextLine }
 )
@@ -261,8 +263,9 @@ func (m *Model) runAction(a core.Action) tea.Cmd {
 			if i >= 0 {
 				if sw, ok := inner(m.tabs[i].sec).(trackerSwitcher); ok {
 					cmd := m.goTo(i)
-					m.note = sw.switchTo(a.Arg)
-					return cmd
+					c, note := sw.switchTo(a.Arg)
+					m.note = note
+					return tea.Batch(cmd, c)
 				}
 			}
 			m.note = "switching trackers is not available here"

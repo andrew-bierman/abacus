@@ -286,6 +286,9 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m, ok := msg.(tasksPollMsg); ok {
 		return s, tea.Batch(s.livePolled(m), s.drain())
 	}
+	if m, ok := msg.(switchLoadedMsg); ok {
+		return s, tea.Batch(s.switchLoaded(m), s.drain())
+	}
 	if cmd, stale := s.dropStale(msg); stale {
 		return s, tea.Batch(cmd, s.drain())
 	}

@@ -333,7 +333,7 @@ func TestSwitcherPicksConfirmsAndReloads(t *testing.T) {
 	}
 	send(r.s, "enter") // starts on the first tracker that is not the current one
 	out = r.s.View()
-	if r.s.sw.mode != switchConfirm || !strings.Contains(out, "beta") || !strings.Contains(out, "No tracker is changed") || !strings.Contains(out, "abacus config set tracker_dir") {
+	if r.s.sw.mode != switchConfirm || !strings.Contains(out, "beta") || !strings.Contains(out, "touches neither tracker") || !strings.Contains(out, "abacus config set tracker_dir") {
 		t.Fatalf("confirm:\n%s", out)
 	}
 	if r.target.dir != "" || len(r.audit.lines) != 0 {
@@ -511,5 +511,78 @@ func liveScenarios() []scenario {
 		{name: "tasks-filter-pick", build: savedModel, keys: []string{"2", "ctrl+o"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-switch-pick", build: switchModel, keys: []string{"2", "P"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-switch-confirm", build: switchModel, keys: []string{"2", "P", "enter"}, tab: "Tasks", extra: framedSizes},
+	}
+}
+
+func init() { switchInline = true } // the key-pressing tests do not run the commands they get back
+
+// The disk work runs off the UI goroutine: P opens a loading state that owns the keys, the answer
+// opens the picker, and esc while waiting drops the answer.
+func TestSwitcherReadsTheDiskOffTheUIGoroutine(t *testing.T) {
+	switchInline = false
+	t.Cleanup(func() { switchInline = true })
+	r := newSwitchRig(t, 100, 32)
+	_, cmd := r.s.Update(keyRunes("P"))
+	if cmd == nil || r.s.sw.mode != switchLoading || !r.s.Capturing() || !strings.Contains(r.s.View(), "reading the known trackers") {
+		t.Fatalf("P opens the loading state: mode %v", r.s.sw.mode)
+	}
+	_, next := r.s.Update(cmd())
+	if r.s.sw.mode != switchPick || next != nil {
+		t.Fatalf("the answer opens the picker: %v", r.s.sw.mode)
+	}
+	send(r.s, "esc")
+	_, cmd = r.s.Update(keyRunes("P"))
+	send(r.s, "esc") // cancelled while waiting
+	r.s.Update(cmd())
+	if r.s.sw.mode != switchNone {
+		t.Errorf("an answer after esc must be dropped: %v", r.s.sw.mode)
+	}
+	// Enter in the picker plans off the goroutine too
+	_, cmd = r.s.Update(keyRunes("P"))
+	r.s.Update(cmd())
+	_, cmd = r.s.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if r.s.sw.mode != switchLoading {
+		t.Fatalf("enter plans in the background: %v", r.s.sw.mode)
+	}
+	r.s.Update(cmd())
+	if r.s.sw.mode != switchConfirm {
+		t.Errorf("then the confirm screen: %v", r.s.sw.mode)
+	}
+}
+
+// A drive that does not answer: the switcher gives up at its deadline and says so.
+func TestSwitcherGivesUpOnAStuckDrive(t *testing.T) {
+	switchInline = false
+	old := switchDeadline
+	switchDeadline = 50 * time.Millisecond
+	t.Cleanup(func() { switchInline, switchDeadline = true, old })
+	r := newSwitchRig(t, 100, 32)
+	stuck := make(chan struct{})
+	t.Cleanup(func() { close(stuck) })
+	sw := core.NewSwitcher(r.cfg, core.RecentTrackers{}, r.target, func() string { <-stuck; return "" }, r.audit)
+	r.s.sw.sw = sw
+	_, cmd := r.s.Update(keyRunes("P"))
+	start := time.Now()
+	msg := cmd()
+	if d := time.Since(start); d > 2*time.Second {
+		t.Fatalf("waited %v", d)
+	}
+	r.s.Update(msg)
+	if r.s.sw.mode != switchNone || !strings.Contains(r.s.notice, "took too long") {
+		t.Errorf("mode %v notice %q", r.s.sw.mode, r.s.notice)
+	}
+}
+
+func TestSwitcherRefusesATrackerOthersCanWrite(t *testing.T) {
+	r := newSwitchRig(t, 100, 32)
+	if err := os.Chmod(r.b, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	send(r.s, "P", "enter")
+	if r.s.sw.mode != switchNone || !strings.Contains(r.s.notice, "writable by other users") {
+		t.Errorf("mode %v notice %q", r.s.sw.mode, r.s.notice)
+	}
+	if r.target.dir != "" {
+		t.Error("nothing was repointed")
 	}
 }

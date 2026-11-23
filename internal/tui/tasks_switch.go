@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,6 +23,7 @@ const (
 	switchPick               // choosing a tracker
 	switchConfirm            // the gated confirm screen
 	switchBusy               // the switch is being applied
+	switchLoading            // the disk is being read (off the UI goroutine)
 )
 
 // switchUI is the tracker switcher: a picker over the trackers the user opened or configured, then the
@@ -34,6 +36,7 @@ type switchUI struct {
 	cur     int
 	plan    core.SwitchPlan
 	touched string // the tracker last remembered, so each is written once
+	seq     int    // the switcher request that is waited for
 }
 
 // trackerSwitchedMsg is the answer to applying a switch.
@@ -42,27 +45,83 @@ type trackerSwitchedMsg struct {
 	err error
 }
 
+// switchDeadline bounds the disk work of the switcher (finding the known trackers, checking one): a
+// dead network mount must not freeze the TUI.
+var switchDeadline = 2 * time.Second
+
+// switchInline makes the switcher's disk work run in line: tests that press keys without running the
+// commands they return set it.
+var switchInline = false
+
+// switchLoadedMsg is the answer to the switcher's disk work.
+type switchLoadedMsg struct {
+	seq     int
+	cands   []core.RecentTracker
+	current string
+	plan    *core.SwitchPlan
+	note    string // why there is nothing to show
+}
+
+// switchWork runs work off the UI goroutine under switchDeadline and opens the loading state, which
+// owns the keys (esc cancels). The answer is dropped if the state moved on.
+func (s *tasksSection) switchWork(work func() switchLoadedMsg) tea.Cmd {
+	w := &s.sw
+	w.mode = switchLoading
+	w.seq++
+	seq := w.seq
+	run := func() tea.Msg {
+		ch := make(chan switchLoadedMsg, 1)
+		go func() { ch <- work() }()
+		select {
+		case m := <-ch:
+			m.seq = seq
+			return m
+		case <-time.After(switchDeadline):
+			return switchLoadedMsg{seq: seq, note: "reading the tracker folders took too long: is a network drive not answering?"}
+		}
+	}
+	if switchInline {
+		return s.switchLoaded(run().(switchLoadedMsg))
+	}
+	return run
+}
+
+// switchLoaded takes the answer of switchWork: the picker, the confirm screen, or a note.
+func (s *tasksSection) switchLoaded(m switchLoadedMsg) tea.Cmd {
+	w := &s.sw
+	if m.seq != w.seq || w.mode != switchLoading { // cancelled, or another request was made since
+		return nil
+	}
+	switch {
+	case m.note != "":
+		w.mode, s.notice = switchNone, m.note
+	case m.plan != nil:
+		w.cands, w.current, w.plan, w.mode = m.cands, m.current, *m.plan, switchConfirm
+	case len(m.cands) < 2:
+		w.mode, s.notice = switchNone, "no other tracker to switch to: trackers you open are remembered here"
+	default:
+		w.cands, w.current, w.cur, w.mode = m.cands, m.current, 0, switchPick
+		for i, c := range w.cands { // start on the first tracker that is not the one in use
+			if c.Dir != w.current {
+				w.cur = i
+				break
+			}
+		}
+	}
+	return nil
+}
+
 // openSwitch lists the trackers abacus knows: the one in use, the remembered ones and the configured one.
 func (s *tasksSection) openSwitch() tea.Cmd {
-	w := &s.sw
-	if w.sw == nil {
+	if s.sw.sw == nil {
 		s.notice = "switching tracker is not available here"
 		return nil
 	}
-	w.cands, w.current = w.sw.Candidates()
-	if len(w.cands) < 2 {
-		s.notice = "no other tracker to switch to: trackers you open are remembered here"
-		return nil
-	}
-	w.cur = 0
-	for i, c := range w.cands { // start on the first tracker that is not the one in use
-		if c.Dir != w.current {
-			w.cur = i
-			break
-		}
-	}
-	w.mode = switchPick
-	return nil
+	sw := s.sw.sw
+	return s.switchWork(func() switchLoadedMsg {
+		c, cur := sw.Candidates()
+		return switchLoadedMsg{cands: c, current: cur}
+	})
 }
 
 // switchOverlayKey handles the keys of the picker and the confirm screen.
@@ -78,13 +137,18 @@ func (s *tasksSection) switchOverlayKey(k tea.KeyMsg) tea.Cmd {
 		case key.Matches(k, keyDown):
 			w.cur = min(len(w.cands)-1, w.cur+1)
 		case key.Matches(k, keyPickEnter):
-			p, err := w.sw.Plan(w.cands[w.cur].Dir)
-			if err != nil {
-				s.notice = core.Sanitize(err.Error())
-				w.mode = switchNone
-				return nil
-			}
-			w.plan, w.mode = p, switchConfirm
+			sw, dir, cands, cur := w.sw, w.cands[w.cur].Dir, w.cands, w.current
+			return s.switchWork(func() switchLoadedMsg {
+				p, err := sw.Plan(dir)
+				if err != nil {
+					return switchLoadedMsg{note: core.Sanitize(err.Error())}
+				}
+				return switchLoadedMsg{cands: cands, current: cur, plan: &p}
+			})
+		}
+	case switchLoading:
+		if key.Matches(k, keyBack) {
+			w.mode, w.seq = switchNone, w.seq+1 // the answer, when it comes, is dropped
 		}
 	case switchConfirm:
 		switch {
@@ -165,6 +229,9 @@ func (s *tasksSection) switchWhole() bool {
 func (s *tasksSection) trackerView() []string {
 	th, w, inner := s.th, s.width(), innerW(s.width())
 	sw := &s.sw
+	if sw.mode == switchLoading {
+		return box(th, "Switch tracker", []string{th.Text(KindMuted, "reading the known trackers…"), "", th.Text(KindMuted, "esc cancels")}, w, s.h)
+	}
 	if sw.mode != switchPick {
 		title := "Switch tracker"
 		if sw.mode == switchBusy {
@@ -217,6 +284,9 @@ func (s *tasksSection) switchBindings() []key.Binding {
 	}
 	if s.sw.mode == switchBusy {
 		return nil
+	}
+	if s.sw.mode == switchLoading {
+		return []key.Binding{keyBack}
 	}
 	pick := key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "switch"))
 	if s.width() < 60 { // a narrow footer must keep "q quit"
@@ -291,33 +361,34 @@ func WithTrackerSwitcher(sw *core.Switcher) Option { return func(c *config) { c.
 
 // switchTo is `:ctx NAME`: find the known tracker called NAME (its folder name, any case; a unique
 // prefix also works) and open the same confirm screen P does. It switches nothing by itself.
-func (s *tasksSection) switchTo(name string) string {
-	w := &s.sw
-	if w.sw == nil {
-		return "switching tracker is not available here"
+func (s *tasksSection) switchTo(name string) (tea.Cmd, string) {
+	if s.sw.sw == nil {
+		return nil, "switching tracker is not available here"
 	}
-	cands, cur := w.sw.Candidates()
-	var hit []core.RecentTracker
-	for _, c := range cands {
-		if b := filepath.Base(c.Dir); strings.EqualFold(b, name) {
-			hit = []core.RecentTracker{c}
-			break
-		} else if len(name) > 0 && len(b) >= len(name) && strings.EqualFold(b[:len(name)], name) {
-			hit = append(hit, c)
+	sw := s.sw.sw
+	return s.switchWork(func() switchLoadedMsg {
+		cands, cur := sw.Candidates()
+		var hit []core.RecentTracker
+		for _, c := range cands {
+			if b := filepath.Base(c.Dir); strings.EqualFold(b, name) {
+				hit = []core.RecentTracker{c}
+				break
+			} else if len(name) > 0 && len(b) >= len(name) && strings.EqualFold(b[:len(name)], name) {
+				hit = append(hit, c)
+			}
 		}
-	}
-	switch {
-	case len(hit) == 0:
-		return "no known tracker called " + san(name) + ": P lists the ones you opened"
-	case len(hit) > 1:
-		return san(name) + " matches more than one tracker: P lists them"
-	case hit[0].Dir == cur:
-		return san(filepath.Base(hit[0].Dir)) + " is already the tracker in use"
-	}
-	p, err := w.sw.Plan(hit[0].Dir)
-	if err != nil {
-		return core.Sanitize(err.Error())
-	}
-	w.cands, w.current, w.plan, w.mode = cands, cur, p, switchConfirm
-	return ""
+		switch {
+		case len(hit) == 0:
+			return switchLoadedMsg{note: "no known tracker called " + san(name) + ": P lists the ones you opened"}
+		case len(hit) > 1:
+			return switchLoadedMsg{note: san(name) + " matches more than one tracker: P lists them"}
+		case hit[0].Dir == cur:
+			return switchLoadedMsg{note: san(filepath.Base(hit[0].Dir)) + " is already the tracker in use"}
+		}
+		p, err := sw.Plan(hit[0].Dir)
+		if err != nil {
+			return switchLoadedMsg{note: core.Sanitize(err.Error())}
+		}
+		return switchLoadedMsg{cands: cands, current: cur, plan: &p}
+	}), ""
 }

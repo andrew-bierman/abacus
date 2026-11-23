@@ -97,30 +97,38 @@ func (s *Switcher) Plan(dir string) (SwitchPlan, error) {
 	}
 	lines := []string{
 		"Tasks will read this tracker from now on.",
-		"This saves tracker_dir in the " + brand.Name + " settings and applies now.",
-		"No tracker is changed and no tool command runs.",
+		"Task changes you confirm later will be made in this tracker.",
+		"This step saves tracker_dir in the " + brand.Name + " settings and touches neither tracker.",
 		"At the next start, ABACUS_BD_DIR or a tracker at or above the working directory still wins.",
 	}
 	return SwitchPlan{id: switchSeq.Add(1), Dir: dir, From: from, Lines: lines,
 		Argv: []string{brand.Name, "config", "set", "tracker_dir", dir}}, nil
 }
 
-// Apply runs a confirmed plan once: audit the attempt (a failed audit blocks it), save tracker_dir,
-// re-point the running modules, remember the tracker, audit the outcome.
+// Apply runs a confirmed plan once: audit the attempt (a failed audit blocks it), re-point the running
+// modules, then save tracker_dir, then remember the tracker, then audit the outcome. The setting is
+// written only after the re-point worked, and a failed save rolls the re-point back, so what is on
+// screen and what is saved never disagree (a switch from "no tracker" cannot be rolled back and says so).
 func (s *Switcher) Apply(_ context.Context, p SwitchPlan) error {
 	if !p.confirmed {
 		return ErrNotConfirmed
 	}
 	e := AuditEntry{Domain: string(DomainTasks), Verb: "switch-tracker", Argv: p.Argv, Tracker: p.Dir}
 	return s.gate.do(p.id, e, func() error {
-		if _, err := ValidateTrackerDir(p.Dir); err != nil { // it may have gone since the plan
+		if _, err := ValidateTrackerDir(p.Dir); err != nil { // it may have gone, or been loosened, since the plan
 			return err
-		}
-		if err := s.Config.Update(func(c *Config) error { return c.Set("tracker_dir", p.Dir) }); err != nil {
-			return fmt.Errorf("could not save tracker_dir: %w", err)
 		}
 		if err := s.Target.SetTrackerDir(p.Dir); err != nil {
 			return err
+		}
+		if err := s.Config.Update(func(c *Config) error { return c.Set("tracker_dir", p.Dir) }); err != nil {
+			if p.From != "" {
+				if rb := s.Target.SetTrackerDir(p.From); rb != nil {
+					return fmt.Errorf("could not save tracker_dir (%w) and could not go back to %s: %v", err, Sanitize(p.From), rb)
+				}
+				return fmt.Errorf("could not save tracker_dir, so the switch was undone: %w", err)
+			}
+			return fmt.Errorf("could not save tracker_dir (the session already points at the new tracker): %w", err)
 		}
 		_ = s.Recents.Touch(p.Dir, time.Now()) // a list that cannot be saved must not fail the switch
 		return nil

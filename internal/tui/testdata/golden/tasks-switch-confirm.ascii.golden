@@ -6,8 +6,8 @@
 │                                      │
 │   Tasks will read this tracker from  │
 │   now on.                            │
-│   This saves tracker_dir in the      │
-│ ↕ +10 more: enlarge the terminal to  │
+│   Task changes you confirm later     │
+│ ↕ +11 more: enlarge the terminal to  │
 │ review                               │
 ╰──────────────────────────────────────╯
 n/esc cancel · q quit · ? help …
@@ -20,10 +20,11 @@ n/esc cancel · q quit · ? help …
 │                                      │
 │   Tasks will read this tracker from  │
 │   now on.                            │
-│   This saves tracker_dir in the      │
-│   abacus settings and applies now.   │
-│   No tracker is changed and no tool  │
-│   command runs.                      │
+│   Task changes you confirm later     │
+│   will be made in this tracker.      │
+│   This step saves tracker_dir in the │
+│   abacus settings and touches        │
+│   neither tracker.                   │
 │   At the next start, ABACUS_BD_DIR   │
 │   or a tracker at or above the       │
 │   working directory still wins.      │
@@ -40,7 +41,6 @@ n/esc cancel · q quit · ? help …
 
 
 
-
 y apply · n/esc cancel · q quit · ? hel…
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
@@ -49,10 +49,10 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   to    /work/side-project                                                   │
 │                                                                              │
 │   Tasks will read this tracker from now on.                                  │
-│   This saves tracker_dir in the abacus settings and applies now.             │
-│   No tracker is changed and no tool command runs.                            │
-│   At the next start, ABACUS_BD_DIR or a tracker at or above the working      │
-│ ↕ +4 more: enlarge the terminal to review                                    │
+│   Task changes you confirm later will be made in this tracker.               │
+│   This step saves tracker_dir in the abacus settings and touches neither     │
+│   tracker.                                                                   │
+│ ↕ +5 more: enlarge the terminal to review                                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 n/esc cancel · q quit · ? help · tab/→ next tab
 === 80x30 ===
@@ -63,8 +63,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   to    /work/side-project                                                   │
 │                                                                              │
 │   Tasks will read this tracker from now on.                                  │
-│   This saves tracker_dir in the abacus settings and applies now.             │
-│   No tracker is changed and no tool command runs.                            │
+│   Task changes you confirm later will be made in this tracker.               │
+│   This step saves tracker_dir in the abacus settings and touches neither     │
+│   tracker.                                                                   │
 │   At the next start, ABACUS_BD_DIR or a tracker at or above the working      │
 │   directory still wins.                                                      │
 │                                                                              │
@@ -84,31 +85,30 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Switch tracker ───────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   from  /work/fleet                                                                                                  │
 │   to    /work/side-project                                                                                           │
 │                                                                                                                      │
 │   Tasks will read this tracker from now on.                                                                          │
-│   This saves tracker_dir in the abacus settings and applies now.                                                     │
-│   No tracker is changed and no tool command runs.                                                                    │
+│   Task changes you confirm later will be made in this tracker.                                                       │
+│   This step saves tracker_dir in the abacus settings and touches neither tracker.                                    │
 │   At the next start, ABACUS_BD_DIR or a tracker at or above the working directory still wins.                        │
 │ ↕ +3 more: enlarge the terminal to review                                                                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 n/esc cancel · q quit · ? help · tab/→ next tab
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Switch tracker ───────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   from  /work/fleet                                                                                                  │
 │   to    /work/side-project                                                                                           │
 │                                                                                                                      │
 │   Tasks will read this tracker from now on.                                                                          │
-│   This saves tracker_dir in the abacus settings and applies now.                                                     │
-│   No tracker is changed and no tool command runs.                                                                    │
+│   Task changes you confirm later will be made in this tracker.                                                       │
+│   This step saves tracker_dir in the abacus settings and touches neither tracker.                                    │
 │   At the next start, ABACUS_BD_DIR or a tracker at or above the working directory still wins.                        │
 │                                                                                                                      │
 │ same as running:                                                                                                     │
@@ -138,9 +138,10 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   to    /work/side-project                               │
 │                                                          │
 │   Tasks will read this tracker from now on.              │
-│   This saves tracker_dir in the abacus settings and      │
-│   applies now.                                           │
-│   No tracker is changed and no tool command runs.        │
+│   Task changes you confirm later will be made in this    │
+│   tracker.                                               │
+│   This step saves tracker_dir in the abacus settings and │
+│   touches neither tracker.                               │
 │   At the next start, ABACUS_BD_DIR or a tracker at or    │
 │   above the working directory still wins.                │
 │                                                          │
@@ -153,18 +154,17 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Switch tracker ───────────────────────────────────────────────────────────────────────────────╮
 │   from  /work/fleet                                                                              │
 │   to    /work/side-project                                                                       │
 │                                                                                                  │
 │   Tasks will read this tracker from now on.                                                      │
-│   This saves tracker_dir in the abacus settings and applies now.                                 │
-│   No tracker is changed and no tool command runs.                                                │
+│   Task changes you confirm later will be made in this tracker.                                   │
+│   This step saves tracker_dir in the abacus settings and touches neither tracker.                │
 │   At the next start, ABACUS_BD_DIR or a tracker at or above the working directory still wins.    │
 │                                                                                                  │
 │ same as running:                                                                                 │

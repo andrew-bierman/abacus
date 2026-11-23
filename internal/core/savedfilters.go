@@ -179,7 +179,7 @@ func (f SavedFilters) update(fn func([]SavedFilter) ([]SavedFilter, error)) erro
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("saved filters: %w", err)
 	}
-	unlock, err := lockWithin(f.Path, 2*time.Second)
+	unlock, err := lockWithin(f.Path, 500*time.Millisecond)
 	if errors.Is(err, errLockBusy) {
 		return ErrFiltersBusy
 	}

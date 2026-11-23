@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 enter apply · d delete · ↑/↓ move · esc back · q quit · ? help · tab/→ next tab
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Saved filters (2) ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ blocked soon  status:blocked priority:1                                                                            │
 │   ui work  label:ui !status:closed                                                                                   │
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 enter apply · d delete · ↑/↓ move · esc back · q quit · ? help · tab/→ next tab
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Saved filters (2) ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ blocked soon  status:blocked priority:1                                                                            │
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 enter apply · d delete · ↑/↓ move · esc back · q quit …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Saved filters (2) ────────────────────────────────────────────────────────────────────────────╮
 │ ▸ blocked soon  status:blocked priority:1                                                        │
