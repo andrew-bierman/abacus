@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-enter keep · esc clear · q quit · ? help · tab/→ next tab
+enter keep · esc clear · ctrl+p/n recent · q quit · ? help · tab/→ next tab
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-enter keep · esc clear · q quit · ? help · tab/→ next tab
+enter keep · esc clear · ctrl+p/n recent · q quit · ? help · tab/→ next tab
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
@@ -98,7 +98,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-enter keep · esc clear · q quit · ? help · tab/→ next tab
+enter keep · esc clear · ctrl+p/n recent · q quit · ? help · tab/→ next tab
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-enter keep · esc clear · q quit · ? help · tab/→ next tab
+enter keep · esc clear · ctrl+p/n recent · q quit · ? help · tab/→ next tab
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet 
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-enter keep · esc clear · q quit · ? help · tab/→ next tab
+enter keep · esc clear · ctrl+p/n recent · q quit · ? help · tab/→ next tab

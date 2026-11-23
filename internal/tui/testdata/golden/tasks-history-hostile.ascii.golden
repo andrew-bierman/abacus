@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+[List] Kanban  Graph  Insights
+[open] / to… 12 of 14 · sort: priority ↑
+╭─ ▸ ac-09 ────────────────────────────╮
+│ Summarize what needs attention       │
+│ across queues in one row.            │
+│                                      │
+│ History                              │
+│   7h   upda[2Jted evil               │
+│        title="]0;pwned"              │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+[List] Kanban  Graph  Insights
+[open] / to… 12 of 14 · sort: priority ↑
+╭─ ▸ ac-09 ────────────────────────────╮
+│ ac-09  feature                       │
+│ queue attention digest               │
+│ ○ open  P2                           │
+│ held by 1 unfinished  (blocked)      │
+│ created 12d ago · updated 4d ago     │
+│ labels  queues                       │
+│ parent  ○ ac-01 Fleet workspace      │
+│                                      │
+│ Blocked by (1)                       │
+│   ◐ ac-12 wire the lease heartbeat   │
+│                                      │
+│ Blocks (0)                           │
+│   none                               │
+│                                      │
+│ Summarize what needs attention       │
+│ across queues in one row.            │
+│                                      │
+│ History                              │
+│   7h   upda[2Jted evil               │
+│        title="]0;pwned"              │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Kanban  Graph  Insights                                14 tasks · 3 ready
+[open] / to filter                                   12 of 14 · sort: priority ↑
+╭─ ▸ ac-09 ────────────────────────────────────────────────────────────────────╮
+│   none                                                                       │
+│                                                                              │
+│ Summarize what needs attention across queues in one row.                     │
+│                                                                              │
+│ History                                                                      │
+│   7h   upda[2Jted evil  title="]0;pwned"                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+[List] Kanban  Graph  Insights                                14 tasks · 3 ready
+[open] / to filter                                   12 of 14 · sort: priority ↑
+╭─ ▸ ac-09 ────────────────────────────────────────────────────────────────────╮
+│ ac-09  feature                                                               │
+│ queue attention digest                                                       │
+│ ○ open  P2                                                                   │
+│ held by 1 unfinished  (blocked)                                              │
+│ created 12d ago · updated 4d ago                                             │
+│ labels  queues                                                               │
+│ parent  ○ ac-01 Fleet workspace                                              │
+│                                                                              │
+│ Blocked by (1)                                                               │
+│   ◐ ac-12 wire the lease heartbeat                                           │
+│                                                                              │
+│ Blocks (0)                                                                   │
+│   none                                                                       │
+│                                                                              │
+│ Summarize what needs attention across queues in one row.                     │
+│                                                                              │
+│ History                                                                      │
+│   7h   upda[2Jted evil  title="]0;pwned"                                     │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll · esc back · n new …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
+[open] / to filter                                                                           12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-09 ─────────────────────────────────────╮
+│   id    title                          done st P  dep  type  age who │ │                                             │
+│   ac-01 ▾ Fleet workspace 1/5          ▰▱▱▱ ○  P1      epic  30d mei │ │ Summarize what needs attention across       │
+│   ac-12 ├── wire the lease heartbeat        ◐  P0 →1   bug   9d  ada │ │ queues in one row.                          │
+│   ac-15 ├── lease holder column             ○  P1 →1   feat  6d  mei │ │                                             │
+│ ▸ ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │ History                                     │
+│   ↕ +8 more                                                          │ │   7h   upda[2Jted evil  title="]0;pwned"    │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat …
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
+[open] / to filter                                                                           12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-09 ─────────────────────────────────────╮
+│   id    title                          done st P  dep  type  age who │ │ ac-09  feature                              │
+│   ac-01 ▾ Fleet workspace 1/5          ▰▱▱▱ ○  P1      epic  30d mei │ │ queue attention digest                      │
+│   ac-12 ├── wire the lease heartbeat        ◐  P0 →1   bug   9d  ada │ │ ○ open  P2                                  │
+│   ac-15 ├── lease holder column             ○  P1 →1   feat  6d  mei │ │ held by 1 unfinished  (blocked)             │
+│ ▸ ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │ created 12d ago · updated 4d ago            │
+│   ac-16 └── stale lease warning             ○  P2 ⊘1   task  5d  -   │ │ labels  queues                              │
+│   ac-20   split graph source from exp…      ◐  P1 ⊘1→1 task  4d  ada │ │ parent  ○ ac-01 Fleet workspace             │
+│   ac-21   export reader                     ○  P2 ⊘1→1 task  4d  -   │ │                                             │
+│   ac-25   doctor: stale export warning      ●  P2      bug   3d  ada │ │ Blocked by (1)                              │
+│   ac-27   board thread digest               ●  P3      feat  2d  -   │ │   ◐ ac-12 wire the lease heartbeat          │
+│   ac-30   saved filters                     ○  P3      feat  2d  -   │ │                                             │
+│   ac-33   help overlay per view             ◐  P3      task  1d  mei │ │ Blocks (0)                                  │
+│   ac-36   verify tool flags against h…      ◇  P3      chore 40d mei │ │   none                                      │
+│                                                                      │ │                                             │
+│                                                                      │ │ Summarize what needs attention across       │
+│                                                                      │ │ queues in one row.                          │
+│                                                                      │ │                                             │
+│                                                                      │ │ History                                     │
+│                                                                      │ │   7h   upda[2Jted evil  title="]0;pwned"    │
+│                                                                      │ │                                             │
+│ ▾ open ▹ folded                                                      │ │                                             │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+[List] Kanban  Graph  Insights            14 tasks · 3 ready
+[open] / to filter               12 of 14 · sort: priority ↑
+╭─ ▸ ac-09 ────────────────────────────────────────────────╮
+│ queue attention digest                                   │
+│ ○ open  P2                                               │
+│ held by 1 unfinished  (blocked)                          │
+│ created 12d ago · updated 4d ago                         │
+│ labels  queues                                           │
+│ parent  ○ ac-01 Fleet workspace                          │
+│                                                          │
+│ Blocked by (1)                                           │
+│   ◐ ac-12 wire the lease heartbeat                       │
+│                                                          │
+│ Blocks (0)                                               │
+│   none                                                   │
+│                                                          │
+│ Summarize what needs attention across queues in one row. │
+│                                                          │
+│ History                                                  │
+│   7h   upda[2Jted evil  title="]0;pwned"                 │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ scroll …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Kanban  Graph  Insights                                                    14 tasks · 3 ready
+[open] / to filter                                                       12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-09 ─────────────────────────────╮
+│   id    title              done st P  dep  type  age who │ │ ac-09  feature                      │
+│   ac-01 ▾ Fleet workspace… ▰▱▱▱ ○  P1      epic  30d mei │ │ queue attention digest              │
+│   ac-12 ├── wire the leas…      ◐  P0 →1   bug   9d  ada │ │ ○ open  P2                          │
+│   ac-15 ├── lease holder …      ○  P1 →1   feat  6d  mei │ │ held by 1 unfinished  (blocked)     │
+│ ▸ ac-09 ├── queue attenti…      ○  P2 ⊘1   feat  12d -   │ │ created 12d ago · updated 4d ago    │
+│   ac-16 └── stale lease w…      ○  P2 ⊘1   task  5d  -   │ │ labels  queues                      │
+│   ac-20   split graph sou…      ◐  P1 ⊘1→1 task  4d  ada │ │ parent  ○ ac-01 Fleet workspace     │
+│   ac-21   export reader         ○  P2 ⊘1→1 task  4d  -   │ │                                     │
+│   ac-25   doctor: stale e…      ●  P2      bug   3d  ada │ │ Blocked by (1)                      │
+│   ac-27   board thread di…      ●  P3      feat  2d  -   │ │   ◐ ac-12 wire the lease heartbeat  │
+│   ac-30   saved filters         ○  P3      feat  2d  -   │ │                                     │
+│   ac-33   help overlay pe…      ◐  P3      task  1d  mei │ │ Blocks (0)                          │
+│   ac-36   verify tool fla…      ◇  P3      chore 40d mei │ │   none                              │
+│                                                          │ │                                     │
+│                                                          │ │ Summarize what needs attention      │
+│                                                          │ │ across queues in one row.           │
+│                                                          │ │                                     │
+│                                                          │ │ History                             │
+│                                                          │ │   7h   upda[2Jted evil              │
+│                                                          │ │        title="]0;pwned"             │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│ ▾ open ▹ folded                                          │ │                                     │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │                                     │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view …

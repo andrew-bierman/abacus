@@ -57,6 +57,11 @@ type config struct {
 	history     core.SearchHistory
 	historySet  bool
 	treeState   *core.TreeState // where the Tasks tree keeps its folds; nil keeps them for the session only
+	filters     core.SavedFilters
+	filtersSet  bool
+	recents     core.RecentTrackers
+	recentsSet  bool
+	switcher    *core.Switcher // tests inject one; the default is built from the Tasks provider
 }
 
 // Option customises the shell.
@@ -98,6 +103,12 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 		if c, err := (core.ConfigStore{Path: configPath()}).Load(); isDemo(entries) || (err == nil && c.SearchHistory == "off") {
 			cfg.history = core.SearchHistory{}
 		}
+	}
+	if !cfg.filtersSet && !isDemo(entries) {
+		cfg.filters = core.DefaultSavedFilters()
+	}
+	if !cfg.recentsSet && !isDemo(entries) {
+		cfg.recents = core.DefaultRecentTrackers()
 	}
 	m := &Model{th: cfg.th, searchHist: cfg.history}
 	m.help = help.New()
@@ -231,8 +242,11 @@ func (m *Model) active() section { return m.tabs[m.sel].sec }
 
 func (m *Model) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	for _, t := range m.tabs {
+	for i, t := range m.tabs {
 		cmds = append(cmds, t.sec.Init())
+		if d, ok := t.sec.(deactivator); ok && i != m.sel { // a tab that starts hidden does not poll until shown
+			d.deactivate()
+		}
 	}
 	if a, ok := m.active().(activator); ok {
 		cmds = append(cmds, a.activate())

@@ -56,6 +56,10 @@ func press(m tea.Model, k string) tea.Model {
 		msg = tea.KeyMsg{Type: tea.KeyCtrlN}
 	case "ctrl+u":
 		msg = tea.KeyMsg{Type: tea.KeyCtrlU}
+	case "ctrl+s":
+		msg = tea.KeyMsg{Type: tea.KeyCtrlS}
+	case "ctrl+o":
+		msg = tea.KeyMsg{Type: tea.KeyCtrlO}
 	case "up":
 		msg = tea.KeyMsg{Type: tea.KeyUp}
 	case "down":

@@ -413,8 +413,8 @@ func (s *tasksSection) graphView() string {
 	if gv.Focus != "" && gv.Mode == core.GraphNeighborhood {
 		title += " · " + san(gv.Focus)
 	}
-	if !s.list.readAt.IsZero() && !taskview.Fresh(s.list.readAt, nowFn(), tasksPollEvery) {
-		title += " · " + th.Text(KindWarn, "stale "+taskview.Age(s.list.readAt, nowFn()))
+	if seen := s.seenAt(); !seen.IsZero() && !taskview.Fresh(seen, nowFn(), s.pollEvery()) {
+		title += " · " + th.Text(KindWarn, "stale "+taskview.Age(seen, nowFn()))
 	}
 	var list, info []string
 	switch {

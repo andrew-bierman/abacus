@@ -60,7 +60,9 @@ func failedFeed(d core.DomainID, err error, poll time.Duration) core.SearchFeed 
 func (s *tasksSection) searchStamp() string {
 	switch {
 	case s.list.view != nil:
-		return stamp(core.SearchSearched, s.list.readAt, strconv.FormatBool(s.list.fallback))
+		// seenAt, not readAt: a check that finds the tracker unchanged moves it, and the open overlay must
+		// follow, or its Tasks hits would turn stale while the list is current
+		return stamp(core.SearchSearched, s.seenAt(), strconv.FormatBool(s.list.fallback)+"|"+s.pollEvery().String())
 	case !s.loaded:
 		return stamp(core.SearchLoading, time.Time{}, "")
 	case s.err != nil:
@@ -72,13 +74,13 @@ func (s *tasksSection) searchStamp() string {
 func (s *tasksSection) searchFeed() core.SearchFeed {
 	switch {
 	case s.list.view != nil:
-		f := core.SearchFeed{Domain: core.DomainTasks, ReadAt: s.list.readAt, PollEvery: tasksPollEvery, Docs: s.list.view.SearchDocs()}
+		f := core.SearchFeed{Domain: core.DomainTasks, ReadAt: s.seenAt(), PollEvery: s.pollEvery(), Docs: s.list.view.SearchDocs()}
 		if s.list.fallback { // the whole tracker could not be read: only the summary's recent changes
 			f.State, f.Reason = core.SearchDegraded, core.SearchReasonRecentTasks
 		}
 		return f
 	case s.loaded && s.err != nil:
-		return failedFeed(core.DomainTasks, s.err, tasksPollEvery)
+		return failedFeed(core.DomainTasks, s.err, s.pollEvery())
 	}
 	return core.SearchFeed{Domain: core.DomainTasks, State: core.SearchLoading}
 }
