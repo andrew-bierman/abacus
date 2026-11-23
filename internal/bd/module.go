@@ -69,8 +69,7 @@ func New(o Options) *Module {
 		}
 	}
 	if o.Runner == nil {
-		// MaxOut bounds memory for the snapshot read; every other read is far smaller.
-		o.Runner = core.ExecRunner{Scrub: core.ScrubBeadsEnv, MaxOut: taskview.MaxExport + 1}
+		o.Runner = core.ExecRunner{Scrub: core.ScrubBeadsEnv}
 	}
 	if o.LookPath == nil {
 		o.LookPath = exec.LookPath
@@ -281,16 +280,12 @@ func (m *Module) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
 	if g := m.Guide(ctx); g != nil {
 		return core.TaskSnapshot{}, &core.NeedsSetupError{Guide: *g}
 	}
-	out, exit, err := m.read(ctx, readExport)
+	out, err := m.Export(ctx) // capped, with the long export deadline
 	switch {
-	case errors.Is(err, core.ErrTimedOut):
-		return core.TaskSnapshot{}, errors.New("bd timed out exporting the tracker")
 	case errors.Is(err, core.ErrOutputTooLarge):
 		return core.TaskSnapshot{}, taskview.ErrTooLarge
 	case err != nil:
-		return core.TaskSnapshot{}, fmt.Errorf("bd could not run: %s", core.Sanitize(err.Error()))
-	case exit != 0:
-		return core.TaskSnapshot{}, errors.New(noTrackerHint)
+		return core.TaskSnapshot{}, err
 	}
 	name := ""
 	if d := m.TrackerDir(); d != "" {
@@ -403,6 +398,8 @@ func (m *Module) Export(ctx context.Context) ([]byte, error) {
 	switch {
 	case errors.Is(err, core.ErrOutputTooLarge) || len(out) >= ExportMaxOut:
 		return nil, fmt.Errorf("bd export: %w", core.ErrOutputTooLarge)
+	case errors.Is(err, core.ErrTimedOut):
+		return nil, fmt.Errorf("bd timed out exporting the tracker: %w", core.ErrTimedOut)
 	case err != nil:
 		return nil, fmt.Errorf("bd export could not run: %s", core.Sanitize(err.Error()))
 	case exit != 0:

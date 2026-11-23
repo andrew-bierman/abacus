@@ -59,7 +59,7 @@ func TestSnapshotFailuresAreDistinguished(t *testing.T) {
 		{"timeout", func(f *fakeRun) { f.errs = map[string]error{"--readonly export": core.ErrTimedOut} }, "timed out"},
 		{"too large", func(f *fakeRun) { f.errs = map[string]error{"--readonly export": core.ErrOutputTooLarge} }, "larger than 64 MiB"},
 		{"cannot run", func(f *fakeRun) { f.errs = map[string]error{"--readonly export": errors.New("boom")} }, "could not run"},
-		{"no tracker", func(f *fakeRun) { f.exit = map[string]int{"--readonly export": 1}; f.resp["--readonly export"] = "" }, "ABACUS_BD_DIR"},
+		{"no tracker", func(f *fakeRun) { f.exit = map[string]int{"--readonly export": 1}; f.resp["--readonly export"] = "" }, "exited 1"},
 		{"garbled", func(f *fakeRun) { f.resp["--readonly export"] = `{"id":"a-1"}` + "\n{oops" }, "unreadable record"},
 	}
 	for _, c := range cases {
@@ -68,8 +68,12 @@ func TestSnapshotFailuresAreDistinguished(t *testing.T) {
 		c.set(f)
 		m := mod(f, Options{})
 		m.Detect(context.Background())
-		if _, err := m.Snapshot(context.Background()); err == nil || !strings.Contains(err.Error(), c.want) {
+		_, err := m.Snapshot(context.Background())
+		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: %v, want %q", c.name, err, c.want)
+		}
+		if c.name == "timeout" && !errors.Is(err, core.ErrTimedOut) {
+			t.Errorf("a timeout stays typed so the view can back off: %v", err)
 		}
 	}
 }
@@ -89,8 +93,8 @@ func TestAWriteArgvIsRefusedOnTheReadPath(t *testing.T) {
 }
 
 func TestTheDefaultRunnerBoundsTheSnapshotRead(t *testing.T) {
-	r, ok := New(Options{}).o.Runner.(core.ExecRunner)
-	if !ok || r.MaxOut <= 0 {
-		t.Fatalf("the default runner must cap stdout: %+v", r)
+	r, ok := New(Options{}).o.ExportRunner.(core.ExecRunner)
+	if !ok || r.MaxOut != ExportMaxOut || r.Timeout != exportTimeout {
+		t.Fatalf("the export runner must cap stdout and have the long deadline: %+v", r)
 	}
 }
