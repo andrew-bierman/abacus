@@ -14,6 +14,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/bv"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/demo"
 	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
@@ -72,7 +73,7 @@ func boardURL(e Env, cfg core.Config) (url, source, bad string) {
 // ABACUS_LAMBE_CONFIG, then the lambe_config setup saved (if the file is still there).
 func Build(o cli.Options, e Env) *core.Registry {
 	if o.Demo {
-		return core.NewRegistry(lambe.NewDemo())
+		return core.NewRegistry(lambe.NewDemo(), demo.NewLeases(), demo.NewTasks(), demo.NewBoard())
 	}
 	cfg, _ := e.Config.Load() // an unreadable file reads as empty here; Doctor reports it
 	choice := core.ResolveTracker(e.Getenv("ABACUS_BD_DIR"), cfg, e.Cwd, e.Workspace)

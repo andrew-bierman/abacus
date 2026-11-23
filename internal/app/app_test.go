@@ -275,3 +275,21 @@ func TestBoardBinaryNeedsAnIdentityCheckAndTheURLPrecedenceIsEnvThenConfigThenDe
 		}
 	}
 }
+
+// --demo registers providers for every domain, so every tab has data, and none of them can offer
+// a setup step or open a real tool.
+func TestDemoRegistryProvidesEveryDomain(t *testing.T) {
+	reg := Build(cli.Options{Demo: true}, Env{Getenv: func(string) string { return "" }})
+	p := core.ResolveProviders(reg.Detect(context.Background()))
+	if p.Tasks == nil || p.Leases == nil || p.Queues == nil || p.Board == nil || p.Insights == nil || p.Writer == nil || p.Reader == nil {
+		t.Fatalf("a demo needs a provider for every domain: %+v", p)
+	}
+	for d, g := range p.Guiders {
+		if guide := g.Guide(context.Background()); guide != nil {
+			t.Fatalf("a demo must offer no first-run setup, %s offers %+v", d, guide)
+		}
+	}
+	if p.BoardWriter != nil {
+		t.Fatal("a demo board cannot post")
+	}
+}

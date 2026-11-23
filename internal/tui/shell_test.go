@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
+	"github.com/andrew-bierman/abacus/internal/demo"
 	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
@@ -264,5 +266,23 @@ func TestHelpOverlayFrameBoundaryIsExact(t *testing.T) {
 	// frame waits for the full text instead of clipping it.
 	if framedFrom > hMin && strings.Contains(build(framedFrom-1), "? or esc closes") {
 		t.Fatalf("the plain list at %d should not fit its hint, so the frame could have started earlier", framedFrom-1)
+	}
+}
+
+// A demo session changes nothing, so it records nothing: its audit never reaches the real state dir.
+func TestDemoSessionDoesNotWriteTheRealAuditLog(t *testing.T) {
+	state := t.TempDir()
+	t.Setenv("XDG_STATE_HOME", state)
+	a := auditFor([]core.Entry{{Module: demo.NewTasks(), Detection: core.Detection{State: core.Ready}}})
+	if err := a.Record(core.AuditEntry{}); err != nil {
+		t.Fatal(err)
+	}
+	if files, _ := filepath.Glob(filepath.Join(state, "*", "*")); len(files) != 0 {
+		t.Fatalf("a demo audit wrote %v", files)
+	}
+	// A real session still audits to the state dir.
+	real := auditFor([]core.Entry{{Module: fake("a", core.Ready), Detection: core.Detection{State: core.Ready}}})
+	if _, discards := real.(discardAudit); discards {
+		t.Fatal("a real session must keep its audit")
 	}
 }

@@ -136,6 +136,15 @@ appears in any other file.
 - Badges: doctor `ok` `warn` `fail` `skip`, lease `held` `stale` `free`, `stalled`, `blocked`,
   `not connected` and the source labels (`tracker subset`, `graph analysis`).
 
+## Demo
+
+`abacus tui --demo` shows every tab with invented data (the fixtures in `internal/demo`, the same
+ones the goldens use): Board, Tasks with graph insights and the confirm flow, Leases, Queues and
+Doctor. It reads nothing from your machine. A confirmed change is applied to nothing and reports a
+made-up id, `o` on Tasks says there is no tracker to open (the real full-view tool is never probed
+or run), and nothing is recorded in the real audit log. A test drives all of this with a fake tool
+on `PATH` that leaves a marker if it is ever run.
+
 ## Tests
 
 Golden renders live in `internal/tui/testdata/golden/`, from demo and fixture data only (fake

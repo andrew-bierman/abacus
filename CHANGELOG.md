@@ -8,6 +8,10 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- `abacus tui --demo` shows every tab with invented data: Board, Tasks (with graph insights and the
+  confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
+  only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,
+  a demo "write" is applied to nothing, and nothing is recorded in the real audit log.
 - README: supported platforms, verified on Linux amd64 from the release archive (doctor, setup, TUI with only bundled tools). A plan for Windows support is in `docs/plans/`.
 - The Board domain: channels, recent threads and messages (author, time, text) and open tasks
   with their state and claimant, read from the Vercel Board CLI (`@vercel/board`, `board` or

@@ -17,6 +17,7 @@ import (
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
+	"github.com/andrew-bierman/abacus/internal/demo"
 	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
@@ -48,13 +49,7 @@ type scenario struct {
 // leaseProv is a fixture Leases provider (a fake module that also provides the domain).
 type leaseProv struct{ named }
 
-func (leaseProv) Leases(context.Context) (core.LeasesReport, error) {
-	return core.LeasesReport{Header: core.Header{Source: core.SourceLive}, Leases: []core.Lease{
-		{Resource: "ac-zoj", State: core.LeaseHeld, Holder: "glm-scheduler-01", ExpiresAt: "12m"},
-		{Resource: "ac-00h", State: core.LeaseHeld, Holder: "codex-macbookpro", ExpiresAt: "3m"},
-		{Resource: "ac-1k2", State: core.LeaseStale, Holder: "claude-mac"},
-		{Resource: "ac-9x1", State: core.LeaseFree}}}, nil
-}
+func (leaseProv) Leases(context.Context) (core.LeasesReport, error) { return demo.LeasesReport(), nil }
 
 func leaseFake() leaseProv {
 	f := &modtest.Fake{IDStr: "beads-lease", Det: core.Detection{State: core.Ready, Version: "1.0.0"}}
@@ -70,21 +65,9 @@ type taskProv struct {
 	readErr *error
 }
 
-func fixtureTasks() core.TasksReport {
-	return core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 14, Open: 6, InProgress: 3, Blocked: 2, Deferred: 1, Closed: 2, Ready: 4},
-		Recent: []core.Task{
-			{ID: "ac-12", Title: "wire the lease heartbeat", Status: "in_progress", Priority: 1},
-			{ID: "ac-09", Title: "queue attention digest", Status: "open", Priority: 2},
-			{ID: "ac-03", Title: "retire the old poller", Status: "closed", Priority: 3}}}
-}
-
-func fixtureInsights() core.InsightsReport {
-	return core.InsightsReport{Header: core.Header{Source: core.SourceGraph, State: core.Connected}, TotalActionable: 4, TotalBlocked: 2,
-		TopPicks:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
-		Blockers:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
-		CriticalPath: []core.Ranked{{ID: "ac-12", Value: 3}, {ID: "ac-09", Value: 2}},
-		Cycles:       [][]string{{"ac-20", "ac-21", "ac-20"}}}
-}
+// The fixtures are the demo's own, so the goldens show exactly what `abacus tui --demo` shows.
+func fixtureTasks() core.TasksReport       { return demo.TasksReport() }
+func fixtureInsights() core.InsightsReport { return demo.InsightsReport() }
 
 func (taskProv) Tasks(context.Context) (core.TasksReport, error) { return fixtureTasks(), nil }
 func (taskProv) Insights(context.Context) (core.InsightsReport, error) {
@@ -139,17 +122,7 @@ type boardProv struct {
 	err error
 }
 
-func fixtureBoard() core.BoardReport {
-	return core.BoardReport{Header: core.Header{Source: core.SourceLive},
-		Channels: []core.BoardChannel{{Path: "dev/web", Threads: 3}, {Path: "work", Threads: 3}, {Path: "dev", Threads: 1}, {Path: "ops"}},
-		Threads: []core.BoardThread{
-			{Root: core.BoardMessage{ID: "15", Channel: "dev/web", Author: "ada", At: "2026-11-22T20:12:05Z", Text: "checkout times out for carts over 40 items, started after the 14:02 deploy"}, Replies: 2,
-				Last: &core.BoardMessage{ID: "17", Channel: "dev/web", Author: "ada/claude", At: "2026-11-22T20:14:40Z", Text: "rolled back to d4e5f6; watching the error rate"}},
-			{Root: core.BoardMessage{ID: "2", Channel: "dev", Author: "ada", At: "2026-11-22T19:01:00Z", Text: "deploys are green again"}}},
-		Tasks: []core.BoardTask{
-			{ID: "16", Channel: "work", Text: "fix CVE-123 in acme/web", State: "claimed", Claimant: "codex via ada", Until: "2026-11-22T21:09:29Z"},
-			{ID: "6", Channel: "work", Text: "review the fix", State: "ready"}}}
-}
+func fixtureBoard() core.BoardReport { return demo.BoardReport() }
 
 func (b boardProv) Board(context.Context) (core.BoardReport, error) {
 	if b.err != nil {
