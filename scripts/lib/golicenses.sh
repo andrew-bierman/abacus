@@ -18,18 +18,10 @@ go_linked_modules() {
 # list cannot be read or a linked module has no license file, so a release never ships
 # incomplete notices.
 go_licenses_section() {
-  local root="$1" os="$2" arch="$3" mods path version dir f found bvver
+  local root="$1" os="$2" arch="$3" mods path version dir f found
   mods="$(go_linked_modules "$root" "$os" "$arch")" || return 1
   [ -n "$mods" ] || { echo "no linked Go modules found" >&2; return 1; }
 
-  bvver="$(printf '%s\n' "$mods" | awk -F'\t' '$1=="github.com/Dicklesworthstone/beads_viewer"{print $2}')"
-  if [ -n "$bvver" ]; then
-    echo "In addition, the \`abacus\` binary statically links parts of bv's Go packages (bv $bvver,"
-    echo "\`pkg/analysis\` and the packages it depends on) for the optional in-process graph engine"
-    echo "(\`ABACUS_GRAPH_ENGINE=library\`). That code is under bv's license: see"
-    echo "\`third_party/bv/LICENSE\` (shipped verbatim)."
-    echo
-  fi
   echo "## Go modules linked into abacus"
   echo
   echo "These are the Go modules compiled into the \`abacus\` binary for $os/$arch (the output of"

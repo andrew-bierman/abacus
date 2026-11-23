@@ -1,37 +1,41 @@
 package graph_test
 
-// Parity: the library engine and the bv subprocess adapter (internal/bv) must agree behind
-// core.InsightsProvider. For each scenario the library analyzer runs on a tracker export under
-// testdata, and the subprocess adapter's own decoder runs on the matching `bv --robot-*` JSON,
-// served by a fake runner (bv is never run).
+// Parity: the in-process engine must agree with what bv itself reports. For each scenario the
+// analyzer runs on a tracker export under testdata and its report is compared with the facts read
+// out of the matching `bv --robot-*` JSON documents (static fixtures; bv is never run, here or
+// anywhere in this repository).
 //
-//   - fx_cyclic and fx_acyclic: the robot JSON is the output recorded from bv v0.27.0 on the
-//     seven invented issues described in internal/bv/testdata/README.md; the exports are those
-//     seven issues written as tracker JSONL.
+//   - fx_cyclic and fx_acyclic: the robot JSON under testdata/bv is the output recorded from bv
+//     v0.27.0 on the seven invented issues described in testdata/bv/README.md; the exports are
+//     those seven issues written as tracker JSONL.
 //   - chain, diamond, cycle, closed, big200: the robot JSON under testdata/robot is HAND-WRITTEN
 //     in bv's documented shape, with values worked out from the graph (and, for the first four,
 //     the probe table in docs/plans/2026-11-22-graph-core-assessment.md). It was not captured
 //     from a bv run.
 //
-// What agrees: actionable and blocked counts, graph size, cycles, the critical-path scores, the
-// critical-path note, the first top pick and the first blocker.
+// What is compared (assertParity), field by field: actionable and blocked counts, graph size,
+// cycles, the critical-path scores and note, the first top pick with its unblock count, the number
+// of tracks, and the ORDER of the blockers, the bottlenecks and the top picks (the picks as far as
+// the document lists them). Not compared: pick scores and reasons (they depend on fields the
+// export does not carry, see 4 below), track membership, and the order inside a track. The
+// hand-written documents hold orders worked out from the graph by hand; only fx_cyclic and
+// fx_acyclic are recorded bv output, so a hand-written order proves the engine matches the
+// author's reading of bv, not bv itself.
 //
-// Where bv's own definitions differ from what a reader may expect, and what this adapter does
-// about each (also in docs/tool-contract.md, "Graph engine"):
+// Where bv's own definitions differ from what a reader may expect (also in docs/tool-contract.md,
+// "Graph engine"):
 //
 //  1. Critical path is a per-issue height score (the length of the longest chain an issue starts),
-//     not an ordered path. Both engines report that ranked list as CriticalPath. The adapter does
-//     not derive an ordered path: a diamond shows both of its middle issues with the same score.
+//     not an ordered path: a diamond shows both of its middle issues with the same score.
 //  2. A dependency cycle makes bv skip the computation: no scores at all, even for issues far
-//     from the cycle. Both engines then leave CriticalPath empty and fill CriticalPathNote.
+//     from the cycle. CriticalPath is then empty and CriticalPathNote is filled.
 //  3. A closed issue is a satisfied blocker (its dependents become actionable) but is left out of
 //     the ranked lists, as `bv --robot-insights` leaves it out: it does not raise its dependents'
 //     scores. bv's raw, unscoped critical-path scores do count closed issues (the assessment's
-//     probe saw a closed issue score 3); the adapter uses the scoped insights the CLI uses, so
-//     it matches the subprocess, not the raw probe.
+//     probe saw a closed issue score 3); the engine uses the scoped insights the CLI uses.
 //  4. The next pick is bv's triage score (PageRank, unblocks, priority, staleness and more), not
 //     bd's ready ordering, so scores differ from a recorded run by the fields the export does
-//     not carry (labels, estimates, created_at) and can differ from `bd ready`. Parity is on
+//     not carry (estimates, created_at) and can differ from `bd ready`. Parity is on
 //     which issue is picked, never on the score value.
 //  5. "Blocked" counts issues held back by an unfinished blocker or a blocked status; deferred
 //     and custom-status issues are in neither count.
@@ -47,20 +51,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/andrew-bierman/abacus/internal/bv"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/graph"
 )
-
-type robotRun map[string]string
-
-func (r robotRun) Run(_ context.Context, _ string, args ...string) ([]byte, int, error) {
-	out, ok := r[strings.Join(args, " ")]
-	if !ok {
-		return nil, -1, fmt.Errorf("unexpected argv %v", args)
-	}
-	return []byte(out), 0, nil
-}
 
 func readFile(t *testing.T, parts ...string) string {
 	t.Helper()
@@ -71,23 +64,100 @@ func readFile(t *testing.T, parts ...string) string {
 	return string(b)
 }
 
-// subprocessReport is what internal/bv reports for the given robot documents.
-func subprocessReport(t *testing.T, triage, plan, insights, graphDoc string) core.InsightsReport {
-	t.Helper()
-	m := bv.New(bv.Options{Runner: robotRun{
-		"--robot-triage --format json": triage, "--robot-plan --format json": plan,
-		"--robot-insights --format json": insights, "--robot-graph --format json": graphDoc,
-	}, LookPath: func(string) (string, error) { return "/fake/bv", nil }})
-	r, err := m.Insights(context.Background())
-	if err != nil {
-		t.Fatal(err)
+// What bv's robot documents say, in the fields this comparison needs. Shapes are bv's own
+// (v0.27.0): ids are `id` in triage and plan and `ID` in the insights metrics.
+type bvPick struct {
+	ID            string `json:"id"`
+	Unblocks      int    `json:"unblocks"`
+	UnblocksCount int    `json:"unblocks_count"`
+}
+
+type bvRanked struct {
+	ID    string  `json:"ID"`
+	Value float64 `json:"Value"`
+}
+
+type bvDocs struct {
+	Triage struct {
+		Triage struct {
+			QuickRef struct {
+				TopPicks []bvPick `json:"top_picks"`
+			} `json:"quick_ref"`
+			Recommendations []bvPick `json:"recommendations"`
+			Blockers        []bvPick `json:"blockers_to_clear"`
+		} `json:"triage"`
 	}
+	Plan struct {
+		Plan struct {
+			Tracks          []json.RawMessage `json:"tracks"`
+			TotalActionable int               `json:"total_actionable"`
+			TotalBlocked    int               `json:"total_blocked"`
+		} `json:"plan"`
+	}
+	Insights struct {
+		Bottlenecks []bvRanked `json:"Bottlenecks"`
+		Keystones   []bvRanked `json:"Keystones"`
+		Cycles      [][]string `json:"Cycles"`
+		Status      struct {
+			Critical struct{ State, Reason string } `json:"Critical"`
+		} `json:"status"`
+	}
+	Graph struct {
+		Nodes int `json:"nodes"`
+		Edges int `json:"edges"`
+	}
+}
+
+// bvFacts is what bv reports for the given robot documents, as the report fields the engine
+// fills, so the two compare field by field.
+func bvFacts(t *testing.T, triage, plan, insights, graphDoc string) core.InsightsReport {
+	t.Helper()
+	var d bvDocs
+	for doc, into := range map[string]any{triage: &d.Triage, plan: &d.Plan, insights: &d.Insights, graphDoc: &d.Graph} {
+		if err := json.Unmarshal([]byte(doc), into); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var r core.InsightsReport
+	tp := d.Triage.Triage.QuickRef.TopPicks
+	if len(tp) == 0 {
+		tp = d.Triage.Triage.Recommendations
+	}
+	pick := func(p bvPick) core.Pick {
+		if p.Unblocks == 0 {
+			p.Unblocks = p.UnblocksCount
+		}
+		return core.Pick{ID: p.ID, Unblocks: p.Unblocks}
+	}
+	for _, p := range tp {
+		r.TopPicks = append(r.TopPicks, pick(p))
+	}
+	for _, p := range d.Triage.Triage.Blockers {
+		r.Blockers = append(r.Blockers, pick(p))
+	}
+	r.TotalActionable, r.TotalBlocked = d.Plan.Plan.TotalActionable, d.Plan.Plan.TotalBlocked
+	r.Tracks = make([]core.Track, len(d.Plan.Plan.Tracks))
+	for i, k := range d.Insights.Keystones {
+		if i < 5 {
+			r.CriticalPath = append(r.CriticalPath, core.Ranked{ID: k.ID, Value: k.Value})
+		}
+	}
+	for i, k := range d.Insights.Bottlenecks {
+		if i < 5 {
+			r.Bottlenecks = append(r.Bottlenecks, core.Ranked{ID: k.ID, Value: k.Value})
+		}
+	}
+	r.Cycles = d.Insights.Cycles
+	if c := d.Insights.Status.Critical; c.State == "skipped" {
+		r.CriticalPathNote = "critical path skipped: " + c.Reason
+	}
+	r.GraphNodes, r.GraphEdges = d.Graph.Nodes, d.Graph.Edges
 	return r
 }
 
 func recorded(t *testing.T, insights string) core.InsightsReport {
-	d := filepath.Join("..", "bv", "testdata")
-	return subprocessReport(t, readFile(t, d, "triage.json"), readFile(t, d, "plan.json"), readFile(t, d, insights+".json"), readFile(t, d, "graph.json"))
+	d := filepath.Join("testdata", "bv")
+	return bvFacts(t, readFile(t, d, "triage.json"), readFile(t, d, "plan.json"), readFile(t, d, insights+".json"), readFile(t, d, "graph.json"))
 }
 
 func handWritten(t *testing.T, name string) core.InsightsReport {
@@ -95,7 +165,7 @@ func handWritten(t *testing.T, name string) core.InsightsReport {
 	if err := json.Unmarshal([]byte(readFile(t, "testdata", "robot", name+".json")), &doc); err != nil {
 		t.Fatal(err)
 	}
-	return subprocessReport(t, string(doc["triage"]), string(doc["plan"]), string(doc["insights"]), string(doc["graph"]))
+	return bvFacts(t, string(doc["triage"]), string(doc["plan"]), string(doc["insights"]), string(doc["graph"]))
 }
 
 // canon rotates a cycle to start at its smallest id and drops the repeated closing id, so the
@@ -134,38 +204,44 @@ func values(rs []core.Ranked) []float64 {
 func assertParity(t *testing.T, lib, sub core.InsightsReport) {
 	t.Helper()
 	if lib.TotalActionable != sub.TotalActionable || lib.TotalBlocked != sub.TotalBlocked {
-		t.Errorf("actionable/blocked: library %d/%d, subprocess %d/%d", lib.TotalActionable, lib.TotalBlocked, sub.TotalActionable, sub.TotalBlocked)
+		t.Errorf("actionable/blocked: library %d/%d, bv %d/%d", lib.TotalActionable, lib.TotalBlocked, sub.TotalActionable, sub.TotalBlocked)
 	}
 	if lib.GraphNodes != sub.GraphNodes || lib.GraphEdges != sub.GraphEdges {
-		t.Errorf("graph size: library %d/%d, subprocess %d/%d", lib.GraphNodes, lib.GraphEdges, sub.GraphNodes, sub.GraphEdges)
+		t.Errorf("graph size: library %d/%d, bv %d/%d", lib.GraphNodes, lib.GraphEdges, sub.GraphNodes, sub.GraphEdges)
 	}
 	if !slices.Equal(cycles(lib), cycles(sub)) {
-		t.Errorf("cycles: library %v, subprocess %v", cycles(lib), cycles(sub))
+		t.Errorf("cycles: library %v, bv %v", cycles(lib), cycles(sub))
 	}
 	if !slices.Equal(values(lib.CriticalPath), values(sub.CriticalPath)) {
-		t.Errorf("critical path scores: library %v, subprocess %v", values(lib.CriticalPath), values(sub.CriticalPath))
+		t.Errorf("critical path scores: library %v, bv %v", values(lib.CriticalPath), values(sub.CriticalPath))
 	}
 	if lib.CriticalPathNote != sub.CriticalPathNote {
-		t.Errorf("critical path note: library %q, subprocess %q", lib.CriticalPathNote, sub.CriticalPathNote)
+		t.Errorf("critical path note: library %q, bv %q", lib.CriticalPathNote, sub.CriticalPathNote)
 	}
 	if len(lib.TopPicks) == 0 || len(sub.TopPicks) == 0 || lib.TopPicks[0].ID != sub.TopPicks[0].ID || lib.TopPicks[0].Unblocks != sub.TopPicks[0].Unblocks {
-		t.Errorf("top pick: library %+v, subprocess %+v", lib.TopPicks, sub.TopPicks)
+		t.Errorf("top pick: library %+v, bv %+v", lib.TopPicks, sub.TopPicks)
 	}
 	if len(lib.Blockers) == 0 || len(sub.Blockers) == 0 || lib.Blockers[0].ID != sub.Blockers[0].ID {
-		t.Errorf("first blocker: library %+v, subprocess %+v", lib.Blockers, sub.Blockers)
+		t.Errorf("first blocker: library %+v, bv %+v", lib.Blockers, sub.Blockers)
+	}
+	// Ranking order, not just the first item: the blockers and the bottlenecks must match bv's
+	// document element for element, and the picks must match as far as the document lists them
+	// (the hand-written big200 document lists only its first pick).
+	if n := len(sub.TopPicks); len(lib.TopPicks) < n || !slices.Equal(ids(lib.TopPicks[:n]), ids(sub.TopPicks)) {
+		t.Errorf("ordered top picks: library %v, bv %v", ids(lib.TopPicks), ids(sub.TopPicks))
+	}
+	if !slices.Equal(ids(lib.Blockers), ids(sub.Blockers)) {
+		t.Errorf("ordered blockers: library %v, bv %v", ids(lib.Blockers), ids(sub.Blockers))
+	}
+	if !slices.Equal(rids(lib.Bottlenecks), rids(sub.Bottlenecks)) {
+		t.Errorf("ordered bottlenecks: library %v, bv %v", rids(lib.Bottlenecks), rids(sub.Bottlenecks))
 	}
 	if len(lib.Tracks) != len(sub.Tracks) {
-		t.Errorf("tracks: library %d, subprocess %d", len(lib.Tracks), len(sub.Tracks))
-	}
-	if lib.Summarize() != sub.Summarize() {
-		t.Errorf("summary: library %q, subprocess %q", lib.Summarize(), sub.Summarize())
-	}
-	if lib.Source != sub.Source {
-		t.Errorf("source: library %q, subprocess %q", lib.Source, sub.Source)
+		t.Errorf("tracks: library %d, bv %d", len(lib.Tracks), len(sub.Tracks))
 	}
 }
 
-func TestParityWithTheSubprocessAdapter(t *testing.T) {
+func TestParityWithBvOutput(t *testing.T) {
 	for _, c := range []struct {
 		name string
 		sub  func(*testing.T) core.InsightsReport
@@ -188,7 +264,7 @@ func TestParityWithTheSubprocessAdapter(t *testing.T) {
 			sub := c.sub(t)
 			assertParity(t, lib, sub)
 			if sub.TotalActionable != c.actionable || sub.TotalBlocked != c.blocked || len(sub.Cycles) != c.cycles || sub.TopPicks[0].ID != c.pick {
-				t.Fatalf("the subprocess fixture does not say what the scenario says: %+v", sub)
+				t.Fatalf("the bv fixture does not say what the scenario says: %+v", sub)
 			}
 			if lib.TotalActionable != c.actionable || lib.TotalBlocked != c.blocked || len(lib.Cycles) != c.cycles || lib.TopPicks[0].ID != c.pick {
 				t.Fatalf("the library does not say what the scenario says: %+v", lib)
@@ -203,10 +279,10 @@ func TestParityRecordedAcyclicInsights(t *testing.T) {
 	sub := recorded(t, "insights_acyclic")
 	lib := analyze(t, load(t, "fx_acyclic"))
 	if len(lib.Cycles) != 0 || lib.CriticalPathNote != "" || sub.CriticalPathNote != "" {
-		t.Fatalf("library %+v, subprocess %+v", lib, sub)
+		t.Fatalf("library %+v, bv %+v", lib, sub)
 	}
 	if fmt.Sprint(lib.CriticalPath) != fmt.Sprint(sub.CriticalPath) || fmt.Sprint(lib.Bottlenecks) != fmt.Sprint(sub.Bottlenecks) {
-		t.Fatalf("critical path: library %v, subprocess %v; bottlenecks: library %v, subprocess %v", lib.CriticalPath, sub.CriticalPath, lib.Bottlenecks, sub.Bottlenecks)
+		t.Fatalf("critical path: library %v, bv %v; bottlenecks: library %v, bv %v", lib.CriticalPath, sub.CriticalPath, lib.Bottlenecks, sub.Bottlenecks)
 	}
 	if len(lib.CriticalPath) != 4 || lib.CriticalPath[0].ID != "fx-1" || lib.CriticalPath[0].Value != 3 {
 		t.Fatalf("%v", lib.CriticalPath)
@@ -285,4 +361,20 @@ func TestDocumentedDifferences(t *testing.T) {
 			t.Fatalf("%+v", r)
 		}
 	})
+}
+
+func ids(ps []core.Pick) []string {
+	var o []string
+	for _, p := range ps {
+		o = append(o, p.ID)
+	}
+	return o
+}
+
+func rids(ps []core.Ranked) []string {
+	var o []string
+	for _, p := range ps {
+		o = append(o, p.ID)
+	}
+	return o
 }

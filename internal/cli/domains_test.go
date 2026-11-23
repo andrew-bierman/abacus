@@ -191,8 +191,8 @@ func TestTasksShowsInsightsOrHowToInstall(t *testing.T) {
 		}
 	}
 	_, out, _, _ = runIn(t, "", []core.Module{newTaskMod()}, "tasks")
-	if !strings.Contains(out, "abacus's own copy of bv") || strings.Contains(out, "brew install") {
-		t.Errorf("a missing bundled bv is abacus's problem, not an install task:\n%s", out)
+	if !strings.Contains(out, "abacus's own copy of bd") || strings.Contains(out, "brew install") {
+		t.Errorf("a missing bundled bd is abacus's problem, not an install task:\n%s", out)
 	}
 }
 

@@ -2,7 +2,11 @@ package bd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -184,4 +188,93 @@ func TestReadTaskReadsOneIssueReadonlyAndChecksTheID(t *testing.T) {
 		t.Fatal("a flag-like id is refused before any process")
 	}
 	var _ core.TaskReader = m
+}
+
+func TestExportReadsTheWholeTrackerReadOnly(t *testing.T) {
+	f := newFake()
+	f.resp["-C /trk --readonly export"] = "{\"id\":\"a\"}\n"
+	out, err := mod(f, Options{Dir: "/trk"}).Export(context.Background())
+	if err != nil || string(out) != "{\"id\":\"a\"}\n" {
+		t.Fatalf("%q %v", out, err)
+	}
+	f.exit = map[string]int{"-C /trk --readonly export": 1}
+	if _, err := mod(f, Options{Dir: "/trk"}).Export(context.Background()); err == nil || !strings.Contains(err.Error(), "exited 1") {
+		t.Fatalf("a failing export must be an error: %v", err)
+	}
+	f.errs = map[string]error{"-C /trk --readonly export": fmt.Errorf("boom\x1b[2J")}
+	if _, err := mod(f, Options{Dir: "/trk"}).Export(context.Background()); err == nil || strings.Contains(err.Error(), "\x1b") {
+		t.Fatalf("the error must be sanitized: %q", err)
+	}
+}
+
+// splitFake is a Runner that also reports stderr, like the real ExecRunner.
+type splitFake struct {
+	out, errOut []byte
+	exit        int
+	err         error
+}
+
+func (s splitFake) Run(context.Context, string, ...string) ([]byte, int, error) {
+	return s.out, s.exit, s.err
+}
+
+func (s splitFake) RunSplit(context.Context, string, ...string) ([]byte, []byte, int, error) {
+	return s.out, s.errOut, s.exit, s.err
+}
+
+func exportMod(r core.Runner) *Module {
+	return New(Options{Dir: "/trk", Runner: r, LookPath: found})
+}
+
+func TestExportFailureKeepsASanitizedShortStderrTail(t *testing.T) {
+	long := strings.Repeat("x", 500)
+	_, err := exportMod(splitFake{exit: 1, errOut: []byte("first line\n\x1b[2Jdatabase is locked " + long)}).Export(context.Background())
+	if err == nil || !strings.HasPrefix(err.Error(), "bd export exited 1: ") || strings.Contains(err.Error(), "\x1b") || len(err.Error()) > 260 {
+		t.Fatalf("%q", err)
+	}
+	if _, err := exportMod(splitFake{exit: 2, errOut: []byte("database is locked\n")}).Export(context.Background()); err == nil || !strings.Contains(err.Error(), "exited 2: database is locked") {
+		t.Fatalf("%v", err)
+	}
+	if _, err := exportMod(splitFake{exit: 3}).Export(context.Background()); err == nil || err.Error() != "bd export exited 3" {
+		t.Fatalf("no stderr, no suffix: %v", err)
+	}
+}
+
+func TestExportOverTheCapIsTheBoundedError(t *testing.T) {
+	// The capped runner reports ErrOutputTooLarge with whatever it kept; a runner that hands back
+	// more than the cap is treated the same.
+	if _, err := exportMod(splitFake{out: []byte("{}"), err: core.ErrOutputTooLarge}).Export(context.Background()); !errors.Is(err, core.ErrOutputTooLarge) {
+		t.Fatalf("%v", err)
+	}
+	if _, err := exportMod(splitFake{out: make([]byte, ExportMaxOut)}).Export(context.Background()); !errors.Is(err, core.ErrOutputTooLarge) {
+		t.Fatalf("%v", err)
+	}
+	if out, err := exportMod(splitFake{}).Export(context.Background()); err != nil || len(out) != 0 {
+		t.Fatalf("empty stdout is an empty export: %q %v", out, err)
+	}
+}
+
+// The real process runner discards what a tool prints past the cap instead of buffering it, and
+// stops with ErrOutputTooLarge: a bd that prints 768 MiB keeps at most the cap (the allocation bound is loose because the kept
+// slice grows by appending).
+func TestExportStreamsThroughACappedRunnerAndDoesNotBufferPastTheCap(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("needs sh")
+	}
+	script := filepath.Join(t.TempDir(), "bd")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nhead -c 805306368 /dev/zero\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	m := New(Options{Dir: "/trk", LookPath: found}) // no injected runner: the production capped one
+	m.SetFound(core.Found{Bin: script})
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	_, err := m.Export(context.Background())
+	runtime.ReadMemStats(&after)
+	if !errors.Is(err, core.ErrOutputTooLarge) {
+		t.Fatalf("%v", err)
+	}
+	if grown := after.TotalAlloc - before.TotalAlloc; grown > 600<<20 {
+		t.Fatalf("allocated %d MiB for a 768 MiB output: it was buffered", grown>>20)
+	}
 }

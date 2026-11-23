@@ -43,8 +43,8 @@ Counts by state, ready work and the most recent changes (an aligned table with a
 `x`) in a framed list panel, and the graph insights in a panel of their own: the next pick, the
 issues that block the most, the critical path and dependency cycles. From 100 columns the insights
 sit beside the list; below that they sit under it (the list keeps two thirds of the rows). Insights
-are read on start and on `r`, not on a timer, because they run several processes. Without an
-insights provider the panel says it is not connected and what is wrong with abacus's own bv (a
+are read on start and on `r`, not on a timer, because each read analyzes the whole tracker. Without an
+insights provider the panel says it is not connected and what is wrong with abacus's own bd (a
 release: damaged or moved, re-extract; a dev build: run `scripts/dev-bundle.sh`).
 
 The new and edit forms, the "Checking the current state…" screen, the confirm screen and its
@@ -157,7 +157,7 @@ The Doctor tab (the one place providers are listed by name) leads with "Ready" o
 one line per area, a "Bundled tools: 4 of 4 verified" line, and each tool with where it was found
 (`bundled`, `PATH`, `override`, `demo`; or `unavailable` for abacus's own copy that cannot be used,
 `optional` for the Board CLI, which abacus does not ship) and its version, then the detailed checks.
-"Ready" needs bd, lambe and beads-lease usable; bv (graph insights) counts in the bundled line but is optional. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
+"Ready" needs bd, lambe and beads-lease usable. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
 other modules every 30 seconds.

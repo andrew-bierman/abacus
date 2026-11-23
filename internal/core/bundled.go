@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-// abacus brings its own copies of bd, bv, lambe and beads-lease (a release archive carries them in
+// abacus brings its own copies of bd, lambe and beads-lease (a release archive carries them in
 // bundled/ beside the program), so a missing tool is never the user's job: it is either a damaged
 // or moved download (release builds) or an unfinished dev setup (go build). This file owns the
 // words for both, so every surface says the same thing.
@@ -44,10 +44,6 @@ func IsBundledTool(tool string) bool {
 	}
 	return false
 }
-
-// IsOptionalBundled reports whether a bundled tool is one abacus works without: bv only adds graph
-// insights, so its absence never makes the overview "Needs attention".
-func IsOptionalBundled(tool string) bool { return tool == "bv" }
 
 // BundledProblem is the one sentence for a bundled tool abacus cannot use. refused is the specific
 // reason a copy that exists was turned down ("world-writable", "not executable", ...), or "" when
@@ -103,9 +99,12 @@ func HowToConnectFor(d DomainID) string {
 	return ""
 }
 
-// HowToConnectInsights is shown when no graph-analysis provider is available (a release and a dev
-// build word the fix differently).
-func HowToConnectInsights() string { return "Graph insights need bv. " + BundledProblem("bv", "") }
+// HowToConnectInsights is shown when no graph-analysis provider is available. The analysis runs
+// inside abacus on the tracker bd keeps, so the fix is about bd (a release and a dev build word it
+// differently).
+func HowToConnectInsights() string {
+	return "Graph insights are computed inside abacus from the tracker. " + BundledProblem("bd", "")
+}
 
 // BundledSummary is the self-contained check: how many of the tools abacus ships were found as its
 // own verified copies. Additive to the doctor and version reports.

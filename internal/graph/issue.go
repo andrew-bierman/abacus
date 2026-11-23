@@ -1,10 +1,8 @@
-// Package graph is the opt-in in-process graph-insights engine. It owns the issue model abacus
-// feeds to an analyzer, reads issues from the tracker's JSON export, and returns the same
-// core.InsightsReport the bv subprocess adapter (internal/bv) fills, so the two are
-// interchangeable behind core.InsightsProvider. Core imports nothing from here.
+// Package graph is the in-process graph-insights engine, the only one abacus has. It owns the
+// issue model abacus feeds to an analyzer, reads issues from the tracker's JSON export, and
+// returns the core.InsightsReport behind core.InsightsProvider. Core imports nothing from here.
 //
-// The only file that imports bv's analysis package is bvanalyzer.go; removing bv later is that
-// one file plus the NewBVAnalyzer call in internal/app.
+// The only file that imports bv's analysis package is bvanalyzer.go.
 package graph
 
 import (
@@ -87,6 +85,8 @@ type Issue struct {
 	// DependsOn, for sources that record the link on the blocker: "a blocks b" means b depends
 	// on a, and the analyzer sees one and the same edge either way.
 	Blocks []string
+	// Labels are the issue's labels; bv's triage reads them.
+	Labels []string
 }
 
 // Edges returns every dependency edge in issues as (dependent, dependsOn, type), merging the

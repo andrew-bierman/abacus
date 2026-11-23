@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Put abacus's own copies of the bundled tools (bd, bv, lambe, beads-lease) next to a locally built
+# Put abacus's own copies of the bundled tools (bd, lambe, beads-lease) next to a locally built
 # binary, so `go build -o bin/abacus ./cmd/abacus` behaves like a release archive.
 #
 #   scripts/dev-bundle.sh [--platform linux-amd64] [--out DIR] [--check]
@@ -10,7 +10,7 @@
 # beside them. The default output is bin/bundled, which abacus finds next to bin/abacus.
 #
 # Layout of DIR:
-#   {bd,bv,lambe,beads-lease}  the executables
+#   {bd,lambe,beads-lease}     the executables
 #   third_party/<tool>/LICENSE, THIRD_PARTY_NOTICES.md
 #   .pins/<tool>               what was installed: platform, asset sha256, executable sha256
 #

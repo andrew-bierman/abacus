@@ -80,7 +80,7 @@ type tasksSection struct {
 	changedNote string          // on the confirm screen: the issue changed, or could not be checked
 	tasksBusy   bool            // a refresh is in flight: r is ignored
 	insBusy     bool
-	wantIns     bool // insights are read after the next tasks read: an empty tracker skips bv
+	wantIns     bool // insights are read after the next tasks read: an empty tracker skips the analysis
 
 	ws *wsLayer // the optional workspace layer; nil without one
 
@@ -193,7 +193,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s.err == nil {
 			wasEmpty := s.insights != nil && s.insights.Empty
 			switch {
-			case s.report.Counts.Total == 0: // nothing to analyze: not a failure, and bv is not run
+			case s.report.Counts.Total == 0: // nothing to analyze: not a failure, and the analysis is not run
 				e := core.EmptyInsights()
 				s.insights, s.wantIns = &e, false
 			case s.wantIns || wasEmpty: // first read, a refresh, or the first task just appeared

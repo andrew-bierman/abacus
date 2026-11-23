@@ -44,7 +44,7 @@ The headline changes, in plain words:
   degraded insights header and a Doctor warning, shows the export's age otherwise, never reads an
   export above the tracker directory or through a symlink that leaves it, reports an export over
   64 MiB as `export larger than 64 MiB`, and switches off bv's `BV_DEBUG` stderr logger.
-- An opt-in in-process graph engine for the Tasks insights: set `ABACUS_GRAPH_ENGINE=library` and
+- An in-process graph engine for the Tasks insights (opt-in when added, now the only engine: see Changed): set `ABACUS_GRAPH_ENGINE=library` and
   abacus runs bv's analysis package inside its own process (new `internal/graph`) over the
   tracker's `.beads/issues.jsonl` export, with no `bv` binary and no subprocess. The default is
   unchanged (the bv subprocess), `--demo` never uses it, and an unknown value keeps the default
@@ -52,16 +52,15 @@ The headline changes, in plain words:
   so the Tasks tab and JSON output do not change. How the two differ is in
   `docs/tool-contract.md` ("Graph engine"). The assessment is marked "prototype built".
 - `scripts/dev-bundle.sh` (`make bundle`, `make dev`): a locally built binary gets abacus's own
-  pinned, sha256-verified copies of bd, bv, lambe and beads-lease in `bin/bundled/`, so Doctor shows
+  pinned, sha256-verified copies of bd, lambe and beads-lease in `bin/bundled/`, so Doctor shows
   every tool as `bundled` and tabs are no longer "not connected" on a dev machine. It fails closed
   on any hash mismatch, builds in a temp directory and moves it into place, is idempotent and has a
   `--check` mode. `package-release.sh` now also verifies every manifest tool landed in `bundled/`,
   and a test fails when a tool in `bundled-tools.json` lacks an asset for a release platform.
-- `abacus doctor` and `abacus version` report "Bundled tools: 4 of 4 verified" (or what is wrong);
+- `abacus doctor` and `abacus version` report "Bundled tools: 3 of 3 verified" (or what is wrong);
   JSON gains `bundled` (version) and `overview.bundled` (doctor) and tool lines gain `bundled_tool`
   and `optional`, all additive (schema_version stays 1). Doctor's header says `Ready` only when bd,
-  lambe and beads-lease are usable; bv (graph insights) is optional: it still counts in "Bundled
-  tools: N of 4" and is listed as an optional thing to set up, but never blocks `Ready`.
+  lambe and beads-lease are usable.
 - `scripts/dev-bundle.sh --out DIR` refuses a DIR that is not empty and does not look like its own
   install (it replaces the whole directory), re-checks each kept tool's license and file modes (and
   drops tools the manifest no longer lists), and manifest tool names must match `^[a-z0-9-]+$`.
@@ -70,6 +69,24 @@ The headline changes, in plain words:
 
 ### Changed
 
+- Graph insights are now computed in-process, always. The bv binary is no longer bundled or
+  required: the `bv` subprocess provider (`internal/bv`), `ABACUS_BV_BIN`, `bv` in
+  `bundled-tools.json`, in the sidecar lookup, in Doctor's tool list and in "Bundled tools" (now
+  `N of 3`) are gone, and so is `ABACUS_GRAPH_ENGINE` with its Doctor line (the in-process engine
+  from "Added" below is no longer opt-in). bv's analysis package is linked, so the archive's
+  `THIRD_PARTY_NOTICES.md` lists bv v0.27.0 as a linked library and `third_party/bv/LICENSE`
+  still ships verbatim, now copied from the pinned Go module and checked against a sha256 pin in
+  `bundled-tools.json` (`linked_licenses`; the build fails on a mismatch or if the linked version
+  is not the pinned one; `update-bundled-tools.sh --license bv` re-pins). The owner has reviewed
+  and accepts that license.
+- The archive is smaller because it no longer carries the bv binary (bytes, 0.0.0 build before to
+  after): darwin-amd64 82,277,755 to 66,749,912 (-15.5 MB), darwin-arm64 75,243,652 to 60,629,053
+  (-14.6 MB), linux-amd64 80,695,147 to 65,322,147 (-15.4 MB), linux-arm64 74,049,082 to
+  59,936,655 (-14.1 MB). The abacus binary itself already linked bv's analysis and is 30 to 65 KB
+  smaller.
+- A tracker without `.beads/issues.jsonl` (bd's default) is read for insights through
+  `bd --readonly export`, one more fixed read-only argv on the bd adapter's allowlist; an export
+  file still wins when there is one.
 - A bundled tool abacus cannot use is never "missing" or "install X" to the user. In a release the
   text says abacus's own copy is damaged or was moved, gives the refusal reason when a copy was
   refused, and says to re-extract the archive and keep the folder together; in a dev build

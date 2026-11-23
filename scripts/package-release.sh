@@ -4,8 +4,10 @@
 #   scripts/package-release.sh VERSION [--platforms "darwin-arm64 linux-amd64"] [--out DIR]
 #
 # Each archive is laid out as
-#   abacus_VERSION_OS_ARCH/{abacus, bundled/{bd,bv,lambe,beads-lease}, third_party/<tool>/LICENSE,
-#                           THIRD_PARTY_NOTICES.md, LICENSE, README.md}
+#   abacus_VERSION_OS_ARCH/{abacus, bundled/{bd,lambe,beads-lease}, third_party/<tool>/LICENSE,
+#                           third_party/bv/LICENSE, THIRD_PARTY_NOTICES.md, LICENSE, README.md}
+# bv is linked into the abacus binary, not bundled: its license ships verbatim from the pinned Go
+# module (manifest "linked_licenses"; sha256 pinned, the build fails closed on any mismatch).
 # Every tool comes from bundled-tools.json (fields are documented in scripts/lib/bundle.sh):
 # downloaded with gh, its sha256 checked against the pin (the build fails closed on any
 # mismatch), and only the one executable extracted. Archives are built in a work directory and
@@ -50,6 +52,11 @@ mkdir "$work/out"
 tools=()
 while IFS= read -r t; do tools+=("$t"); done < <(jq -r '.tools[].name' "$manifest")
 check_tool_names "${tools[@]}"
+linked=()
+while IFS= read -r t; do linked+=("$t"); done < <(jq -r '(.linked_licenses // [])[].name' "$manifest")
+[ "${#linked[@]}" = 0 ] || check_tool_names "${linked[@]}"
+# Modules whose license must ship verbatim when linked: a manifest without them fails the build.
+must_ship=(github.com/Dicklesworthstone/beads_viewer)
 
 for p in $platforms; do
   os="${p%-*}"; arch="${p#*-}"
@@ -65,12 +72,24 @@ for p in $platforms; do
       -ldflags "-s -w -X main.version=$version" -o "$stage/abacus" ./cmd/abacus
   fi
 
+  mods="$(go_linked_modules "$root" "$os" "$arch")" \
+    || die "cannot list the Go modules linked into abacus (run go mod download first)"
+  for m in "${must_ship[@]}"; do
+    printf '%s\n' "$mods" | awk -F'\t' -v m="$m" '$1==m{f=1} END{exit !f}' || continue
+    [ "$(jq -r --arg m "$m" '[(.linked_licenses // [])[] | select(.module==$m)] | length' "$manifest")" != 0 ] \
+      || die "$m is linked into abacus but the manifest has no linked_licenses entry for it"
+  done
+
   notices="$stage/THIRD_PARTY_NOTICES.md"
   notices_header >"$notices"
   for tool in "${tools[@]}"; do
     asset_path="$(fetch "$tool" "$p")"
     install_tool "$stage/bundled" "$stage/third_party" "$tool" "$p" "$asset_path"
     notices_entry "$tool" "$p" "$asset_path" >>"$notices"
+  done
+  for lname in ${linked[@]+"${linked[@]}"}; do
+    install_linked_license "$stage/third_party" "$lname" "$mods"
+    linked_notices_entry "$lname" >>"$notices"
   done
   notices_footer >>"$notices"
   # Every manifest tool must have landed as a non-empty executable; a release never ships a gap.

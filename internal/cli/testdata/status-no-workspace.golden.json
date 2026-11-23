@@ -48,7 +48,7 @@
         "domain": "tasks",
         "title": "Insights",
         "state": "not-connected",
-        "how_to_connect": "Graph insights need bv. abacus's own copy of bv is damaged or was moved. Re-extract the download and keep the folder together."
+        "how_to_connect": "Graph insights are computed inside abacus from the tracker. abacus's own copy of bd is damaged or was moved. Re-extract the download and keep the folder together."
       }
     },
     "leases": {

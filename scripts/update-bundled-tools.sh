@@ -3,13 +3,15 @@
 #
 #   scripts/update-bundled-tools.sh TOOL VERSION [--trust-first-download]
 #   scripts/update-bundled-tools.sh --all            re-pin every tool at its current version
+#   scripts/update-bundled-tools.sh --license NAME   re-pin a linked_licenses entry: the sha256 of
+#                                                    the license in the module cache at the entry's version
 #
 # For each platform it reads the sha256 from the tool's own upstream checksum file, downloads
 # the asset with gh (your gh login, so private repos work), and fails unless the download matches.
 # If upstream publishes no checksum for an asset it stops; --trust-first-download records the
 # hash of that one download instead (say so in the PR). It also pins the sha256 of each tool's
 # license. The manifest is rewritten atomically (temp file in the same directory, then mv).
-# It never publishes or tags anything. Fields are documented in scripts/lib/bundle.sh.
+# (--all also re-pins the linked licenses.) It never publishes or tags anything. Fields are documented in scripts/lib/bundle.sh.
 #
 # Environment: ABACUS_BUNDLE_CACHE (downloads) and ABACUS_BUNDLE_MANIFEST (manifest path).
 set -euo pipefail
@@ -28,14 +30,16 @@ tmps=()
 cleanup() { [ "${#tmps[@]}" = 0 ] || rm -rf "${tmps[@]}"; }
 trap cleanup EXIT
 
-trust=0; all=0; args=()
-for a in "$@"; do
-  case "$a" in
+trust=0; all=0; args=(); lic_name=""
+while [ $# -gt 0 ]; do
+  case "$1" in
     --trust-first-download) trust=1 ;;
     --all) all=1 ;;
-    -*) die "unknown flag $a" ;;
-    *) args+=("$a") ;;
+    --license) lic_name="${2:?--license needs a linked_licenses name}"; shift ;;
+    -*) die "unknown flag $1" ;;
+    *) args+=("$1") ;;
   esac
+  shift
 done
 
 pin_tool() {
@@ -85,10 +89,29 @@ pin_tool() {
   echo "pinned $tool $version"
 }
 
-if [ "$all" = 1 ]; then
+# pin_linked NAME: write the license sha256 of a linked module from the module cache. The version
+# is hand-edited (it must equal the one in go.mod), so this never changes it.
+pin_linked() {
+  local name="$1" src lsha tmp
+  need go
+  jq -e --arg t "$name" '(.linked_licenses // [])[] | select(.name==$t)' "$manifest" >/dev/null || die "unknown linked license $name"
+  src="$(module_license_file "$(linked_field "$name" .module)" "$(linked_field "$name" .version)" "$(linked_field "$name" .license_path)")"
+  [ -s "$src" ] || die "$name: empty license"
+  lsha="$(sha "$src")"
+  tmp="$(mktemp "$manifest.XXXXXX")"; tmps+=("$tmp")
+  jq --arg t "$name" --arg l "$lsha" '(.linked_licenses[] | select(.name==$t)) |= (.license_sha256=$l)' "$manifest" >"$tmp"
+  mv "$tmp" "$manifest"
+  echo "pinned license of $name ($lsha)"
+}
+
+if [ -n "$lic_name" ]; then
+  [ "${#args[@]}" = 0 ] && [ "$all" = 0 ] || die "--license takes only a name"
+  pin_linked "$lic_name"
+elif [ "$all" = 1 ]; then
   [ "${#args[@]}" = 0 ] || die "--all takes no arguments"
   while IFS=$'\t' read -r t v; do pin_tool "$t" "$v"; done < <(jq -r '.tools[] | [.name,.version] | @tsv' "$manifest")
+  while IFS= read -r t; do pin_linked "$t"; done < <(jq -r '(.linked_licenses // [])[].name' "$manifest")
 else
-  [ "${#args[@]}" = 2 ] || die "usage: $0 TOOL VERSION [--trust-first-download] | --all"
+  [ "${#args[@]}" = 2 ] || die "usage: $0 TOOL VERSION [--trust-first-download] | --all | --license NAME"
   pin_tool "${args[0]}" "${args[1]#v}"
 fi

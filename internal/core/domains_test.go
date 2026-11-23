@@ -122,7 +122,7 @@ func (m insMod) Insights(context.Context) (core.InsightsReport, error) { return 
 func TestInsightsNotConnectedNamesHowToInstallAndDoesNotHideTheDomain(t *testing.T) {
 	d := core.ReadDomains(context.Background(), nil)
 	for _, in := range []*core.InsightsReport{d.Tasks.Insights} {
-		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "abacus's own copy of bv") || strings.Contains(in.HowToConnect, "brew install") {
+		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "abacus's own copy of bd") || strings.Contains(in.HowToConnect, "brew install") {
 			t.Fatalf("%+v", in)
 		}
 	}
@@ -174,7 +174,7 @@ func (m *countMod) Insights(context.Context) (core.InsightsReport, error) {
 func TestReadDomainReadsOnlyThatDomainsProvider(t *testing.T) {
 	cases := map[core.DomainID][5]int{ // tasks, leases, queues, board, insights
 		core.DomainTasks:  {1, 0, 0, 0, 1},
-		core.DomainBoard:  {0, 0, 0, 1, 0}, // Board is not a graph: bv is not run for it
+		core.DomainBoard:  {0, 0, 0, 1, 0}, // Board is not a graph: the analysis is not run for it
 		core.DomainLeases: {0, 1, 0, 0, 0},
 		core.DomainQueues: {0, 0, 1, 0, 0},
 	}
@@ -314,7 +314,7 @@ func (b *boomInsights) Insights(context.Context) (core.InsightsReport, error) {
 }
 
 func TestAnEmptyTrackerReadsAsNoTasksYetNotAsAFailure(t *testing.T) {
-	bi := &boomInsights{Fake: &modtest.Fake{IDStr: "bv", Det: core.Detection{State: core.Ready}}}
+	bi := &boomInsights{Fake: &modtest.Fake{IDStr: "graph", Det: core.Detection{State: core.Ready}}}
 	entries := []core.Entry{
 		{Module: emptyTracker{&modtest.Fake{IDStr: "bd"}}, Detection: core.Detection{State: core.Ready}},
 		{Module: bi, Detection: core.Detection{State: core.Ready}},
@@ -327,7 +327,7 @@ func TestAnEmptyTrackerReadsAsNoTasksYetNotAsAFailure(t *testing.T) {
 }
 
 func TestAFailedInsightsReadOnARealTrackerIsPlainAndKeepsTheReasonOut(t *testing.T) {
-	bi := &boomInsights{Fake: &modtest.Fake{IDStr: "bv"}}
+	bi := &boomInsights{Fake: &modtest.Fake{IDStr: "graph"}}
 	in := core.ReadInsights(context.Background(), bi, "")
 	if in.State != core.Degraded || strings.Contains(in.Reason, "exited") || !strings.Contains(in.Reason, "Doctor") || in.HowToConnect != "" {
 		t.Fatalf("%+v", in)

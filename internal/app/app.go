@@ -4,6 +4,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/andrew-bierman/abacus/internal/beadslease"
 	"github.com/andrew-bierman/abacus/internal/board"
 	"github.com/andrew-bierman/abacus/internal/brand"
-	"github.com/andrew-bierman/abacus/internal/bv"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/demo"
@@ -89,6 +89,10 @@ func Build(o cli.Options, e Env) *core.Registry {
 			lambeCfg = cfg.LambeConfig
 		}
 	}
+	bdMod := bd.New(bd.Options{
+		Bin: e.Getenv("ABACUS_BD_BIN"), Ref: ref, InitDir: choice.Offer, ConfigMissing: choice.Missing,
+		OnInit: saveTracker(e.Config),
+	})
 	return core.NewRegistry(
 		lambe.New(lambe.Options{
 			Bin:        e.Getenv("ABACUS_LAMBE_BIN"),
@@ -100,11 +104,8 @@ func Build(o cli.Options, e Env) *core.Registry {
 			Bin:   e.Getenv("ABACUS_BEADSLEASE_BIN"),
 			Actor: func() string { c, _ := e.Config.Load(); return c.Actor },
 		}),
-		bd.New(bd.Options{
-			Bin: e.Getenv("ABACUS_BD_BIN"), Ref: ref, InitDir: choice.Offer, ConfigMissing: choice.Missing,
-			OnInit: saveTracker(e.Config),
-		}),
-		insights(e, ref),
+		bdMod,
+		insights(ref, bdMod.Export),
 		board.New(boardOptions(e, cfg)),
 		// Rex is optional: ABACUS_REX_BIN overrides the lookup, and an absent Rex stays out of the
 		// tool list and Doctor. In --demo the demo Leases provider supplies the workspace instead.
@@ -113,19 +114,14 @@ func Build(o cli.Options, e Env) *core.Registry {
 		rex.New(rex.Options{Bin: e.Getenv("ABACUS_REX_BIN"), Getenv: e.Getenv,
 			Hosts: rex.ParseHosts(e.Getenv("ABACUS_REX_HOSTS")), PassEnv: rex.ParsePassEnv(e.Getenv("ABACUS_REX_PASS_ENV"))}),
 		core.NewConfigCheck(e.Config),
-		graph.NewEngineCheck(e.Getenv(graph.EngineEnv)),
 	)
 }
 
-// insights is the Tasks graph-insights provider. By default it is the bv subprocess; with
-// ABACUS_GRAPH_ENGINE=library it is the in-process engine over the same tracker the bd adapter
-// reads. Any other value keeps the subprocess (Doctor reports an unknown one); --demo never
-// gets here.
-func insights(e Env, ref *core.TrackerRef) core.Module {
-	if engine, _ := graph.ParseEngine(e.Getenv(graph.EngineEnv)); engine == graph.Library {
-		return graph.NewModule(graph.Options{Source: graph.FileSource{Ref: ref}, Analyzer: graph.NewBVAnalyzer()})
-	}
-	return bv.New(bv.Options{Bin: e.Getenv("ABACUS_BV_BIN"), Ref: ref})
+// insights is the Tasks graph-insights provider: bv's analysis package run in this process over
+// the same tracker the bd adapter reads (its .beads/issues.jsonl, or bd's read-only export when
+// the tracker keeps none). It is the only engine; --demo never gets here.
+func insights(ref *core.TrackerRef, export func(context.Context) ([]byte, error)) core.Module {
+	return graph.NewModule(graph.Options{Source: graph.FileSource{Ref: ref, Fallback: export}, Analyzer: graph.NewBVAnalyzer()})
 }
 
 func boardOptions(e Env, cfg core.Config) board.Options {

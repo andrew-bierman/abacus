@@ -30,6 +30,9 @@ var (
 	readVersion = []string{"--readonly", "version", "--json"}
 	readStatus  = []string{"--readonly", "status", "--json", "--no-activity"}
 	readList    = []string{"--readonly", "list", "--json", "--brief", "--all", "--sort", "updated", "--flat", "-n", "8"}
+	// readExport writes the issues (dependencies included) to stdout only: the graph engine's
+	// source when the tracker keeps no .beads/issues.jsonl. No -o, so it never writes a file.
+	readExport = []string{"--readonly", "export"}
 )
 
 func readAllowed(a []string, dir string) bool {
@@ -40,7 +43,7 @@ func readAllowed(a []string, dir string) bool {
 	if len(a) == 4 && a[0] == "--readonly" && a[1] == "show" && a[3] == "--json" && core.TaskIDRE.MatchString(a[2]) {
 		return true
 	}
-	return slices.Equal(a, readVersion) || slices.Equal(a, readStatus) || slices.Equal(a, readList)
+	return slices.Equal(a, readVersion) || slices.Equal(a, readStatus) || slices.Equal(a, readList) || slices.Equal(a, readExport)
 }
 
 var prioRE = regexp.MustCompile(`^--priority=[0-4]$`)
