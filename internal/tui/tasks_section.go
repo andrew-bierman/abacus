@@ -136,6 +136,7 @@ func newTasksSection(p core.Providers, cfg *config) *tasksSection {
 	if p.Writer != nil {
 		s.applier = core.NewApplier(p.Writer, cfg.audit)
 	}
+	s.list.tree.store = cfg.treeState
 	s.tick = func() tea.Cmd { return tea.Tick(tasksPollEvery, func(time.Time) tea.Msg { return tasksTickMsg{} }) }
 	return s
 }

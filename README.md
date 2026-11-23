@@ -325,19 +325,19 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                        14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
-│   id    title                                       st P  dep  type  age who │
-│ ▸ ac-12 wire the lease heartbeat                    ◐  P0 →1   bug   9d  ada │
-│   ac-01 Fleet workspace 1/5                         ○  P1      epic  30d mei │
-│   ac-15 lease holder column                         ○  P1 →1   feat  6d  mei │
-│   ac-20 split graph source from export              ◐  P1 ⊘1→1 task  4d  ada │
-│   ac-09 queue attention digest                      ○  P2 ⊘1   feat  12d -   │
-│   ac-16 stale lease warning                         ○  P2 ⊘1   task  5d  -   │
-│   ac-21 export reader                               ○  P2 ⊘1→1 task  4d  -   │
-│   ac-25 doctor: stale export warning                ●  P2      bug   3d  ada │
-│   ac-27 board thread digest                         ●  P3      feat  2d  -   │
-│   ac-30 saved filters                               ○  P3      feat  2d  -   │
-│   ac-33 help overlay per view                       ◐  P3      task  1d  mei │
-│   ac-36 verify tool flags against help              ◇  P3      chore 40d mei │
+│   id    title                                  done st P  dep  type  age who │
+│   ac-01 ▾ Fleet workspace 1/5                  ▰▱▱▱ ○  P1      epic  30d mei │
+│ ▸ ac-12 ├── wire the lease heartbeat                ◐  P0 →1   bug   9d  ada │
+│   ac-15 ├── lease holder column                     ○  P1 →1   feat  6d  mei │
+│   ac-09 ├── queue attention digest                  ○  P2 ⊘1   feat  12d -   │
+│   ac-16 └── stale lease warning                     ○  P2 ⊘1   task  5d  -   │
+│   ac-20   split graph source from export            ◐  P1 ⊘1→1 task  4d  ada │
+│   ac-21   export reader                             ○  P2 ⊘1→1 task  4d  -   │
+│   ac-25   doctor: stale export warning              ●  P2      bug   3d  ada │
+│   ac-27   board thread digest                       ●  P3      feat  2d  -   │
+│   ac-30   saved filters                             ○  P3      feat  2d  -   │
+│   ac-33   help overlay per view                     ◐  P3      task  1d  mei │
+│   ac-36   verify tool flags against help            ◇  P3      chore 40d mei │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -345,7 +345,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                                                              │
+│ ▾ open ▹ folded                                                              │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯

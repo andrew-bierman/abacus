@@ -245,3 +245,21 @@ func (v *View) Tree(o TreeOptions) core.TaskTreeReport {
 	rep.Shown = len(rep.Rows)
 	return rep
 }
+
+// Progress is how many of width cells of a progress bar are filled for done of total: rounded,
+// but never full while something is open and never empty once something is done, so a bar
+// does not claim more or less than the count says. Zero total fills nothing.
+func Progress(done, total, width int) int {
+	if total <= 0 || width <= 0 {
+		return 0
+	}
+	done = max(0, min(done, total))
+	n := (done*width + total/2) / total
+	if done > 0 && n == 0 {
+		n = 1
+	}
+	if done < total && n >= width {
+		n = width - 1
+	}
+	return min(max(n, 0), width)
+}

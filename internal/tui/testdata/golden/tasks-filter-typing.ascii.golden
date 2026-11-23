@@ -4,8 +4,8 @@
 [open] /pri▏  2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
-│ ▸ ac-25 doctor: stale exp… ●  P2     │
-│   ac-33 help overlay per … ◐  P3     │
+│ ▸ ac-25   doctor: stale e… ●  P2     │
+│   ac-33   help overlay pe… ◐  P3     │
 │                                      │
 │                                      │
 │                                      │
@@ -18,8 +18,8 @@ enter keep · esc clear · q quit · ? hel…
 [open] /pri▏  2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
-│ ▸ ac-25 doctor: stale exp… ●  P2     │
-│   ac-33 help overlay per … ◐  P3     │
+│ ▸ ac-25   doctor: stale e… ●  P2     │
+│   ac-33   help overlay pe… ◐  P3     │
 │                                      │
 │                                      │
 │                                      │
@@ -37,7 +37,7 @@ enter keep · esc clear · q quit · ? hel…
 │                                      │
 │                                      │
 │                                      │
-│                                      │
+│ ▾ open ▹ folded · folds paused       │
 │ ⊘N held by N · →N holds N · ⊘↑ held… │
 │ ○ open ◐ active ● blocked ✓ closed … │
 ╰──────────────────────────────────────╯
@@ -47,9 +47,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                        14 tasks · 3 ready
 [open] /pri▏                                          2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
-│   id    title                                         st P  dep type age who │
-│ ▸ ac-25 doctor: stale export warning                  ●  P2     bug  3d  ada │
-│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
+│   id    title                                    done st P  dep type age who │
+│ ▸ ac-25   doctor: stale export warning                ●  P2     bug  3d  ada │
+│   ac-33   help overlay per view                       ◐  P3     task 1d  mei │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -61,9 +61,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                        14 tasks · 3 ready
 [open] /pri▏                                          2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
-│   id    title                                         st P  dep type age who │
-│ ▸ ac-25 doctor: stale export warning                  ●  P2     bug  3d  ada │
-│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
+│   id    title                                    done st P  dep type age who │
+│ ▸ ac-25   doctor: stale export warning                ●  P2     bug  3d  ada │
+│   ac-33   help overlay per view                       ◐  P3     task 1d  mei │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -81,7 +81,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                                                              │
+│ ▾ open ▹ folded · folds paused                                               │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -91,9 +91,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] /pri▏                                                                                  2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-25 ─────────────────────────────────────╮
-│   id    title                                 st P  dep type age who │ │ ac-25  bug                                  │
-│ ▸ ac-25 doctor: stale export warning          ●  P2     bug  3d  ada │ │ doctor: stale export warning                │
-│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                          │
+│   id    title                            done st P  dep type age who │ │ ac-25  bug                                  │
+│ ▸ ac-25   doctor: stale export warning        ●  P2     bug  3d  ada │ │ doctor: stale export warning                │
+│   ac-33   help overlay per view               ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                          │
 │                                                                      │ │ created 3d ago · updated 1d ago             │
 │                                                                      │ │ labels  doctor                              │
 │                                                                      │ │   ↕ +8 more                                 │
@@ -105,9 +105,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] /pri▏                                                                                  2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-25 ─────────────────────────────────────╮
-│   id    title                                 st P  dep type age who │ │ ac-25  bug                                  │
-│ ▸ ac-25 doctor: stale export warning          ●  P2     bug  3d  ada │ │ doctor: stale export warning                │
-│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                          │
+│   id    title                            done st P  dep type age who │ │ ac-25  bug                                  │
+│ ▸ ac-25   doctor: stale export warning        ●  P2     bug  3d  ada │ │ doctor: stale export warning                │
+│   ac-33   help overlay per view               ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                          │
 │                                                                      │ │ created 3d ago · updated 1d ago             │
 │                                                                      │ │ labels  doctor                              │
 │                                                                      │ │                                             │
@@ -125,7 +125,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
-│                                                                      │ │                                             │
+│ ▾ open ▹ folded · folds paused                                       │ │                                             │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
@@ -136,9 +136,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                    14 tasks · 3 ready
 [open] /pri▏                      2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
-│   id    title                     st P  dep type age who │
-│ ▸ ac-25 doctor: stale export war… ●  P2     bug  3d  ada │
-│   ac-33 help overlay per view     ◐  P3     task 1d  mei │
+│   id    title                done st P  dep type age who │
+│ ▸ ac-25   doctor: stale exp…      ●  P2     bug  3d  ada │
+│   ac-33   help overlay per …      ◐  P3     task 1d  mei │
 │                                                          │
 │                                                          │
 │                                                          │
@@ -150,7 +150,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │                                                          │
 │                                                          │
-│                                                          │
+│ ▾ open ▹ folded · folds paused                           │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
@@ -161,9 +161,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                                            14 tasks · 3 ready
 [open] /pri▏                                                              2 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-25 ─────────────────────────────╮
-│   id    title                     st P  dep type age who │ │ ac-25  bug                          │
-│ ▸ ac-25 doctor: stale export war… ●  P2     bug  3d  ada │ │ doctor: stale export warning        │
-│   ac-33 help overlay per view     ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                  │
+│   id    title                done st P  dep type age who │ │ ac-25  bug                          │
+│ ▸ ac-25   doctor: stale exp…      ●  P2     bug  3d  ada │ │ doctor: stale export warning        │
+│   ac-33   help overlay per …      ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                  │
 │                                                          │ │ created 3d ago · updated 1d ago     │
 │                                                          │ │ labels  doctor                      │
 │                                                          │ │                                     │
@@ -183,7 +183,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │
-│                                                          │ │                                     │
+│ ▾ open ▹ folded · folds paused                           │ │                                     │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │                                     │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │                                     │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯

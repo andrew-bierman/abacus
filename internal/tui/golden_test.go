@@ -301,7 +301,7 @@ func scenarios() []scenario {
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
-	}, searchScenarios()...)
+	}, append(searchScenarios(), treeScenarios()...)...)
 }
 
 func render(t *testing.T, sc scenario, th Theme, w, h int) string {

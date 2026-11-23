@@ -404,3 +404,14 @@ func TestHasHierarchy(t *testing.T) {
 		t.Error("a summary without dependency data claims no hierarchy")
 	}
 }
+
+func TestProgress(t *testing.T) {
+	for _, c := range []struct{ done, total, width, want int }{
+		{0, 0, 4, 0}, {0, 5, 4, 0}, {5, 5, 4, 4}, {1, 100, 4, 1}, {99, 100, 4, 3}, {1, 2, 4, 2}, {3, 8, 4, 2}, {7, 8, 4, 3},
+		{2, 3, 4, 3}, {9, 5, 4, 4}, {-1, 5, 4, 0}, {1, 2, 0, 0}, {1, 2, 1, 0},
+	} {
+		if got := Progress(c.done, c.total, c.width); got != c.want {
+			t.Errorf("Progress(%d,%d,%d) = %d, want %d", c.done, c.total, c.width, got, c.want)
+		}
+	}
+}
