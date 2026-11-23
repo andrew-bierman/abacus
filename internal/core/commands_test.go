@@ -38,6 +38,8 @@ func TestParseCommandTable(t *testing.T) {
 		{"?", Action{Kind: ActHelp}},
 		{"q", Action{Kind: ActQuit}},
 		{"quit", Action{Kind: ActQuit}},
+		{"exit", Action{Kind: ActQuit}},
+		{"context", Action{Kind: ActContext}},
 		{"tasks\x07", Action{Kind: ActGoTab, Tab: "Tasks"}}, // control characters are dropped, not run
 	}
 	for _, c := range cases {
@@ -110,6 +112,7 @@ func TestClosestThreshold(t *testing.T) {
 	for _, c := range []struct {
 		word, want string
 	}{
+		{"lq", "list"},                       // a tie (ls and q are one edit away): the table's first command wins
 		{"bord", "board"}, {"tsak", "tasks"}, // one swap from the alias "task"
 		{"leas", "leases"}, {"x", ""}, {"xy", ""}, {"abc", ""}, {"grap", "graph"}, {"dctor", "doctor"},
 		{"treee", "tree"}, {"helps", "help"}, {"queus", "queues"},
@@ -149,6 +152,12 @@ func TestCompleteCommandTable(t *testing.T) {
 		{"filter label:ui st", []string{"filter label:ui status:"}},
 		{"filter ar", nil}, // "parent" contains "ar" but does not start with it
 		{"ctx ", nil},
+		{"filter is:blocked,re", []string{"filter is:blocked,ready"}},
+		{"filter has:comments,la", []string{"filter has:comments,labels"}},
+		{"search is:b,r", []string{"search is:b,ready"}},
+		{"filter is:blocked,", []string{"filter is:blocked,ready", "filter is:blocked,stale"}},
+		{"filter is:x,s", []string{"filter is:x,stale"}},
+		{"filter is:blocked,b", nil}, // already chosen
 	}
 	for _, c := range cases {
 		got := CompleteCommand(c.in)

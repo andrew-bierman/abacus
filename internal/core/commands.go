@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -27,8 +28,9 @@ const (
 	ActQuit    ActionKind = "quit"
 )
 
-// navigationKinds is the closed set of kinds a command may have; none changes anything outside the
-// screen. A new kind is added here on purpose, with its test, or not at all.
+// navigationKinds is the closed set of kinds a command may have; none changes the tracker, the board,
+// a lease or a queue, and none runs a tool (the front-end may keep its own UI layout state, such as
+// which Tasks view or fold state was last shown). A new kind is added here on purpose, with its test, or not at all.
 var navigationKinds = map[ActionKind]bool{
 	ActGoTab: true, ActGoView: true, ActSearch: true, ActFilter: true, ActContext: true, ActHelp: true, ActQuit: true,
 }
@@ -329,9 +331,14 @@ func CompleteCommand(input string) []string {
 	lead := word + " " + head + prefix
 	var out []string
 	if name, val, ok := strings.Cut(tok, ":"); ok {
+		// a member field takes a comma list (is:blocked,ready): complete the last segment, skipping
+		// the values already chosen
+		cut := strings.LastIndex(val, ",") + 1
+		done, last := val[:cut], strings.ToLower(val[cut:])
+		chosen := strings.Split(strings.TrimSuffix(done, ","), ",")
 		for _, v := range query.Values(name) {
-			if strings.HasPrefix(v, strings.ToLower(val)) {
-				out = append(out, lead+name+":"+v)
+			if strings.HasPrefix(v, last) && !slices.Contains(chosen, v) {
+				out = append(out, lead+name+":"+done+v)
 			}
 		}
 		return out
