@@ -72,7 +72,7 @@ terminal:
 
 - `split` divides a width (or height) between fixed, minimum and weighted slots, like a ratatui
   layout, and never overshoots.
-- `fitColumns` and `formatRow` build an aligned table: columns drop in priority order as the
+- `table` (`fit`, `fitRows` and `row`) builds an aligned table: columns drop in priority order as the
   width shrinks (the last one left is squeezed, not dropped) and the slack goes to the
   flexible column.
 - `panel` draws a rounded, titled frame. The focused panel carries a `▸` before its title as
@@ -86,7 +86,20 @@ quit) keep working; keys for the hidden section are dropped. Each input path nee
 capturing and non-capturing, since a guard on one path alone survives mutation of the other
 (`TestTooSmallTerminalCannotApplyAHiddenConfirm`, `TestTooSmallTerminalGivesAHiddenListNoKeys`).
 
-The help overlay is the first user of them: a focused panel with aligned key columns, and a
+Leases, Queues and Doctor are built from them, with two more pieces:
+
+- `duo` lays out a list panel and a detail panel. From `bpWide` (100) columns the list takes
+  three fifths and the detail the rest, side by side; below that only the list is drawn, and
+  `enter` drills into the detail and `esc` comes back. The list panel is the one focused panel;
+  the detail is read-only. Panels are as tall as their content plus a little air (at least ten
+  rows), never taller than the body, so a four-row list in a tall terminal is a compact box.
+- `table.fitRows` sizes columns to the widest cell, so short content takes little room and a
+  column is dropped only when it truly does not fit. Ids and states keep their whole width, up to 24 cells for a lease id and 12 for a lease state (longer text is cut with an ellipsis and is whole in the detail panel); the
+  low-priority columns (holder and expiry, phase and machine, workflow and last event) go first.
+
+Not-connected and unavailable states stay plain unframed lines with their "how to connect" text.
+
+The help overlay was the first user of the helpers: a focused panel with aligned key columns, and a
 plain indented list when the frame would cost rows the text needs.
 
 Header and footer are always shown (down to a height of 2). The body is cut to the remaining

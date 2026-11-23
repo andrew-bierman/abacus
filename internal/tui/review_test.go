@@ -171,10 +171,12 @@ func TestTypedLeasesDriveBadgesNotTextParsing(t *testing.T) {
 	var m tea.Model = s
 	m, _ = m.Update(leasesMsg{read: r})
 	v := m.View()
-	for _, want := range []string{"(stale) r:1 (last holder bob)", "(held) r:2 by alice (expires 5m)", "(from-a-newer-provider) r:3"} {
-		if !strings.Contains(v, want) {
-			t.Errorf("missing %q:\n%s", want, v)
-		}
+	rowWith(t, v, "(stale)", "r:1", "bob")
+	rowWith(t, v, "(held)", "r:2", "alice", "5m")
+	rowWith(t, v, "(from-", "r:3") // an unknown state still gets a row; the table may cut its text
+	m = press(press(press(m, "down"), "down"), "enter")
+	if !strings.Contains(m.View(), "(from-a-newer-provider)") {
+		t.Errorf("the whole unknown state must be readable in the detail:\n%s", m.View())
 	}
 	th := NewTheme(rendererFor(termenv.TrueColor, true))
 	for tone, kind := range map[core.Tone]Kind{core.ToneOK: KindOK, core.ToneWarn: KindWarn, core.ToneFail: KindFail, core.ToneInfo: KindAccent, core.ToneMuted: KindMuted} {
@@ -249,7 +251,10 @@ func TestFilterMatchesEachHaystackField(t *testing.T) {
 		out := m.View()
 		var left []string
 		for _, l := range strings.Split(out, "\n") {
-			left = append(left, strings.Split(l, "│")[0])
+			// The list is the first framed panel: the text between its left border and the next.
+			if parts := strings.Split(l, "│"); len(parts) > 1 {
+				left = append(left, parts[1])
+			}
 		}
 		list := strings.Join(left, "\n")
 		for _, id := range []string{"I-1", "I-2", "I-3", "I-4"} {
@@ -412,10 +417,11 @@ func TestHostileUnicodeInLambeFields(t *testing.T) {
 func TestPaneBreakpointIsExactlyOneHundred(t *testing.T) {
 	th := asciiTheme()
 	list, detail := []string{"LIST"}, []string{"DETAIL"}
-	if out := strings.Join(panes(th, 99, 5, list, detail, false), "\n"); strings.Contains(out, "DETAIL") {
-		t.Fatalf("99 columns must be stacked: %q", out)
+	if g := duoLayout(99, 9); g.wide || strings.Contains(strings.Join(g.draw(th, 9, "L", list, "D", detail, false), "\n"), "DETAIL") {
+		t.Fatal("99 columns must be stacked")
 	}
-	if out := strings.Join(panes(th, 100, 5, list, detail, false), "\n"); !strings.Contains(out, "DETAIL") || !strings.Contains(out, "LIST") {
+	g := duoLayout(100, 9)
+	if out := strings.Join(g.draw(th, 9, "L", list, "D", detail, false), "\n"); !g.wide || !strings.Contains(out, "DETAIL") || !strings.Contains(out, "LIST") {
 		t.Fatalf("100 columns must be side by side: %q", out)
 	}
 }

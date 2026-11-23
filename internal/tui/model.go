@@ -341,14 +341,14 @@ func (m *Model) headerLines(w int) []string {
 	return out
 }
 
-var helpCols = []column{{min: 13, max: 13, prio: 0}, {min: 1, prio: 1}}
+var helpKeys = table{cols: []column{{min: 13, max: 13, prio: 0}, {min: 1, prio: 1}}, gap: 1}
 
 // overlayLines is the help overlay for a body w wide and h tall (h <= 0: unknown). It is a
 // focused panel when the whole text fits inside one, and a plain indented list when a frame
 // would cost rows the text needs.
 func (m *Model) overlayLines(w, h int) []string {
 	var rows []string
-	widths := fitColumns(helpCols, max(w-panelChromeW, 1), 1)
+	widths := helpKeys.fit(max(w-panelChromeW, 1))
 	for gi, g := range m.FullHelp() {
 		if gi > 0 {
 			rows = append(rows, "")
@@ -356,7 +356,7 @@ func (m *Model) overlayLines(w, h int) []string {
 		for _, b := range g {
 			if b.Enabled() {
 				hp := b.Help()
-				rows = append(rows, formatRow(helpCols, widths, []string{m.th.Key(hp.Key), hp.Desc}, 1))
+				rows = append(rows, helpKeys.row(widths, []string{m.th.Key(hp.Key), hp.Desc}))
 			}
 		}
 	}

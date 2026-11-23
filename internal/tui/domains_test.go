@@ -439,7 +439,7 @@ func TestUnknownOutcomeIsShownAsUnknownNeverNotApplied(t *testing.T) {
 func TestQueuesLabelsDemoDataAndTheTrackerSubset(t *testing.T) {
 	m := sized(load(t, asciiTheme(), nil), 100, 30)
 	m = press(m, "4")
-	if v := m.View(); !strings.Contains(v, "(demo data)") {
+	if v := m.View(); !strings.Contains(v, "· demo data") {
 		t.Fatalf("demo data must be labelled:\n%s", v)
 	}
 }
