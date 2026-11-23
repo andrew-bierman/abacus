@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -61,9 +63,85 @@ func TestTasksGraphJSONAndText(t *testing.T) {
 	if !strings.Contains(out, "blocked by gr-bac") || !strings.Contains(out, "blocks gr-67z") {
 		t.Errorf("neighborhood text:\n%s", out)
 	}
-	for _, args := range [][]string{{"tasks", "graph", "nope"}, {"tasks", "graph", "--depth", "9"}, {"tasks", "graph", "gr-ko8", "--whole"}, {"tasks", "graph", "a", "b"}} {
-		if code, _, _ := runTasks(t, graphMods(), args...); code == core.ExitOK {
-			t.Errorf("%v should fail", args)
+}
+
+// Failures say why and print nothing: an unknown id is a failure, a malformed command is usage.
+func TestTasksGraphFailures(t *testing.T) {
+	for _, c := range []struct {
+		args    []string
+		code    int
+		wantErr string
+	}{
+		{[]string{"tasks", "graph", "nope"}, core.ExitFail, `no task "nope"`},
+		{[]string{"tasks", "graph", "--depth", "9"}, core.ExitUsage, "usage: abacus tasks graph"},
+		{[]string{"tasks", "graph", "--depth", "0"}, core.ExitUsage, "usage: abacus tasks graph"},
+		{[]string{"tasks", "graph", "gr-ko8", "--whole"}, core.ExitUsage, "usage: abacus tasks graph"},
+		{[]string{"tasks", "graph", "a", "b"}, core.ExitUsage, "usage: abacus tasks graph"},
+		{[]string{"tasks", "graph", "--bogus"}, core.ExitUsage, "flag provided but not defined"},
+	} {
+		code, out, errOut := runTasks(t, graphMods(), c.args...)
+		if code != c.code || out != "" || !strings.Contains(errOut, c.wantErr) {
+			t.Errorf("%v: code %d (want %d), stdout %q, stderr %q (want %q)", c.args, code, c.code, out, errOut, c.wantErr)
 		}
+	}
+	bad := []core.Module{snapMod{Fake: &modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1"}}, err: context.DeadlineExceeded}}
+	if code, out, errOut := runTasks(t, bad, "tasks", "graph", "--whole"); code != core.ExitFail || out != "" || errOut == "" {
+		t.Errorf("a failed read: %d %q %q", code, out, errOut)
+	}
+}
+
+// The JSON is a contract like the list's: schema_version 1, the graph keys, additive only.
+func TestTasksGraphJSONContract(t *testing.T) {
+	_, near, _ := runTasks(t, graphMods(), "tasks", "graph", "gr-ko8", "--json")
+	_, whole, _ := runTasks(t, graphMods(), "tasks", "graph", "--whole", "--json")
+	checkGoldenFile(t, "tasks-graph.golden.json", near)
+	checkGoldenFile(t, "tasks-graph-whole.golden.json", whole)
+}
+
+// memMod serves an in-memory snapshot.
+type memMod struct {
+	*modtest.Fake
+	snap core.TaskSnapshot
+}
+
+func (m memMod) Snapshot(context.Context) (core.TaskSnapshot, error) { return m.snap, nil }
+
+// A focus with more dependents than the boxes hold: every outline row of the text is a whole line
+// (id, status, title), none of them blank, and the JSON rows carry the same nodes.
+func TestTasksGraphOutlineReachesPastTheBoxes(t *testing.T) {
+	is := []core.TaskIssue{{ID: "f-0", Title: "the focus", Status: "open", Priority: 2}}
+	for i := 1; i <= 7; i++ {
+		is = append(is, core.TaskIssue{ID: fmt.Sprintf("d-%d", i), Title: fmt.Sprintf("dependent %d", i), Status: "open", Priority: 2, Deps: []core.TaskDep{{DependsOn: "f-0", Type: "blocks"}}})
+	}
+	mods := []core.Module{memMod{&modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1"}}, core.TaskSnapshot{Issues: is}}}
+	_, out, _ := runTasks(t, mods, "tasks", "graph", "f-0", "--depth", "1")
+	for i := 1; i <= 7; i++ {
+		if want := fmt.Sprintf("d-%d", i); !regexp.MustCompile(`blocks\s+` + want + `\s+open\s+dependent ` + fmt.Sprint(i)).MatchString(out) {
+			t.Errorf("row for %s is missing or blank:\n%s", want, out)
+		}
+	}
+	_, js, _ := runTasks(t, mods, "tasks", "graph", "f-0", "--depth", "1", "--json")
+	var v struct {
+		Nodes   []struct{ ID string }
+		Outline []struct {
+			ID   string
+			More int
+			Node *struct{ ID, Title, Status string }
+		}
+	}
+	if err := json.Unmarshal([]byte(js), &v); err != nil {
+		t.Fatal(err)
+	}
+	rows := 0
+	for _, r := range v.Outline {
+		if r.ID != "" {
+			rows++
+			if r.Node == nil || r.Node.ID != r.ID || r.Node.Title == "" {
+				t.Errorf("outline row %s without its node", r.ID)
+			}
+		}
+	}
+	if rows != 8 || len(v.Nodes) >= 8 { // the focus and seven dependents, past the five the boxes hold
+		t.Errorf("outline rows %d, boxes %d", rows, len(v.Nodes))
 	}
 }

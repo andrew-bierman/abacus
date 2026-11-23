@@ -36,7 +36,8 @@ func runTaskGraph(rest []string, d Deps) int {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
 	defer cancel()
-	src := core.ResolveProviders(d.Build(o).Detect(ctx)).Source
+	prov := core.ResolveProviders(d.Build(o).Detect(ctx))
+	src := prov.Source
 	if src == nil {
 		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 		return core.ExitFail
@@ -50,7 +51,14 @@ func runTaskGraph(rest []string, d Deps) int {
 	if d.Now != nil {
 		now = d.Now()
 	}
-	gv := taskview.NewGraphIndex(taskview.Build(snap, now)).View(taskview.GraphOptions{Focus: id, Depth: depth, Whole: whole})
+	// the same engine marks the TUI draws, when the engine is connected and read cleanly
+	var ins *core.InsightsReport
+	if prov.Insights != nil {
+		if rep := core.ReadInsights(ctx, prov.Insights, prov.InsightsWhy); rep.State == core.Connected && !rep.Empty {
+			ins = &rep
+		}
+	}
+	gv := taskview.NewGraphIndex(taskview.Build(snap, now)).View(taskview.GraphOptions{Focus: id, Depth: depth, Whole: whole, Insights: ins})
 	if id != "" && gv.Focus == "" {
 		fmt.Fprintf(d.Err, "tasks graph: no task %q\n", core.Sanitize(id))
 		return core.ExitFail
@@ -68,6 +76,11 @@ func renderTaskGraph(w io.Writer, g core.GraphView) {
 	for _, n := range g.Nodes {
 		byID[n.ID] = n
 	}
+	for _, r := range g.Outline { // outline rows carry their nodes: the boxes' Nodes list is shorter
+		if r.Node != nil {
+			byID[r.ID] = *r.Node
+		}
+	}
 	line := func(n core.GraphNode) string {
 		f := ""
 		switch {
@@ -75,6 +88,9 @@ func renderTaskGraph(w io.Writer, g core.GraphView) {
 			f = " [cycle]"
 		case n.OnChain:
 			f = " [chain]"
+		}
+		if n.Bottleneck {
+			f += " [bottleneck]"
 		}
 		return fmt.Sprintf("%-12s %-11s %s%s", n.ID, n.Status, n.Title, f)
 	}
@@ -121,5 +137,8 @@ func renderTaskGraph(w io.Writer, g core.GraphView) {
 	}
 	for _, id := range g.SelfDeps {
 		fmt.Fprintf(w, "depends on itself: %s\n", id)
+	}
+	if g.MarksSource == "" {
+		fmt.Fprintln(w, "bottleneck marks need the graph engine: not shown here")
 	}
 }

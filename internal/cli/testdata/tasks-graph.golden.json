@@ -1,0 +1,337 @@
+{
+  "chain": [
+    "gr-bac",
+    "gr-ko8",
+    "gr-67z",
+    "gr-au4"
+  ],
+  "components": 7,
+  "cycles": [
+    [
+      "gr-syt",
+      "gr-tse",
+      "gr-vgy"
+    ]
+  ],
+  "depth": 2,
+  "domain": "tasks",
+  "edges": [
+    {
+      "from": "gr-67z",
+      "to": "gr-au4",
+      "drawn": true
+    },
+    {
+      "from": "gr-67z",
+      "to": "gr-gdm",
+      "drawn": true
+    },
+    {
+      "from": "gr-9ik",
+      "to": "gr-bac",
+      "drawn": true
+    },
+    {
+      "from": "gr-9ik",
+      "to": "gr-nqy",
+      "drawn": true
+    },
+    {
+      "from": "gr-bac",
+      "to": "gr-ko8",
+      "drawn": true
+    },
+    {
+      "from": "gr-ko8",
+      "to": "gr-1jo",
+      "drawn": true
+    },
+    {
+      "from": "gr-ko8",
+      "to": "gr-67z",
+      "drawn": true
+    },
+    {
+      "from": "gr-nqy",
+      "to": "gr-ko8",
+      "drawn": true
+    }
+  ],
+  "focus": "gr-ko8",
+  "isolated": 1,
+  "layers": [
+    {
+      "layer": -2,
+      "nodes": [
+        "gr-9ik"
+      ]
+    },
+    {
+      "layer": -1,
+      "nodes": [
+        "gr-bac",
+        "gr-nqy"
+      ]
+    },
+    {
+      "layer": 0,
+      "nodes": [
+        "gr-ko8"
+      ]
+    },
+    {
+      "layer": 1,
+      "nodes": [
+        "gr-1jo",
+        "gr-67z"
+      ]
+    },
+    {
+      "layer": 2,
+      "nodes": [
+        "gr-au4",
+        "gr-gdm"
+      ]
+    }
+  ],
+  "mode": "neighborhood",
+  "nodes": [
+    {
+      "id": "gr-9ik",
+      "title": "Snapshot reader",
+      "status": "closed",
+      "priority": 1,
+      "layer": -2,
+      "order": 0,
+      "blocks": 2
+    },
+    {
+      "id": "gr-bac",
+      "title": "Sanitize text",
+      "status": "open",
+      "priority": 2,
+      "layer": -1,
+      "order": 0,
+      "blocks": 1,
+      "ready": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-nqy",
+      "title": "Parse export",
+      "status": "in_progress",
+      "priority": 1,
+      "layer": -1,
+      "order": 1,
+      "blocks": 1
+    },
+    {
+      "id": "gr-ko8",
+      "title": "Graph layout",
+      "status": "open",
+      "priority": 1,
+      "layer": 0,
+      "order": 0,
+      "blocked_by": 2,
+      "blocks": 2,
+      "blocked": true,
+      "focus": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-1jo",
+      "title": "Graph docs",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 0,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-67z",
+      "title": "Graph view",
+      "status": "open",
+      "priority": 1,
+      "layer": 1,
+      "order": 1,
+      "blocked_by": 1,
+      "blocks": 2,
+      "blocked": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-au4",
+      "title": "日本語のとても長いタイトルがここにあります — wide runes and a very very long title to truncate properly",
+      "status": "open",
+      "priority": 2,
+      "layer": 2,
+      "order": 0,
+      "blocked_by": 1,
+      "blocked": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-gdm",
+      "title": "Hostile [31mred[0m evil",
+      "status": "open",
+      "priority": 2,
+      "layer": 2,
+      "order": 1,
+      "blocked_by": 1,
+      "blocked": true
+    }
+  ],
+  "open_blockers": 2,
+  "outline": [
+    {
+      "id": "gr-bac",
+      "side": "up",
+      "depth": 1,
+      "node": {
+        "id": "gr-bac",
+        "title": "Sanitize text",
+        "status": "open",
+        "priority": 2,
+        "layer": -1,
+        "order": 0,
+        "blocks": 1,
+        "ready": true,
+        "on_chain": true
+      }
+    },
+    {
+      "id": "gr-9ik",
+      "side": "up",
+      "depth": 2,
+      "node": {
+        "id": "gr-9ik",
+        "title": "Snapshot reader",
+        "status": "closed",
+        "priority": 1,
+        "layer": -2,
+        "order": 0,
+        "blocks": 2
+      }
+    },
+    {
+      "id": "gr-nqy",
+      "side": "up",
+      "depth": 1,
+      "node": {
+        "id": "gr-nqy",
+        "title": "Parse export",
+        "status": "in_progress",
+        "priority": 1,
+        "layer": -1,
+        "order": 0,
+        "blocks": 1
+      }
+    },
+    {
+      "id": "gr-9ik",
+      "side": "up",
+      "depth": 2,
+      "repeat": true,
+      "node": {
+        "id": "gr-9ik",
+        "title": "Snapshot reader",
+        "status": "closed",
+        "priority": 1,
+        "layer": -2,
+        "order": 0,
+        "blocks": 2
+      }
+    },
+    {
+      "id": "gr-ko8",
+      "side": "focus",
+      "depth": 0,
+      "node": {
+        "id": "gr-ko8",
+        "title": "Graph layout",
+        "status": "open",
+        "priority": 1,
+        "layer": 0,
+        "order": 0,
+        "blocked_by": 2,
+        "blocks": 2,
+        "blocked": true,
+        "focus": true,
+        "on_chain": true
+      }
+    },
+    {
+      "id": "gr-67z",
+      "side": "down",
+      "depth": 1,
+      "node": {
+        "id": "gr-67z",
+        "title": "Graph view",
+        "status": "open",
+        "priority": 1,
+        "layer": 1,
+        "order": 0,
+        "blocked_by": 1,
+        "blocks": 2,
+        "blocked": true,
+        "on_chain": true
+      }
+    },
+    {
+      "id": "gr-au4",
+      "side": "down",
+      "depth": 2,
+      "node": {
+        "id": "gr-au4",
+        "title": "日本語のとても長いタイトルがここにあります — wide runes and a very very long title to truncate properly",
+        "status": "open",
+        "priority": 2,
+        "layer": 2,
+        "order": 0,
+        "blocked_by": 1,
+        "blocked": true,
+        "on_chain": true
+      }
+    },
+    {
+      "id": "gr-gdm",
+      "side": "down",
+      "depth": 2,
+      "node": {
+        "id": "gr-gdm",
+        "title": "Hostile [31mred[0m evil",
+        "status": "open",
+        "priority": 2,
+        "layer": 2,
+        "order": 0,
+        "blocked_by": 1,
+        "blocked": true
+      }
+    },
+    {
+      "id": "gr-1jo",
+      "side": "down",
+      "depth": 1,
+      "node": {
+        "id": "gr-1jo",
+        "title": "Graph docs",
+        "status": "open",
+        "priority": 3,
+        "layer": 1,
+        "order": 0,
+        "blocked_by": 1,
+        "blocked": true
+      }
+    }
+  ],
+  "schema_version": 1,
+  "self_dependencies": [
+    "gr-1fm"
+  ],
+  "source": "live",
+  "state": "connected",
+  "title": "Graph",
+  "total": 37,
+  "unblocks": 2
+}
