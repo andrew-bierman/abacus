@@ -79,6 +79,13 @@ terminal:
   well as a brighter border, so focus is visible with `NO_COLOR`. A panel too small for a frame
   (under 4 cells wide or 3 tall) degrades to plain lines.
 
+Rule for any state that hides a screen (too small, an overlay, a collapsed pane): it must also stop
+input reaching that screen, because a key pressed on a screen the user cannot see can still act
+on it (a hidden confirm answered with `y` would apply a change unseen). Global keys (tabs, help,
+quit) keep working; keys for the hidden section are dropped. Each input path needs its own test,
+capturing and non-capturing, since a guard on one path alone survives mutation of the other
+(`TestTooSmallTerminalCannotApplyAHiddenConfirm`, `TestTooSmallTerminalGivesAHiddenListNoKeys`).
+
 The help overlay is the first user of them: a focused panel with aligned key columns, and a
 plain indented list when the frame would cost rows the text needs.
 
