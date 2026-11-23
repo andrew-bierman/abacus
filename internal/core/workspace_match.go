@@ -1,6 +1,8 @@
 package core
 
 import (
+	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -83,4 +85,28 @@ func HandoffArgv(bin, host string) []string {
 		bin = RexBin
 	}
 	return []string{bin, "-S", host}
+}
+
+// A -S host is a name, user@name or name:port: dot-separated labels of letters, digits, hyphens
+// and underscores (a label starts and ends with a letter or digit), an optional user of up to 32
+// characters that does not start with a dash, and an optional port from 1 to 65535. Never a
+// leading dash (it would be read as another option), a space, a bracketed address or any shell
+// metacharacter. IPv6 literals are not accepted: configure a name.
+var handoffHostRE = regexp.MustCompile(`^(?:[A-Za-z0-9_][A-Za-z0-9._-]{0,31}@)?` +
+	`[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)*` +
+	`(?::([0-9]{1,5}))?$`)
+
+// ValidHandoffHost reports whether host is safe to hand to `rex -S`: the single rule the adapter and
+// every front-end that runs a handoff share.
+func ValidHandoffHost(host string) bool {
+	m := handoffHostRE.FindStringSubmatch(host)
+	if m == nil || len(host) > MaxHostRunes {
+		return false
+	}
+	if m[1] != "" {
+		if port, _ := strconv.Atoi(m[1]); port < 1 || port > 65535 {
+			return false
+		}
+	}
+	return true
 }

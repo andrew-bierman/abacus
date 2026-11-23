@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Workspace ────────────────────────╮
+│ Demo data: nothing is opened.        │
+│ copy: rex                            │
+│                                      │
+│ any key closes                       │
+╰──────────────────────────────────────╯
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────╮
+│ Demo data: nothing is opened.        │
+│ copy: rex                            │
+│                                      │
+│ any key closes                       │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                │
+│ copy: rex                                                                    │
+│                                                                              │
+│ any key closes                                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · w workspace
+=== 80x30 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                │
+│ copy: rex                                                                    │
+│                                                                              │
+│ any key closes                                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · w workspace
+=== 120x12 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                                                        │
+│ copy: rex                                                                                                            │
+│                                                                                                                      │
+│ any key closes                                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · w workspace
+=== 120x30 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                                                        │
+│ copy: rex                                                                                                            │
+│                                                                                                                      │
+│ any key closes                                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · w workspace
+=== 60x24 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                            │
+│ copy: rex                                                │
+│                                                          │
+│ any key closes                                           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details…
+=== 140x32 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                                                                            │
+│ copy: rex                                                                                                                                │
+│                                                                                                                                          │
+│ any key closes                                                                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · w workspace

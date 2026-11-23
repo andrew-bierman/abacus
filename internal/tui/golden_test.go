@@ -53,6 +53,10 @@ type scenario struct {
 // terminal and the width where list and detail sit side by side.
 var framedSizes = [][2]int{{60, 24}, {100, 32}}
 
+// workspaceSizes are the extra golden sizes of the workspace screens: a compact terminal and the
+// ultra-wide one where the "where" column may appear.
+var workspaceSizes = [][2]int{{60, 24}, {140, 32}}
+
 // sizes is the standard grid followed by the scenario's extra sizes.
 func (sc scenario) sizes() [][2]int {
 	var out [][2]int
@@ -196,6 +200,7 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 
 func scenarios() []scenario {
 	std := func(t *testing.T, th Theme) tea.Model { return load(t, th, nil) }
+	wsStd := func(t *testing.T, th Theme) tea.Model { return demoWorkspaceModel(t, th, &wsRecorder{}, 100, 32) }
 	return []scenario{
 		{name: "queues", build: std, keys: []string{"4"}, tab: "Queues"},
 		{name: "queues-drilled", build: std, keys: []string{"4", "enter"}, tab: "Queues"},
@@ -244,6 +249,12 @@ func scenarios() []scenario {
 			m, _ = m.Update(boardMsg{err: b.err})
 			return m
 		}},
+		// The optional workspace layer, from the demo providers and the demo workspace (nothing is run).
+		{name: "queues-workspace", build: wsStd, keys: []string{"4"}, tab: "Queues", extra: workspaceSizes},
+		{name: "leases-workspace", build: wsStd, keys: []string{"3"}, tab: "Leases", extra: workspaceSizes},
+		{name: "leases-workspace-ambiguous", build: wsStd, keys: []string{"3", "j", "j"}, tab: "Leases", extra: workspaceSizes},
+		{name: "leases-workspace-notice", build: wsStd, keys: []string{"3", "w"}, tab: "Leases", extra: workspaceSizes},
+		{name: "tasks-workspace", build: wsStd, keys: []string{"2", "j"}, tab: "Tasks", extra: workspaceSizes},
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},

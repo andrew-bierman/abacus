@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
+│   (held)   ac-zoj  glm-schedul…  12m │
+│   (held)   ac-00h  codex-macbo…   3m │
+│ ▸ (stale)  ac-1k2  claude-mac        │
+│   (free)   ac-9x1                    │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
+│   (held)   ac-zoj  glm-schedul…  12m │
+│   (held)   ac-00h  codex-macbo…   3m │
+│ ▸ (stale)  ac-1k2  claude-mac        │
+│   (free)   ac-9x1                    │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
+│   (held)   ac-zoj  glm-scheduler-01                                      12m │
+│   (held)   ac-00h  codex-macbookpro                                       3m │
+│ ▸ (stale)  ac-1k2  claude-mac                                                │
+│   (free)   ac-9x1                                                            │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · w workspace
+=== 80x30 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
+│   (held)   ac-zoj  glm-scheduler-01                                      12m │
+│   (held)   ac-00h  codex-macbookpro                                       3m │
+│ ▸ (stale)  ac-1k2  claude-mac                                                │
+│   (free)   ac-9x1                                                            │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · w workspace
+=== 120x12 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
+│   (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-1k2 (stale)                              │
+│   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
+│ ▸ (stale)  ac-1k2  claude-mac                                        │ │ last holder claude-mac                      │
+│   (free)   ac-9x1                                                    │ │ expires     -                               │
+│                                                                      │ │                                             │
+│                                                                      │ │ where       ambiguous: 2 claim it           │
+│                                                                      │ │   Lambe · ac-1k2                            │
+│                                                                      │ │   retry ac-1k2                              │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · ↑/↓ move · w workspace
+=== 120x30 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
+│   (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-1k2 (stale)                              │
+│   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
+│ ▸ (stale)  ac-1k2  claude-mac                                        │ │ last holder claude-mac                      │
+│   (free)   ac-9x1                                                    │ │ expires     -                               │
+│                                                                      │ │                                             │
+│                                                                      │ │ where       ambiguous: 2 claim it           │
+│                                                                      │ │   Lambe · ac-1k2                            │
+│                                                                      │ │   retry ac-1k2                              │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · w workspace
+=== 60x24 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────╮
+│   (held)   ac-zoj  glm-scheduler-01                  12m │
+│   (held)   ac-00h  codex-macbookpro                   3m │
+│ ▸ (stale)  ac-1k2  claude-mac                            │
+│   (free)   ac-9x1                                        │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details…
+=== 140x32 ===
+abacus   Board  Tasks  [Leases]  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────────────╮
+│   (held)   ac-zoj  glm-scheduler-01                          12m  Lambe · ac-zoj │ │ ac-1k2 (stale)                                      │
+│   (held)   ac-00h  codex-macbookpro                           3m  ac-00h         │ │                                                     │
+│ ▸ (stale)  ac-1k2  claude-mac                                     ambiguous      │ │ last holder claude-mac                              │
+│   (free)   ac-9x1                                                 -              │ │ expires     -                                       │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │ where       ambiguous: 2 claim it                   │
+│                                                                                  │ │   Lambe · ac-1k2                                    │
+│                                                                                  │ │   retry ac-1k2                                      │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · w workspace

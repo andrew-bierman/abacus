@@ -51,7 +51,33 @@ type leasesSection struct {
 	tick   func() tea.Cmd // injectable so tests never sleep
 	th     Theme
 	geom
-	listNav // ids are the lease resources
+	listNav          // ids are the lease resources
+	ws      *wsLayer // the optional workspace layer; nil without one
+}
+
+func (s *leasesSection) setWorkspace(w *wsLayer) { s.ws = w }
+
+// leaseItem is the workspace item of a lease: its resource.
+func leaseItem(l core.Lease) (core.WorkspaceItem, bool) {
+	return itemOf(core.WorkspaceLease, l.Resource, "")
+}
+
+func (s *leasesSection) wsItems() []core.WorkspaceItem {
+	var items []core.WorkspaceItem
+	for _, l := range s.leases() {
+		if it, ok := leaseItem(l); ok {
+			items = append(items, it)
+		}
+	}
+	return itemList(items...)
+}
+
+// selectedItem is the workspace item under the cursor.
+func (s *leasesSection) selectedItem() (core.WorkspaceItem, bool) {
+	if ls := s.leases(); s.cursor < len(ls) {
+		return leaseItem(ls[s.cursor])
+	}
+	return core.WorkspaceItem{}, false
 }
 
 func newLeasesSection(read func(context.Context) leasesRead) *leasesSection {
@@ -77,7 +103,8 @@ func (s *leasesSection) ids() []string {
 
 func (s *leasesSection) Bindings() []key.Binding {
 	enter, back := s.bindings(s.width(), len(s.leases()))
-	return append(moveBindings(), enter, back)
+	it, ok := s.selectedItem()
+	return append(moveBindings(), enter, back, s.ws.jumpBinding(it, ok))
 }
 
 func (s *leasesSection) fetch() tea.Cmd {
@@ -98,13 +125,26 @@ func (s *leasesSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.got, s.loaded = m.read, true
 		s.reanchor(s.ids(), false) // pin: a lease that vanishes and comes back is selected again
 		s.settle(len(s.leases()))
+		return s, s.ws.fetch(s.wsItems())
+	case workspaceMsg:
+		s.ws.receive(m)
+	case handoffDoneMsg:
+		if s.ws.done() && m.err != nil {
+			s.ws.note = []string{"The workspace did not open: " + core.Sanitize(m.err.Error())}
+		}
 	case leasesTickMsg:
 		return s, tea.Batch(s.fetch(), s.tick())
 	case tea.WindowSizeMsg:
 		s.resize(m)
 		s.fit(s.width())
 	case tea.KeyMsg:
+		if s.ws.swallow() { // the key that closes the notice does nothing else
+			return s, nil
+		}
 		switch {
+		case key.Matches(m, keyWorkspace):
+			it, ok := s.selectedItem()
+			return s, s.ws.jump(it, ok)
 		case key.Matches(m, keyUp):
 			s.up(s.ids())
 		case key.Matches(m, keyDown):
@@ -148,14 +188,28 @@ func (s *leasesSection) listLines(g duoGeom) []string {
 		}
 		rows[i] = []string{th.Badge(toneKind(l.Tone()), san(string(l.State))), resource, th.Tint(l.Holder, san(l.Holder)), san(l.Expiry())}
 	}
-	widths := leaseCols.fitRows(max(g.listInner()-2, 1), rows) // two cells for the selection marker
+	tb := leaseCols
+	if s.ws.has() {
+		cells := make([]string, len(ls))
+		for i, l := range ls {
+			it, ok := leaseItem(l)
+			cells[i] = s.ws.place(th, it, ok, i == s.cursor)
+		}
+		if wtb, ok := s.ws.whereCol(tb, s.width(), g.listInner(), rows, cells); ok {
+			tb = wtb
+			for i := range rows {
+				rows[i] = append(rows[i], cells[i])
+			}
+		}
+	}
+	widths := tb.fitRows(max(g.listInner()-2, 1), rows) // two cells for the selection marker
 	lines := make([]string, len(rows))
 	for i, r := range rows {
 		marker := "  "
 		if i == s.cursor {
 			marker = "▸ "
 		}
-		lines[i] = marker + leaseCols.row(widths, r)
+		lines[i] = marker + tb.row(widths, r)
 	}
 	return windowLines(th, lines, s.cursor, g.inner, &s.top)
 }
@@ -172,10 +226,12 @@ func (s *leasesSection) detailLines() []string {
 	if l.State == core.LeaseStale {
 		holder = "last holder"
 	}
-	return []string{
+	out := []string{
 		th.Header.Render(orDash(l.Resource)) + " " + th.Badge(toneKind(l.Tone()), san(string(l.State))), "",
 		field(holder, l.Holder), field("expires", san(l.Expiry())),
 	}
+	it, ok := leaseItem(l)
+	return append(out, s.ws.detail(th, it, ok, 12)...)
 }
 
 func (s *leasesSection) View() string {
@@ -188,6 +244,9 @@ func (s *leasesSection) View() string {
 		return joinLines(notConnectedBox(th, "Leases", s.got.unavailable, s.got.howToConnect, w, s.h))
 	case s.got.unavailable != "":
 		return joinLines(box(th, "Leases", unavailableBody(th, s.got.unavailable, innerW(w)), w, s.h))
+	}
+	if box, ok := s.ws.noteBox(th, w, s.h); ok {
+		return joinLines(box)
 	}
 	g := duoLayout(w, s.h)
 	list := s.listLines(g)

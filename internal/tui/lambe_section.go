@@ -45,6 +45,25 @@ type lambeSection struct {
 	notice string
 	filter string
 	typing bool
+	ws     *wsLayer // the optional workspace layer; nil without one
+}
+
+func (s *lambeSection) setWorkspace(w *wsLayer) { s.ws = w }
+
+// runItem is the workspace item of a run: its issue on the machine it carries.
+func runItem(r lambe.Run) (core.WorkspaceItem, bool) {
+	return itemOf(core.WorkspaceRun, r.Issue, r.Machine)
+}
+
+// wsItems are the runs to ask the workspace about.
+func (s *lambeSection) wsItems() []core.WorkspaceItem {
+	var items []core.WorkspaceItem
+	for _, r := range s.view.Snapshot.Runs {
+		if it, ok := runItem(r); ok {
+			items = append(items, it)
+		}
+	}
+	return itemList(items...)
 }
 
 func newLambeSection(m *lambe.Module, handoff func([]string) tea.Cmd) *lambeSection {
@@ -101,7 +120,11 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case lambeViewMsg:
 		s.view, s.err, s.loaded = msg.view, msg.err, true
 		s.reanchor(s.ids(), false)
+		return s, s.ws.fetch(s.wsItems())
+	case workspaceMsg:
+		s.ws.receive(msg)
 	case handoffDoneMsg:
+		s.ws.done()
 		if msg.err != nil {
 			s.notice = "rex: " + core.Sanitize(msg.err.Error())
 		}
@@ -112,6 +135,9 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.fit(s.width())
 	case tea.KeyMsg:
 		s.notice = ""
+		if s.ws.swallow() {
+			return s, nil
+		}
 		if s.typing {
 			s.typeKey(msg)
 			return s, nil
@@ -136,12 +162,30 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s.cursor >= len(runs) {
 				return s, nil
 			}
+			it, ok := runItem(runs[s.cursor])
+			if s.ws.knows(it, ok) { // the workspace knows where this run is: its plan decides
+				return s, s.ws.jump(it, ok)
+			}
+			if s.ws.running() { // a handoff is open or has not reported back yet
+				return s, nil
+			}
 			machine := runs[s.cursor].Machine
 			if machine == "" {
 				s.notice = "no machine recorded for this run"
 				return s, nil
 			}
-			return s, s.handoff(s.m.RexArgv(machine))
+			if !core.ValidHandoffHost(machine) { // never put a provider's text in a command
+				s.notice = "this run's machine name is not safe to pass on, so nothing was opened"
+				return s, nil
+			}
+			if s.ws.isDemo() { // fixtures: show the command, never run it
+				s.ws.noteCopy("Demo data: nothing is opened.", s.m.RexArgv(machine))
+				return s, nil
+			}
+			if s.ws == nil {
+				return s, s.handoff(s.m.RexArgv(machine))
+			}
+			return s, s.ws.start(s.m.RexArgv(machine))
 		}
 	}
 	return s, nil
@@ -283,6 +327,20 @@ func (s *lambeSection) listLines(iw int) ([]string, int) {
 		styled = append(styled, mk(th.Text(kind, glyph)+" "+th.Text(kind, state), flag, th.Tint(r.Machine, orDash(r.Machine))))
 		plain = append(plain, mk(glyph+" "+state, plainFlag, orDash(r.Machine)))
 	}
+	if s.ws.has() {
+		cells := make([]string, len(runs))
+		plainCells := make([]string, len(runs))
+		for i, r := range runs {
+			it, ok := runItem(r)
+			cells[i], plainCells[i] = s.ws.place(th, it, ok, false), s.ws.place(th, it, ok, true)
+		}
+		if wtb, ok := s.ws.whereCol(tb, s.width(), iw, styled, cells); ok {
+			tb = wtb
+			for i := range styled {
+				styled[i], plain[i] = append(styled[i], cells[i]), append(plain[i], plainCells[i])
+			}
+		}
+	}
 	out = append(out, renderRows(th, tb, iw, styled, plain, s.cursor)...)
 	if s.view.Source != lambe.SourceTracker {
 		out = append(out, "", s.countLabel("Queue", len(s.view.Queue.Rows)))
@@ -320,6 +378,8 @@ func (s *lambeSection) detailLines() []string {
 		field("phase", r.Phase), field("workflow", r.Workflow), field("session", r.Session),
 		field("attempt", fmt.Sprint(r.Attempt)), field("machine", r.Machine), field("actor", r.Actor),
 		field("last event", r.LastEventAge)}
+	it, ok := runItem(r)
+	out = append(out, s.ws.detail(th, it, ok, 11)...)
 	for _, h := range s.view.Snapshot.NeedsHuman {
 		if h.Issue == r.Issue {
 			out = append(out, "", th.Text(KindFail, "needs attention: "+san(h.Reason)), "  "+san(h.Detail))
@@ -340,6 +400,9 @@ func (s *lambeSection) View() string {
 	case s.err != nil:
 		body = box(s.th, "Queues", unavailableBody(s.th, s.err.Error(), innerW(w)), w, s.bodyH(s.notice))
 	default:
+		if box, ok := s.ws.noteBox(s.th, w, s.h); ok {
+			return joinLines(box)
+		}
 		g := duoLayout(w, s.bodyH(s.notice))
 		scrolling, cursorLine := s.listLines(g.listInner())
 		list := s.compose(scrolling, cursorLine, g.inner)

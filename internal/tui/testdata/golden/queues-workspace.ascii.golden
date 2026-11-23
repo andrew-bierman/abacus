@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  Tasks  Leases  [Queues]  Doctor
+╭─ ▸ Runs 3 · demo data ───────────────╮
+│ ▸ T-1  ● running                     │
+│   T-2  ◐ deferred                    │
+│   T-3  ● running   (stalled)         │
+│                                      │
+│ Queue 2                              │
+│   ↕ +2 more                          │
+│ Needs attention 1                    │
+│   T-2  gate_failed  gh:pr rejected:… │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  Tasks  Leases  [Queues]  Doctor
+────────────────────────────────────────
+╭─ ▸ Runs 3 · demo data ───────────────╮
+│ ▸ T-1  ● running                     │
+│   T-2  ◐ deferred                    │
+│   T-3  ● running   (stalled)         │
+│                                      │
+│ Queue 2                              │
+│   Q-1  ready      ready task         │
+│   Q-2  (blocked)  blocked task       │
+│                                      │
+│ Needs attention 1                    │
+│   T-2  gate_failed  gh:pr rejected:… │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  [Queues]  Doctor
+╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────╮
+│ ▸ T-1  ● running              gating    operators-mac  general  30s          │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a          │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m          │
+│                                                                              │
+│ Queue 2                                                                      │
+│   ↕ +2 more                                                                  │
+│ Needs attention 1                                                            │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  [Queues]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────╮
+│ ▸ T-1  ● running              gating    operators-mac  general  30s          │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a          │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m          │
+│                                                                              │
+│ Queue 2                                                                      │
+│   Q-1  ready      ready task                                                 │
+│   Q-2  (blocked)  blocked task                                               │
+│                                                                              │
+│ Needs attention 1                                                            │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  [Queues]  Doctor
+╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
+│ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │                                             │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m  │ │ phase      gating                           │
+│                                                                      │ │ workflow   general                          │
+│ Queue 2                                                              │ │ session    ses-t1                           │
+│   ↕ +2 more                                                          │ │ attempt    2                                │
+│ Needs attention 1                                                    │ │ machine    operators-mac                    │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                   │ │ actor      lambe@operators-mac              │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
+=== 120x30 ===
+abacus   Board  Tasks  Leases  [Queues]  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
+│ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │                                             │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m  │ │ phase      gating                           │
+│                                                                      │ │ workflow   general                          │
+│ Queue 2                                                              │ │ session    ses-t1                           │
+│   Q-1  ready      ready task                                         │ │ attempt    2                                │
+│   Q-2  (blocked)  blocked task                                       │ │ machine    operators-mac                    │
+│                                                                      │ │ actor      lambe@operators-mac              │
+│ Needs attention 1                                                    │ │ last event 30s                              │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                   │ │                                             │
+│                                                                      │ │ where      Lambe · T-1                      │
+│                                                                      │ │ host       operators-mac                    │
+│                                                                      │ │ session    demo:s1                          │
+│                                                                      │ │ match      exact                            │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
+=== 60x24 ===
+abacus   Board  Tasks  Leases  [Queues]  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Runs 3 · demo data ───────────────────────────────────╮
+│ ▸ T-1  ● running              gating    operators-mac    │
+│   T-2  ◐ deferred             deferred  operators-mac    │
+│   T-3  ● running   (stalled)  running   operators-mac    │
+│                                                          │
+│ Queue 2                                                  │
+│   Q-1  ready      ready task                             │
+│   Q-2  (blocked)  blocked task                           │
+│                                                          │
+│ Needs attention 1                                        │
+│   T-2  gate_failed  gh:pr rejected: merge conflict       │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · enter details…
+=== 140x32 ===
+abacus   Board  Tasks  Leases  [Queues]  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────────────╮
+│ ▸ T-1  ● running              gating    operators-mac  general  30s  Lambe · T-1 │ │ T-1 (running)                                       │
+│   T-2  ◐ deferred             deferred  operators-mac  -        n/a  -           │ │                                                     │
+│   T-3  ● running   (stalled)  running   operators-mac  review   12m  review T-3… │ │ phase      gating                                   │
+│                                                                                  │ │ workflow   general                                  │
+│ Queue 2                                                                          │ │ session    ses-t1                                   │
+│   Q-1  ready      ready task                                                     │ │ attempt    2                                        │
+│   Q-2  (blocked)  blocked task                                                   │ │ machine    operators-mac                            │
+│                                                                                  │ │ actor      lambe@operators-mac                      │
+│ Needs attention 1                                                                │ │ last event 30s                                      │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                               │ │                                                     │
+│                                                                                  │ │ where      Lambe · T-1                              │
+│                                                                                  │ │ host       operators-mac                            │
+│                                                                                  │ │ session    demo:s1                                  │
+│                                                                                  │ │ match      exact                                    │
+╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session

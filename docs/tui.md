@@ -26,6 +26,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
 | `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice saying b9s is optional and where to get it if it is not there). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
+| `w` | Leases, Tasks: go to the selected row's workspace session (see "Workspace" below). Offered only when the row has a placement or an ambiguity |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues, narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
@@ -191,6 +192,31 @@ Color means something, and every color is backed by a word or glyph so `NO_COLOR
   progress, `▓` blocked, `░` deferred, `·` closed), so it reads in monochrome.
 - **Queues mark**: a shape per state before its name (`●` running, `✕` failed, `◐` deferred, `◌` pending, `○` settled or canceled), colored by its tone.
 - The selected row is drawn plain on the highlight so the highlight stays whole.
+
+## Workspace
+
+When an optional terminal workspace is connected (and in the demo), Queues, Leases and Tasks show
+where the selected item lives. Nothing changes anywhere without workspace data.
+
+- **Detail.** The selected run, lease or task gets a `where` block: the session, its machine, the
+  match (`exact`, `by label`, `machine not configured`), `ambiguous: N claim it` with the
+  candidates, or `not placed`. A cached read, a truncated read and a degraded workspace are marked.
+  Tasks has no detail panel, so its block sits under the table.
+- **Where column.** At 140 columns and wider the lists get an aligned `where` column as the last,
+  first-dropped column; it appears only if no other column is dropped and the identifying columns
+  (id, state) keep their width.
+- **Jump.** `o` on Queues (as before) and `w` on Leases and Tasks use the open plan core built. On
+  the keypress, and only when the placement is unambiguous and the plan's first step is an
+  interactive `<workspace tool> -S <that placement's machine>`, that one step is run with the same
+  runner `o` always used; no later step is tried, the command must be the located workspace tool
+  with a safe machine name (the same check the adapter uses), and a second press while the handoff
+  is open does nothing. Anything else is a framed notice that any key
+  closes: the candidates when ambiguous, or the command to copy (machine not configured, a session
+  on this machine, a step that cannot run from here). The key is absent from the footer and does
+  nothing when there is no workspace data or the row has no placement. Like every section key it
+  is dropped when the body is too small to draw.
+- **Demo.** The demo workspace places some demo items (one ambiguous). A demo session never runs a
+  step: `o` and `w` only show the command, including `o` on a run the workspace does not place.
 
 ## Demo
 

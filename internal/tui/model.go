@@ -100,6 +100,9 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	}
 	for _, d := range core.DomainOrder {
 		sec := domainSection(d, prov, handoff, cfg)
+		if h, ok := sec.(workspaceHost); ok { // the optional workspace layer; never runs without a key
+			h.setWorkspace(newWsLayer(string(d), prov.Workspace, isDemo(entries), handoff))
+		}
 		if prov.Guiders[d] != nil && d != core.DomainBoard {
 			sec = newGuidedSection(d, sec, cfg.setup)
 		}
