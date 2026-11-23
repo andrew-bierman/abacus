@@ -1,0 +1,82 @@
+{
+ "triage": {
+  "triage": {
+   "quick_ref": {
+    "top_picks": [
+     {
+      "id": "cy-3",
+      "title": "Free standing",
+      "score": 0.1,
+      "reasons": [
+       "Currently unclaimed"
+      ],
+      "unblocks": 0
+     }
+    ]
+   },
+   "blockers_to_clear": [
+    {
+     "id": "cy-1",
+     "title": "Cycle one",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "cy-2"
+     ],
+     "actionable": false,
+     "blocked_by": [
+      "cy-2"
+     ]
+    },
+    {
+     "id": "cy-2",
+     "title": "Cycle two",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "cy-1"
+     ],
+     "actionable": false,
+     "blocked_by": [
+      "cy-1"
+     ]
+    }
+   ]
+  }
+ },
+ "plan": {
+  "plan": {
+   "tracks": [
+    {
+     "track_id": "track-A",
+     "items": [
+      {
+       "id": "cy-3"
+      }
+     ]
+    }
+   ],
+   "total_actionable": 1,
+   "total_blocked": 2
+  }
+ },
+ "insights": {
+  "Bottlenecks": [],
+  "Keystones": [],
+  "Cycles": [
+   [
+    "cy-1",
+    "cy-2",
+    "cy-1"
+   ]
+  ],
+  "status": {
+   "Critical": {
+    "state": "skipped",
+    "reason": "dependency graph contains a cycle; topological order unavailable"
+   }
+  }
+ },
+ "graph": {
+  "nodes": 3,
+  "edges": 2
+ }
+}

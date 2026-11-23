@@ -1,0 +1,302 @@
+{
+ "triage": {
+  "triage": {
+   "quick_ref": {
+    "top_picks": [
+     {
+      "id": "bg-00-0",
+      "title": "Chain 0 step 0",
+      "score": 0.4,
+      "reasons": [
+       "Unblocks 1 item(s)"
+      ],
+      "unblocks": 1
+     }
+    ]
+   },
+   "blockers_to_clear": [
+    {
+     "id": "bg-00-0",
+     "title": "Chain 0 step 0",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "bg-00-1"
+     ],
+     "actionable": true
+    },
+    {
+     "id": "bg-00-1",
+     "title": "Chain 0 step 1",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "bg-00-2"
+     ],
+     "actionable": false,
+     "blocked_by": [
+      "bg-00-0"
+     ]
+    },
+    {
+     "id": "bg-00-2",
+     "title": "Chain 0 step 2",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "bg-00-3"
+     ],
+     "actionable": false,
+     "blocked_by": [
+      "bg-00-1"
+     ]
+    },
+    {
+     "id": "bg-00-3",
+     "title": "Chain 0 step 3",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "bg-00-4"
+     ],
+     "actionable": false,
+     "blocked_by": [
+      "bg-00-2"
+     ]
+    },
+    {
+     "id": "bg-00-4",
+     "title": "Chain 0 step 4",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "bg-00-5"
+     ],
+     "actionable": false,
+     "blocked_by": [
+      "bg-00-3"
+     ]
+    }
+   ]
+  }
+ },
+ "plan": {
+  "plan": {
+   "tracks": [
+    {
+     "track_id": "track-0",
+     "items": [
+      {
+       "id": "bg-00-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-1",
+     "items": [
+      {
+       "id": "bg-01-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-2",
+     "items": [
+      {
+       "id": "bg-02-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-3",
+     "items": [
+      {
+       "id": "bg-03-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-4",
+     "items": [
+      {
+       "id": "bg-04-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-5",
+     "items": [
+      {
+       "id": "bg-05-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-6",
+     "items": [
+      {
+       "id": "bg-06-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-7",
+     "items": [
+      {
+       "id": "bg-07-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-8",
+     "items": [
+      {
+       "id": "bg-08-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-9",
+     "items": [
+      {
+       "id": "bg-09-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-10",
+     "items": [
+      {
+       "id": "bg-10-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-11",
+     "items": [
+      {
+       "id": "bg-11-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-12",
+     "items": [
+      {
+       "id": "bg-12-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-13",
+     "items": [
+      {
+       "id": "bg-13-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-14",
+     "items": [
+      {
+       "id": "bg-14-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-15",
+     "items": [
+      {
+       "id": "bg-15-1"
+      }
+     ]
+    },
+    {
+     "track_id": "track-16",
+     "items": [
+      {
+       "id": "bg-16-1"
+      }
+     ]
+    },
+    {
+     "track_id": "track-17",
+     "items": [
+      {
+       "id": "bg-17-1"
+      }
+     ]
+    },
+    {
+     "track_id": "track-18",
+     "items": [
+      {
+       "id": "bg-18-0"
+      }
+     ]
+    },
+    {
+     "track_id": "track-19",
+     "items": [
+      {
+       "id": "bg-19-0"
+      }
+     ]
+    }
+   ],
+   "total_actionable": 20,
+   "total_blocked": 177
+  }
+ },
+ "insights": {
+  "Bottlenecks": [
+   {
+    "ID": "bg-00-4",
+    "Value": 20
+   },
+   {
+    "ID": "bg-00-5",
+    "Value": 20
+   },
+   {
+    "ID": "bg-01-4",
+    "Value": 20
+   },
+   {
+    "ID": "bg-01-5",
+    "Value": 20
+   },
+   {
+    "ID": "bg-02-4",
+    "Value": 20
+   }
+  ],
+  "Keystones": [
+   {
+    "ID": "bg-00-0",
+    "Value": 10
+   },
+   {
+    "ID": "bg-01-0",
+    "Value": 10
+   },
+   {
+    "ID": "bg-02-0",
+    "Value": 10
+   },
+   {
+    "ID": "bg-03-0",
+    "Value": 10
+   },
+   {
+    "ID": "bg-04-0",
+    "Value": 10
+   }
+  ],
+  "Cycles": [],
+  "status": {
+   "Critical": {
+    "state": "computed"
+   }
+  }
+ },
+ "graph": {
+  "nodes": 200,
+  "edges": 180
+ }
+}

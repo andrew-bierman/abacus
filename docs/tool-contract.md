@@ -266,6 +266,102 @@ on an explicit keypress.
 focus`, `rex window new`, `session.select` (also needs a client with Remote control on; `rex-tui`
 support is unknown), window labels via `session.view`, `rex hosts`, program status, spawning. A
 rung is data (a name and an argv), so each is a new value, not a new type.
+## Graph engine (bv subprocess or in-process library)
+
+The Tasks insights (top picks, blockers, critical path, cycles, actionable and blocked counts) have
+two engines behind one `core.InsightsProvider`. The report is the same `InsightsReport`, so the
+Tasks tab and the JSON output do not change.
+
+| | subprocess (default) | library (opt-in) |
+|---|---|---|
+| Runs | the `bv` binary: four `--robot-*` reads | bv's `pkg/analysis` inside abacus, one in-memory pass |
+| Needs | `bv` (bundled with the download, or on PATH) | nothing installed; reads the tracker's `.beads/issues.jsonl` |
+| Code | `internal/bv` | `internal/graph` (the only bv import is `bvanalyzer.go`) |
+
+**Opt in.** Set `ABACUS_GRAPH_ENGINE=library` in the environment abacus starts in. It applies to
+every command and tab that reads insights, and never to `--demo`.
+`abacus doctor` shows a `graph engine` line saying which engine is active.
+
+**Go back.** Unset the variable, or set it to `subprocess`. Any other value (including a typo)
+keeps the default and makes Doctor warn `ABACUS_GRAPH_ENGINE: unknown value, using the default`;
+it never fails a command.
+
+**What the library reads.** Issues come from `.beads/issues.jsonl` in the tracker directory the
+Tasks tab uses (`ABACUS_BD_DIR`, a tracker at or above the working directory, the saved
+`tracker_dir`, or the managed workspace). When that directory is known the export must be in it:
+nothing above it is read, because an export in a parent belongs to another project. With no
+directory set the search starts at the working directory and walks up through its parents. An
+export or `.beads` directory that is a symlink resolving outside the directory it was found in is
+refused with a plain reason, never read. The reader takes
+JSONL or a JSON array with `id`, `title`, `status`, `priority`, `issue_type`, `updated_at` and
+`dependencies` (`{issue_id, depends_on_id, type}`; a bare id counts as a blocking dependency; an
+empty type is `blocks`), and an optional `blocks` list on the blocker. It never runs `bd` and
+never writes. A tracker with no export file shows the insights as unavailable and Doctor names the
+reason: use the default engine for that tracker. An empty export is "no tasks yet" and bv's code
+is not called.
+
+**Stale exports.** The export is a copy the tracker writes after changes, so it can trail the
+tracker's own data. abacus compares the export's modification time with the newest of
+`.beads/*.db` (and its `-wal`) and the `.beads/dolt` directory. If the data is newer by more than
+5 seconds, the insights header is degraded with "the issue export is 6m older than the tracker
+data, so these numbers may be out of date" (the graph is still shown) and Doctor warns on an
+`export` line. With no database to compare against, or a current export, the header carries the
+export's age (`export 10m old`) after the counts, and Doctor shows the age. Modification times are
+the only signal: a tracker that rewrites the export without changing its data looks current, and
+a clock change can mislead it.
+
+**Memory ceiling.** The whole export is read into memory and decoded before analysis, so the
+reader refuses anything over 64 MiB with `export larger than 64 MiB` (Doctor shows the same
+reason) instead of an unreadable-issue error. The cap bounds the file, not the working set: the
+decoded issues, the graph and bv's analysis each hold their own copy, so expect several times the
+file size in memory while an insights read runs. A tracker near the cap should use the default
+engine.
+
+**Debug logging.** bv's `pkg/debug` turns on a stderr logger in an `init()` when `BV_DEBUG` is
+set. That runs before abacus's `main`, so clearing the variable is too late; abacus instead
+switches the logger off when the engine is built and again before each analysis, so it cannot
+write over the TUI. (The analysis path of v0.27.0 does not log; this is for a later bv bump.)
+bv's metrics (`BV_METRICS`) only collect in memory and print nothing.
+
+**Mapping.** "a blocks b" means b depends on a; both spellings are the same edge. Statuses
+`open`, `in_progress`, `blocked`, `deferred` and `closed` map to bv's; `tombstone` reads as closed;
+any other status is kept and treated as parked (neither closed nor actionable). Only a `blocks`
+dependency holds an issue back; `related`, `discovered-from` and any type abacus does not know
+never block. Every id, title and reason in the report is sanitized.
+
+**What differs from the subprocess** (each is a test in `internal/graph/parity_test.go`):
+
+1. The critical path is bv's per-issue height score (how long a chain an issue starts), not an
+   ordered path; a diamond lists both middle issues with the same score. Both engines report the
+   same ranked list, and abacus does not derive an ordered path.
+2. A dependency cycle makes bv skip the critical path for the whole graph. Both engines leave it
+   empty and set `critical_path_note`.
+3. A closed issue is a satisfied blocker (its dependents become actionable). The ranked
+   keystone and bottleneck lists exclude closed issues, as `bv --robot-insights` does (bv's raw,
+   unscoped scores do count them; the library uses the scoped insights the CLI uses). The triage
+   pick scores come from bv's triage over all issues, closed ones included, so a pick's score is
+   not the keystone list's.
+4. The next pick is bv's triage score (PageRank, unblocks, priority, staleness), not `bd ready`'s
+   ordering. Scores can differ slightly from a `bv` run on the same tracker because the library
+   reads only the fields above (no labels, estimates or created_at); the picked issue, the
+   counts, the cycles and the critical-path scores agree on the parity fixtures.
+5. "Blocked" is an unfinished blocker or a blocked status; deferred and custom-status issues are
+   in neither count.
+
+**Cost and licensing.** The module is pinned to the exact tag v0.27.0, so the Go directive is
+`go 1.26.11` and lipgloss is a pseudo-version (see the assessment). The release binary is about
+1.8 MB larger (linux/amd64, 8.39 MB to 10.19 MB). The bundled tools still ship unmodified and run
+as subprocesses; separately, the `abacus` binary statically links parts of bv's Go packages (bv
+v0.27.0 `pkg/analysis` and the packages it depends on). That code is under bv's license, which
+ships verbatim in the release archive as `third_party/bv/LICENSE`. The archive's
+`THIRD_PARTY_NOTICES.md` says so and ends with every Go module linked into the binary and its
+license text (generated by `scripts/lib/golicenses.sh` from `go list -deps` and the module cache,
+offline; it fails the packaging if a linked module has no license file).
+
+Fixtures: `internal/graph/testdata` holds hand-written trackers (`*.jsonl`, including the seven
+invented issues behind the recorded bv fixtures) and hand-written `bv --robot-*` documents in
+`testdata/robot` (worked out from the graph shapes, not captured from a run). The only recorded bv
+output used is `internal/bv/testdata`.
 
 ## Clients
 

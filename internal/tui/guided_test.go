@@ -20,6 +20,7 @@ type freshBd struct {
 	made bool
 	ran  [][]string
 	fail error
+	dir  string // InitDir when set
 }
 
 func (f *freshBd) Domain() core.DomainID { return core.DomainTasks }
@@ -38,7 +39,12 @@ func (f *freshBd) Tasks(context.Context) (core.TasksReport, error) {
 	return core.TasksReport{Header: core.Header{Source: core.SourceLive}}, nil
 }
 func (f *freshBd) TrackerDir() string { return "" }
-func (f *freshBd) InitDir() string    { return "/data/abacus/workspace" }
+func (f *freshBd) InitDir() string {
+	if f.dir != "" {
+		return f.dir
+	}
+	return "/data/abacus/workspace"
+}
 func (f *freshBd) BuildTaskArgv(core.TaskChange) ([]string, error) {
 	return []string{"bd", "init", "--non-interactive", "--quiet", "--skip-agents", "--skip-hooks", "--prefix=abacus"}, nil
 }

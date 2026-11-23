@@ -25,7 +25,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
 | `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
-| `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice with an install hint if it is missing). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
+| `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice saying b9s is optional and where to get it if it is not there). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues, narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
@@ -43,8 +43,24 @@ Counts by state, ready work and the most recent changes (an aligned table with a
 issues that block the most, the critical path and dependency cycles. From 100 columns the insights
 sit beside the list; below that they sit under it (the list keeps two thirds of the rows). Insights
 are read on start and on `r`, not on a timer, because they run several processes. Without an
-insights provider the panel says it is not connected and how to install one. The forms and the
-confirm screen are drawn as before and are not framed yet.
+insights provider the panel says it is not connected and what is wrong with abacus's own bv (a
+release: damaged or moved, re-extract; a dev build: run `scripts/dev-bundle.sh`).
+
+The new and edit forms, the "Checking the current state…" screen, the confirm screen and its
+"applying…" state are each one framed panel with the title in the border. The form is a table: a
+marker column (`▸` on the focused field, with the caret `▏` at the end of its value, so focus
+shows without color), the label column, then the value column; a long value wraps in its column.
+When the value column would be narrower than 12 cells (the edit form below 45 columns) the label sits above its value instead. The form error is a row under the fields.
+The confirm screen shows the "changed since you opened it" note when there is one, the plan lines
+and "exact command:" with the command wrapped in full, never cut. Only a body taller than the
+terminal is clipped, and then a `↕ +N more` row says so. A confirm that is clipped cannot be
+answered with `y`: the row reads "enlarge the terminal to review", `y apply` leaves the footer, and
+the key does nothing until the whole plan and command are on screen (the same for the first-run
+setup confirm). The command shown is the command run: an argument with an invisible, bidi or
+control character is shown quoted, as an escape, so nothing is hidden between the screen and what
+runs. While a form or confirm screen is open, its own keys lead the footer, so a narrow footer cuts
+"? help" and the tab hint first. None of this changes the gate: nothing writes before `y` on the
+confirm screen, and a state that hides a screen still blocks keys.
 
 ## Board
 
@@ -92,7 +108,9 @@ terminal:
 
 Rule for any state that hides a screen (too small, an overlay, a collapsed pane): it must also stop
 input reaching that screen, because a key pressed on a screen the user cannot see can still act
-on it (a hidden confirm answered with `y` would apply a change unseen). Global keys (tabs, help,
+on it (a hidden confirm answered with `y` would apply a change unseen). A clipped confirm is a
+partly hidden screen: it blocks `y` the same way (`TestConfirmAppliesOnlyWhenTheWholeCommandIsVisible`).
+Global keys (tabs, help,
 quit) keep working; keys for the hidden section are dropped. Each input path needs its own test,
 capturing and non-capturing, since a guard on one path alone survives mutation of the other
 (`TestTooSmallTerminalCannotApplyAHiddenConfirm`, `TestTooSmallTerminalGivesAHiddenListNoKeys`).
@@ -108,7 +126,16 @@ Leases, Queues and Doctor are built from them, with two more pieces:
   column is dropped only when it truly does not fit. Ids and states keep their whole width, up to 24 cells for a lease id and 12 for a lease state (longer text is cut with an ellipsis and is whole in the detail panel); the
   low-priority columns (holder and expiry, phase and machine, workflow and last event) go first.
 
-Not-connected and unavailable states stay plain unframed lines with their "how to connect" text.
+The four list sections (Leases, Queues, Board, Tasks) share one piece, `listNav` (`listnav.go`):
+the cursor, the scroll offset, the selected row's identity and the drill state. A section hands it
+one stable id per selectable row (a lease resource, a run key, "t:"/"k:" plus a message id, a task
+ID). When the selected row disappears on a refresh, Leases and Queues keep the selection pinned to
+it (it is selected again if the row comes back) and Board and Tasks select the clamped row now
+under the cursor. Tasks has no detail panel to drill into.
+
+Not-connected and unavailable states (and the first-run setup prompt) are one framed panel with the
+domain in the border; the "how to connect:" text is a block of its own, set off by blank rows, which
+the tool-name test exempts. Loading is a plain line.
 
 The help overlay was the first user of the helpers: a focused panel with aligned key columns, and a
 plain indented list when the frame would cost rows the text needs.
@@ -126,8 +153,10 @@ A provider that was found but cannot be used (`broken`, `incompatible`) leaves i
 detected provider.
 
 The Doctor tab (the one place providers are listed by name) leads with "Ready" or "Needs attention",
-one line per area, and each tool with where it was found (`bundled`, `PATH`, `override`, `demo` or
-`missing`) and its version, then the detailed checks. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
+one line per area, a "Bundled tools: 4 of 4 verified" line, and each tool with where it was found
+(`bundled`, `PATH`, `override`, `demo`; or `unavailable` for abacus's own copy that cannot be used,
+`optional` for the Board CLI, which abacus does not ship) and its version, then the detailed checks.
+"Ready" needs bd, lambe and beads-lease usable; bv (graph insights) counts in the bundled line but is optional. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
 other modules every 30 seconds.

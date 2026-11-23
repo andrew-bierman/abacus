@@ -442,7 +442,7 @@ func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
 	bin := m.Bin()
 	m.mu.Unlock()
 	if bin == "" {
-		return errors.New("lambe was not found")
+		return errors.New("abacus's own lambe is unavailable (see `abacus doctor`)")
 	}
 	if f := m.Located(); f.Src == core.SourcePATH && f.Ignored != "" {
 		return fmt.Errorf("not writing: bundled lambe was refused (%s); not running init with the PATH one", f.Ignored)

@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -92,6 +91,9 @@ func (s *guidedSection) setupKey() key.Binding {
 func (s *guidedSection) Bindings() []key.Binding {
 	switch {
 	case s.mode == guidedConfirm:
+		if !s.confirmWhole() {
+			return []key.Binding{keyNo}
+		}
 		return []key.Binding{keyYes, keyNo}
 	case s.mode == guidedBusy:
 		return nil
@@ -176,6 +178,9 @@ func (s *guidedSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case guidedConfirm:
 		switch {
 		case key.Matches(k, keyYes):
+			if !s.confirmWhole() { // a clipped plan is not what was reviewed: y waits for room
+				return s, nil
+			}
 			s.mode = guidedBusy
 			return s, s.apply(s.plan.Confirm())
 		case key.Matches(k, keyNo):
@@ -202,6 +207,11 @@ func (s *guidedSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return s, c
 }
 
+// confirmWhole is whether the confirm screen shows the whole plan and exact command at this size.
+func (s *guidedSection) confirmWhole() bool {
+	return confirmFits(s.th, "", s.plan.Lines, s.plan.Argv, s.width(), s.h)
+}
+
 func (s *guidedSection) apply(p core.SetupPlan) tea.Cmd {
 	d := s.domain
 	return func() tea.Msg {
@@ -212,41 +222,36 @@ func (s *guidedSection) apply(p core.SetupPlan) tea.Cmd {
 	}
 }
 
-func (s *guidedSection) lines() []string {
+// panelLines is the screen while a setup step is being confirmed or applied, or while the domain
+// still needs one: one framed panel either way.
+func (s *guidedSection) panelLines() []string {
 	th, w := s.th, s.width()
+	inner := innerW(w)
 	switch s.mode {
 	case guidedConfirm, guidedBusy:
-		out := []string{th.Header.Render("Confirm this setup step"), ""}
-		for _, l := range s.plan.Lines {
-			out = append(out, wrap("  "+san(l), w)...)
-		}
-		out = append(out, "", th.Text(KindMuted, "exact command:"))
-		out = append(out, wrap("  "+san(core.DisplayArgv(s.plan.Argv)), w)...)
+		title := "Confirm this setup step"
 		if s.mode == guidedBusy {
-			out = append(out, "", th.Text(KindMuted, "applying…"))
+			title = "Applying this setup step"
 		}
-		return out
+		return reviewBox(th, title, confirmBody(th, "", s.plan.Lines, s.plan.Argv, s.mode == guidedBusy, inner), w, s.h)
 	}
 	g := s.guide
-	out := []string{th.Header.Render(san(g.Domain.Title())) + " " + th.Badge(KindWarn, "needs setup"), ""}
-	out = append(out, wrap(th.Text(KindAccent, san(guideLine(*g))), w)...)
+	body := []string{th.Badge(KindWarn, "needs setup"), ""}
+	body = append(body, wrap(th.Text(KindAccent, san(guideLine(*g))), inner)...)
 	if g.Detail != "" {
-		out = append(out, "")
-		out = append(out, wrap(th.Text(KindMuted, san(g.Detail)), w)...)
+		body = append(body, "")
+		body = append(body, wrap(th.Text(KindMuted, san(g.Detail)), inner)...)
 	}
 	if s.notice != "" {
-		out = append(out, "", th.Text(KindWarn, san(s.notice)))
+		body = append(body, "")
+		body = append(body, wrap(th.Text(KindWarn, san(s.notice)), inner)...)
 	}
-	return out
+	return box(th, san(g.Domain.Title()), body, w, s.h)
 }
 
 func (s *guidedSection) View() string {
 	if s.mode != guidedList || s.guide != nil {
-		lines := s.lines()
-		for i := range lines {
-			lines[i] = trunc(lines[i], s.width())
-		}
-		return strings.Join(lines, "\n") + "\n"
+		return joinLines(s.panelLines())
 	}
 	v := s.inner.View()
 	if s.notice != "" {

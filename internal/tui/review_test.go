@@ -436,7 +436,9 @@ func TestHeaderCompactionThresholds(t *testing.T) {
 	}
 	for h, rule := range map[int]bool{15: false, 16: true} {
 		mm := sized(m, 80, h)
-		if got := strings.Contains(lines(mm)[1], "─"); got != rule {
+		// the rule is a row of nothing but "─"; a framed panel's top edge contains one too
+		row := strings.TrimSpace(lines(mm)[1])
+		if got := row != "" && strings.Trim(row, "─") == ""; got != rule {
 			t.Errorf("height %d: rule row present=%v, want %v: %q", h, got, rule, lines(mm)[1])
 		}
 	}

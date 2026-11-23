@@ -8,6 +8,49 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Release notices: `THIRD_PARTY_NOTICES.md` now says the bundled tools ship unmodified and run as
+  subprocesses, and that the `abacus` binary also statically links parts of bv's Go packages (bv
+  v0.27.0 `pkg/analysis` and dependencies) under bv's license (`third_party/bv/LICENSE`, verbatim).
+  It ends with every Go module linked into the binary and its license text, generated offline by
+  `scripts/lib/golicenses.sh` from `go list -deps`.
+- The library engine reports a stale export (older than `.beads/*.db` or the dolt directory) as a
+  degraded insights header and a Doctor warning, shows the export's age otherwise, never reads an
+  export above the tracker directory or through a symlink that leaves it, reports an export over
+  64 MiB as `export larger than 64 MiB`, and switches off bv's `BV_DEBUG` stderr logger.
+- An opt-in in-process graph engine for the Tasks insights: set `ABACUS_GRAPH_ENGINE=library` and
+  abacus runs bv's analysis package inside its own process (new `internal/graph`) over the
+  tracker's `.beads/issues.jsonl` export, with no `bv` binary and no subprocess. The default is
+  unchanged (the bv subprocess), `--demo` never uses it, and an unknown value keeps the default
+  and shows a Doctor warning. Doctor says which engine is active. The report has the same shape,
+  so the Tasks tab and JSON output do not change. How the two differ is in
+  `docs/tool-contract.md` ("Graph engine"). The assessment is marked "prototype built".
+- `scripts/dev-bundle.sh` (`make bundle`, `make dev`): a locally built binary gets abacus's own
+  pinned, sha256-verified copies of bd, bv, lambe and beads-lease in `bin/bundled/`, so Doctor shows
+  every tool as `bundled` and tabs are no longer "not connected" on a dev machine. It fails closed
+  on any hash mismatch, builds in a temp directory and moves it into place, is idempotent and has a
+  `--check` mode. `package-release.sh` now also verifies every manifest tool landed in `bundled/`,
+  and a test fails when a tool in `bundled-tools.json` lacks an asset for a release platform.
+- `abacus doctor` and `abacus version` report "Bundled tools: 4 of 4 verified" (or what is wrong);
+  JSON gains `bundled` (version) and `overview.bundled` (doctor) and tool lines gain `bundled_tool`
+  and `optional`, all additive (schema_version stays 1). Doctor's header says `Ready` only when bd,
+  lambe and beads-lease are usable; bv (graph insights) is optional: it still counts in "Bundled
+  tools: N of 4" and is listed as an optional thing to set up, but never blocks `Ready`.
+- `scripts/dev-bundle.sh --out DIR` refuses a DIR that is not empty and does not look like its own
+  install (it replaces the whole directory), re-checks each kept tool's license and file modes (and
+  drops tools the manifest no longer lists), and manifest tool names must match `^[a-z0-9-]+$`.
+- `core.HowToConnect` (map) and `core.HowToConnectInsights` (var) are now `core.HowToConnectFor(domain)`
+  and `core.HowToConnectInsights()`, computed from the build kind: no shared state, race-free.
+
+### Changed
+
+- A bundled tool abacus cannot use is never "missing" or "install X" to the user. In a release the
+  text says abacus's own copy is damaged or was moved, gives the refusal reason when a copy was
+  refused, and says to re-extract the archive and keep the folder together; in a dev build
+  (`version` is `dev`) it says to run `scripts/dev-bundle.sh`. Optional tools that abacus does not
+  ship (Vercel Board CLI, b9s) say they are optional and what they add. Doctor's tool badge reads
+  `unavailable` or `optional` instead of `missing`; the raw `where: "missing"` in JSON is unchanged.
+
+
 - Assessment of bv and b9s as importable Go packages for the Tasks graph insights
   (`docs/plans/2026-11-22-graph-core-assessment.md`): measurements, a decision and the bv license
   rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
@@ -58,6 +101,11 @@ may change behavior, and patch versions are fixes and small additions.
 - `core.Sanitize` now also drops every Unicode format character (word joiner, soft hyphen, tag
   characters and the like) and the blank Hangul fillers, not only bidi controls and zero-width
   characters. `core.ShellJoin` now quotes words containing `=` or `%`.
+- The minimum Go version is now 1.26.11 (it follows `github.com/Dicklesworthstone/beads_viewer`
+  v0.27.0, pinned exactly), and lipgloss moves from v1.1.0 to the pseudo-version
+  `v1.1.1-0.20250404203927-76690c660834` that bv's module requires, with `x/ansi`,
+  `colorprofile`, `displaywidth` and a few smaller modules following. Every TUI golden is
+  unchanged. The release binary grows by about 1.8 MB (linux/amd64, 8.39 MB to 10.19 MB).
 - A visual pass over the tabs, restrained and meaningful: Tasks opens with a bar of the task states
   in proportion (at most 40 cells; blocked in red, in progress in the accent color, closed quiet),
   status is colored by meaning (blocked red, deferred amber, in progress accent) and only P0 is
@@ -67,6 +115,25 @@ may change behavior, and patch versions are fixes and small additions.
   two hues it can tell apart. Each color is also carried by a glyph or word, so nothing depends on color:
   the bar uses a different glyph per state and the dot is a character. Selected rows stay plain on
   the highlight. In `--demo`, Doctor now lists the demo tools as demo instead of missing.
+- The Tasks forms and the screens around the write gate are framed panels like the other tabs: the
+  new and edit forms (fields aligned in a table with a marker and caret on the focused one, the
+  error under them), "Checking the current state…", the confirm screen (the "changed since you
+  opened it" note, the plan, and the exact command wrapped in full, never cut) and its "applying…"
+  state. The first-run setup prompt and its confirm screen, and the not-connected and unavailable
+  states of Tasks, Board, Leases and Queues, are framed too. Wording, keys and the write gate are
+  unchanged: nothing is written before `y` on the confirm screen. Long titles and commands wrap
+  instead of being cut, and a body that does not fit a short terminal ends in a "+N more" row.
+  A confirm screen that does not fit cannot be applied: its more-row says to enlarge the terminal
+  to review, `y apply` leaves the footer and `y` does nothing until the whole plan and command are
+  visible (the same for the first-run setup confirm). The command shown is the command run: an
+  argument with an invisible, bidi or control character is shown quoted. While a form or confirm is
+  open its keys lead the footer. The not-connected panels of Board, Leases and Queues put how to
+  connect first when the height cannot hold everything, and a one-row panel still marks hidden rows.
+- Internal: Leases, Queues, Board and Tasks share one list-navigation piece (`listNav`: cursor,
+  scroll, selected row identity, drill), with direct tests. Selection and key behavior are unchanged
+  (Leases and Queues still pin the selection when its row disappears; Board and Tasks follow the
+  clamped row). The Tasks section moved to its own file, and the Board builds only the selected
+  row's detail text instead of one per row on every render. No output changed.
 - Tasks and Board are drawn in framed panels with aligned columns. Tasks shows the counts and an
   aligned task table in a list panel and the graph insights in their own panel, beside the list from
   100 columns and under it below that. Board shows the summary, channels and aligned thread and task

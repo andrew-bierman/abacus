@@ -271,7 +271,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	entries := d.Build(o).Detect(ctx)
 	w := core.ResolveProviders(entries).Writer
 	if w == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnect[core.DomainTasks])
+		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 		return core.ExitFail
 	}
 	plan, err := core.PlanTaskChange(w, ch)
@@ -408,7 +408,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	defer cancel()
 	w := core.ResolveProviders(d.Build(o).Detect(ctx)).BoardWriter
 	if w == nil {
-		fmt.Fprintf(d.Err, "board: not connected. %s\n", core.HowToConnect[core.DomainBoard])
+		fmt.Fprintf(d.Err, "board: not connected. %s\n", core.HowToConnectFor(core.DomainBoard))
 		return core.ExitFail
 	}
 	plan, err := core.PlanBoardChange(w, ch)

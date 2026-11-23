@@ -1,12 +1,12 @@
 === 40x12 ===
  [Board]  Tasks  Leases  Queues  Doctor
-state unavailable: could not reach the
-board
-
-check board_url and the network, then
-press r.
-
-
+╭─ ▸ Board ────────────────────────────╮
+│ state unavailable: could not reach   │
+│ the board                            │
+│                                      │
+│ check board_url and the network,     │
+│ then press r.                        │
+╰──────────────────────────────────────╯
 
 
 
@@ -14,13 +14,13 @@ press r.
 === 40x30 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────
-state unavailable: could not reach the
-board
-
-check board_url and the network, then
-press r.
-
-
+╭─ ▸ Board ────────────────────────────╮
+│ state unavailable: could not reach   │
+│ the board                            │
+│                                      │
+│ check board_url and the network,     │
+│ then press r.                        │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,11 +44,11 @@ press r.
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
-state unavailable: could not reach the board
-
-check board_url and the network, then press r.
-
-
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ state unavailable: could not reach the board                                 │
+│                                                                              │
+│ check board_url and the network, then press r.                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -58,11 +58,11 @@ check board_url and the network, then press r.
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-state unavailable: could not reach the board
-
-check board_url and the network, then press r.
-
-
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ state unavailable: could not reach the board                                 │
+│                                                                              │
+│ check board_url and the network, then press r.                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,11 +88,11 @@ check board_url and the network, then press r.
 ? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
-state unavailable: could not reach the board
-
-check board_url and the network, then press r.
-
-
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ state unavailable: could not reach the board                                                                         │
+│                                                                                                                      │
+│ check board_url and the network, then press r.                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -102,9 +102,67 @@ check board_url and the network, then press r.
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-state unavailable: could not reach the board
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ state unavailable: could not reach the board                                                                         │
+│                                                                                                                      │
+│ check board_url and the network, then press r.                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-check board_url and the network, then press r.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮
+│ state unavailable: could not reach the board             │
+│                                                          │
+│ check board_url and the network, then press r.           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · ↑/↓ move · r refresh
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────────────────────────╮
+│ state unavailable: could not reach the board                                                     │
+│                                                                                                  │
+│ check board_url and the network, then press r.                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
 

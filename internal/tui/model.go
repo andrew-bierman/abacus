@@ -135,7 +135,7 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 	}
 	h, ok := p.Missing[d]
 	if !ok { // a provider exists but this front-end has no renderer for it
-		h = core.Header{Domain: d, Title: d.Title(), State: core.NotConnected, Reason: "no view for this provider", HowToConnect: core.HowToConnect[d]}
+		h = core.Header{Domain: d, Title: d.Title(), State: core.NotConnected, Reason: "no view for this provider", HowToConnect: core.HowToConnectFor(d)}
 	}
 	var fv func(string) tea.Cmd
 	if d == core.DomainTasks {
@@ -313,7 +313,12 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // ShortHelp and FullHelp make the model a help.KeyMap: the footer and overlay are generated
 // from the same bindings the keys use. Escape hatches come first so a narrow footer keeps them.
+// While the section captures keys (a form, a confirm screen) its own keys come first: the decision
+// on the screen outranks the way around the app, so a narrow footer keeps "y apply" and "n cancel".
 func (m *Model) ShortHelp() []key.Binding {
+	if sec := m.active(); sec.Capturing() {
+		return append(append([]key.Binding(nil), sec.Bindings()...), keyQuit, keyHelp, keyNext)
+	}
 	return append([]key.Binding{keyHelp, keyQuit, keyNext}, m.active().Bindings()...)
 }
 

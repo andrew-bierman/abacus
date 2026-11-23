@@ -1,0 +1,2 @@
+{"id":"bl-1","title":"Blocker","status":"open","priority":1,"issue_type":"task","description":"invented fixture issue","created_at":"2026-11-01T10:00:00Z","updated_at":"2026-11-02T10:00:00Z","blocks":["bl-2"]}
+{"id":"bl-2","title":"Blocked","status":"open","priority":2,"issue_type":"task","description":"invented fixture issue","created_at":"2026-11-01T10:00:00Z","updated_at":"2026-11-02T10:00:00Z"}

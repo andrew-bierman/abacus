@@ -39,15 +39,12 @@ type lambeSection struct {
 	view   lambe.View
 	err    error
 	loaded bool
-	cursor int
-	// selected is the identity of the chosen run, so a poll refresh that reorders or removes
-	// rows cannot move the selection (and the Rex handoff) onto a different run.
-	selected string
-	notice   string
-	drilled  bool // stacked layout only: showing the detail pane
-	filter   string
-	typing   bool
-	top      int
+	// listNav's selected is the identity of the chosen run (runKey), so a poll refresh that
+	// reorders or removes rows cannot move the selection (and the Rex handoff) onto a different run.
+	listNav
+	notice string
+	filter string
+	typing bool
 }
 
 func newLambeSection(m *lambe.Module, handoff func([]string) tea.Cmd) *lambeSection {
@@ -58,9 +55,9 @@ func (s *lambeSection) SetTheme(t Theme) { s.th = t }
 func (s *lambeSection) Capturing() bool  { return s.typing }
 
 func (s *lambeSection) Bindings() []key.Binding {
-	stacked := isStacked(s.width())
-	enter, back := keyEnter, keyBack
-	enter.SetEnabled(stacked && !s.drilled)
+	_, back := s.bindings(s.width(), len(s.runs()))
+	enter := keyEnter // offered whenever stacked, even with no runs, as before
+	enter.SetEnabled(isStacked(s.width()) && !s.drilled)
 	back.SetEnabled(s.drilled || s.filter != "")
 	return append(moveBindings(), enter, back, keyFilter, keyOpen)
 }
@@ -103,7 +100,7 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case lambeViewMsg:
 		s.view, s.err, s.loaded = msg.view, msg.err, true
-		s.reanchor()
+		s.reanchor(s.ids(), false)
 	case handoffDoneMsg:
 		if msg.err != nil {
 			s.notice = "rex: " + core.Sanitize(msg.err.Error())
@@ -112,7 +109,7 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return s, tea.Batch(s.fetch(), tick())
 	case tea.WindowSizeMsg:
 		s.resize(msg)
-		s.drilled = s.drilled && isStacked(s.width())
+		s.fit(s.width())
 	case tea.KeyMsg:
 		s.notice = ""
 		if s.typing {
@@ -122,20 +119,16 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		runs := s.runs()
 		switch {
 		case key.Matches(msg, keyUp):
-			s.cursor = max(0, s.cursor-1)
-			s.remember()
+			s.up(s.ids())
 		case key.Matches(msg, keyDown):
-			s.cursor = min(max(0, len(runs)-1), s.cursor+1)
-			s.remember()
+			s.down(s.ids())
 		case key.Matches(msg, keyEnter):
-			s.drilled = isStacked(s.width()) && len(runs) > 0
+			s.enter(s.width(), len(runs))
 		case key.Matches(msg, keyBack):
 			// Esc peels one layer: the detail pane first, then the filter.
-			if s.drilled {
-				s.drilled = false
-			} else if s.filter != "" {
+			if !s.back() && s.filter != "" {
 				s.filter = ""
-				s.reanchor()
+				s.reanchor(s.ids(), false)
 			}
 		case key.Matches(msg, keyFilter):
 			s.typing, s.drilled = true, false
@@ -168,34 +161,19 @@ func (s *lambeSection) typeKey(msg tea.KeyMsg) {
 	case tea.KeyRunes, tea.KeySpace:
 		s.filter += string(msg.Runes)
 	}
-	s.reanchor()
+	s.reanchor(s.ids(), false)
 }
 
 func runKey(r lambe.Run) string { return r.Issue + "\x00" + r.Session }
 
-// remember records the run under the cursor as the selection.
-func (s *lambeSection) remember() {
-	if runs := s.runs(); s.cursor < len(runs) {
-		s.selected = runKey(runs[s.cursor])
-	}
-}
-
-// reanchor puts the cursor back on the selected run after a refresh, falling back to the
-// clamped index when that run is gone.
-func (s *lambeSection) reanchor() {
+// ids is one stable id per visible run (the filtered list the cursor indexes): its runKey.
+func (s *lambeSection) ids() []string {
 	runs := s.runs()
+	out := make([]string, len(runs))
 	for i, r := range runs {
-		if s.selected != "" && runKey(r) == s.selected {
-			s.cursor = i
-			return
-		}
+		out[i] = runKey(r)
 	}
-	s.cursor = min(s.cursor, max(0, len(runs)-1))
-	// Only cursor movement changes the selection: a filter that hides it, or a refresh that
-	// drops it, must not silently move it, so clearing the filter restores the same run.
-	if s.selected == "" {
-		s.remember()
-	}
+	return out
 }
 
 // stateKind is the color role of a run state; the severity itself is decided once, in core.
@@ -358,12 +336,9 @@ func (s *lambeSection) View() string {
 		body = []string{s.th.Text(KindMuted, "loading…")}
 	case errors.Is(s.err, lambe.ErrNoDaemon):
 		// Not a failure: nothing is supervising. Say so plainly and how to start it.
-		body = []string{s.th.Header.Render("Queues") + " " + s.th.Badge(KindSkip, "not connected"), ""}
-		body = append(body, wrap(s.th.Text(KindWarn, lambe.NoDaemonReason), w)...)
-		body = append(body, "")
-		body = append(body, wrap(s.th.Text(KindAccent, "how to connect: ")+san(s.m.StartHint()), w)...)
+		body = notConnectedBox(s.th, "Queues", lambe.NoDaemonReason, s.m.StartHint(), w, s.bodyH(s.notice))
 	case s.err != nil:
-		body = wrap(s.th.Text(KindWarn, "state unavailable: "+core.Sanitize(s.err.Error())), w)
+		body = box(s.th, "Queues", unavailableBody(s.th, s.err.Error(), innerW(w)), w, s.bodyH(s.notice))
 	default:
 		g := duoLayout(w, s.bodyH(s.notice))
 		scrolling, cursorLine := s.listLines(g.listInner())
