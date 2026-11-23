@@ -242,7 +242,7 @@ func TestModuleReportsAFailedReadAndRecovers(t *testing.T) {
 		t.Fatal("a failed read is an error")
 	}
 	ch := m.Doctor(context.Background())
-	if len(ch) != 1 || ch[0].Status != core.StatusWarn || !strings.Contains(ch[0].Detail, "failed") || !strings.Contains(ch[0].Fix, "bd status") {
+	if len(ch) != 1 || ch[0].Status != core.StatusWarn || !strings.Contains(ch[0].Detail, "failed") || !strings.Contains(ch[0].Fix, "bd status") || strings.Contains(ch[0].Fix, "issues.jsonl") {
 		t.Fatalf("%+v", ch)
 	}
 	if st := m.Status(context.Background()); st.Unavailable == "" {

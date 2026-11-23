@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
@@ -24,6 +25,9 @@ type Options struct {
 	LookPath func(string) (string, error)
 	Runner   core.Runner
 	Timeout  time.Duration
+	// ExportRunner runs the one large read (export). Nil means the Runner when one was injected,
+	// else a real process with stdout capped at ExportMaxOut and a longer deadline.
+	ExportRunner core.Runner
 
 	// Ref, when set, replaces Dir with a directory shared with other modules (the graph engine), so a
 	// workspace created while abacus runs is read without a restart.
@@ -47,7 +51,21 @@ type Module struct {
 	o Options
 }
 
+// ExportMaxOut is the most export stdout that is kept (one byte over the graph engine's 64 MiB
+// limit, so "too large" is detectable); the rest of the output is discarded, never buffered.
+const ExportMaxOut = 64<<20 + 1
+
+// exportTimeout is longer than a normal read: the export walks every issue.
+const exportTimeout = 30 * time.Second
+
 func New(o Options) *Module {
+	if o.ExportRunner == nil {
+		if o.Runner == nil {
+			o.ExportRunner = core.ExecRunner{Scrub: core.ScrubBeadsEnv, MaxOut: ExportMaxOut, Timeout: exportTimeout}
+		} else {
+			o.ExportRunner = o.Runner
+		}
+	}
 	if o.Runner == nil {
 		o.Runner = core.ExecRunner{Scrub: core.ScrubBeadsEnv}
 	}
@@ -335,15 +353,44 @@ func requestedID(a []string, dir string) string {
 
 // Export reads every issue, dependencies included, as JSONL (`bd --readonly export`, stdout only).
 // The graph engine uses it when the tracker keeps no .beads/issues.jsonl, which is bd's default.
+// Stdout is capped at ExportMaxOut: past it the error wraps core.ErrOutputTooLarge. A failure
+// carries the tail of bd's stderr, sanitized, so Doctor can say why.
 func (m *Module) Export(ctx context.Context) ([]byte, error) {
-	out, exit, err := m.read(ctx, readExport)
-	if err != nil {
-		return nil, fmt.Errorf("bd export could not run: %s", core.Sanitize(err.Error()))
+	args := m.dirArgs(readExport...)
+	if !readAllowed(args, m.TrackerDir()) {
+		return nil, fmt.Errorf("bd %q is not allowed: reads are fixed", args)
 	}
-	if exit != 0 {
-		return nil, fmt.Errorf("bd export exited %d", exit)
+	ctx, cancel := context.WithTimeout(ctx, exportTimeout)
+	defer cancel()
+	var out, errOut []byte
+	var exit int
+	var err error
+	if sr, ok := m.o.ExportRunner.(core.SplitRunner); ok {
+		out, errOut, exit, err = sr.RunSplit(ctx, m.Bin(), args...)
+	} else {
+		out, exit, err = m.o.ExportRunner.Run(ctx, m.Bin(), args...)
+	}
+	switch {
+	case errors.Is(err, core.ErrOutputTooLarge) || len(out) >= ExportMaxOut:
+		return nil, fmt.Errorf("bd export: %w", core.ErrOutputTooLarge)
+	case err != nil:
+		return nil, fmt.Errorf("bd export could not run: %s", core.Sanitize(err.Error()))
+	case exit != 0:
+		return nil, fmt.Errorf("bd export exited %d%s", exit, stderrTail(errOut))
 	}
 	return out, nil
+}
+
+// stderrTail is ": <last 200 characters of stderr>", sanitized, or "" when there is none.
+func stderrTail(b []byte) string {
+	s := strings.Join(strings.Fields(core.Sanitize(string(b))), " ")
+	if s == "" {
+		return ""
+	}
+	if r := []rune(s); len(r) > 200 {
+		s = "..." + string(r[len(r)-200:])
+	}
+	return ": " + s
 }
 
 // ReadTask re-reads one issue (`bd --readonly show ID --json`) so a confirm screen can show

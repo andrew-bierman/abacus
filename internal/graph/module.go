@@ -98,7 +98,7 @@ func (m *Module) Doctor(context.Context) []core.Check {
 	m.mu.Unlock()
 	if last != "" {
 		return []core.Check{{Name: "insights", Status: core.StatusWarn, Detail: "the last graph-insights read failed: " + last,
-			Fix: "check that bd can read this tracker (bd status) and that .beads/issues.jsonl exists, then press r"}}
+			Fix: "check that bd can read this tracker (bd status), then press r"}}
 	}
 	checks := []core.Check{{Name: "insights", Status: core.StatusOK, Detail: "in-process analysis"}}
 	if f, ok := m.freshness(); ok {

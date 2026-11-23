@@ -3,6 +3,7 @@ package graph_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -424,5 +425,25 @@ func TestParseIssuesSkipsRecordsThatAreNotIssues(t *testing.T) {
 `)
 	if len(got) != 1 || got[0].ID != "a" {
 		t.Fatalf("%+v", got)
+	}
+}
+
+func TestFallbackOverTheCapIsTheExistingTooLargeErrorAndEmptyOutputIsEmpty(t *testing.T) {
+	src := func(f func(context.Context) ([]byte, error)) graph.FileSource {
+		return graph.FileSource{Ref: core.NewTrackerRef(t.TempDir()), Fallback: f}
+	}
+	big := func(context.Context) ([]byte, error) { return nil, fmt.Errorf("bd export: %w", core.ErrOutputTooLarge) }
+	if _, err := src(big).Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "export larger than 64 MiB") {
+		t.Fatalf("%v", err)
+	}
+	over := func(context.Context) ([]byte, error) { return make([]byte, 64<<20+1), nil }
+	if _, err := src(over).Issues(context.Background()); err == nil || !strings.Contains(err.Error(), "export larger than 64 MiB") {
+		t.Fatalf("%v", err)
+	}
+	empty := func(context.Context) ([]byte, error) { return nil, nil }
+	m := graph.NewModule(graph.Options{Source: src(empty), Analyzer: graph.NewBVAnalyzer()})
+	r, err := m.Insights(context.Background())
+	if err != nil || !r.Empty {
+		t.Fatalf("empty stdout is the empty report: %+v %v", r, err)
 	}
 }

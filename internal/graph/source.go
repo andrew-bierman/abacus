@@ -306,6 +306,9 @@ func (s FileSource) Issues(ctx context.Context) ([]Issue, error) {
 			return nil, errNoExport
 		}
 		out, err := s.Fallback(ctx)
+		if errors.Is(err, core.ErrOutputTooLarge) || len(out) > maxExport {
+			return nil, errTooLarge
+		}
 		if err != nil {
 			return nil, err
 		}
