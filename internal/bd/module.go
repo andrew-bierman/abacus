@@ -4,6 +4,7 @@
 package bd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 // Options configure the module; every process boundary is injectable.
@@ -67,7 +69,8 @@ func New(o Options) *Module {
 		}
 	}
 	if o.Runner == nil {
-		o.Runner = core.ExecRunner{Scrub: core.ScrubBeadsEnv}
+		// MaxOut bounds memory for the snapshot read; every other read is far smaller.
+		o.Runner = core.ExecRunner{Scrub: core.ScrubBeadsEnv, MaxOut: taskview.MaxExport + 1}
 	}
 	if o.LookPath == nil {
 		o.LookPath = exec.LookPath
@@ -267,6 +270,33 @@ func (m *Module) Tasks(ctx context.Context) (core.TasksReport, error) {
 			Priority: i.Priority, Type: core.Sanitize(i.Type), Assignee: core.Sanitize(i.Assignee), UpdatedAt: core.Sanitize(i.UpdatedAt)})
 	}
 	return r, nil
+}
+
+// Snapshot reads the whole tracker once (`bd --readonly export`) for the Tasks list and detail.
+// Every view derives from this one read, so they cannot disagree about what is blocked or ready.
+func (m *Module) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
+	if nc := m.configMissing(); nc != nil {
+		return core.TaskSnapshot{}, nc
+	}
+	if g := m.Guide(ctx); g != nil {
+		return core.TaskSnapshot{}, &core.NeedsSetupError{Guide: *g}
+	}
+	out, exit, err := m.read(ctx, readExport)
+	switch {
+	case errors.Is(err, core.ErrTimedOut):
+		return core.TaskSnapshot{}, errors.New("bd timed out exporting the tracker")
+	case errors.Is(err, core.ErrOutputTooLarge):
+		return core.TaskSnapshot{}, taskview.ErrTooLarge
+	case err != nil:
+		return core.TaskSnapshot{}, fmt.Errorf("bd could not run: %s", core.Sanitize(err.Error()))
+	case exit != 0:
+		return core.TaskSnapshot{}, errors.New(noTrackerHint)
+	}
+	name := ""
+	if d := m.TrackerDir(); d != "" {
+		name = filepath.Base(d)
+	}
+	return taskview.Parse(bytes.NewReader(out), time.Now(), name)
 }
 
 // RunTask runs a planned write. It re-checks the write allowlist, so nothing but a built

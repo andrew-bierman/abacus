@@ -33,12 +33,22 @@ func TestReadAllowlistIsExact(t *testing.T) {
 		{"-C", "/other", "--readonly", "export"},
 		{"--readonly", "show", "tt-1", "tt-2", "--json"},
 		{"show", "tt-1", "--json"},
+		{"export"},                                     // not readonly
+		{"--readonly", "export", "-o", "out.jsonl"},    // would write a file
+		{"--readonly", "export", "--all"},              // infrastructure records
+		{"--readonly", "export", "--include-memories"}, // agent memories
+		{"--readonly", "export", "--json"},
+		{"--readonly", "export", "export"},
+		{"-C", "/other", "--readonly", "export"},
 		{},
 	}
 	for _, a := range bad {
 		if readAllowed(a, "/trk") {
 			t.Errorf("read should be refused: %v", a)
 		}
+	}
+	if writeAllowed([]string{"--readonly", "export"}, "") || writeAllowed([]string{"export"}, "") {
+		t.Error("export is a read, never a write")
 	}
 	if readAllowed([]string{"-C", "/trk", "--readonly", "version", "--json"}, "") {
 		t.Error("-C only with a configured dir")
