@@ -265,8 +265,12 @@ func TestLiveNoCheckWhileAUserReadIsInFlight(t *testing.T) {
 		t.Fatal("a check started beside a read in flight")
 	}
 	r.run(cmd)
+	if r.s.livePoll() != nil {
+		t.Error("a read the user asked for counts as a check: the next one is a wait away")
+	}
+	r.c.advance(tasksPollEvery)
 	if r.s.livePoll() == nil {
-		t.Error("after the reads answered a check is due again")
+		t.Error("after the wait a check is due again")
 	}
 }
 
