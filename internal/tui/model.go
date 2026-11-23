@@ -4,6 +4,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -38,10 +39,11 @@ type Model struct {
 
 // config is what Options set before the sections are built.
 type config struct {
-	th       Theme
-	audit    core.Audit
-	setup    *core.Setup
-	fullView func(dir string) tea.Cmd
+	th          Theme
+	audit       core.Audit
+	setup       *core.Setup
+	fullView    func(dir string) tea.Cmd
+	fullViewSet bool // WithFullView was given, so a demo session leaves it alone
 }
 
 // Option customises the shell.
@@ -59,7 +61,9 @@ func WithSetup(s *core.Setup) Option { return func(c *config) { c.setup = s } }
 
 // WithFullView replaces the handoff to the full interactive view (tests inject a fake;
 // the default probes for it and runs it only on an explicit keypress).
-func WithFullView(f func(dir string) tea.Cmd) Option { return func(c *config) { c.fullView = f } }
+func WithFullView(f func(dir string) tea.Cmd) Option {
+	return func(c *config) { c.fullView, c.fullViewSet = f, true }
+}
 
 // New builds the cockpit from detection entries.
 func New(entries []core.Entry, opts ...Option) *Model {
@@ -77,6 +81,9 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	m.help.Styles = m.th.HelpStyles()
 	m.help.ShortSeparator = " · "
 	prov := core.ResolveProviders(entries)
+	if isDemo(entries) && !cfg.fullViewSet {
+		cfg.fullView = demoFullView
+	}
 	if cfg.audit == nil {
 		cfg.audit = auditFor(entries)
 	}
@@ -435,10 +442,24 @@ func (discardAudit) Record(core.AuditEntry) error { return nil }
 // auditFor is the audit a session writes to when none was injected: the abacus state dir, except
 // for a demo session, which changes nothing and so records nothing.
 func auditFor(entries []core.Entry) core.Audit {
-	for _, e := range entries {
-		if d, ok := e.Module.(demoModule); ok && d.IsDemo() {
-			return discardAudit{}
-		}
+	if isDemo(entries) {
+		return discardAudit{}
 	}
 	return core.DefaultAudit()
+}
+
+// isDemo reports whether any module in the session is fixture data.
+func isDemo(entries []core.Entry) bool {
+	for _, e := range entries {
+		if d, ok := e.Module.(demoModule); ok && d.IsDemo() {
+			return true
+		}
+	}
+	return false
+}
+
+// demoFullView is the full-view handoff of a demo session: there is no tracker, so there is
+// nothing to open, and the real tool on PATH is never probed or run.
+func demoFullView(string) tea.Cmd {
+	return func() tea.Msg { return fullViewDoneMsg{err: errors.New("demo data: there is no tracker to open")} }
 }
