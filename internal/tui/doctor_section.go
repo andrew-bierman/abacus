@@ -157,6 +157,7 @@ func (s *doctorSection) statusLine(ov core.Overview) string {
 			todo++
 		}
 	}
+	todo = max(todo, len(ov.Attention))
 	switch {
 	case ov.Ready && todo == 0:
 		return th.Badge(KindOK, "Ready")
@@ -209,8 +210,14 @@ func (s *doctorSection) areaLines(ov core.Overview, iw int) []string {
 func (s *doctorSection) toolLines(ov core.Overview, iw int) []string {
 	th := s.th
 	var out []string
+	for _, l := range wrap(san(ov.Bundled.Line), iw) {
+		out = append(out, th.Text(KindMuted, l))
+	}
 	for _, t := range ov.Tools {
-		where := th.Badge(KindSkip, "missing")
+		where := th.Badge(KindSkip, san(t.Label()))
+		if t.Where == "missing" && t.Bundled {
+			where = th.Badge(KindWarn, san(t.Label())) // abacus's own copy is the problem, not the user
+		}
 		switch t.Where {
 		case "bundled":
 			where = th.Badge(KindOK, "bundled")

@@ -30,6 +30,8 @@ type Report struct {
 	// Overview leads `doctor`: ready or needs attention, each domain and tool in one line.
 	// Additive, so schema_version stays 1.
 	Overview *Overview `json:"overview,omitempty"`
+	// Bundled is the self-contained check, set by `version`. Additive.
+	Bundled *BundledSummary `json:"bundled,omitempty"`
 }
 
 func newReport(version string) Report {
@@ -81,6 +83,8 @@ func VersionReport(version string, entries []Entry) Report {
 		}
 		r.Modules = append(r.Modules, base(e))
 	}
+	b := SummarizeBundled(r.Modules)
+	r.Bundled = &b
 	return r
 }
 

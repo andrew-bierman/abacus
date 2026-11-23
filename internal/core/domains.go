@@ -150,7 +150,8 @@ type InsightsProvider interface {
 }
 
 // HowToConnectInsights is shown when no graph-analysis provider is available.
-const HowToConnectInsights = "Graph insights need bv. It comes with the abacus download (keep the whole folder together), or install it: brew install dicklesworthstone/tap/bv."
+// It is rewritten by SetBuildVersion (a release and a dev build word the fix differently).
+var HowToConnectInsights = "Graph insights need bv. " + BundledProblem("bv", "")
 
 // InsightsUnavailable is the plain one-liner for a bv read that failed on a tracker that has
 // tasks. The actual reason is kept for Doctor.
@@ -327,12 +328,13 @@ type (
 )
 
 // HowToConnect is the fix message shown for a domain with no usable provider. It may name
-// the provider command because it helps the user fix a provider.
+// the provider command because it helps the user fix a provider. The bundled-tool texts depend
+// on the build kind (release or dev) and are refreshed by SetBuildVersion at start-up.
 var HowToConnect = map[DomainID]string{
 	DomainBoard:  HowToConnectBoard,
-	DomainTasks:  "The Beads CLI (bd) was not found. It comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
-	DomainLeases: "Leases need beads-lease, which comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
-	DomainQueues: "Queues need Lambe, which comes with the abacus download (keep the whole folder together), or install it and put it on your PATH.",
+	DomainTasks:  BundledProblem("bd", ""),
+	DomainLeases: BundledProblem("beads-lease", ""),
+	DomainQueues: BundledProblem("lambe", ""),
 }
 
 // HowToConnectBoardDegraded is the hint for a Board read that failed although the CLI is there:

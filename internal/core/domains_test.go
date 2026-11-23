@@ -122,7 +122,7 @@ func (m insMod) Insights(context.Context) (core.InsightsReport, error) { return 
 func TestInsightsNotConnectedNamesHowToInstallAndDoesNotHideTheDomain(t *testing.T) {
 	d := core.ReadDomains(context.Background(), nil)
 	for _, in := range []*core.InsightsReport{d.Tasks.Insights} {
-		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "brew install") {
+		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "abacus's own copy of bv") || strings.Contains(in.HowToConnect, "brew install") {
 			t.Fatalf("%+v", in)
 		}
 	}

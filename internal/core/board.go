@@ -17,7 +17,7 @@ import (
 
 // HowToConnectBoard is shown when the Vercel Board CLI is missing or is not Vercel Board. It
 // names the real package on purpose: `vb` on npm is an unrelated project.
-const HowToConnectBoard = "The Vercel Board CLI was not found. Install it with: npm i -g @vercel/board (never `npm i vb` or `npx vb`: that is a different package). Docs: https://github.com/vercel/board"
+const HowToConnectBoard = "The Board tab is optional: it adds channels, threads and tasks from a Vercel Board, and nothing else needs it. To turn it on, install the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`: that is a different package). Docs: https://github.com/vercel/board"
 
 // The two "installed but not usable yet" states of a Board CLI: the reason, and the exact next step.
 const (
