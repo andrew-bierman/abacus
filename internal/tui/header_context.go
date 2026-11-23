@@ -46,7 +46,7 @@ func (m *Model) withContext(line string, w int) string {
 	c := m.contextLine()
 	parts := c.Parts()
 	for len(parts) > 1 && lipgloss.Width(strings.Join(parts, " · ")) > room {
-		if len(parts) == 2 && strings.TrimSpace(c.Tracker) != "" { // the tracker name gives way before the count does
+		if len(parts) == 2 && c.HaveTasks && strings.TrimSpace(c.Tracker) != "" { // tracker and count: the name is cut before the count goes
 			if keep := room - lipgloss.Width(" · "+parts[1]); keep >= contextMinName {
 				parts[0] = trunc(parts[0], keep)
 				break

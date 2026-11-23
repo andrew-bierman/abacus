@@ -19,17 +19,11 @@ func TestHeaderContextAppearsFromOneHundredColumnsAndNeverMovesTheTabs(t *testin
 		if lipgloss.Width(h) != w {
 			t.Errorf("%d: the tab bar row is %d wide", w, lipgloss.Width(h))
 		}
-		if !strings.HasPrefix(h, " abacus") && !strings.Contains(h, "[Tasks]") {
-			t.Errorf("%d: the tab bar is not intact: %q", w, h)
+		if !strings.HasPrefix(h, "abacus   Board  [Tasks]  Leases  Queues  Doctor") {
+			t.Errorf("%d: the tab bar is not intact at the left: %q", w, h)
 		}
-		if !strings.Contains(h, "[Tasks]") || strings.Index(h, "[Tasks]") > 30 {
-			t.Errorf("%d: tabs moved: %q", w, h)
-		}
-		if !strings.HasSuffix(h, "tasks · 3 ready") && !strings.Contains(h, "fleet") {
-			t.Errorf("%d: no context at the right: %q", w, h)
-		}
-		if !strings.Contains(h, "fleet") || !strings.Contains(h, " tasks") {
-			t.Errorf("%d: the tracker and the count belong in the header: %q", w, h)
+		if !strings.HasSuffix(strings.TrimRight(h, " "), "fleet · 14 tasks · 3 ready") {
+			t.Errorf("%d: the context is not at the right: %q", w, h)
 		}
 	}
 	for _, w := range []int{99, 80, 60, 40} {

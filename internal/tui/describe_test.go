@@ -139,11 +139,11 @@ func TestYStillMeansApplyOnTheConfirmScreenOnly(t *testing.T) {
 }
 
 func TestViewerScrollsAndClamps(t *testing.T) {
-	m := press(press(pm(t, 100, 20), "2"), "d")
+	m := press(press(press(pm(t, 100, 20), "2"), "T"), "d") // the flat list's first row, ac-12, has a long detail
 	v := overOf(m)
 	total := len(v.content(innerW(100)))
 	if total < 20 {
-		t.Skipf("the fixture's detail is only %d lines", total)
+		t.Fatalf("the fixture's detail is only %d lines: this test needs a long one", total)
 	}
 	m = press(m, "k")
 	if v.off != 0 {

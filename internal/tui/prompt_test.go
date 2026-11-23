@@ -83,25 +83,6 @@ func TestPromptSelectsTasksViews(t *testing.T) {
 	}
 }
 
-// Until the Kanban view exists the alias is registered and says so; once it does, it selects it.
-func TestPromptKanbanAliasIsHonest(t *testing.T) {
-	m := cmd(press(pm(t, 100, 32), "2"), "kanban")
-	have := false
-	for _, v := range taskViews {
-		have = have || strings.EqualFold(v.name, "kanban")
-	}
-	f := footer(m)
-	if have {
-		if tasksSec(m).list.cur == viewList && !strings.EqualFold(taskViews[tasksSec(m).list.cur].name, "kanban") {
-			t.Errorf("kanban view exists but :kanban did not select it")
-		}
-		return
-	}
-	if !strings.Contains(f, "kanban") || !strings.Contains(f, "not available") || tasksSec(m).list.cur != viewList || prm(m) != nil {
-		t.Errorf("without a Kanban view :kanban must say it is not available and change nothing: %q", f)
-	}
-}
-
 func TestPromptFilterAppliesAndClears(t *testing.T) {
 	m := cmd(cmd(press(pm(t, 100, 32), "1"), "list"), "filter label:ui") // the flat list: the tree also shows the parents of a match
 	s := tasksSec(m)
@@ -197,9 +178,13 @@ func TestPromptEditingKeys(t *testing.T) {
 		t.Error("an empty command closes and changes nothing")
 	}
 	m = typeLine(press(m, ":"), strings.Repeat("x", 400))
-	if n := len(prm(m).text); n > core.MaxCommandLen {
-		t.Errorf("the line grew to %d", n)
+	if n := len(prm(m).text); n != 400 { // never cut silently: enter refuses it, with the reason
+		t.Errorf("the line holds %d runes, want 400", n)
 	}
+	if m = press(m, "enter"); prm(m) == nil || !strings.Contains(footer(m), "too long") {
+		t.Errorf("an over-long line is refused at enter: %q", footer(m))
+	}
+	m = press(m, "ctrl+u")
 	m = press(press(m, "esc"), ":")
 	if len(prm(m).text) != 0 {
 		t.Error("a reopened prompt starts empty")
@@ -491,7 +476,7 @@ func TestEveryCommandResolvesToARealTargetAndNamesNoTool(t *testing.T) {
 				t.Errorf("%s targets the tab %q, which does not exist", c.Name, c.Tab)
 			}
 		}
-		if c.Kind == core.ActGoView && !views[c.View] && c.View != "kanban" {
+		if c.Kind == core.ActGoView && !views[c.View] {
 			t.Errorf("%s targets the view %q, which does not exist", c.Name, c.View)
 		}
 		for _, w := range []string{c.Name, c.Desc, c.Arg.Name, strings.Join(c.Aliases, " ")} {

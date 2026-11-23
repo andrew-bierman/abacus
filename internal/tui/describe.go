@@ -20,6 +20,9 @@ var (
 	keyViewerScroll = key.NewBinding(key.WithKeys("up", "down", "k", "j", "pgup", "pgdown", "home", "end", "g", "G"), key.WithHelp("↑/↓", "scroll"))
 )
 
+// keyHelpClose is the help overlay's footer hint; the keys that close it are ? and esc.
+var keyHelpClose = key.NewBinding(key.WithKeys("?", "esc"), key.WithHelp("?/esc", "close"))
+
 func viewerBindings() []key.Binding { return []key.Binding{keyViewerClose, keyViewerScroll} }
 
 // maxViewerLines bounds what a panel keeps: a huge item is cut with a line that says so.

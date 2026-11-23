@@ -337,7 +337,7 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case key.Matches(k, keyHelp) || key.Matches(k, keyBack):
 			m.showHelp = false
 		case k.Type == tea.KeyUp || k.String() == "k":
-			m.helpOff--
+			m.helpOff = max(m.helpOff-1, 0)
 		case k.Type == tea.KeyDown || k.String() == "j":
 			m.helpOff++
 		}
@@ -378,6 +378,9 @@ func (m *Model) ShortHelp() []key.Binding {
 	}
 	if m.over != nil {
 		return viewerBindings()
+	}
+	if m.showHelp && !tooSmall(m.width(), m.h) { // the way out is always on the footer, whatever the scroll
+		return []key.Binding{keyHelpClose, keyViewerScroll}
 	}
 	if sec := m.active(); sec.Capturing() {
 		return append(append([]key.Binding(nil), sec.Bindings()...), keyQuit, keyHelp, keyNext)

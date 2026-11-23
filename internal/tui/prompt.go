@@ -12,8 +12,9 @@ import (
 )
 
 // The `:` command prompt (k9s style). It is a capturing state of the shell, drawn in the footer row,
-// and it only navigates: every line goes through core.ParseCommand into a typed core.Action of a
-// navigation kind (go to a tab or a Tasks view, open search, apply a list filter, show the context,
+// and it only navigates (it may keep UI layout state, such as the Tasks tree or list mode, but never
+// changes a tracker, board, lease or queue): every line goes through core.ParseCommand into a typed
+// core.Action of a navigation kind (go to a tab or a Tasks view, open search, apply a list filter, show the context,
 // help, quit). Nothing here plans, confirms, applies, audits or runs anything: this file and its
 // siblings name no writer, and a test reads their source to keep it so. Parsing, completion and
 // the closest-match suggestion are core's pure functions; this file holds the line, the history and
@@ -27,8 +28,13 @@ import (
 
 var keyPrompt = key.NewBinding(key.WithKeys(":"), key.WithHelp(":", "command"))
 
-// promptHistMax is how many commands the session remembers.
-const promptHistMax = 100
+// promptHistMax is how many commands the session remembers; promptHardMax bounds what one line can
+// hold (a paste of a megabyte must not fill memory). A line over core.MaxCommandLen is kept as typed
+// and refused at enter with its reason, never cut: a truncated line could turn into another command.
+const (
+	promptHistMax = 100
+	promptHardMax = 2000
+)
 
 type prompt struct {
 	text   []rune
@@ -44,11 +50,13 @@ type prompt struct {
 func (m *Model) openPrompt() { m.prompt = &prompt{histAt: -1} }
 
 func (p *prompt) edit(t []rune) {
-	if len(t) > core.MaxCommandLen {
-		t = t[:core.MaxCommandLen]
-	}
 	p.text, p.err, p.cands, p.cycle, p.histAt = t, "", nil, 0, -1
+	if len(t) > promptHardMax {
+		p.text, p.err = t[:promptHardMax], tooLong
+	}
 }
+
+const tooLong = "command too long (more than 300 characters)"
 
 // promptKey handles a key while the prompt is open: nothing reaches a section or the shell's global
 // keys, so q types a q and a hidden confirm cannot be answered through it.
@@ -104,7 +112,7 @@ func (m *Model) promptEnter() tea.Cmd {
 		m.prompt = nil
 		return nil
 	}
-	a, err := core.ParseCommand(line)
+	a, err := core.ParseCommand(string(p.text)) // the raw line: a length limit is on what was typed
 	if err != nil {
 		p.err = err.Error()
 		return nil
@@ -172,12 +180,15 @@ func (p *prompt) footer(th Theme, w int) string {
 	if p.err != "" {
 		return trunc(th.Text(KindWarn, san(p.err)), w)
 	}
-	typed := string(p.text)
-	room := max(w-3, 1)
-	if r := []rune(typed); len(r) > room { // keep the end, where the person is typing
-		typed = "…" + string(r[len(r)-room+1:])
+	typed := san(string(p.text))
+	if lipgloss.Width(":"+typed+"▏") > w { // keep the end, where the person is typing: drop whole runes from the front by cells
+		r := []rune(typed)
+		for len(r) > 0 && lipgloss.Width(":…"+string(r)+"▏") > w {
+			r = r[1:]
+		}
+		typed = "…" + string(r)
 	}
-	left := th.Key(":") + san(typed) + "▏"
+	left := th.Key(":") + typed + "▏"
 	var hints []string
 	if cs := core.CompleteCommand(string(p.text)); len(cs) > 1 {
 		var names []string
@@ -247,7 +258,11 @@ func (m *Model) runAction(a core.Action) tea.Cmd {
 			m.note = "switching trackers is not available yet"
 			return nil
 		}
-		m.note = "context: " + m.contextLine().String()
+		if c := m.contextLine().String(); c != "" {
+			m.note = "context: " + c
+		} else {
+			m.note = "context: not known yet (the tracker has not loaded)"
+		}
 	case core.ActGoTab, core.ActGoView, core.ActFilter:
 		i := m.tabIndex(a.Tab)
 		if i < 0 {
