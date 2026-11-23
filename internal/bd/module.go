@@ -320,7 +320,16 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
-	out, exit, err := m.o.Runner.Run(ctx, m.Bin(), argv[1:]...)
+	// stderr is kept apart: bd explains plain-text refusals ("cannot close blocked issue", "already open")
+	// there, while stdout carries the JSON answer.
+	var out, errOut []byte
+	var exit int
+	var err error
+	if sr, ok := m.o.Runner.(core.SplitRunner); ok {
+		out, errOut, exit, err = sr.RunSplit(ctx, m.Bin(), argv[1:]...)
+	} else {
+		out, exit, err = m.o.Runner.Run(ctx, m.Bin(), argv[1:]...)
+	}
 	if err != nil {
 		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) {
 			return core.TaskResult{}, unknownOutcome()
@@ -330,13 +339,21 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	if exit < 0 { // killed by a signal: it may have written first
 		return core.TaskResult{}, unknownOutcome()
 	}
-	if exit == 13 && argv[1] != "close" { // bd's own exit code for a precondition (--if-status) that no longer held
+	// bd's own exit code for a precondition (--if-status) that no longer held: only an update carries one.
+	// The verb is read after any -C, so a configured tracker directory does not hide it.
+	if verb, _ := stripDir(argv[1:], m.TrackerDir()); exit == 13 && len(verb) > 0 && verb[0] == "update" {
 		return core.TaskResult{}, core.ErrChanged
 	}
 	issue, bdErr := decodeIssue(out)
 	if exit != 0 {
 		if bdErr != "" {
 			return core.TaskResult{}, errors.New("bd: " + core.Sanitize(bdErr))
+		}
+		if l := firstLine(errOut); l != "" {
+			return core.TaskResult{}, fmt.Errorf("bd exited %d: %s", exit, l)
+		}
+		if l := firstLine(out); l != "" {
+			return core.TaskResult{}, fmt.Errorf("bd exited %d: %s", exit, l)
 		}
 		return core.TaskResult{}, fmt.Errorf("bd exited %d", exit)
 	}
@@ -345,6 +362,9 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	}
 	// Exit 0 is not enough: the write counts only if bd returned the issue that was asked for.
 	if issue.ID == "" {
+		if v, _ := stripDir(argv[1:], m.TrackerDir()); len(v) > 0 && v[0] == "reopen" && strings.Contains(strings.ToLower(string(out)+string(errOut)), "already open") {
+			return core.TaskResult{}, errors.New("already open: nothing to do")
+		}
 		return core.TaskResult{}, errors.New("bd wrote but returned no issue: check the tracker")
 	}
 	if want := requestedID(argv[1:], m.TrackerDir()); want != "" && issue.ID != want {
@@ -354,10 +374,10 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	// of the task agrees (a read that cannot be made does not undo a write bd itself confirmed).
 	if want := wantedStatus(argv[1:], m.TrackerDir()); want != "" {
 		if issue.Status != want {
-			return core.TaskResult{}, fmt.Errorf("bd answered with status %q, wanted %q: check the tracker", core.Sanitize(issue.Status), want)
+			return core.TaskResult{}, core.AppliedMismatch(fmt.Sprintf("written, but bd answered with status %s, not %s: changed by someone else? check the tracker", core.Sanitize(issue.Status), want))
 		}
 		if t, err := m.ReadTask(ctx, issue.ID); err == nil && t.Status != want {
-			return core.TaskResult{}, fmt.Errorf("re-read shows status %q after the write, wanted %q: refresh and check the tracker", t.Status, want)
+			return core.TaskResult{}, core.AppliedMismatch(fmt.Sprintf("written, but the status is now %s, not %s: changed by someone else?", core.Sanitize(t.Status), want))
 		}
 	}
 	return core.TaskResult{ID: core.Sanitize(issue.ID), Title: core.Sanitize(issue.Title), Status: core.Sanitize(issue.Status)}, nil
@@ -380,6 +400,25 @@ func wantedStatus(a []string, dir string) string {
 				return v
 			}
 		}
+	}
+	return ""
+}
+
+// firstLine is the first non-empty line of bd's plain-text output, sanitized and cut to 120 characters
+// ("" when there is none or it looks like JSON, which decodeIssue already handled).
+func firstLine(b []byte) string {
+	for _, l := range strings.Split(string(b), "\n") {
+		if t := strings.TrimSpace(l); strings.HasPrefix(t, "{") || strings.HasPrefix(t, "[") {
+			return ""
+		}
+		l = strings.Join(strings.Fields(core.Sanitize(l)), " ")
+		if l == "" {
+			continue
+		}
+		if r := []rune(l); len(r) > 120 {
+			l = string(r[:119]) + "…"
+		}
+		return l
 	}
 	return ""
 }

@@ -93,12 +93,12 @@ func TestMoveVerificationNeedsTheAskedForStatusInTheAnswerAndTheReread(t *testin
 	// exit 0 and the right issue, but bd answered with another status
 	f := moveFake(issueIn("open"), issueIn("open"), 0)
 	delete(f.resp, showKey) // no re-read to lean on: the answer alone must fail it
-	if _, err := writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "update", "tt-1", "--json", "--status=in_progress", "--if-status=open"}); err == nil || !strings.Contains(err.Error(), "bd answered with status") {
+	if _, err := writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "update", "tt-1", "--json", "--status=in_progress", "--if-status=open"}); err == nil || !strings.Contains(err.Error(), "bd answered with status") || !errors.Is(err, core.ErrAppliedMismatch) {
 		t.Errorf("answer mismatch: %v", err)
 	}
 	// the answer is right but the re-read disagrees (another actor moved it again): not a success
 	f = moveFake(issueIn("in_progress"), issueIn("blocked"), 0)
-	if _, err := writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "update", "tt-1", "--json", "--status=in_progress", "--if-status=open"}); err == nil || !strings.Contains(err.Error(), "re-read shows") {
+	if _, err := writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "update", "tt-1", "--json", "--status=in_progress", "--if-status=open"}); err == nil || !strings.Contains(err.Error(), "the status is now blocked") || !errors.Is(err, core.ErrAppliedMismatch) {
 		t.Errorf("re-read mismatch: %v", err)
 	}
 	// a re-read that cannot be made does not undo a write bd itself confirmed
@@ -139,5 +139,71 @@ func TestReopenRunsVerifiedAndRefusesMissingOrForcedForms(t *testing.T) {
 		if _, err := writeMod(f, Options{}).RunTask(context.Background(), a); err == nil || len(f.calls) != 0 {
 			t.Errorf("%v: err=%v calls=%v", a, err, f.calls)
 		}
+	}
+}
+
+// Exit 13 is a stale guard only for an update, with or without a configured -C directory; a close or
+// reopen that exits 13 for any other reason is reported as the plain failure it is.
+func TestExit13IsAStaleGuardOnlyForUpdateWithAndWithoutADir(t *testing.T) {
+	for _, dir := range []string{"", "/trk"} {
+		pre := ""
+		if dir != "" {
+			pre = "-C " + dir + " "
+		}
+		for verb, c := range map[string]struct {
+			argv    []string
+			changed bool
+		}{
+			"update": {[]string{"update", "tt-1", "--json", "--status=in_progress", "--if-status=open"}, true},
+			"close":  {[]string{"close", "tt-1", "--json"}, false},
+			"reopen": {[]string{"reopen", "tt-1", "--json"}, false},
+		} {
+			args := c.argv
+			if dir != "" {
+				args = append([]string{"-C", dir}, args...)
+			}
+			key := pre + strings.Join(c.argv, " ")
+			f := &fakeRun{resp: map[string]string{key: "boom"}, exit: map[string]int{key: 13}, errs: map[string]error{}}
+			_, err := writeMod(f, Options{Dir: dir}).RunTask(context.Background(), append([]string{"bd"}, args...))
+			if errors.Is(err, core.ErrChanged) != c.changed || err == nil {
+				t.Errorf("dir %q %s: err=%v, want changed=%v", dir, verb, err, c.changed)
+			}
+		}
+	}
+}
+
+func TestPlainTextFailuresAndAlreadyOpenAreSaidPlainly(t *testing.T) {
+	long := "cannot close blocked issue: tt-1 is blocked by [tt-2] (use --force to override) " + strings.Repeat("x", 200)
+	f := &fakeRun{resp: map[string]string{"close tt-1 --json": "\x1b[2J" + long + "\nsecond line"}, exit: map[string]int{"close tt-1 --json": 1}, errs: map[string]error{}}
+	_, err := writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "close", "tt-1", "--json"})
+	if err == nil || !strings.HasPrefix(err.Error(), "bd exited 1: ") || !strings.Contains(err.Error(), "cannot close blocked issue") || strings.Contains(err.Error(), "\x1b") || strings.Contains(err.Error(), "second") || len([]rune(err.Error())) > 140 {
+		t.Errorf("%v", err)
+	}
+	f = &fakeRun{resp: map[string]string{"reopen tt-1 --json": "tt-1 is already open\n"}, exit: map[string]int{}, errs: map[string]error{}}
+	_, err = writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "reopen", "tt-1", "--json"})
+	if err == nil || err.Error() != "already open: nothing to do" {
+		t.Errorf("reopen of an open task: %v", err)
+	}
+	// JSON on a failure is never echoed as text
+	f = &fakeRun{resp: map[string]string{"close tt-1 --json": `{"unexpected":true}`}, exit: map[string]int{"close tt-1 --json": 1}, errs: map[string]error{}}
+	if _, err = writeMod(f, Options{}).RunTask(context.Background(), []string{"bd", "close", "tt-1", "--json"}); err == nil || err.Error() != "bd exited 1" {
+		t.Errorf("%v", err)
+	}
+}
+
+// A write that landed but shows another status is worded truthfully and audited as applied-mismatch.
+func TestAppliedMismatchIsAuditedAsSuchAndNeverSaidToBeNotApplied(t *testing.T) {
+	f, au := moveFake(issueIn("in_progress"), issueIn("blocked"), 0), &recAudit{}
+	m := writeMod(f, Options{})
+	plan, _ := core.PlanTaskChange(m, moveChange())
+	_, err := core.NewApplier(m, au).Apply(context.Background(), plan.Confirm())
+	if !errors.Is(err, core.ErrAppliedMismatch) {
+		t.Fatalf("%v", err)
+	}
+	if got := core.DescribeWriteError(err); strings.HasPrefix(got, "not applied") || !strings.Contains(got, "the status is now blocked") {
+		t.Errorf("%q", got)
+	}
+	if len(au.lines) != 2 || au.lines[1].Phase != "applied-mismatch" {
+		t.Errorf("audit %+v", au.lines)
 	}
 }

@@ -105,13 +105,25 @@ type unknownOutcomeError struct{ msg string }
 func (e unknownOutcomeError) Error() string        { return "result unknown: " + e.msg }
 func (e unknownOutcomeError) Is(target error) bool { return target == ErrOutcomeUnknown }
 
+// ErrAppliedMismatch means the tracker confirmed the write but the task is not in the status that was
+// asked for (someone else moved it again): it landed, so it is neither "not applied" nor an error.
+var ErrAppliedMismatch = errors.New("written, but the status differs")
+
+type appliedMismatchError struct{ msg string }
+
+func (e appliedMismatchError) Error() string        { return e.msg }
+func (e appliedMismatchError) Is(target error) bool { return target == ErrAppliedMismatch }
+
+// AppliedMismatch is the error for a write that landed but whose result is not the one asked for.
+func AppliedMismatch(msg string) error { return appliedMismatchError{msg} }
+
 // UnknownOutcome is the error for a write that may or may not have happened.
 func UnknownOutcome(msg string) error { return unknownOutcomeError{msg} }
 
 // DescribeWriteError is the one wording every front-end shows for a failed write: an unknown
 // outcome is never called "not applied".
 func DescribeWriteError(err error) string {
-	if errors.Is(err, ErrOutcomeUnknown) {
+	if errors.Is(err, ErrOutcomeUnknown) || errors.Is(err, ErrAppliedMismatch) {
 		return Sanitize(err.Error())
 	}
 	return "not applied: " + Sanitize(err.Error())

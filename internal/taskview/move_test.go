@@ -85,3 +85,15 @@ func (okWriter) RunTask(context.Context, []string) (core.TaskResult, error) {
 	return core.TaskResult{}, nil
 }
 func (okWriter) TrackerDir() string { return "" }
+
+func TestPlanMoveWarnsThatClosingAHeldCardWillBeRefused(t *testing.T) {
+	r := moveRow("open")
+	r.BlockedBy = 1
+	ch, err := PlanMove(r, "closed")
+	if err != nil || ch.Op != core.TaskClose || !strings.Contains(ch.Warning, "1 unfinished") || !strings.Contains(ch.Warning, "refuse") {
+		t.Fatalf("%+v %v", ch, err)
+	}
+	if ch, _ = PlanMove(moveRow("open"), "closed"); ch.Warning != "" {
+		t.Errorf("an unheld card closes without a warning: %q", ch.Warning)
+	}
+}

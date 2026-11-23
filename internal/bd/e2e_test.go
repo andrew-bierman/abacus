@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -229,6 +230,26 @@ func TestRealBdCardMovesAgainstAnIsolatedTemporaryTracker(t *testing.T) {
 			t.Fatalf("%s -> %s: %+v %v (now %s)", hop[0], hop[1], res, err, statusNow())
 		}
 	}
+	// reopen of a task that is already open says so instead of "bd wrote but returned no issue"
+	if _, err := apply(core.TaskChange{Op: core.TaskReopen, ID: created.ID}); err == nil || err.Error() != "already open: nothing to do" {
+		t.Fatalf("reopen of an open task: %v", err)
+	}
+	// closing a task held by an open blocker fails, and the reason is in the error
+	blocker, err := apply(core.TaskChange{Op: core.TaskCreate, Title: "blocker"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dep := exec.Command("bd", "dep", "add", created.ID, blocker.ID)
+	dep.Dir = proj
+	if out, err := dep.CombinedOutput(); err != nil {
+		t.Skipf("cannot add a dependency (%v): %s", err, out)
+	}
+	if _, err := move("open", "closed"); err == nil || !strings.Contains(err.Error(), "blocked") {
+		t.Fatalf("closing a held task: %v", err)
+	}
+	rm := exec.Command("bd", "dep", "remove", created.ID, blocker.ID)
+	rm.Dir = proj
+	_ = rm.Run()
 	// someone else moved it: a move planned against "open" is refused by the tracker itself and writes nothing
 	if _, err := move("open", "in_progress"); err != nil {
 		t.Fatal(err)
@@ -239,7 +260,7 @@ func TestRealBdCardMovesAgainstAnIsolatedTemporaryTracker(t *testing.T) {
 	if statusNow() != "in_progress" {
 		t.Fatalf("a refused move wrote %s", statusNow())
 	}
-	if au.n != 2+2*6+2*2 {
+	if au.n != 2+2*6+2*2+2*3 {
 		t.Fatalf("audit lines = %d (attempt + result per write, refused ones included)", au.n)
 	}
 }

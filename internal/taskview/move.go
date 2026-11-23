@@ -27,6 +27,9 @@ func PlanMove(r core.TaskRow, to string) (core.TaskChange, error) {
 		return core.TaskChange{}, fmt.Errorf("%s is already %s", r.ID, to)
 	case to == "closed":
 		ch.Op = core.TaskClose
+		if r.BlockedBy > 0 {
+			ch.Warning = fmt.Sprintf("%s is held by %d unfinished task(s): the tracker will refuse to close it until they are done", r.ID, r.BlockedBy)
+		}
 	case from == "closed" && to == "open":
 		ch.Op = core.TaskReopen
 	case from == "closed":
