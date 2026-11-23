@@ -604,3 +604,61 @@ func TestKanbanSideBySideBoundaryWithSixColumns(t *testing.T) {
 		}
 	}
 }
+
+// Per view, strictly: h and l fold on the tree only in the List, step columns only on the board and
+// siblings only in the Graph; H and L move a card only on the board; T, + and - belong to the List.
+func TestKanbanKeysStayOnTheBoardAndTreeKeysStayInTheList(t *testing.T) {
+	s, p := kbAt(100, 32) // on the board
+	before, mode := len(s.list.tree.folded), s.list.tree.mode
+	send(s, "T", "+", "-")
+	send(s, "h", "l") // columns, not folds
+	if len(s.list.tree.folded) != before || s.list.tree.mode != mode {
+		t.Fatalf("tree keys reached the tree from the Kanban view: %v %q", s.list.tree.folded, s.list.tree.mode)
+	}
+	send(s, "L")
+	if s.mode != modeVerify {
+		t.Fatalf("L plans a move on the board: mode %v", s.mode)
+	}
+	s.mode = modeList
+	for name, setup := range map[string]func(*tasksSection){
+		"list":     func(s *tasksSection) { send(s, "V") },
+		"graph":    func(s *tasksSection) { send(s, "v") },
+		"insights": func(s *tasksSection) { send(s, "V", "V") },
+	} {
+		s2, p2 := kbAt(100, 32)
+		setup(s2)
+		send(s2, "H", "L")
+		if s2.mode != modeList || ranMoves(p2) != "" || s2.list.cur == viewKanban {
+			t.Errorf("%s: H/L started a move or the view is wrong: mode %v view %v", name, s2.mode, s2.list.cur)
+		}
+	}
+	_ = p
+}
+
+// A board's selected card carries to the other views: v into the Graph focuses it, g does too, and
+// leaving for the List puts the list cursor on it.
+func TestKanbanSelectionCarriesToGraphAndList(t *testing.T) {
+	s, _ := kbAt(100, 32)
+	send(s, "l", "j") // second column, second card
+	card := selID(s)
+	send(s, "g")
+	if s.list.cur != viewGraph || s.graph.focus != card {
+		t.Fatalf("g: view %v focus %q want %q", s.list.cur, s.graph.focus, card)
+	}
+	s3, _ := kbAt(100, 32)
+	send(s3, "l", "j")
+	card = selID(s3)
+	send(s3, "V")
+	if s3.list.cur != viewList || s3.selected != card {
+		t.Fatalf("leaving the board for the List selects the card %q: view %v selected %q", card, s3.list.cur, s3.selected)
+	}
+}
+
+// A search jump onto a task still lands on the List view, from the board too.
+func TestSearchJumpFromTheKanbanViewShowsTheTaskInTheList(t *testing.T) {
+	m := jump(t, "ac-16", "2", "v")
+	ts := secAt(m, tabTasks).(*tasksSection)
+	if ts.list.cur != viewList || ts.selected != "ac-16" {
+		t.Errorf("view %v selected %q", ts.list.cur, ts.selected)
+	}
+}
