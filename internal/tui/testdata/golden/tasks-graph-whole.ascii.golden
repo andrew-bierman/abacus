@@ -39,9 +39,9 @@ whole graph · 36 linked · 1 without links · 7 groups
 ╭─ ▸ Graph ────────────────────────────────────────────────────────────────────╮
 │ cycle gr-syt → gr-tse → gr-vgy → gr-syt                                      │
 │ depends on itself gr-1fm                                                     │
-│ longest chain (6):                                                           │
-│ gr-q7z → gr-hsy → gr-3k9 → gr-hoz → gr-fdz → gr-l5l                          │
-│                                                                              │
+│ longest chain (6): gr-q7z → … → gr-l5l                                       │
+│   ○ gr-d23 Fan item 10                                                    ⊘1 │
+│   ○ gr-ea5 Fan item 8                                                     ⊘1 │
 │   ○ gr-k2w Fan item 3                                                     ⊘1 │
 │   ○ gr-pzq Fan item 4                                                     ⊘1 │
 │   ○ gr-r7d Fan item 2                                                     ⊘1 │
@@ -53,7 +53,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │ ── layer 2 · 2 tasks · waits for an earlier layer                            │
 │   ◐ gr-q7z Chain step 3                                                 →1 * │
 │ ▸ ○ gr-ko8 Graph layout                                               ⊘2→2 ^ │
-│   ↕ +33 more                                                                 │
+│   ↕ +31 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · g nearby · enter open · ↑/↓ move · h/l layer…
 === 60x24 ===
@@ -64,9 +64,9 @@ whole graph · 36 linked · 1 without links · 7 groups
 ╭─ ▸ Graph ────────────────────────────────────────────────╮
 │ cycle gr-syt → gr-tse → gr-vgy → gr-syt                  │
 │ depends on itself gr-1fm                                 │
-│ longest chain (6):                                       │
-│ gr-q7z → gr-hsy → gr-3k9 → gr-hoz → gr-fdz → gr-l5l      │
-│                                                          │
+│ longest chain (6): gr-q7z → … → gr-l5l                   │
+│   ○ gr-d23 Fan item 10                                ⊘1 │
+│   ○ gr-ea5 Fan item 8                                 ⊘1 │
 │   ○ gr-k2w Fan item 3                                 ⊘1 │
 │   ○ gr-pzq Fan item 4                                 ⊘1 │
 │   ○ gr-r7d Fan item 2                                 ⊘1 │
@@ -78,6 +78,6 @@ whole graph · 36 linked · 1 without links · 7 groups
 │ ── layer 2 · 2 tasks · waits for an earlier layer        │
 │   ◐ gr-q7z Chain step 3                             →1 * │
 │ ▸ ○ gr-ko8 Graph layout                           ⊘2→2 ^ │
-│   ↕ +33 more                                             │
+│   ↕ +31 more                                             │
 ╰──────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · g nearby · enter open …

@@ -377,7 +377,7 @@ func (s *tasksSection) graphView() string {
 		var cur int
 		var head []string
 		if !g.wide { // the cycles and the chain stay pinned above the layers when there is no Chain panel
-			head = clipLines(th, append(append(s.cycleLines(gv, iw), s.chainLines(gv, iw)...), ""), max(rows/2, 1))
+			head = clipLines(th, append(s.cycleLines(gv, iw), s.chainSummary(gv, iw)), max(rows/2, 1))
 		}
 		list, cur = s.wholeLines(gv, iw)
 		list = append(append([]string(nil), head...), windowLines(th, list, cur, max(rows-len(head), 1), &gs.top)...)
@@ -449,6 +449,15 @@ func (s *tasksSection) chainLines(gv core.GraphView, w int) []string {
 		words = append(words, san(id))
 	}
 	return append([]string{s.th.Section(head)}, wrapTokens(words, w)...)
+}
+
+// chainSummary is the longest chain in one line: its length, first and last task.
+func (s *tasksSection) chainSummary(gv core.GraphView, w int) string {
+	n := len(gv.Chain)
+	if n < 2 {
+		return s.th.Text(KindMuted, "longest chain: none")
+	}
+	return trunc(fmt.Sprintf("longest chain (%d): %s → … → %s", n, san(gv.Chain[0]), san(gv.Chain[n-1])), w)
 }
 
 // cycleLines lists each cycle explicitly, at most three, with the rest counted.
@@ -570,7 +579,18 @@ func (s *tasksSection) wholeLines(gv core.GraphView, iw int) ([]string, int) {
 		if l.Layer == 0 {
 			what = "nothing blocks these"
 		}
-		lines = append(lines, th.Text(KindMuted, trunc(fmt.Sprintf("── layer %d · %d tasks · %s", l.Layer, len(l.Nodes)+l.More, what), iw)))
+		for _, id := range l.Nodes {
+			if byID[id].InCycle {
+				what = "includes a cycle (~)"
+				break
+			}
+		}
+		n := len(l.Nodes) + l.More
+		noun := "tasks"
+		if n == 1 {
+			noun = "task"
+		}
+		lines = append(lines, th.Text(KindMuted, trunc(fmt.Sprintf("── layer %d · %d %s · %s", l.Layer, n, noun, what), iw)))
 		for _, id := range l.Nodes {
 			if id == s.graph.sel {
 				cur = len(lines)
