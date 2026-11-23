@@ -165,6 +165,16 @@ func TestARunningProcessSurvivesAPruneByResolvingAgain(t *testing.T) {
 	}
 }
 
+func TestAResolvedPathThatVanishedIsUnpackedAgainNotReturned(t *testing.T) {
+	_, root := embeddedIn(t)
+	p, _ := core.ResolveEmbedded("bd")
+	os.RemoveAll(filepath.Dir(p)) // pruned by another abacus; this process asks again without any other check
+	p2, why := core.ResolveEmbedded("bd")
+	if why != "" || !exists(p2) || !strings.HasPrefix(p2, root) {
+		t.Fatalf("a cache hit must be re-checked and the tool unpacked again: %q %q", p2, why)
+	}
+}
+
 func TestACachedPathIsRecheckedBeforeEachUse(t *testing.T) {
 	embeddedIn(t)
 	p, _ := core.ResolveEmbedded("bd")
@@ -279,8 +289,8 @@ func TestAnInterruptedExtractionRemovesItsTempFileAndTheNextRunIsClean(t *testin
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(core.SetEmbeddedForTest(cancelFS{set.FS, cancel}))
 	p, why := core.ResolveEmbeddedCtx(ctx, "bd")
-	if p != "" || why == "" {
-		t.Fatalf("%q %q", p, why)
+	if p != "" || !strings.Contains(why, "stopped before") || strings.Contains(why, "damaged") {
+		t.Fatalf("an interruption is not a damaged copy: %q %q", p, why)
 	}
 	dir := filepath.Join(root, set.Manifest.Hash())
 	for _, n := range mustReadDir(t, dir) {
