@@ -286,14 +286,7 @@ func (s *lambeSection) listLines(iw int) ([]string, int) {
 		styled = append(styled, mk(th.Text(stateKind(r.State), state), flag))
 		plain = append(plain, mk(state, plainFlag))
 	}
-	widths := tb.fitRows(max(iw-2, 1), styled) // two cells for the selection marker
-	for i := range runs {
-		if i == s.cursor {
-			out = append(out, th.Selected.Render(padTo(trunc("▸ "+tb.row(widths, plain[i]), iw), iw)))
-			continue
-		}
-		out = append(out, "  "+tb.row(widths, styled[i]))
-	}
+	out = append(out, renderRows(th, tb, iw, styled, plain, s.cursor)...)
 	if s.view.Source != lambe.SourceTracker {
 		out = append(out, "", s.countLabel("Queue", len(s.view.Queue.Rows)))
 		qt := table{cols: []column{{min: 14, max: 14, prio: 0}, {min: 9, max: 9, prio: 0}, {min: 4, prio: 1}}, gap: 2}

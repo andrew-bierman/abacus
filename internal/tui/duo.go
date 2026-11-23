@@ -82,3 +82,30 @@ func sideBySide(left, right []string) []string {
 	}
 	return out
 }
+
+// stackRows splits a body h rows tall between a top and a bottom panel (each also costs
+// panelChromeH rows of frame). The bottom keeps its content up to a third of the body; the top gets
+// the rest, but no more than its content plus a little air. h <= 0 means both keep their content.
+func stackRows(h, topLen, bottomLen int) (top, bottom int) {
+	if h <= 0 {
+		return topLen, bottomLen
+	}
+	avail := max(h-2*panelChromeH, 2)
+	bottom = min(bottomLen, max(2, avail/3))
+	top = min(max(avail-bottom, 1), max(topLen, duoMinRows))
+	return top, bottom
+}
+
+// stackPanels draws two panels one above the other, the top one focused, each holding exactly the
+// rows it was given (padded with blanks).
+func stackPanels(th Theme, w int, topTitle string, top []string, topRows int, bottomTitle string, bottom []string, bottomRows int) []string {
+	fill := func(lines []string, n int) []string {
+		out := append([]string(nil), lines...)
+		for len(out) < n {
+			out = append(out, "")
+		}
+		return out
+	}
+	out := panel(th, topTitle, fill(top, topRows), w, topRows+panelChromeH, true)
+	return append(out, panel(th, bottomTitle, fill(bottom, bottomRows), w, bottomRows+panelChromeH, false)...)
+}

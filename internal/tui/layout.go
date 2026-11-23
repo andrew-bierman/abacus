@@ -165,3 +165,26 @@ func split(total int, tracks ...track) []int {
 	}
 	return out
 }
+
+// windowLines is the visible part of lines (rows <= 0: all) around the cursor line, with the
+// "+N more" marker in the last row when something is hidden. top is the scroll state.
+func windowLines(th Theme, lines []string, cursor, rows int, top *int) []string {
+	vis, newTop, hidden := windowMore(lines, cursor, rows, *top)
+	*top = newTop
+	if hidden > 0 && rows >= 2 {
+		vis = append(append([]string(nil), vis...), th.moreMarker(hidden))
+	}
+	return vis
+}
+
+// clipLines shows at most rows lines (rows <= 0: all), replacing the last with a "+N more" marker
+// when it cuts.
+func clipLines(th Theme, lines []string, rows int) []string {
+	if rows <= 0 || len(lines) <= rows {
+		return lines
+	}
+	if rows == 1 {
+		return lines[:1]
+	}
+	return append(append([]string(nil), lines[:rows-1]...), th.moreMarker(len(lines)-rows+1))
+}
