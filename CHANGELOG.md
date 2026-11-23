@@ -22,6 +22,14 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- Leases, Queues and Doctor are drawn in framed panels with aligned columns. Leases has a cursor
+  (up and down), a detail panel beside the list from 100 columns and Enter and Esc to drill in
+  below that. Queues keeps its keys, attention block and selection rules, with its run list as a
+  table (a stalled column only when a run is stalled; workflow and last event on wide terminals).
+  Doctor shows Areas and Tools side by side from 100 columns and one panel per tool, with long
+  details wrapped instead of cut. Columns size to their content and drop by priority as the
+  terminal narrows; ids and states are never clipped, and a short list in a tall terminal is a
+  compact box. Output is otherwise the same data; JSON and CLI are unchanged.
 - TUI foundations for the redesign: named breakpoints (`bpMin`, `bpCompact`, `bpWide`, `bpUltra`,
   `hMin`, `hRule`, `hSummary`, `hTall`) in one file with unchanged values, new layout helpers
   (`split`, aligned flexing `fitColumns` and `formatRow`, titled rounded `panel`) and panel and focus styles in the
