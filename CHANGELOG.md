@@ -26,6 +26,13 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- Tasks and Board are drawn in framed panels with aligned columns. Tasks shows the counts and an
+  aligned task table in a list panel and the graph insights in their own panel, beside the list from
+  100 columns and under it below that. Board shows the summary, channels and aligned thread and task
+  tables in a list panel with the selected message or task in a detail panel beside it from 100
+  columns (Enter and Esc drill in below that). Selection still follows the thread or task across
+  refreshes. The forms, the confirm screen and every write path are unchanged. The README sample
+  is regenerated and now ends at a panel border.
 - Leases, Queues and Doctor are drawn in framed panels with aligned columns. Leases has a cursor
   (up and down), a detail panel beside the list from 100 columns and Enter and Esc to drill in
   below that. Queues keeps its keys, attention block and selection rules, with its run list as a
