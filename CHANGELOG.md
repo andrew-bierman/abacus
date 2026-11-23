@@ -8,6 +8,7 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- `docs/plans/2026-11-22-board-bundling-assessment.md`: how to ship the Board domain without asking for Node (compiled binary measured, native client judged, trust model, recommendation).
 - `abacus tui --demo` shows every tab with invented data: Board, Tasks (with graph insights and the
   confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
   only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,
