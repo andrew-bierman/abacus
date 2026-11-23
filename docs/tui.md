@@ -108,6 +108,13 @@ Leases, Queues and Doctor are built from them, with two more pieces:
   column is dropped only when it truly does not fit. Ids and states keep their whole width, up to 24 cells for a lease id and 12 for a lease state (longer text is cut with an ellipsis and is whole in the detail panel); the
   low-priority columns (holder and expiry, phase and machine, workflow and last event) go first.
 
+The four list sections (Leases, Queues, Board, Tasks) share one piece, `listNav` (`listnav.go`):
+the cursor, the scroll offset, the selected row's identity and the drill state. A section hands it
+one stable id per selectable row (a lease resource, a run key, "t:"/"k:" plus a message id, a task
+ID). When the selected row disappears on a refresh, Leases and Queues keep the selection pinned to
+it (it is selected again if the row comes back) and Board and Tasks select the clamped row now
+under the cursor. Tasks has no detail panel to drill into.
+
 Not-connected and unavailable states stay plain unframed lines with their "how to connect" text.
 
 The help overlay was the first user of the helpers: a focused panel with aligned key columns, and a

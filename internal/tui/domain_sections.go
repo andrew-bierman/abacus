@@ -97,20 +97,17 @@ type boardSection struct {
 	p       core.BoardProvider
 	inspect func() *exec.Cmd // nil: the provider has no inspector
 
-	report   core.BoardReport
-	err      error
-	loaded   bool
-	busy     bool
-	active   bool
-	gen      int // bumped on every (de)activation: a tick from an older visit is dropped
-	fetches  int // reads started (a test seam: a poll never starts one while another is in flight)
-	cursor   int
-	selected string // "t:<id>" or "k:<id>", so a refresh cannot move the cursor to another row
-	top      int
-	drilled  bool // stacked layout only: showing the detail panel
-	notice   string
-	th       Theme
+	report  core.BoardReport
+	err     error
+	loaded  bool
+	busy    bool
+	active  bool
+	gen     int // bumped on every (de)activation: a tick from an older visit is dropped
+	fetches int // reads started (a test seam: a poll never starts one while another is in flight)
+	notice  string
+	th      Theme
 	geom
+	listNav // ids are "t:<id>" (threads) then "k:<id>" (tasks), cursor order
 }
 
 func newBoardSection(p core.BoardProvider) *boardSection {
@@ -128,9 +125,7 @@ func (s *boardSection) Capturing() bool  { return false }
 func (s *boardSection) canInspect() bool { return s.inspect != nil && s.loaded && s.err == nil }
 
 func (s *boardSection) Bindings() []key.Binding {
-	enter, back := keyEnter, keyBack
-	enter.SetEnabled(isStacked(s.width()) && !s.drilled && len(s.rows()) > 0)
-	back.SetEnabled(s.drilled)
+	enter, back := s.bindings(s.width(), len(s.rows()))
 	out := append(moveBindings(), enter, back, keyReload)
 	if s.canInspect() {
 		out = append(out, keyBrowser)
@@ -168,19 +163,32 @@ func (s *boardSection) activate() tea.Cmd {
 
 func (s *boardSection) deactivate() { s.active = false; s.gen++ }
 
-// row is one selectable line: a thread or a task.
+// boardRow is one selectable line: a thread or a task. Its detail body is built only when asked
+// for, so a render builds one body (the selected row's), not one per row.
 type boardRow struct {
 	id   string
-	body []string
+	body func() []string
 }
 
 func (s *boardSection) rows() []boardRow {
 	var out []boardRow
 	for _, t := range s.report.Threads {
-		out = append(out, boardRow{id: "t:" + t.Root.ID, body: threadBody(t)})
+		out = append(out, boardRow{id: "t:" + t.Root.ID, body: func() []string { return threadBody(t) }})
 	}
 	for _, t := range s.report.Tasks {
-		out = append(out, boardRow{id: "k:" + t.ID, body: taskBody(t)})
+		out = append(out, boardRow{id: "k:" + t.ID, body: func() []string { return taskBody(t) }})
+	}
+	return out
+}
+
+// ids is one stable id per row, in cursor order.
+func (s *boardSection) ids() []string {
+	out := make([]string, 0, len(s.report.Threads)+len(s.report.Tasks))
+	for _, t := range s.report.Threads {
+		out = append(out, "t:"+t.Root.ID)
+	}
+	for _, t := range s.report.Tasks {
+		out = append(out, "k:"+t.ID)
 	}
 	return out
 }
@@ -229,26 +237,12 @@ func taskBody(t core.BoardTask) []string {
 	return append(out, textLines(t.Text)...)
 }
 
-func (s *boardSection) reanchor() {
-	rows := s.rows()
-	for i, r := range rows {
-		if s.selected != "" && r.id == s.selected {
-			s.cursor = i
-			return
-		}
-	}
-	s.cursor = min(s.cursor, max(0, len(rows)-1))
-	if s.cursor < len(rows) {
-		s.selected = rows[s.cursor].id
-	}
-}
-
 func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case boardMsg:
 		s.report, s.err, s.loaded, s.busy = m.report, m.err, true, false
-		s.reanchor()
-		s.drilled = s.drilled && len(s.rows()) > 0
+		s.reanchor(s.ids(), true) // follow: the clamped row under the cursor is selected
+		s.settle(len(s.report.Threads) + len(s.report.Tasks))
 	case boardTickMsg:
 		if !s.active || m.gen != s.gen { // not visible, or a tick of an earlier visit
 			return s, nil
@@ -263,19 +257,19 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
-		s.drilled = s.drilled && isStacked(s.width())
+		s.fit(s.width())
 	case tea.KeyMsg:
 		s.notice = ""
-		rows := s.rows()
+		ids := s.ids()
 		switch {
 		case key.Matches(m, keyUp):
-			s.cursor = max(0, s.cursor-1)
+			s.up(ids)
 		case key.Matches(m, keyDown):
-			s.cursor = min(max(0, len(rows)-1), s.cursor+1)
+			s.down(ids)
 		case key.Matches(m, keyEnter):
-			s.drilled = isStacked(s.width()) && len(rows) > 0
+			s.enter(s.width(), len(ids))
 		case key.Matches(m, keyBack):
-			s.drilled = false
+			s.back()
 		case key.Matches(m, keyReload):
 			if !s.busy {
 				return s, s.fetch()
@@ -283,9 +277,7 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(m, keyBrowser) && s.canInspect():
 			return s, tea.ExecProcess(s.inspect(), func(err error) tea.Msg { return boardInspectDoneMsg{err} })
 		}
-		if s.cursor < len(rows) {
-			s.selected = rows[s.cursor].id
-		}
+		s.remember(ids)
 	}
 	return s, nil
 }
@@ -397,7 +389,7 @@ func (s *boardSection) connectedView() string {
 			detailTitle = "Thread"
 		}
 		detail = nil
-		for _, b := range rows[s.cursor].body {
+		for _, b := range rows[s.cursor].body() {
 			detail = append(detail, wrap(b, g.detail-panelChromeW)...)
 		}
 	}

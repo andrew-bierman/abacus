@@ -66,10 +66,8 @@ type tasksSection struct {
 	err      error
 	loaded   bool
 	insights *core.InsightsReport
-	cursor   int
-	selected string // id of the selected task, so a refresh cannot move the cursor to another
-	top      int
 	notice   string
+	listNav  // ids are the task IDs; Tasks has no drill (never enter/back)
 
 	mode        taskMode
 	op          core.TaskOp
@@ -161,7 +159,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case tasksMsg:
 		s.report, s.err, s.loaded, s.tasksBusy = m.report, m.err, true, false
-		s.reanchor()
+		s.reanchor(s.ids(), true) // follow: the clamped row under the cursor is selected
 		if s.err == nil {
 			wasEmpty := s.insights != nil && s.insights.Empty
 			switch {
@@ -224,17 +222,14 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, nil
 }
 
-func (s *tasksSection) reanchor() {
-	for i, t := range s.recent() {
-		if s.selected != "" && t.ID == s.selected {
-			s.cursor = i
-			return
-		}
+// ids is one stable id per recent task: its ID.
+func (s *tasksSection) ids() []string {
+	rec := s.recent()
+	out := make([]string, len(rec))
+	for i, t := range rec {
+		out[i] = t.ID
 	}
-	s.cursor = min(s.cursor, max(0, len(s.recent())-1))
-	if t, ok := s.current(); ok {
-		s.selected = t.ID
-	}
+	return out
 }
 
 func (s *tasksSection) current() (core.Task, bool) {
@@ -269,11 +264,9 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	s.notice = ""
 	switch {
 	case key.Matches(k, keyUp):
-		s.cursor = max(0, s.cursor-1)
-		s.remember()
+		s.up(s.ids())
 	case key.Matches(k, keyDown):
-		s.cursor = min(max(0, len(s.recent())-1), s.cursor+1)
-		s.remember()
+		s.down(s.ids())
 	case key.Matches(k, keyReload):
 		if s.tasksBusy {
 			return s, nil
@@ -319,12 +312,6 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return s, nil
-}
-
-func (s *tasksSection) remember() {
-	if t, ok := s.current(); ok {
-		s.selected = t.ID
-	}
 }
 
 func (s *tasksSection) formKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {

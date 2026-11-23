@@ -51,9 +51,7 @@ type leasesSection struct {
 	tick   func() tea.Cmd // injectable so tests never sleep
 	th     Theme
 	geom
-	cursor, top int
-	selected    string // the chosen lease by resource, so a refresh cannot move the selection
-	drilled     bool   // stacked layout only: showing the detail panel
+	listNav // ids are the lease resources
 }
 
 func newLeasesSection(read func(context.Context) leasesRead) *leasesSection {
@@ -67,10 +65,18 @@ func (s *leasesSection) Capturing() bool  { return false }
 
 func (s *leasesSection) leases() []core.Lease { return s.got.report.Leases }
 
+// ids is one stable id per row: the lease resource.
+func (s *leasesSection) ids() []string {
+	ls := s.leases()
+	out := make([]string, len(ls))
+	for i, l := range ls {
+		out[i] = l.Resource
+	}
+	return out
+}
+
 func (s *leasesSection) Bindings() []key.Binding {
-	enter, back := keyEnter, keyBack
-	enter.SetEnabled(isStacked(s.width()) && !s.drilled && len(s.leases()) > 0)
-	back.SetEnabled(s.drilled)
+	enter, back := s.bindings(s.width(), len(s.leases()))
 	return append(moveBindings(), enter, back)
 }
 
@@ -90,52 +96,26 @@ func (s *leasesSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case leasesMsg:
 		s.got, s.loaded = m.read, true
-		s.reanchor()
-		s.drilled = s.drilled && len(s.leases()) > 0
+		s.reanchor(s.ids(), false) // pin: a lease that vanishes and comes back is selected again
+		s.settle(len(s.leases()))
 	case leasesTickMsg:
 		return s, tea.Batch(s.fetch(), s.tick())
 	case tea.WindowSizeMsg:
 		s.resize(m)
-		s.drilled = s.drilled && isStacked(s.width())
+		s.fit(s.width())
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(m, keyUp):
-			s.cursor = max(0, s.cursor-1)
-			s.remember()
+			s.up(s.ids())
 		case key.Matches(m, keyDown):
-			s.cursor = min(max(0, len(s.leases())-1), s.cursor+1)
-			s.remember()
+			s.down(s.ids())
 		case key.Matches(m, keyEnter):
-			s.drilled = isStacked(s.width()) && len(s.leases()) > 0
+			s.enter(s.width(), len(s.leases()))
 		case key.Matches(m, keyBack):
-			s.drilled = false
+			s.back()
 		}
 	}
 	return s, nil
-}
-
-// remember records the lease under the cursor as the selection.
-func (s *leasesSection) remember() {
-	if ls := s.leases(); s.cursor < len(ls) {
-		s.selected = ls[s.cursor].Resource
-	}
-}
-
-// reanchor puts the cursor back on the selected lease after a refresh, falling back to the clamped
-// index when that lease is gone. Only cursor movement changes the selection, so a lease that
-// vanishes and comes back is selected again (as Queues does for runs).
-func (s *leasesSection) reanchor() {
-	ls := s.leases()
-	for i, l := range ls {
-		if s.selected != "" && l.Resource == s.selected {
-			s.cursor = i
-			return
-		}
-	}
-	s.cursor = min(s.cursor, max(0, len(ls)-1))
-	if s.selected == "" {
-		s.remember()
-	}
 }
 
 // leaseCols are the table's columns: state, lease, holder, expiry. The state and the lease id keep
