@@ -32,10 +32,14 @@ const (
 	jumpGone    jumpResult = iota // the item is not in the section any more
 	jumpOK                        // selected
 	jumpCleared                   // selected after clearing the section's own filter that hid it
+	jumpNoRow                     // the section has no row for this kind of item: the tab opens, the note says why
 )
 
 // jumper is implemented by sections that can select a row by the id their listNav uses.
-type jumper interface{ jumpTo(id string) jumpResult }
+// jumpTo selects the row for a result; the string is the section's own note (empty: the shell's).
+type jumper interface {
+	jumpTo(r core.SearchResult) (jumpResult, string)
+}
 
 func stamp(state core.SearchState, readAt time.Time, extra string) string {
 	return string(state) + "|" + strconv.FormatInt(readAt.UnixNano(), 10) + "|" + extra
@@ -68,7 +72,11 @@ func (s *tasksSection) searchStamp() string {
 func (s *tasksSection) searchFeed() core.SearchFeed {
 	switch {
 	case s.list.view != nil:
-		return core.SearchFeed{Domain: core.DomainTasks, ReadAt: s.list.readAt, PollEvery: tasksPollEvery, Docs: s.list.view.SearchDocs()}
+		f := core.SearchFeed{Domain: core.DomainTasks, ReadAt: s.list.readAt, PollEvery: tasksPollEvery, Docs: s.list.view.SearchDocs()}
+		if s.list.fallback { // the whole tracker could not be read: only the summary's recent changes
+			f.State, f.Reason = core.SearchDegraded, core.SearchReasonRecentTasks
+		}
+		return f
 	case s.loaded && s.err != nil:
 		return failedFeed(core.DomainTasks, s.err, tasksPollEvery)
 	}
@@ -87,13 +95,14 @@ func (s *tasksSection) rowShown(id string) bool {
 	return false
 }
 
-func (s *tasksSection) jumpTo(id string) jumpResult {
+func (s *tasksSection) jumpTo(r core.SearchResult) (jumpResult, string) {
+	id := r.Jump()
 	l := &s.list
 	if l.view == nil {
-		return jumpGone
+		return jumpGone, ""
 	}
 	if _, ok := l.view.Row(id); !ok {
-		return jumpGone
+		return jumpGone, ""
 	}
 	l.cur, l.typing = viewList, false
 	res := jumpOK
@@ -110,7 +119,7 @@ func (s *tasksSection) jumpTo(id string) jumpResult {
 	s.reanchor(s.ids(), true)
 	s.drilled, l.detailFocus = false, false
 	s.moved()
-	return res
+	return res, ""
 }
 
 // ---- Board
@@ -132,7 +141,11 @@ func (s *boardSection) searchFeed() core.SearchFeed {
 	case s.err != nil:
 		return failedFeed(core.DomainBoard, s.err, boardPollEvery)
 	}
-	return core.SearchFeed{Domain: core.DomainBoard, ReadAt: s.readAt, PollEvery: boardPollEvery, Docs: core.BoardSearchDocs(s.report)}
+	f := core.SearchFeed{Domain: core.DomainBoard, ReadAt: s.readAt, PollEvery: boardPollEvery, Docs: core.BoardSearchDocs(s.report)}
+	if s.report.Truncated != "" {
+		f.Reason = core.SearchReasonBoardCapped
+	}
+	return f
 }
 
 // searchLoad is the board's first read, the same call the tab makes on first visit.
@@ -143,15 +156,16 @@ func (s *boardSection) searchLoad() tea.Cmd {
 	return s.fetch()
 }
 
-func (s *boardSection) jumpTo(id string) jumpResult {
+func (s *boardSection) jumpTo(r core.SearchResult) (jumpResult, string) {
+	id := r.Jump()
 	for i, x := range s.ids() {
 		if x == id {
 			s.cursor, s.drilled = i, false
 			s.remember(s.ids())
-			return jumpOK
+			return jumpOK, ""
 		}
 	}
-	return jumpGone
+	return jumpGone, ""
 }
 
 // ---- Leases
@@ -180,15 +194,16 @@ func (s *leasesSection) searchFeed() core.SearchFeed {
 
 func (s *leasesSection) searchLoad() tea.Cmd { return nil }
 
-func (s *leasesSection) jumpTo(id string) jumpResult {
+func (s *leasesSection) jumpTo(r core.SearchResult) (jumpResult, string) {
+	id := r.Jump()
 	for i, x := range s.ids() {
 		if x == id {
 			s.cursor, s.drilled = i, false
 			s.remember(s.ids())
-			return jumpOK
+			return jumpOK, ""
 		}
 	}
-	return jumpGone
+	return jumpGone, ""
 }
 
 // ---- Queues
@@ -212,16 +227,20 @@ func (s *lambeSection) searchFeed() core.SearchFeed {
 	case s.err != nil:
 		return core.SearchFeed{Domain: core.DomainQueues, State: core.SearchDegraded, Reason: core.Sanitize(s.err.Error())}
 	}
-	return core.SearchFeed{Domain: core.DomainQueues, ReadAt: s.readAt, PollEvery: pollEvery, Docs: core.QueuesSearchDocs(lambe.QueuesReportOf(s.view, s.m.IsDemo()))}
+	rep := lambe.QueuesReportOf(s.view, false) // the demo's own note is not a reduction
+	return core.SearchFeed{Domain: core.DomainQueues, ReadAt: s.readAt, PollEvery: pollEvery, Docs: core.QueuesSearchDocs(rep), Reason: rep.Reason}
 }
 
 func (s *lambeSection) searchLoad() tea.Cmd { return nil }
 
-// jumpTo selects the first run of the issue; an attention or history item selects its run too.
-func (s *lambeSection) jumpTo(id string) jumpResult {
+// jumpTo selects the first run of the issue. Queues lists runs only: a queued item, an attention
+// item or a history entry has no row of its own, so it selects the run of the same issue when
+// there is one and otherwise opens the tab and says what the item is.
+func (s *lambeSection) jumpTo(r core.SearchResult) (jumpResult, string) {
+	id := r.Jump()
 	find := func() int {
-		for i, r := range s.runs() {
-			if r.Issue == id {
+		for i, run := range s.runs() {
+			if run.Issue == id {
 				return i
 			}
 		}
@@ -236,11 +255,23 @@ func (s *lambeSection) jumpTo(id string) jumpResult {
 		}
 	}
 	if i < 0 {
-		return jumpGone
+		switch r.Kind {
+		case core.KindQueued:
+			return jumpNoRow, id + " is queued, not a running run, so no run is selected."
+		case core.KindHistory:
+			return jumpNoRow, id + " is in history, not a running run, so no run is selected."
+		case core.KindAttention:
+			return jumpNoRow, id + " needs attention but has no run in the list."
+		}
+		return jumpGone, ""
 	}
 	s.cursor, s.drilled = i, false
 	s.remember(s.ids())
-	return res
+	note := ""
+	if r.Kind != core.KindRun && res == jumpOK {
+		note = id + " has no row of its own here: showing its run."
+	}
+	return res, note
 }
 
 // ---- a domain with no provider
@@ -280,9 +311,9 @@ func (s *guidedSection) searchLoad() tea.Cmd {
 	return nil
 }
 
-func (s *guidedSection) jumpTo(id string) jumpResult {
+func (s *guidedSection) jumpTo(r core.SearchResult) (jumpResult, string) {
 	if j, ok := s.inner.(jumper); ok && s.guide == nil {
-		return j.jumpTo(id)
+		return j.jumpTo(r)
 	}
-	return jumpGone
+	return jumpGone, ""
 }

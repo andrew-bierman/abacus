@@ -2,12 +2,12 @@
  [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────╮
 │ search who:ada▏               6 hits │
-│ Tasks (4)                            │
-│ ▸ ac-25  doctor: s…  blocked · P2 ·… │
-│   ac-20  split gra…  in progress · … │
 │   ac-12  wire the …  in progress · … │
 │   ac-03  retire th…  closed · P3 · … │
 │                                      │
+│ Board (2)                            │
+│   #15    checkout …  dev/web · ada … │
+│ ▸ #2     deploys a…  dev · ada       │
 │   ↕ +3 more                          │
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
@@ -17,14 +17,14 @@ esc close · enter jump · ↑/↓ move …
 ╭─ ▸ Search ───────────────────────────╮
 │ search who:ada▏               6 hits │
 │ Tasks (4)                            │
-│ ▸ ac-25  doctor: s…  blocked · P2 ·… │
+│   ac-25  doctor: s…  blocked · P2 ·… │
 │   ac-20  split gra…  in progress · … │
 │   ac-12  wire the …  in progress · … │
 │   ac-03  retire th…  closed · P3 · … │
 │                                      │
 │ Board (2)                            │
 │   #15    checkout …  dev/web · ada … │
-│   #2     deploys a…  dev · ada       │
+│ ▸ #2     deploys a…  dev · ada       │
 │                                      │
 │                                      │
 │                                      │
@@ -46,12 +46,12 @@ esc close · enter jump · ↑/↓ move …
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                       6 hits │
-│ Tasks (4)                                                                    │
-│ ▸ ac-25  doctor: stale export warning              blocked · P2 · ada        │
-│   ac-20  split graph source from export            in progress · P1 · ada    │
 │   ac-12  wire the lease heartbeat                  in progress · P0 · ada    │
 │   ac-03  retire the old poller                     closed · P3 · ada         │
 │                                                                              │
+│ Board (2)                                                                    │
+│   #15    checkout times out for carts over 40 it…  dev/web · ada · 2 replies │
+│ ▸ #2     deploys are green again                   dev · ada                 │
 │   ↕ +3 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
@@ -61,14 +61,14 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                       6 hits │
 │ Tasks (4)                                                                    │
-│ ▸ ac-25  doctor: stale export warning              blocked · P2 · ada        │
+│   ac-25  doctor: stale export warning              blocked · P2 · ada        │
 │   ac-20  split graph source from export            in progress · P1 · ada    │
 │   ac-12  wire the lease heartbeat                  in progress · P0 · ada    │
 │   ac-03  retire the old poller                     closed · P3 · ada         │
 │                                                                              │
 │ Board (2)                                                                    │
 │   #15    checkout times out for carts over 40 it…  dev/web · ada · 2 replies │
-│   #2     deploys are green again                   dev · ada                 │
+│ ▸ #2     deploys are green again                   dev · ada                 │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -90,12 +90,12 @@ esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                                               6 hits │
-│ Tasks (4)                                                                                                            │
-│ ▸ ac-25  doctor: stale export warning                                                      blocked · P2 · ada        │
-│   ac-20  split graph source from export                                                    in progress · P1 · ada    │
 │   ac-12  wire the lease heartbeat                                                          in progress · P0 · ada    │
 │   ac-03  retire the old poller                                                             closed · P3 · ada         │
 │                                                                                                                      │
+│ Board (2)                                                                                                            │
+│   #15    checkout times out for carts over 40 items, started after the 14:02 deploy        dev/web · ada · 2 replies │
+│ ▸ #2     deploys are green again                                                           dev · ada                 │
 │   ↕ +3 more                                                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
@@ -105,14 +105,14 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                                               6 hits │
 │ Tasks (4)                                                                                                            │
-│ ▸ ac-25  doctor: stale export warning                                                      blocked · P2 · ada        │
+│   ac-25  doctor: stale export warning                                                      blocked · P2 · ada        │
 │   ac-20  split graph source from export                                                    in progress · P1 · ada    │
 │   ac-12  wire the lease heartbeat                                                          in progress · P0 · ada    │
 │   ac-03  retire the old poller                                                             closed · P3 · ada         │
 │                                                                                                                      │
 │ Board (2)                                                                                                            │
 │   #15    checkout times out for carts over 40 items, started after the 14:02 deploy        dev/web · ada · 2 replies │
-│   #2     deploys are green again                                                           dev · ada                 │
+│ ▸ #2     deploys are green again                                                           dev · ada                 │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
@@ -136,14 +136,14 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────╮
 │ search who:ada▏                                   6 hits │
 │ Tasks (4)                                                │
-│ ▸ ac-25  doctor: stale expor…  blocked · P2 · ada        │
+│   ac-25  doctor: stale expor…  blocked · P2 · ada        │
 │   ac-20  split graph source …  in progress · P1 · ada    │
 │   ac-12  wire the lease hear…  in progress · P0 · ada    │
 │   ac-03  retire the old poll…  closed · P3 · ada         │
 │                                                          │
 │ Board (2)                                                │
 │   #15    checkout times out …  dev/web · ada · 2 replies │
-│   #2     deploys are green a…  dev · ada                 │
+│ ▸ #2     deploys are green a…  dev · ada                 │
 │                                                          │
 │                                                          │
 │                                                          │
@@ -161,14 +161,14 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                           6 hits │
 │ Tasks (4)                                                                                        │
-│ ▸ ac-25  doctor: stale export warning                                  blocked · P2 · ada        │
+│   ac-25  doctor: stale export warning                                  blocked · P2 · ada        │
 │   ac-20  split graph source from export                                in progress · P1 · ada    │
 │   ac-12  wire the lease heartbeat                                      in progress · P0 · ada    │
 │   ac-03  retire the old poller                                         closed · P3 · ada         │
 │                                                                                                  │
 │ Board (2)                                                                                        │
 │   #15    checkout times out for carts over 40 items, started after t…  dev/web · ada · 2 replies │
-│   #2     deploys are green again                                       dev · ada                 │
+│ ▸ #2     deploys are green again                                       dev · ada                 │
 │                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │

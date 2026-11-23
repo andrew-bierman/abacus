@@ -84,7 +84,7 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	}
 	if !cfg.historySet { // a demo session keeps no history; any other uses the state dir
 		cfg.history = core.DefaultSearchHistory()
-		if isDemo(entries) {
+		if c, err := (core.ConfigStore{Path: configPath()}).Load(); isDemo(entries) || (err == nil && c.SearchHistory == "off") {
 			cfg.history = core.SearchHistory{}
 		}
 	}
@@ -276,10 +276,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, c
 	}
 	// Async results and ticks go to every section; each ignores message types it does not own.
+	cmd := m.broadcast(msg)
 	if m.search != nil {
-		m.search.dirty = true
+		m.search.refresh(m) // an async read may have changed what search sees; never rebuilt in View
 	}
-	return m, m.broadcast(msg)
+	return m, cmd
 }
 
 func (m *Model) broadcast(msg tea.Msg) tea.Cmd {
@@ -493,6 +494,12 @@ func isDemo(entries []core.Entry) bool {
 		}
 	}
 	return false
+}
+
+// configPath is the abacus config file ("" when there is no home).
+func configPath() string {
+	p, _ := core.DefaultConfigPath()
+	return p
 }
 
 // demoFullView is the full-view handoff of a demo session: there is no tracker, so there is

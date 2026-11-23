@@ -2,6 +2,8 @@ package tui
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
 // Tab indexes of the fixture model.
@@ -558,5 +561,342 @@ func TestSearchOverlayTextIsSanitizedAndWithinWidth(t *testing.T) {
 	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(strings.Repeat("a", 400))})
 	if n := len(m.(*Model).search.text); n != 256 {
 		t.Errorf("query length %d, want the 256 cap", n)
+	}
+}
+
+// ---- review fixes
+
+// Text whose lower-case form changes byte length once killed the overlay and `abacus search`.
+func TestSearchOverlaySurvivesCaseFoldingBoardText(t *testing.T) {
+	for _, p := range []string{"Ⱥ", "İ", "\u212a", "ß", "e\u0301"} {
+		m := sized(load(t, asciiTheme(), nil), 100, 32)
+		rep := fixtureBoard()
+		rep.Threads = append(rep.Threads, core.BoardThread{Root: core.BoardMessage{ID: "77", Channel: "ops", Author: "mei", Text: "notes\n" + strings.Repeat(p, 40) + " the deploy renewal window"}})
+		m, _ = m.Update(boardMsg{report: rep})
+		for _, k := range ctrlK("renewal") {
+			m = press(m, k)
+		}
+		out := m.View()
+		if strings.Contains(out, "Search failed") || !strings.Contains(out, "#77") {
+			t.Errorf("%q:\n%s", p, out)
+		}
+		m = press(m, "enter") // and the jump works
+		if activeTab(m) != "Board" {
+			t.Errorf("%q: tab %s", p, activeTab(m))
+		}
+	}
+}
+
+// panicSection is a searchable section whose feed has a bug.
+type panicSection struct{ *notConnectedSection }
+
+func (panicSection) searchStamp() string         { return "x" }
+func (panicSection) searchFeed() core.SearchFeed { panic("boom") }
+
+func TestSearchPanicBecomesANotice(t *testing.T) {
+	m := sized(load(t, asciiTheme(), nil), 100, 32)
+	m.(*Model).tabs[tabLeases].sec = panicSection{newNotConnectedSection(core.Header{Domain: core.DomainLeases, Title: "Leases"}, nil)}
+	m = press(m, "ctrl+k") // must not panic
+	for _, k := range typed("ac-") {
+		m = press(m, k)
+	}
+	out := m.View()
+	if !strings.Contains(out, "Search failed") {
+		t.Errorf("refresh panic:\n%s", out)
+	}
+	if m = press(m, "enter"); !overlayOpen(m) {
+		t.Error("enter must do nothing while search has failed")
+	}
+	if m = press(m, "esc"); overlayOpen(m) {
+		t.Error("esc still closes")
+	}
+	// a drawing bug is caught too
+	m = sized(load(t, asciiTheme(), nil), 100, 32)
+	m = press(m, "ctrl+k")
+	m.(*Model).search.sel = -1 // an impossible cursor: drawing indexes out of range
+	if out := m.View(); !strings.Contains(out, "Search failed") {
+		t.Errorf("draw panic:\n%s", out)
+	}
+}
+
+func queuesFixture(t *testing.T, mod func(*lambe.View)) tea.Model {
+	return sized(load(t, asciiTheme(), func(v lambe.View) lambe.View { mod(&v); return v }), 100, 32)
+}
+
+func TestJumpFromQueuedHistoryAndAttentionHitsIsTruthful(t *testing.T) {
+	add := func(v *lambe.View) {
+		v.Snapshot.NeedsHuman = append(v.Snapshot.NeedsHuman, lambe.NeedsHuman{Issue: "X-9", Reason: "stuck_gate", Detail: "waiting on a human"})
+	}
+	for _, c := range []struct {
+		q, note string
+	}{
+		{"id:Q-1", "Q-1 is queued, not a running run"},
+		{"id:H-2", "H-2 is in history, not a running run"},
+		{"stuck_gate", "X-9 needs attention but has no run in the list"},
+		{"gate_failed", "T-2 has no row of its own here: showing its run"}, // attention of a run that exists
+	} {
+		m := queuesFixture(t, add)
+		for _, k := range ctrlK(c.q) {
+			m = press(m, k)
+		}
+		m = press(m, "enter")
+		last := lines(m)[len(lines(m))-1]
+		if activeTab(m) != "Queues" || !strings.Contains(last, c.note) || strings.Contains(last, "no longer in") {
+			t.Errorf("%q: tab %s footer %q, want %q", c.q, activeTab(m), last, c.note)
+		}
+	}
+	m := queuesFixture(t, add)
+	for _, k := range ctrlK("gate_failed") {
+		m = press(m, k)
+	}
+	press(m, "enter")
+	if qs := secAt(m, tabQueues).(*lambeSection); !strings.HasPrefix(qs.selected, "T-2\x00") {
+		t.Errorf("the run of the attention item is selected, got %q", qs.selected)
+	}
+}
+
+// A run and an attention item of one issue share an id: the cursor stays on the one it was on.
+func TestSearchCursorKeepsItsKindAcrossARefresh(t *testing.T) {
+	m := sized(load(t, asciiTheme(), nil), 100, 32)
+	for _, k := range ctrlK("T-2") {
+		m = press(m, k)
+	}
+	o := m.(*Model).search
+	var runAt, attAt = -1, -1
+	for i, tg := range o.targets {
+		switch tg.res.Kind {
+		case core.KindRun:
+			runAt = i
+		case core.KindAttention:
+			attAt = i
+		}
+	}
+	if runAt < 0 || attAt < 0 || o.targets[runAt].res.ID != o.targets[attAt].res.ID {
+		t.Fatalf("fixture lacks a run and an attention item of one issue: %+v", o.targets)
+	}
+	o.sel = attAt
+	o.dirty = true
+	m, _ = m.Update(struct{}{}) // any message re-runs the search
+	if got := m.(*Model).search; got.targets[got.sel].res.Kind != core.KindAttention {
+		t.Errorf("the cursor moved to %s", got.targets[got.sel].res.Kind)
+	}
+}
+
+func TestEnterOnAnInvalidQueryDoesNothingAndSavesNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "abacus", "search-history.json")
+	m := historyModel(t, path)
+	for _, k := range ctrlK("ac-16 nosuch:x") { // results of "ac-16" are still shown, the query is invalid
+		m = press(m, k)
+	}
+	m = press(m, "enter")
+	if !overlayOpen(m) || activeTab(m) != "Board" {
+		t.Error("enter must not jump from stale hits")
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Error("an invalid query was saved")
+	}
+	// a valid one is saved as typed, once it has run
+	for range typed(" nosuch:x") {
+		m = press(m, "backspace")
+	}
+	press(m, "enter")
+	if got := (core.SearchHistory{Path: path}).Load(core.HistoryGlobal); len(got) != 1 || got[0] != "ac-16" {
+		t.Errorf("history = %v", got)
+	}
+}
+
+func TestRecalledHistoryPassesTheTypedFilter(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "abacus", "search-history.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	evil := "ac-\x1b[2J" + strings.Repeat("x", 400)
+	data, _ := json.Marshal(map[string][]string{"global": {evil, "\x07\x00"}})
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := historyModel(t, path)
+	m = press(m, "ctrl+k")
+	out := m.View()
+	for _, l := range strings.Split(out, "\n") {
+		for _, r := range l {
+			if unicode.IsControl(r) {
+				t.Fatalf("control character in %q", l)
+			}
+		}
+	}
+	m = press(m, "ctrl+p")
+	got := m.(*Model).search.text
+	if len(got) == 0 || len(got) > 256 || strings.ContainsFunc(string(got), unicode.IsControl) {
+		t.Errorf("recalled %d runes %q", len(got), string(got))
+	}
+}
+
+func TestRecentSearchesOrderAndRecall(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "abacus", "search-history.json")
+	h := core.SearchHistory{Path: path}
+	for _, q := range []string{"oldest", "middle", "newest"} {
+		if err := h.Add(core.HistoryGlobal, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m := historyModel(t, path)
+	m = press(m, "ctrl+k")
+	out := m.View()
+	if !(strings.Index(out, "newest") < strings.Index(out, "middle") && strings.Index(out, "middle") < strings.Index(out, "oldest")) {
+		t.Errorf("recent searches are newest first:\n%s", out)
+	}
+	m = press(m, "x") // a draft
+	for i := 0; i < 4; i++ {
+		m = press(m, "ctrl+p")
+	}
+	if got := string(m.(*Model).search.text); got != "oldest" {
+		t.Errorf("four ctrl+p stop at the oldest, got %q", got)
+	}
+	for i := 0; i < 3; i++ {
+		m = press(m, "ctrl+n")
+	}
+	if got := string(m.(*Model).search.text); got != "x" {
+		t.Errorf("ctrl+n past the newest restores the draft, got %q", got)
+	}
+}
+
+func TestSearchSaysWhenADomainWasSearchedInPart(t *testing.T) {
+	// tasks: only the summary's recent changes (no whole-tracker read)
+	p := tasksFake()
+	var m tea.Model = New([]core.Entry{{Module: p, Detection: p.Det}}, WithTheme(asciiTheme()), WithAudit(&memAudit{}), WithFullView(noFullView), WithSearchHistory(core.SearchHistory{}))
+	m = sized(m, 100, 32)
+	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
+	for _, k := range ctrlK("zzzzzz") {
+		m = press(m, k)
+	}
+	out := m.View()
+	if !strings.Contains(out, "No matches for") || !strings.Contains(out, "Tasks: only recent changes were searched") {
+		t.Errorf("tasks fallback:\n%s", out)
+	}
+	// board: a capped read
+	m = sized(load(t, asciiTheme(), nil), 100, 32)
+	rep := fixtureBoard()
+	rep.Truncated = "more threads in other channels"
+	m, _ = m.Update(boardMsg{report: rep})
+	for _, k := range ctrlK("zzzzzz") {
+		m = press(m, k)
+	}
+	if out := m.View(); !strings.Contains(out, "Board: only recent threads and open tasks were searched") {
+		t.Errorf("board capped:\n%s", out)
+	}
+	// queues: the tracker subset says so too
+	m = queuesFixture(t, func(v *lambe.View) { v.Source = lambe.SourceTracker })
+	for _, k := range ctrlK("zzzzzz") {
+		m = press(m, k)
+	}
+	if out := m.View(); !strings.Contains(out, "Queues: no live daemon") {
+		t.Errorf("queues reduced:\n%s", out)
+	}
+}
+
+// Queues is re-read every 5 seconds: after 20 seconds it is stale, after 8 it is not.
+func TestSearchQueuesStalenessUsesItsFiveSecondInterval(t *testing.T) {
+	for _, c := range []struct {
+		ago   time.Duration
+		stale bool
+	}{{8 * time.Second, false}, {10 * time.Second, false}, {20 * time.Second, true}} {
+		m := sized(load(t, asciiTheme(), nil), 100, 32)
+		secAt(m, tabQueues).(*lambeSection).readAt = goldenNow.Add(-c.ago)
+		for _, k := range ctrlK("T-3") {
+			m = press(m, k)
+		}
+		if got := strings.Contains(m.View(), "may be out of date"); got != c.stale {
+			t.Errorf("read %v ago: stale = %v, want %v", c.ago, got, c.stale)
+		}
+	}
+}
+
+// The overlay stays inside its width at every width, with a selected row and with recent searches.
+func TestSearchOverlayWidthSweep(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "abacus", "search-history.json")
+	h := core.SearchHistory{Path: path}
+	for _, q := range []string{"一二三四五六七八九十" + strings.Repeat("界", 60), "ac-", "who:ada"} {
+		_ = h.Add(core.HistoryGlobal, q)
+	}
+	for _, q := range []string{"", "ac-", "who:ada", "evil", "zzzz", "lease nosuch:x"} {
+		for w := 40; w <= 300; w += 7 {
+			for _, ht := range []int{12, 24, 32, 60} {
+				m := hostileFixture(t, asciiTheme())
+				m.(*Model).searchHist = h
+				m = sized(m, w, ht)
+				for _, k := range ctrlK(q) {
+					m = press(m, k)
+				}
+				m = press(m, "down")
+				for i, l := range strings.Split(m.View(), "\n") {
+					if lipgloss.Width(l) > w {
+						t.Fatalf("%q %dx%d line %d is %d wide: %q", q, w, ht, i, lipgloss.Width(l), l)
+					}
+					for _, r := range l {
+						if unicode.IsControl(r) {
+							t.Fatalf("%q %dx%d: control %q", q, w, ht, r)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// Exactly one read of a never-loaded domain, however often the overlay is opened before it answers.
+func TestSearchLoadsAnUnloadedDomainExactlyOnce(t *testing.T) {
+	b := boardFake()
+	reads := 0
+	var m tea.Model = New([]core.Entry{{Module: countingBoard{boardProv: b, n: &reads}, Detection: b.Det}}, WithTheme(asciiTheme()), WithAudit(&memAudit{}), WithSearchHistory(core.SearchHistory{}))
+	m = sized(m, 100, 32)
+	var cmds []tea.Cmd
+	for i := 0; i < 3; i++ { // open, close, open, close, open: the answer has not arrived
+		var c tea.Cmd
+		m, c = m.Update(tea.KeyMsg{Type: tea.KeyCtrlK})
+		cmds = append(cmds, c)
+		if i < 2 {
+			m, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		}
+	}
+	for _, c := range cmds {
+		runBoardCmd(c)
+	}
+	if reads != 1 {
+		t.Errorf("the board was read %d times, want 1", reads)
+	}
+}
+
+// A poll while the overlay is open never rebuilds the index inside View.
+func TestSearchViewNeverRebuildsTheIndexAndPollsRefreshOneDomain(t *testing.T) {
+	m := sized(load(t, asciiTheme(), nil), 100, 32)
+	snap := core.TaskSnapshot{ReadAt: goldenNow, Tracker: "big"}
+	for i := 0; i < 20000; i++ {
+		snap.Issues = append(snap.Issues, core.TaskIssue{ID: fmt.Sprintf("ac-%05d", i), Title: fmt.Sprintf("Task %d about renewal", i), Description: "a body of some length for the task",
+			Status: "open", Labels: []string{"core"}, UpdatedAt: goldenNow, CreatedAt: goldenNow})
+	}
+	m, _ = m.Update(taskSnapshotMsg{snap: snap})
+	for _, k := range ctrlK("renewal") {
+		m = press(m, k)
+	}
+	o := m.(*Model).search
+	ix := o.ix
+	start := time.Now()
+	for i := 0; i < 20; i++ {
+		m.View()
+	}
+	if per := time.Since(start) / 20; per > 20*time.Millisecond {
+		t.Errorf("a View took %v", per)
+	}
+	// a poll of the board: only that domain is re-prepared, so it is quick even with 20,000 tasks indexed
+	start = time.Now()
+	later := fixtureBoard()
+	secAt(m, tabBoard).(*boardSection).readAt = goldenNow.Add(time.Second)
+	m, _ = m.Update(boardMsg{report: later})
+	if d := time.Since(start); d > 150*time.Millisecond {
+		t.Errorf("the refresh after one domain's poll took %v", d)
+	}
+	if o.ix != ix {
+		t.Error("the index must be kept and one domain replaced, not rebuilt")
 	}
 }

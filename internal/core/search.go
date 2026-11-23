@@ -32,6 +32,12 @@ const (
 	TaskStaleAfter = 14 * 24 * time.Hour
 )
 
+// Why a domain was searched in part (lower case: front-ends put the domain before it).
+const (
+	SearchReasonRecentTasks = "only recent changes were searched: the full task list could not be read"
+	SearchReasonBoardCapped = "only recent threads and open tasks were searched"
+)
+
 // SearchOrder is the order of the groups in a report.
 var SearchOrder = []DomainID{DomainTasks, DomainBoard, DomainLeases, DomainQueues}
 

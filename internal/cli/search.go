@@ -129,12 +129,6 @@ func unsearched(r core.SearchReport) []string {
 	return out
 }
 
-// Why a domain was searched in part.
-const (
-	reasonRecentTasks = "only recent changes were searched: the full task list could not be read"
-	reasonBoardCapped = "only recent threads and open tasks were searched"
-)
-
 func searchStateWords(s core.SearchDomain) string {
 	w := strings.ReplaceAll(string(s.State), "_", " ")
 	if s.Reason != "" && s.State == core.SearchDegraded {
@@ -206,13 +200,13 @@ func readSearchFeed(ctx context.Context, entries []core.Entry, now time.Time, id
 		f.State, f.Reason = feedState(dom.Tasks.Header), dom.Tasks.Reason
 		f.Docs = taskview.Build(taskview.FromRecent(dom.Tasks.Recent, now), now).SearchDocs()
 		if f.State == core.SearchSearched { // searched, but only the summary's recent changes
-			f.State, f.Reason = core.SearchDegraded, joinReason(f.Reason, reasonRecentTasks)
+			f.State, f.Reason = core.SearchDegraded, core.JoinSearchReasons(f.Reason, core.SearchReasonRecentTasks)
 		}
 	case core.DomainBoard:
 		f.State, f.Reason = feedState(dom.Board.Header), dom.Board.Reason
 		f.Docs = core.BoardSearchDocs(dom.Board)
 		if dom.Board.Truncated != "" {
-			f.Reason = joinReason(f.Reason, reasonBoardCapped)
+			f.Reason = core.JoinSearchReasons(f.Reason, core.SearchReasonBoardCapped)
 		}
 	case core.DomainLeases:
 		f.State, f.Reason = feedState(dom.Leases.Header), dom.Leases.Reason
@@ -225,13 +219,6 @@ func readSearchFeed(ctx context.Context, entries []core.Entry, now time.Time, id
 		f.Docs = nil
 	}
 	return f
-}
-
-func joinReason(a, b string) string {
-	if a == "" {
-		return b
-	}
-	return a + "; " + b
 }
 
 func renderSearch(w io.Writer, r core.SearchReport) {

@@ -284,3 +284,27 @@ func TestSearchDegradedFeedMapping(t *testing.T) {
 		t.Errorf("partial read (code %d):\n%s", code, out)
 	}
 }
+
+type foldBoard struct{ searchFleet }
+
+func (foldBoard) Board(context.Context) (core.BoardReport, error) {
+	var threads []core.BoardThread
+	for i, p := range []string{"Ⱥ", "İ", "K", "ß", "é"} {
+		threads = append(threads, core.BoardThread{Root: core.BoardMessage{ID: string(rune('a' + i)), Text: "notes\n" + strings.Repeat(p, 40) + " the renewal window"}})
+	}
+	return core.BoardReport{Threads: threads}, nil
+}
+
+// Text whose lower-case form changes byte length used to kill `abacus search` with a panic.
+func TestSearchSurvivesCaseFoldingBoardText(t *testing.T) {
+	for _, js := range []bool{false, true} {
+		args := []string{"renewal", "--domain", "board"}
+		if js {
+			args = append(args, "--json")
+		}
+		code, out, errOut := runSearch(t, []core.Module{foldBoard{searchSnapFleet()}}, args...)
+		if code != 0 || errOut != "" || !strings.Contains(out, "renewal") {
+			t.Errorf("json=%v: code %d err %q\n%s", js, code, errOut, out)
+		}
+	}
+}
