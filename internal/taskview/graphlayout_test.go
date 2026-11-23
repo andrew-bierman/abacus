@@ -357,3 +357,20 @@ func TestGraphAgreesWithTheEngine(t *testing.T) {
 	}
 	t.Logf("engine: %d bottlenecks, %d keystones; %d nodes marked", len(rep.Bottlenecks), len(rep.CriticalPath), marked)
 }
+
+// The nodes flagged OnChain are exactly the chain, in the whole graph and through a focus, and a tie
+// between two equal branches below the focus goes to the smaller id.
+func TestGraphChainIsFlaggedOnNodes(t *testing.T) {
+	g := gview(gt("a", "open"), gt("b", "open", "a"), gt("c", "open", "a"), gt("d", "open", "b", "c"))
+	for name, v := range map[string]core.GraphView{"whole": g.View(GraphOptions{Whole: true}), "near": g.View(GraphOptions{Focus: "a", Depth: 3})} {
+		var flagged []string
+		for _, n := range v.Nodes {
+			if n.OnChain {
+				flagged = append(flagged, n.ID)
+			}
+		}
+		if !reflect.DeepEqual(flagged, []string{"a", "b", "d"}) || !reflect.DeepEqual(v.Chain, []string{"a", "b", "d"}) {
+			t.Errorf("%s: flagged %v, chain %v", name, flagged, v.Chain)
+		}
+	}
+}
