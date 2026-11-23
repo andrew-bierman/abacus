@@ -91,8 +91,8 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
 │   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
-│   (stale)  ac-1k2  claude-mac                                        │ │ holder   glm-scheduler-01                   │
-│   (free)   ac-9x1                                                    │ │ expires  12m                                │
+│   (stale)  ac-1k2  claude-mac                                        │ │ holder      glm-scheduler-01                │
+│   (free)   ac-9x1                                                    │ │ expires     12m                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -105,8 +105,8 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
 │   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
-│   (stale)  ac-1k2  claude-mac                                        │ │ holder   glm-scheduler-01                   │
-│   (free)   ac-9x1                                                    │ │ expires  12m                                │
+│   (stale)  ac-1k2  claude-mac                                        │ │ holder      glm-scheduler-01                │
+│   (free)   ac-9x1                                                    │ │ expires     12m                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │

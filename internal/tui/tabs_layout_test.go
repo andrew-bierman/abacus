@@ -35,9 +35,10 @@ func TestLeasesDetailPanelAppearsExactlyAtOneHundredColumns(t *testing.T) {
 		t.Fatalf("99 columns shows the list only:\n%s", v)
 	}
 	v := leasesAt(100, 30, sampleLeases...).View()
-	if !strings.Contains(v, "─ Lease ─") || !strings.Contains(v, "holder   glm-scheduler-01") {
+	if !strings.Contains(v, "─ Lease ─") {
 		t.Fatalf("100 columns shows the selected lease beside the list:\n%s", v)
 	}
+	rowWith(t, v, "holder", "glm-scheduler-01")
 }
 
 func TestLeasesColumnsDropByPriorityAndNeverClipTheIdOrState(t *testing.T) {
@@ -265,5 +266,47 @@ func TestQueuesWorkflowAndLastEventAreWideOnlyColumns(t *testing.T) {
 	}
 	if l := row(160); !strings.Contains(l, "general") || !strings.Contains(l, "30s") {
 		t.Errorf("160 columns shows workflow and last event: %q", l)
+	}
+}
+
+// The selection follows the lease, not the row number: a refresh that reorders or removes rows
+// above the cursor must not move it onto a different lease.
+func TestLeasesSelectionFollowsTheLeaseAcrossARefresh(t *testing.T) {
+	m := leasesAt(120, 30, sampleLeases...)
+	m = press(m, "j") // ac-00h
+	reordered := []core.Lease{sampleLeases[3], sampleLeases[2], sampleLeases[1], sampleLeases[0]}
+	m, _ = m.Update(leasesMsg{read: leasesReport(reordered...)})
+	rowWith(t, m.View(), "▸", "ac-00h")
+	rowWith(t, m.View(), "holder", "codex-macbookpro")
+	m, _ = m.Update(leasesMsg{read: leasesReport(sampleLeases[0], sampleLeases[3])}) // ac-00h is gone
+	if v := m.View(); strings.Contains(v, "select a row") {
+		t.Fatalf("a vanished lease falls back to a row, not to nothing:\n%s", v)
+	}
+	// A refresh that drops the selection does not move it: when the lease comes back it is
+	// selected again.
+	m, _ = m.Update(leasesMsg{read: leasesReport(sampleLeases...)})
+	rowWith(t, m.View(), "▸", "ac-00h")
+}
+
+func TestResizingWideNeverLeavesADrilledDetailBehind(t *testing.T) {
+	l := press(leasesAt(80, 30, sampleLeases...), "enter")
+	l = sized(sized(l, 120, 30), 80, 30)
+	if v := l.View(); !strings.Contains(v, "Leases ·") || strings.Contains(v, "─ ▸ Lease ") {
+		t.Fatalf("leases: widening ends the drill:\n%s", v)
+	}
+	q := press(demoSection(t, 80, 30), "enter")
+	q = sized(sized(q, 120, 30), 80, 30)
+	if v := q.View(); !strings.Contains(v, "Queue") || strings.Contains(v, "─ ▸ Run ") {
+		t.Fatalf("queues: widening ends the drill:\n%s", v)
+	}
+}
+
+func TestStaleLeaseDetailSaysLastHolderAndExpiryMatchesTheTable(t *testing.T) {
+	v := leasesAt(120, 30, core.Lease{Resource: "ac-1", State: core.LeaseStale, Holder: "bob"}).View()
+	rowWith(t, v, "last holder", "bob")
+	held := leasesAt(120, 30, core.Lease{Resource: "ac-2", State: core.LeaseHeld, Holder: "amy"}).View()
+	rowWith(t, held, "expires", "?")
+	if strings.Contains(held, "expires  -") {
+		t.Fatalf("a held lease with no expiry reads ? in the table and the detail alike:\n%s", held)
 	}
 }

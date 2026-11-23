@@ -28,7 +28,7 @@ may change behavior, and patch versions are fixes and small additions.
   table (a stalled column only when a run is stalled; workflow and last event on wide terminals).
   Doctor shows Areas and Tools side by side from 100 columns and one panel per tool, with long
   details wrapped instead of cut. Columns size to their content and drop by priority as the
-  terminal narrows; ids and states are never clipped, and a short list in a tall terminal is a
+  terminal narrows; ids and states keep their width (up to 24 and 12 cells for leases), and a short list in a tall terminal is a
   compact box. Output is otherwise the same data; JSON and CLI are unchanged.
 - TUI foundations for the redesign: named breakpoints (`bpMin`, `bpCompact`, `bpWide`, `bpUltra`,
   `hMin`, `hRule`, `hSummary`, `hTall`) in one file with unchanged values, new layout helpers

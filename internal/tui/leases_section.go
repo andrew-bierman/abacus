@@ -52,7 +52,8 @@ type leasesSection struct {
 	th     Theme
 	geom
 	cursor, top int
-	drilled     bool // stacked layout only: showing the detail panel
+	selected    string // the chosen lease by resource, so a refresh cannot move the selection
+	drilled     bool   // stacked layout only: showing the detail panel
 }
 
 func newLeasesSection(read func(context.Context) leasesRead) *leasesSection {
@@ -89,18 +90,21 @@ func (s *leasesSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case leasesMsg:
 		s.got, s.loaded = m.read, true
-		s.cursor = min(s.cursor, max(0, len(s.leases())-1))
+		s.reanchor()
 		s.drilled = s.drilled && len(s.leases()) > 0
 	case leasesTickMsg:
 		return s, tea.Batch(s.fetch(), s.tick())
 	case tea.WindowSizeMsg:
 		s.resize(m)
+		s.drilled = s.drilled && isStacked(s.width())
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(m, keyUp):
 			s.cursor = max(0, s.cursor-1)
+			s.remember()
 		case key.Matches(m, keyDown):
 			s.cursor = min(max(0, len(s.leases())-1), s.cursor+1)
+			s.remember()
 		case key.Matches(m, keyEnter):
 			s.drilled = isStacked(s.width()) && len(s.leases()) > 0
 		case key.Matches(m, keyBack):
@@ -108,6 +112,30 @@ func (s *leasesSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return s, nil
+}
+
+// remember records the lease under the cursor as the selection.
+func (s *leasesSection) remember() {
+	if ls := s.leases(); s.cursor < len(ls) {
+		s.selected = ls[s.cursor].Resource
+	}
+}
+
+// reanchor puts the cursor back on the selected lease after a refresh, falling back to the clamped
+// index when that lease is gone. Only cursor movement changes the selection, so a lease that
+// vanishes and comes back is selected again (as Queues does for runs).
+func (s *leasesSection) reanchor() {
+	ls := s.leases()
+	for i, l := range ls {
+		if s.selected != "" && l.Resource == s.selected {
+			s.cursor = i
+			return
+		}
+	}
+	s.cursor = min(s.cursor, max(0, len(ls)-1))
+	if s.selected == "" {
+		s.remember()
+	}
 }
 
 // leaseCols are the table's columns: state, lease, holder, expiry. The state and the lease id keep
@@ -137,7 +165,6 @@ func (s *leasesSection) listTitle() string {
 	return title
 }
 
-// listLines is the scrolling table and the empty-state line.
 func (s *leasesSection) listLines(g duoGeom) []string {
 	th := s.th
 	ls := s.leases()
@@ -169,7 +196,6 @@ func (s *leasesSection) listLines(g duoGeom) []string {
 	return vis
 }
 
-// detailLines describes the selected lease.
 func (s *leasesSection) detailLines() []string {
 	th := s.th
 	ls := s.leases()
@@ -177,10 +203,14 @@ func (s *leasesSection) detailLines() []string {
 		return []string{th.Text(KindMuted, "select a row")}
 	}
 	l := ls[s.cursor]
-	field := func(label, v string) string { return th.Label.Render(padTo(label, 9)) + orDash(v) }
+	field := func(label, v string) string { return th.Label.Render(padTo(label, 12)) + orDash(v) }
+	holder := "holder"
+	if l.State == core.LeaseStale {
+		holder = "last holder"
+	}
 	return []string{
 		th.Header.Render(orDash(l.Resource)) + " " + th.Badge(toneKind(l.Tone()), san(string(l.State))), "",
-		field("holder", l.Holder), field("expires", l.ExpiresAt),
+		field(holder, l.Holder), field("expires", s.expiry(l)),
 	}
 }
 

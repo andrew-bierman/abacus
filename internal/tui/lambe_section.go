@@ -112,6 +112,7 @@ func (s *lambeSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return s, tea.Batch(s.fetch(), tick())
 	case tea.WindowSizeMsg:
 		s.resize(msg)
+		s.drilled = s.drilled && isStacked(s.width())
 	case tea.KeyMsg:
 		s.notice = ""
 		if s.typing {
@@ -364,7 +365,7 @@ func (s *lambeSection) View() string {
 	if s.notice != "" {
 		body = append(body, trunc(s.th.Text(KindWarn, s.notice), w))
 	}
-	return strings.Join(body, "\n") + "\n"
+	return joinLines(body)
 }
 
 // compose stacks the scrolling list over the pinned attention block inside h rows (h <= 0:
