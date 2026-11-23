@@ -227,6 +227,7 @@ func TestKanbanMoveGoesThroughReReadConfirmAndAppliesOnlyOnY(t *testing.T) {
 	}
 	send(s, "L")
 	settleVerify(t, s, core.Task{ID: "ac-01", Title: "Fleet workspace", Status: "open", Priority: 1})
+	(*p.fresh)["ac-01"] = core.Task{ID: "ac-01", Status: "open"} // the apply-time re-read agrees
 	_, cmd := s.Update(keyRunes("y"))
 	if cmd == nil || s.mode != modeBusy {
 		t.Fatalf("y applies: mode %v", s.mode)
@@ -496,5 +497,89 @@ func TestKanbanNeverPanicsOverGroupingsShapesAndWidths(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// ---- review fixes: the close/reopen guard fails closed ----
+
+type countAudit struct{ n int }
+
+func (a *countAudit) Record(core.AuditEntry) error { a.n++; return nil }
+
+func kbAudited(r core.TaskReader) (*tasksSection, taskProv, *countAudit) {
+	p := tasksFake()
+	au := &countAudit{}
+	pr := core.Providers{Writer: p}
+	if r != nil {
+		pr.Reader = r
+	} else {
+		pr.Reader = p
+	}
+	s := newTasksSection(pr, &config{audit: au})
+	s.SetTheme(asciiTheme())
+	s.Update(tea.WindowSizeMsg{Width: 100, Height: 32})
+	s.Update(tasksMsg{report: demo.TasksReport()})
+	s.Update(taskSnapshotMsg{snap: fixtureSnapshot()})
+	send(s, "v")
+	return s, p, au
+}
+
+func TestKanbanMoveIsRefusedWhenTheReReadFails(t *testing.T) {
+	s, p, au := kbAudited(nil)
+	send(s, "L")
+	_, cmd := s.Update(taskVerifiedMsg{id: "ac-01", err: errors.New("bd show timed out")})
+	if s.mode != modeList || !strings.Contains(s.notice, "could not verify the current status; nothing was written") || cmd != nil || ranMoves(p) != "" || au.n != 0 {
+		t.Fatalf("mode %v notice %q ran %q audit %d", s.mode, s.notice, ranMoves(p), au.n)
+	}
+}
+
+func TestKanbanMoveIsRefusedWithoutAReader(t *testing.T) {
+	p := tasksFake()
+	au := &countAudit{}
+	s := newTasksSection(core.Providers{Writer: p}, &config{audit: au})
+	s.SetTheme(asciiTheme())
+	s.Update(tea.WindowSizeMsg{Width: 100, Height: 32})
+	s.Update(tasksMsg{report: demo.TasksReport()})
+	s.Update(taskSnapshotMsg{snap: fixtureSnapshot()})
+	send(s, "v", "L")
+	if s.mode != modeList || !strings.Contains(s.notice, "could not verify") || ranMoves(p) != "" || au.n != 0 {
+		t.Fatalf("mode %v notice %q", s.mode, s.notice)
+	}
+}
+
+// The status changes between the confirm screen and y: the plan aborts, nothing runs, no audit line.
+func TestKanbanMoveAbortsAtApplyTimeWhenTheStatusChangedAfterConfirm(t *testing.T) {
+	s, p, au := kbAudited(nil)
+	send(s, "L")
+	settleVerify(t, s, core.Task{ID: "ac-01", Title: "Fleet workspace", Status: "open", Priority: 1})
+	(*p.fresh)["ac-01"] = core.Task{ID: "ac-01", Status: "blocked"}
+	_, cmd := s.Update(keyRunes("y"))
+	s.Update(cmd())
+	if ranMoves(p) != "" || au.n != 0 || s.mode != modeList || !strings.Contains(s.notice, "changed since you opened it") {
+		t.Fatalf("ran %q audit %d mode %v notice %q", ranMoves(p), au.n, s.mode, s.notice)
+	}
+}
+
+func TestKanbanMoveAbortsAtApplyTimeWhenTheRecheckFails(t *testing.T) {
+	s, p, au := kbAudited(nil)
+	send(s, "L")
+	settleVerify(t, s, core.Task{ID: "ac-01", Status: "open", Priority: 1})
+	*p.readErr = errors.New("down")
+	_, cmd := s.Update(keyRunes("y"))
+	s.Update(cmd())
+	if ranMoves(p) != "" || au.n != 0 || !strings.Contains(s.notice, "could not verify") {
+		t.Fatalf("ran %q audit %d notice %q", ranMoves(p), au.n, s.notice)
+	}
+}
+
+func TestKanbanMoveStillAppliesWhenTheRecheckAgrees(t *testing.T) {
+	s, p, _ := kbAudited(nil)
+	send(s, "L")
+	settleVerify(t, s, core.Task{ID: "ac-01", Status: "open", Priority: 1})
+	(*p.fresh)["ac-01"] = core.Task{ID: "ac-01", Status: "open"}
+	_, cmd := s.Update(keyRunes("y"))
+	s.Update(cmd())
+	if ranMoves(p) == "" {
+		t.Fatalf("ran %q", ranMoves(p))
 	}
 }

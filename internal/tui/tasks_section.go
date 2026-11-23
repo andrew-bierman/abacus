@@ -32,6 +32,8 @@ type taskVerifiedMsg struct {
 	task core.Task
 	err  error
 }
+var errCannotVerify = errors.New("could not verify the current status; nothing was written")
+
 type taskAppliedMsg struct {
 	res core.TaskResult
 	err error
@@ -304,6 +306,11 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.changedNote = ""
 		// A change planned against a status (a card move, a status edit) is refused outright when the task
 		// has moved since: the board shows the current state again and the move is planned anew.
+		if m.err != nil && ch.Expect != "" { // a change planned against a status is never confirmed unchecked
+			s.mode = modeList
+			s.notice = "could not verify the current status; nothing was written"
+			return s, nil
+		}
 		if m.err == nil && ch.Expect != "" && m.task.Status != ch.Expect {
 			s.mode = modeList
 			s.notice = fmt.Sprintf("%s changed since you opened it (now %s): nothing was written", san(m.id), san(m.task.Status))
@@ -535,6 +542,10 @@ func (s *tasksSection) beginConfirm(ch core.TaskChange) tea.Cmd {
 		}
 		return nil
 	}
+	if ch.Expect != "" && s.reader == nil {
+		s.notice, s.mode = "could not verify the current status; nothing was written", modeList
+		return nil
+	}
 	if ch.Op == core.TaskCreate || s.reader == nil {
 		s.toConfirm(ch)
 		return nil
@@ -560,6 +571,20 @@ func (s *tasksSection) apply(p core.WritePlan) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
 		defer cancel()
+		// close and reopen have no tracker-side guard, so the status is checked once more right before
+		// the write; an aborted plan runs nothing and writes no audit line.
+		if exp := p.Change.Expect; exp != "" {
+			if s.reader == nil {
+				return taskAppliedMsg{err: errCannotVerify, op: op}
+			}
+			t, err := s.reader.ReadTask(ctx, p.Change.ID)
+			switch {
+			case err != nil:
+				return taskAppliedMsg{err: errCannotVerify, op: op}
+			case t.Status != exp:
+				return taskAppliedMsg{err: core.ErrChanged, op: op}
+			}
+		}
 		res, err := s.applier.Apply(ctx, p)
 		return taskAppliedMsg{res: res, err: err, op: op}
 	}
