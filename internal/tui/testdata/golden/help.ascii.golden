@@ -10,7 +10,7 @@ Keys
   ?             help
   q             quit
   ↕ +15 more
-? help · q quit · tab/→ next tab …
+?/esc close · ↑/↓ scroll
 === 40x30 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────
@@ -41,7 +41,7 @@ Keys
 
 
 
-? help · q quit · tab/→ next tab …
+?/esc close · ↑/↓ scroll
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 Keys
@@ -54,7 +54,7 @@ Keys
   ?             help
   q             quit
   ↕ +15 more
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+?/esc close · ↑/↓ scroll
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+?/esc close · ↑/↓ scroll
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 Keys
@@ -98,7 +98,7 @@ Keys
   ?             help
   q             quit
   ↕ +14 more
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+?/esc close · ↑/↓ scroll
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,4 +129,4 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+?/esc close · ↑/↓ scroll

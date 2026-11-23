@@ -337,7 +337,7 @@ func scenarios() []scenario {
 		{name: "leases-workspace-notice", build: wsStd, keys: []string{"3", "w"}, tab: "Leases", extra: workspaceSizes},
 		{name: "tasks-workspace", build: wsStd, keys: []string{"2", "j"}, tab: "Tasks", extra: workspaceSizes},
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
-		{name: "help", build: std, keys: []string{"?"}, tab: "Board"},
+		{name: "help", build: std, keys: []string{"?"}, tab: "Board", overlay: true},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
 	}, append(append(searchScenarios(), treeScenarios()...), promptScenarios()...)...)
 }

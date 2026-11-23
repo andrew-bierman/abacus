@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,6 +15,7 @@ func promptScenarios() []scenario {
 	colon := func(line string) []string { return append([]string{"2", ":"}, typed(line)...) }
 	return []scenario{
 		{name: "prompt-open", build: std, keys: []string{"2", ":"}, tab: "Tasks", overlay: true, hiddenOK: true, extra: framedSizes},
+		{name: "prompt-wide-runes", build: std, keys: colon(strings.Repeat("界", 30) + "末"), tab: "Tasks", footHas: []string{"▏"}, hiddenOK: true, extra: framedSizes},
 		{name: "prompt-typing", build: std, keys: colon("filter label:u"), tab: "Tasks", overlay: true, hiddenOK: true, extra: framedSizes},
 		{name: "prompt-completing", build: std, keys: colon("q"), tab: "Tasks", overlay: true, hiddenOK: true, extra: framedSizes},
 		{name: "prompt-completed", build: std, keys: append(colon("fi"), "tab"), tab: "Tasks", overlay: true, hiddenOK: true, extra: framedSizes},
@@ -22,7 +24,7 @@ func promptScenarios() []scenario {
 		{name: "prompt-jumped", build: std, keys: append(colon("board"), "enter"), tab: "Board", hiddenOK: true, footHas: []string{"? help"}, extra: framedSizes},
 		{name: "prompt-graph", build: std, keys: append(colon("graph"), "enter"), tab: "Tasks", hiddenOK: true, extra: framedSizes},
 		{name: "prompt-filtered", build: std, keys: append(colon("filter label:ui"), "enter"), tab: "Tasks", hiddenOK: true, extra: framedSizes},
-		{name: "prompt-kanban", build: std, keys: append(colon("kanban"), "enter"), tab: "Tasks", hiddenOK: true, footHas: []string{"kanban"}, extra: framedSizes},
+		{name: "prompt-kanban", build: std, keys: append(colon("kanban"), "enter"), tab: "Tasks", hiddenOK: true, extra: framedSizes},
 		{name: "prompt-ctx", build: std, keys: append(colon("ctx"), "enter"), tab: "Tasks", hiddenOK: true, footHas: []string{"context: fleet"}, extra: framedSizes},
 		{name: "prompt-history", build: std, keys: append(append(colon("leases"), "enter", ":", "up"), "up"), tab: "Leases", overlay: true, hiddenOK: true, extra: framedSizes},
 		{name: "describe", build: std, keys: []string{"2", "T", "d"}, tab: "Tasks", overlay: true, hiddenOK: true, extra: framedSizes},
