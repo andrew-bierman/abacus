@@ -1,68 +1,16 @@
 package graph_test
 
 import (
-	"context"
 	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/andrew-bierman/abacus/internal/core"
-	"github.com/andrew-bierman/abacus/internal/graph"
 )
 
-func TestParseEngine(t *testing.T) {
-	for _, c := range []struct {
-		in    string
-		want  graph.Engine
-		known bool
-	}{
-		{"", graph.Subprocess, true},
-		{"subprocess", graph.Subprocess, true},
-		{"library", graph.Library, true},
-		{" Library\n", graph.Library, true},
-		{"LIBRARY", graph.Library, true},
-		{"libary", graph.Subprocess, false},
-		{"bv", graph.Subprocess, false},
-		{"1", graph.Subprocess, false},
-	} {
-		if got, known := graph.ParseEngine(c.in); got != c.want || known != c.known {
-			t.Errorf("ParseEngine(%q) = %q, %v; want %q, %v", c.in, got, known, c.want, c.known)
-		}
-	}
-}
-
-func TestEngineCheckSaysWhichEngineIsActiveAndWarnsOnATypo(t *testing.T) {
-	doctor := func(raw string) core.Check {
-		ch := graph.NewEngineCheck(raw).Doctor(context.Background())
-		if len(ch) != 1 {
-			t.Fatalf("%q: %+v", raw, ch)
-		}
-		return ch[0]
-	}
-	if c := doctor(""); c.Status != core.StatusOK || !strings.Contains(c.Detail, "subprocess") {
-		t.Errorf("default: %+v", c)
-	}
-	if c := doctor("library"); c.Status != core.StatusOK || !strings.Contains(c.Detail, "library") {
-		t.Errorf("library: %+v", c)
-	}
-	c := doctor("libary")
-	if c.Status != core.StatusWarn || c.Detail != "ABACUS_GRAPH_ENGINE: unknown value, using the default" {
-		t.Errorf("unknown value: %+v", c)
-	}
-	// The value is never echoed: a typo can hold anything, and Doctor text is shared.
-	if strings.Contains(doctor("libary\x1b[2J").Detail, "libary") {
-		t.Error("the warning must not repeat the value")
-	}
-	if !graph.NewEngineCheck("").Quiet() || graph.NewEngineCheck("").Detect(context.Background()).State != core.Ready {
-		t.Error("the engine check is a quiet, always-ready module")
-	}
-}
-
 // bv is imported by exactly one file, and neither core nor any other package reaches it or
-// this package's internals: removing bv is one file plus its constructor call.
+// this package's internals: the rest of abacus never names a bv type.
 func TestBvIsImportedByOneFileAndCoreKnowsNothingOfIt(t *testing.T) {
 	const bvPath = "github.com/Dicklesworthstone/beads_viewer"
 	var importers []string

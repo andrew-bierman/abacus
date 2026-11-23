@@ -149,12 +149,12 @@ type InsightsProvider interface {
 	Insights(context.Context) (InsightsReport, error)
 }
 
-// InsightsUnavailable is the plain one-liner for a bv read that failed on a tracker that has
+// InsightsUnavailable is the plain one-liner for a graph-insights read that failed on a tracker that has
 // tasks. The actual reason is kept for Doctor.
 const InsightsUnavailable = "Graph insights could not be read just now. Details are in Doctor."
 
 // EmptyInsights is the Insights state of a tracker with no tasks: nothing to analyze, which is
-// not a failure and does not run bv at all.
+// not a failure and does not run the analysis at all.
 func EmptyInsights() InsightsReport {
 	return InsightsReport{Header: Header{Domain: DomainTasks, Title: "Insights", State: Connected, Summary: "no tasks yet"}, Empty: true}
 }
@@ -581,7 +581,7 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 }
 
 // readInsightsFor reads insights for a tracker already read as tasks: with no tasks it says
-// "no tasks yet" and does not run bv.
+// "no tasks yet" and does not run the analysis.
 func readInsightsFor(ctx context.Context, entries []Entry, tasks TasksReport) InsightsReport {
 	if tasks.State == Connected && tasks.Counts.Total == 0 {
 		return EmptyInsights()

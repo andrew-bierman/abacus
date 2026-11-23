@@ -3,7 +3,6 @@ package graph
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -17,33 +16,7 @@ type Analyzer interface {
 	Analyze(ctx context.Context, issues []Issue) (core.InsightsReport, error)
 }
 
-// Engine is which graph-insights engine runs.
-type Engine string
-
-const (
-	// Subprocess runs the bv binary (internal/bv): the default.
-	Subprocess Engine = "subprocess"
-	// Library runs bv's analysis package in this process (this package): opt-in.
-	Library Engine = "library"
-)
-
-// EngineEnv is the environment variable that picks the engine.
-const EngineEnv = "ABACUS_GRAPH_ENGINE"
-
-// ParseEngine reads the ABACUS_GRAPH_ENGINE value. Unset or "subprocess" is the default engine,
-// "library" opts in (case and surrounding spaces do not matter). Any other value is the default
-// engine with known=false, so a typo never changes behavior and never fails: Doctor reports it.
-func ParseEngine(raw string) (e Engine, known bool) {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", string(Subprocess):
-		return Subprocess, true
-	case string(Library):
-		return Library, true
-	}
-	return Subprocess, false
-}
-
-// Options configure the library module.
+// Options configure the graph module.
 type Options struct {
 	Source   IssueSource
 	Analyzer Analyzer
@@ -52,8 +25,8 @@ type Options struct {
 	Now func() time.Time
 }
 
-// Module is the library engine as a core module and core.InsightsProvider. It is Quiet: it
-// replaces bv in the registry only when the library engine is chosen, and is not a tool to list.
+// Module is the graph engine as a core module and core.InsightsProvider: bv's analysis package run
+// in this process, always. It is Quiet: it is compiled in, so it is not a tool to list.
 type Module struct {
 	o       Options
 	mu      sync.Mutex
@@ -118,21 +91,21 @@ func (m *Module) setErr(err error) {
 	}
 }
 
-// Doctor reports why the last insights read failed, as bv's module does.
+// Doctor reports why the last insights read failed, and how old the issue export is.
 func (m *Module) Doctor(context.Context) []core.Check {
 	m.mu.Lock()
 	last := m.lastErr
 	m.mu.Unlock()
 	if last != "" {
 		return []core.Check{{Name: "insights", Status: core.StatusWarn, Detail: "the last graph-insights read failed: " + last,
-			Fix: "check the tracker export, or unset " + EngineEnv + " to use the default engine, then press r"}}
+			Fix: "check that bd can read this tracker (bd status) and that .beads/issues.jsonl exists, then press r"}}
 	}
 	checks := []core.Check{{Name: "insights", Status: core.StatusOK, Detail: "in-process analysis"}}
 	if f, ok := m.freshness(); ok {
 		if f.Stale() {
 			checks = append(checks, core.Check{Name: "export", Status: core.StatusWarn,
 				Detail: "the issue export is " + AgeText(f.Behind()) + " older than the tracker data, so the insights may be out of date",
-				Fix:    "let the tracker write its export again (it does after the next change), or unset " + EngineEnv + " to use the default engine"})
+				Fix:    "let the tracker write its export again (it does after the next change)"})
 		} else {
 			checks = append(checks, core.Check{Name: "export", Status: core.StatusOK, Detail: "the issue export is " + AgeText(m.o.Now().Sub(f.Export)) + " old"})
 		}
@@ -176,28 +149,4 @@ func (m *Module) Insights(ctx context.Context) (core.InsightsReport, error) {
 		}
 	}
 	return r, nil
-}
-
-// EngineCheck is a Quiet module that only puts the engine choice in Doctor: which engine is
-// active, and a warning when ABACUS_GRAPH_ENGINE holds a value that is not understood.
-type EngineCheck struct{ raw string }
-
-func NewEngineCheck(raw string) *EngineCheck { return &EngineCheck{raw: raw} }
-
-func (*EngineCheck) ID() string                            { return "graph-engine" }
-func (*EngineCheck) Name() string                          { return "graph engine" }
-func (*EngineCheck) Detect(context.Context) core.Detection { return core.Detection{State: core.Ready} }
-func (*EngineCheck) Status(context.Context) core.Status    { return core.Status{} }
-func (*EngineCheck) Quiet() bool                           { return true }
-
-func (c *EngineCheck) Doctor(context.Context) []core.Check {
-	e, known := ParseEngine(c.raw)
-	if !known {
-		return []core.Check{{Name: "graph engine", Status: core.StatusWarn, Detail: EngineEnv + ": unknown value, using the default",
-			Fix: "set " + EngineEnv + "=library to opt in, or unset it"}}
-	}
-	if e == Library {
-		return []core.Check{{Name: "graph engine", Status: core.StatusOK, Detail: "library (in-process analysis, opt-in via " + EngineEnv + ")"}}
-	}
-	return []core.Check{{Name: "graph engine", Status: core.StatusOK, Detail: "subprocess (bv, the default)"}}
 }

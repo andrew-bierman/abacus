@@ -167,11 +167,11 @@ func TestLocateNeverUsesAnUnsafeSidecar(t *testing.T) {
 		}
 	}
 	dir := filepath.Join(t.TempDir(), "bundled")
-	if err := os.MkdirAll(filepath.Join(dir, "bv"), 0o755); err != nil { // a directory is not a binary
+	if err := os.MkdirAll(filepath.Join(dir, "lambe"), 0o755); err != nil { // a directory is not a binary
 		t.Fatal(err)
 	}
 	withSidecarDirs(t, dir)
-	if f, _ := core.LocateFound("bv", "", noPath); f.Bin != "" {
+	if f, _ := core.LocateFound("lambe", "", noPath); f.Bin != "" {
 		t.Errorf("a directory was accepted: %+v", f)
 	}
 }
@@ -313,7 +313,7 @@ func TestSidecarEnvOmitsUnsafeDirsAndFiles(t *testing.T) {
 	bad := filepath.Join(root, "bad")
 	fakeTool(t, bad, "bd", 0o777) // world-writable file
 	wdir := filepath.Join(root, "wdir")
-	fakeTool(t, wdir, "bv", 0o755)
+	fakeTool(t, wdir, "lambe", 0o755)
 	if err := os.Chmod(wdir, 0o777); err != nil { // world-writable dir
 		t.Fatal(err)
 	}

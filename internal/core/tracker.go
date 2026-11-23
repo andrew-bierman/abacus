@@ -68,7 +68,7 @@ func ResolveTracker(env string, cfg Config, cwd, workspace string) TrackerChoice
 	return TrackerChoice{Source: "none", Offer: workspace}
 }
 
-// TrackerRef is the tracker directory shared by every module that reads it (bd and bv), so a
+// TrackerRef is the tracker directory shared by every module that reads it (bd and the graph engine), so a
 // workspace created while the TUI is open is picked up without a restart.
 type TrackerRef struct {
 	mu  sync.RWMutex

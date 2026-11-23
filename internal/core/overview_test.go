@@ -23,7 +23,7 @@ func TestOverviewLeadsWithReadyAndListsWhereEachToolCameFrom(t *testing.T) {
 	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 3, Open: 3}}}
 	entries := []core.Entry{
 		{Module: bd, Detection: core.Detection{State: core.Ready, Version: "1.3.4", Source: core.SourceBundled, Path: "/app/bundled/bd"}},
-		{Module: &modtest.Fake{IDStr: "bv"}, Detection: core.Detection{State: core.Ready, Version: "0.27.0", Source: core.SourcePATH, Path: "/opt/bv"}},
+		{Module: &modtest.Fake{IDStr: "beads-lease"}, Detection: core.Detection{State: core.Ready, Version: "0.1.0", Source: core.SourcePATH, Path: "/opt/beads-lease"}},
 		{Module: &modtest.Fake{IDStr: "lambe"}, Detection: core.Detection{State: core.Absent, Detail: "lambe not found on PATH"}},
 	}
 	o := core.BuildOverview(context.Background(), entries)
@@ -35,7 +35,7 @@ func TestOverviewLeadsWithReadyAndListsWhereEachToolCameFrom(t *testing.T) {
 	for _, tl := range o.Tools {
 		tools = append(tools, tl.ID+"="+tl.Where)
 	}
-	if got := strings.Join(tools, " "); got != "bd=bundled bv=PATH lambe=missing" {
+	if got := strings.Join(tools, " "); got != "bd=bundled beads-lease=PATH lambe=missing" {
 		t.Fatalf("%s", got)
 	}
 	if o.Tools[0].Version != "1.3.4" || o.Tools[0].Path != "/app/bundled/bd" {

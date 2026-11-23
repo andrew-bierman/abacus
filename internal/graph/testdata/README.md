@@ -1,13 +1,13 @@
 # graph fixtures
 
-Everything here is invented and hand-written; nothing was captured from a tracker, and `bd` and
-`bv` were never run to make it.
+Everything here is invented and hand-written; nothing was captured from a tracker, and `bd` was
+never run to make it. No bv binary is run anywhere in this repository.
 
 - `*.jsonl`: tracker exports in the shape `.beads/issues.jsonl` has (one issue per line:
   `id`, `title`, `status`, `priority`, `issue_type`, `updated_at`, `dependencies` as
   `{issue_id, depends_on_id, type}`). The shape follows the fields `internal/bd` reads plus the
   dependency record bv's loader documents.
-  - `fx_cyclic`, `fx_acyclic`: the seven invented issues behind `internal/bv/testdata`
+  - `fx_cyclic`, `fx_acyclic`: the seven invented issues behind `testdata/bv`
     (fx-1..fx-7, one chain, one cycle, one closed issue); `fx_acyclic` is the project without the
     cycle (fx-5 and fx-6 removed).
   - `chain`, `diamond`, `cycle`, `closed`: the small graphs of the assessment.
@@ -18,4 +18,4 @@ Everything here is invented and hand-written; nothing was captured from a tracke
 - `robot/*.json`: `bv --robot-*` documents (`triage`, `plan`, `insights`, `graph`) in bv's
   documented shape for chain, diamond, cycle, closed and big200, written by hand with values
   worked out from the graph. They are NOT recorded output. The only recorded bv output used by the
-  parity tests is in `internal/bv/testdata`.
+  parity tests is in `testdata/bv` (static JSON, provenance in its README).

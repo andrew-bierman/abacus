@@ -11,7 +11,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
 )
 
-// bundledRegistry is the four tools abacus ships with lambe gone, plus an absent Board CLI.
+// bundledRegistry is the three tools abacus ships with lambe gone, plus an absent Board CLI.
 func bundledRegistry() []core.Module {
 	var mods []core.Module
 	for _, id := range core.KnownTools {
@@ -45,7 +45,7 @@ func TestDoctorInAReleaseLeadsWithAbacusOwnCopyAndNeverSaysMissing(t *testing.T)
 	out := runVersion(t, "1.2.3", bundledRegistry(), "doctor")
 	for _, want := range []string{
 		"Needs attention: abacus's own copy of lambe is damaged or was moved. Re-extract the download and keep the folder together.",
-		"Bundled tools: 3 of 4 verified; 1 unusable (lambe)",
+		"Bundled tools: 2 of 3 verified; 1 unusable (lambe)",
 		"lambe        unavailable",
 		"board        optional",
 		"optional: adds the Board tab",
@@ -71,7 +71,7 @@ func TestDoctorInADevBuildSaysRunDevBundle(t *testing.T) {
 
 func TestVersionSaysTheBundledToolsLine(t *testing.T) {
 	out := runVersion(t, "1.2.3", bundledRegistry(), "version")
-	if !strings.Contains(out, "Bundled tools: 3 of 4 verified; 1 unusable (lambe)") || !strings.Contains(out, "lambe      unavailable") || strings.Contains(out, "not found on PATH") {
+	if !strings.Contains(out, "Bundled tools: 2 of 3 verified; 1 unusable (lambe)") || !strings.Contains(out, "lambe      unavailable") || strings.Contains(out, "not found on PATH") {
 		t.Errorf("%s", out)
 	}
 	js := runVersion(t, "1.2.3", bundledRegistry(), "version", "--json")
@@ -82,7 +82,7 @@ func TestVersionSaysTheBundledToolsLine(t *testing.T) {
 			Unusable        []string
 		}
 	}
-	if err := json.Unmarshal([]byte(js), &d); err != nil || d.SchemaVersion != 1 || d.Bundled.Total != 4 || d.Bundled.Verified != 3 || len(d.Bundled.Unusable) != 1 {
+	if err := json.Unmarshal([]byte(js), &d); err != nil || d.SchemaVersion != 1 || d.Bundled.Total != 3 || d.Bundled.Verified != 2 || len(d.Bundled.Unusable) != 1 {
 		t.Errorf("%v %+v\n%s", err, d, js)
 	}
 }

@@ -1,8 +1,8 @@
 package graph
 
 // This is the ONLY file in abacus that imports bv's code (github.com/Dicklesworthstone/
-// beads_viewer, pinned to an exact tag in go.mod). Removing bv later means deleting this file
-// and the NewBVAnalyzer call in internal/app; nothing else names a bv type.
+// beads_viewer, pinned to an exact tag in go.mod). bv is linked into abacus; nothing else names
+// a bv type, and the bv binary is neither bundled nor run.
 //
 // Only pkg/analysis and pkg/model are used: bv's loaders, exporters and UI are not, and nothing
 // here reads or writes a file or runs a process.
@@ -12,9 +12,9 @@ package graph
 //
 //   - CriticalPath is bv's Keystones: a ranked list of per-issue chain heights (the number of
 //     issues in the longest chain that ends at the issue's dependents), not an ordered path.
-//     This adapter returns exactly that list, as the subprocess adapter does, so the two agree.
+//     This adapter returns exactly that list.
 //   - A dependency cycle makes bv skip the critical-path computation (no scores at all). The
-//     report then carries CriticalPathNote, filled the way internal/bv fills it.
+//     report then carries CriticalPathNote, worded "critical path skipped: <bv's reason>".
 //   - Closed issues stay in the input: a closed blocker is what makes its dependents actionable.
 //     bv's insight lists (Keystones, Bottlenecks) leave closed issues out of the ranking, as
 //     `bv --robot-insights` does, but a closed issue's chain is not erased from the graph.
@@ -35,7 +35,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// Section sizes, matching internal/bv so the two engines fill the report the same way.
+// Section sizes of the report.
 const (
 	maxPicks    = 3
 	maxBlockers = 5
@@ -190,7 +190,7 @@ func analyze(ctx context.Context, issues []Issue) (core.InsightsReport, error) {
 		for _, p := range tp[:min(len(tp), maxPicks)] {
 			add(p.ID, p.Title, p.Score, p.Reasons, p.Unblocks)
 		}
-	} else { // as internal/bv does: no top picks, fall back to the ranked recommendations
+	} else { // no top picks, fall back to the ranked recommendations
 		rec := tri.Recommendations
 		for _, p := range rec[:min(len(rec), maxPicks)] {
 			add(p.ID, p.Title, p.Score, p.Reasons, len(p.UnblocksIDs))

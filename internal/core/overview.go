@@ -64,14 +64,13 @@ type Overview struct {
 	Domains   []DomainLine `json:"domain_lines"`
 	Tools     []ToolLine   `json:"tools"`
 	// Bundled is the self-contained check: how many of the tools abacus ships were found as its
-	// own verified copies. Additive. Ready needs bd, lambe and beads-lease usable; bv (graph
-	// insights) is counted here but never blocks Ready.
+	// own verified copies. Additive. Ready needs bd, lambe and beads-lease usable.
 	Bundled BundledSummary `json:"bundled"`
 }
 
 // BuildOverview reads each domain (without graph insights, which Doctor does not need) and
 // summarizes it. Ready means Tasks works, no tool is broken, and abacus's own bd, lambe and
-// beads-lease are usable; bv (graph insights) and the other domains are optional and only add
+// beads-lease are usable; the other domains are optional and only add
 // attention items.
 func BuildOverview(ctx context.Context, entries []Entry) Overview {
 	return overviewFrom(entries, readDomainsLite(ctx, entries))
@@ -111,14 +110,6 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 			required = append(required, t.Name+" is installed but cannot run: "+e.Detection.Detail)
 		}
 		switch {
-		case t.Bundled && IsOptionalBundled(t.ID) && (e.Detection.State == Incompatible || e.Detection.State == Absent):
-			// Graph insights are optional: bv alone unusable never blocks Ready. It still counts in
-			// "Bundled tools: N of M" and is listed as an optional thing to set up.
-			why := AbsentSentence(t.ID, e.Detection.Detail)
-			if e.Detection.State == Incompatible {
-				why = t.ID + " cannot be used: " + e.Detection.Detail
-			}
-			o.Attention = append(o.Attention, "Graph insights: "+strings.TrimSuffix(why, ".")+". Everything else works without it.")
 		case t.Bundled && e.Detection.State == Incompatible: // usable by nobody: Ready needs a reason to wait
 			required = append(required, t.ID+" cannot be used: "+e.Detection.Detail)
 		case t.Bundled && e.Detection.State == Absent:

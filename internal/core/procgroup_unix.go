@@ -8,7 +8,7 @@ import (
 )
 
 // setProcessGroup puts the command in its own process group and makes a timeout or cancel kill
-// the whole group, so a timed-out bv does not leave the bd it started running.
+// the whole group, so a timed-out tool does not leave a child it started running.
 func setProcessGroup(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {

@@ -48,7 +48,7 @@ const waitDelay = 2 * time.Second
 
 // ExecRunner is the production Runner. A zero Timeout means DefaultExecTimeout; a non-empty
 // Dir is the working directory of the command. Commands see the sidecar directories first on
-// PATH (so bv finds the bundled bd) and the variables Env returns, if set, on top of the
+// PATH (so a tool that runs another finds the bundled one) and the variables Env returns, if set, on top of the
 // process environment.
 type ExecRunner struct {
 	Timeout time.Duration

@@ -23,7 +23,7 @@ const (
 )
 
 // KnownTools are the tools abacus bundles and composes, by the name it looks them up under.
-var KnownTools = []string{"bd", "bv", "lambe", "beads-lease"}
+var KnownTools = []string{"bd", "lambe", "beads-lease"}
 
 // SidecarDirs lists where bundled tools are looked for, in order. It is a variable so tests
 // can point it at temp dirs; the default follows the running executable.
@@ -232,7 +232,7 @@ func CleanupSidecarEnv() {
 }
 
 // SidecarEnv returns env with a private directory of links to the verified bundled tools first
-// on PATH, so a tool that shells out to another (bv runs bd) finds the bundled one. Only known
+// on PATH, so a tool that shells out to another finds the bundled one. Only known
 // tools that pass the same checks as Locate are exposed, never the sidecar directory itself. env
 // is unchanged when no tool qualifies.
 func SidecarEnv(env []string) []string {

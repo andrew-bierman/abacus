@@ -11,7 +11,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// fakeBinDir writes fake bd, bv, lambe and beads-lease that report the given version tag.
+// fakeBinDir writes fake bd, lambe and beads-lease that report the given version tag.
 func fakeBinDir(t *testing.T, tag string) string {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), tag)
@@ -24,7 +24,6 @@ func fakeBinDir(t *testing.T, tag string) string {
 		}
 	}
 	write("bd", `echo '{"version":"`+tag+`","schema_version":1}'`)
-	write("bv", `echo "bv v1.0-`+tag+`"`)
 	write("lambe", `case "$1" in
   version) echo '{"version":"`+tag+`","api_version":1}' ;;
   doctor) echo '[{"name":"config","status":"fail","detail":"no config"}]'; exit 1 ;;
@@ -60,17 +59,17 @@ func TestBinaryPrecedenceIsOverrideThenBundledThenPATH(t *testing.T) {
 	defer func() { core.SidecarDirs = old }()
 	defer core.CleanupSidecarEnv()
 
-	// Nothing set: the verified bundled copy wins over PATH, for all four tools.
+	// Nothing set: the verified bundled copy wins over PATH, for all three tools.
 	got := detect(t, env(t, nil))
-	for _, id := range []string{"bd", "bv", "lambe", "beads-lease"} {
+	for _, id := range []string{"bd", "lambe", "beads-lease"} {
 		if got[id].Source != core.SourceBundled || !strings.Contains(got[id].Version, "bundled") {
 			t.Errorf("%s: want the bundled copy, got %+v", id, got[id])
 		}
 	}
 	// An explicit ABACUS_*_BIN beats both.
-	got = detect(t, env(t, map[string]string{"ABACUS_BD_BIN": filepath.Join(override, "bd"), "ABACUS_BV_BIN": filepath.Join(override, "bv")}))
-	if got["bd"].Source != core.SourceOverride || got["bd"].Version != "override" || got["bv"].Source != core.SourceOverride {
-		t.Errorf("override: %+v %+v", got["bd"], got["bv"])
+	got = detect(t, env(t, map[string]string{"ABACUS_BD_BIN": filepath.Join(override, "bd")}))
+	if got["bd"].Source != core.SourceOverride || got["bd"].Version != "override" {
+		t.Errorf("override: %+v", got["bd"])
 	}
 	if got["lambe"].Source != core.SourceBundled {
 		t.Errorf("an override for one tool must not change another: %+v", got["lambe"])

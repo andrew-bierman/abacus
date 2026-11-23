@@ -25,7 +25,7 @@ type Options struct {
 	Runner   core.Runner
 	Timeout  time.Duration
 
-	// Ref, when set, replaces Dir with a directory shared with other modules (bv), so a
+	// Ref, when set, replaces Dir with a directory shared with other modules (the graph engine), so a
 	// workspace created while abacus runs is read without a restart.
 	Ref *core.TrackerRef
 	// InitDir is the managed workspace a confirmed `bd init` may create. Set only when there
