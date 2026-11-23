@@ -29,7 +29,7 @@ func runTaskView(verb string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks "+verb, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
-	var asJSON, reverse bool
+	var asJSON, reverse, tree bool
 	var q, sortKey, preset string
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
 	if verb == "list" {
@@ -38,6 +38,7 @@ func runTaskView(verb string, rest []string, d Deps) int {
 		fs.StringVar(&sortKey, "sort", "", "sort key: "+joinKeys())
 		fs.BoolVar(&reverse, "reverse", false, "reverse the sort direction")
 		fs.StringVar(&preset, "preset", "", "open (default), ready, blocked, closed or all")
+		fs.BoolVar(&tree, "tree", false, "print epics and their children as a tree (a match keeps the parents above it)")
 	}
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -92,6 +93,15 @@ func runTaskView(verb string, rest []string, d Deps) int {
 		now = d.Now()
 	}
 	v := taskview.Build(snap, now)
+	if verb == "list" && tree {
+		rep := v.Tree(taskview.TreeOptions{ListOptions: opts})
+		if asJSON {
+			jsonOut(d.Out, rep)
+		} else {
+			renderTaskTree(d.Out, rep)
+		}
+		return core.ExitOK
+	}
 	if verb == "list" {
 		rep := v.List(opts)
 		if asJSON {
@@ -151,6 +161,38 @@ func renderTaskList(w io.Writer, r core.TaskListReport) {
 		fmt.Fprintf(tw, "%s\tP%d\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Priority, t.Status, dash(t.Type), dash(t.Assignee), dash(t.Age), deps(t), t.Title)
 	}
 	_ = tw.Flush()
+}
+
+// renderTaskTree prints the tree with its branch lines; a task shown only as the parent of a match is
+// marked "(context)".
+func renderTaskTree(w io.Writer, r core.TaskTreeReport) {
+	dir := "↑"
+	if r.Descending {
+		dir = "↓"
+	}
+	fmt.Fprintf(w, "Task tree  %d of %d  (%s, sort: %s %s", r.Matched, r.Total, r.Preset, r.Sort, dir)
+	if r.Query != "" {
+		fmt.Fprintf(w, ", query: %s", r.Query)
+	}
+	fmt.Fprintln(w, ")")
+	for _, warn := range r.Warnings {
+		fmt.Fprintf(w, "  warning: %s\n", warn)
+	}
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	for _, t := range r.Rows {
+		title := t.Guide + t.Title
+		if t.Context {
+			title += "  (context)"
+		}
+		fmt.Fprintf(tw, "%s\tP%d\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Priority, t.Status, dash(t.Type), dash(t.Assignee), deps(t.TaskRow), title)
+	}
+	_ = tw.Flush()
+	if r.Orphans > 0 {
+		fmt.Fprintf(w, "%d tasks name a parent that is not in this tracker and are shown at the top level\n", r.Orphans)
+	}
+	if len(r.ParentCycles) > 0 {
+		fmt.Fprintf(w, "parent links form a cycle at %s: shown at the top level\n", strings.Join(r.ParentCycles, ", "))
+	}
 }
 
 func dash(s string) string {

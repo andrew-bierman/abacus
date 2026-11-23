@@ -3,7 +3,8 @@
 The TUI renders core's typed domain reports and holds no logic of its own. It is the fleet
 cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. Tasks is abacus's own work
 browser: every task listed, sorted and filtered, with a detail pane (see "Tasks" below); the
-the dependency graph is the Graph view (below); the kanban and tree views are planned in `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`.
+tree of epics and children is the default list when a tracker has parent-child links, and the
+dependency graph is the Graph view (below); the kanban view is planned in `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`.
 The `o` handoff to the full b9s view stays as an optional extra. The Board is a message board for agents: channels,
 recent threads and open tasks, with the selected thread or task shown in full below the list. Providers (the tools behind each domain)
 are named only in Doctor and in "how to connect" or error messages, never in navigation.
@@ -35,6 +36,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Graph, Insights) |
 | `g` | Tasks list: open the dependency graph on the selected task. In the Graph view: switch between the task's neighborhood and the whole graph. `[` `]` change the depth, `h` `l` step to a sibling (a layer in the whole graph), `enter` refocuses on the selected node (on the focus itself, or in the whole graph, it opens that task in the list), `esc` returns to the list |
 | `ctrl+k` | global search from any tab (see "Global search"); not offered while a form, the confirm screen or a filter is open |
+| `T`, `h` `l`, `+` `-` | Tasks list: switch between the tree of epics and children and the flat list; in the tree, `h` folds an expanded parent (on a leaf or a folded task it goes up to the parent), `l` unfolds a folded one (on an expanded one it goes to the first child), `+` expands all, `-` folds all |
 | `?` | full help overlay; `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
@@ -66,6 +68,24 @@ differ by a refresh.)
   the way bd finds it, so it is the project the list and the `n` `e` `x` writes really use); a read
   older than two polls adds `stale 3m`, and a snapshot that may have lost records, or that saw
   duplicate ids (the later record is used; an export's order is not stable), says so under the panel.
+- **Tree.** When the tracker has at least one parent-child link the list opens as a tree (`T` switches
+  to the flat list and back; with no links there is nothing to fold and `T` says so). An epic and its
+  children are drawn with branch lines (`├─`, `└─`, `│`), `▾` marks an open parent and `▹` a folded
+  one, and an epic row carries a four-cell progress bar of its closed direct children (`▰▰▱▱`, with
+  `done/total` in the title; the bar is the first of those marks to drop as the width shrinks).
+  Siblings follow the list's sort and the quick filter and query apply to the tree: a task shows when
+  it matches, or when a task below it does, and then it is drawn dimmed (marked `dim: context` in the
+  legend) so the branch above a match is never lost; its siblings that do not match are hidden.
+  Folds are paused while a query is active (a match is never hidden inside a fold; `h` says so) and
+  return when it is cleared. A task whose parent is not in the tracker is shown at the top level, a
+  cycle of parent links is cut at its lowest id (shown at the top level), a task with two parents sits
+  under the first, and deep nesting is drawn at most five levels wide (`… ` stands for the rest).
+  Fold choices and the tree-or-flat choice are kept per tracker in abacus's own state directory
+  (`$XDG_STATE_HOME/abacus/tasks-tree.json`, mode 0600; never inside the tracker, and a demo session
+  keeps nothing), so they survive a restart; the selection follows the task through a refresh, a
+  filter and a resize, and folding away the selected task's branch moves it to the nearest parent
+  still shown. The tree is read only: reparenting is a later step. `abacus tasks list --tree` prints
+  the same tree (`--json` for the typed report).
 - **Detail.** Beside the list from 100 columns, otherwise `enter` opens it full width and `esc`
   returns. It shows the task, its status, labels and parent, what blocks it and what it blocks
   (finished ones are listed too, marked `✓`), the children of an epic with a progress bar, the
@@ -125,7 +145,7 @@ differ by a refresh.)
 - **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e` and `x` forms and
   the confirm gate below are unchanged and now act on the task under the cursor.
 
-`abacus tasks list [--query Q] [--sort KEY] [--reverse] [--preset P] [--json]` and
+`abacus tasks list [--query Q] [--sort KEY] [--reverse] [--preset P] [--tree] [--json]` and
 `abacus tasks show ID [--json]` print the same typed reports (`schema_version` 1, additive keys
 only) the TUI renders.
 
