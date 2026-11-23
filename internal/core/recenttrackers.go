@@ -69,10 +69,14 @@ func ValidateTrackerDir(dir string) (string, error) {
 		return "", fmt.Errorf("%s is not a tracker: no .beads/metadata.json in it", Sanitize(dir))
 	}
 	for _, d := range []string{dir, filepath.Join(dir, ".beads")} {
+		name := filepath.Join(filepath.Base(filepath.Dir(d)), filepath.Base(d)) // short: a notice is one line
+		if d == dir {
+			name = filepath.Base(d)
+		}
 		if fi, err := os.Stat(d); err != nil {
-			return "", fmt.Errorf("%s cannot be read: %s", Sanitize(d), Sanitize(err.Error()))
+			return "", fmt.Errorf("%s cannot be read: %s", Sanitize(name), Sanitize(err.Error()))
 		} else if why := UntrustedDir(fi, os.Getuid()); why != "" {
-			return "", fmt.Errorf("%s %s", Sanitize(d), why)
+			return "", fmt.Errorf("not switching: %s %s", Sanitize(name), why)
 		}
 	}
 	return dir, nil
