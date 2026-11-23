@@ -121,7 +121,7 @@ func predHolds(field string, p Pred, v Value, now time.Time) bool {
 				return true
 			}
 		case kTime:
-			t, _ := parseTimeSpec(want, now)
+			t, _ := timeSpecFor(field, want, now)
 			if v.HasTime && cmpTime(v.Time, t, p.Op) {
 				return true
 			}

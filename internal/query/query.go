@@ -13,6 +13,7 @@
 //	comparisons  priority:<=1, priority<2, updated>7d, created<2026-11-01
 //	             a duration (30m 12h 7d 2w) means that long ago, so updated>7d is "touched in
 //	             the last week" and updated<7d is "untouched for a week": > is later, < is earlier
+//	             (on expires a duration points ahead: expires>2h is "more than 2 hours from now")
 //	none         assignee:none and label:none match an empty field
 //
 // A field a document does not have excludes that document, so label:x only finds tasks.
@@ -345,6 +346,16 @@ func parseBool(v string) (bool, bool) {
 
 // maxSpan is the longest duration a query may name: 100 years.
 const maxSpan = 100 * 365 * 24 * time.Hour
+
+// timeSpecFor is parseTimeSpec for a field: a duration on `expires` points ahead (expires>2h is
+// "expires more than two hours from now"), on every other time field it points back.
+func timeSpecFor(field, v string, now time.Time) (time.Time, bool) {
+	t, ok := parseTimeSpec(v, now)
+	if ok && field == "expires" && len(v) >= 2 && strings.ContainsRune("mhdw", rune(v[len(v)-1])) {
+		t = now.Add(now.Sub(t))
+	}
+	return t, ok
+}
 
 // parseTimeSpec turns a duration ("7d" is now minus 7 days), a date or an RFC 3339 time into an
 // instant. With a zero now only the shape is checked.

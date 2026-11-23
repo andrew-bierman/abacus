@@ -288,3 +288,28 @@ func TestHugeDurationsAreRejected(t *testing.T) {
 		t.Error("a hundred years ago is long before this task was updated: it matches")
 	}
 }
+
+// On expires a duration points ahead; on every other time field it points back.
+func TestExpiresDurationsPointAhead(t *testing.T) {
+	mk := func(d time.Duration) doc { return doc{vals: map[string]Value{"expires": {Time: now.Add(d), HasTime: true}}} }
+	for _, tc := range []struct {
+		q    string
+		in   time.Duration
+		want bool
+	}{
+		{"expires>2h", 4 * time.Minute, false}, // expires in 4 minutes: not "more than 2 hours from now"
+		{"expires>2h", 3 * time.Hour, true},
+		{"expires<30m", 4 * time.Minute, true},
+		{"expires<30m", time.Hour, false},
+		{"expires<30m", -time.Hour, true}, // already expired
+		{"expires>2026-11-23", time.Hour, true},
+	} {
+		q, err := Parse(tc.q)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := q.Match(mk(tc.in), now); got != tc.want {
+			t.Errorf("%s with expiry in %v: %v, want %v", tc.q, tc.in, got, tc.want)
+		}
+	}
+}

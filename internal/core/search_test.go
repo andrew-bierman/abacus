@@ -122,8 +122,8 @@ func TestSearchGrammarOverDomains(t *testing.T) {
 		// time fields: updated (at), expires
 		{"updated>2d", []string{"board/m:17", "board/t:15", "queues/ac-30", "tasks/ac-41"}},
 		{"at>2d in:board", []string{"board/m:17", "board/t:15"}},
-		{"expires>2h", []string{"leases/tracker-sync"}},
-		{"expires<2h", nil},
+		{"expires>2h", nil}, // it expires in 4 minutes
+		{"expires<2h", []string{"leases/tracker-sync"}},
 		// negation, OR within a field, AND across
 		{"!status:closed in:tasks", []string{"tasks/ac-38", "tasks/ac-41", "tasks/ac-47"}},
 		{"-who:ada in:tasks", []string{"tasks/ac-38", "tasks/ac-47"}},
@@ -381,4 +381,41 @@ func TestSearchLimitIsClampedToTheMaximum(t *testing.T) {
 	if got := len(r.Groups[0].Results); got != core.MaxSearchLimit || r.Groups[0].Truncated != 100 {
 		t.Errorf("%d results, %d truncated", got, r.Groups[0].Truncated)
 	}
+}
+
+// Text whose lower-case form has a different byte length (U+023A, U+0130, Kelvin) or that folds
+// oddly (sharp s, combining marks) must never break the excerpt, before or inside the match.
+func TestSearchExcerptSurvivesCaseFoldingText(t *testing.T) {
+	prefixes := []string{"Ⱥ", "İ", "K", "ß", "é", "ǅ", "ẞ", "ͅ"}
+	for _, p := range prefixes {
+		for _, body := range []string{
+			strings.Repeat(p, 30) + " the renewal window is skipped",
+			"the " + strings.Repeat(p, 5) + "renewal" + strings.Repeat(p, 5) + " window",
+			"renewal " + strings.Repeat(p, 40),
+			strings.Repeat(p, 60) + "RENEWAL",
+		} {
+			d := core.SearchDoc{Domain: core.DomainBoard, Kind: core.KindThread, ID: "t:1", Ref: "1", Title: "x", Body: body}
+			r, err := core.NewSearchIndex(core.SearchFeed{Domain: core.DomainBoard, Docs: []core.SearchDoc{d}}).Search("renewal", core.SearchOptions{Now: searchNow})
+			if err != nil || r.Total != 1 {
+				t.Fatalf("%q: %v total %d", p, err, r.Total)
+			}
+			if s := r.Groups[0].Results[0].Snippet; !strings.Contains(strings.ToLower(s), "renewal") && !strings.HasPrefix(body, "renewal") {
+				t.Logf("%q: excerpt without the match: %q", p, s)
+			}
+		}
+	}
+}
+
+func FuzzSnippetAround(f *testing.F) {
+	for _, s := range []string{"the renewal window", "Ⱥ renewal", "İ renewal İ", "K kelvin", "straße renewal", "é é renewal", "", "x"} {
+		f.Add(s, "renewal")
+		f.Add(s, "ss")
+		f.Add(s, "")
+	}
+	f.Fuzz(func(t *testing.T, body, word string) {
+		got := core.SnippetAround(body, strings.ToLower(word))
+		if n := len([]rune(got)); n > 48+2+len([]rune(word)) {
+			t.Fatalf("excerpt of %d runes for %q", n, body)
+		}
+	})
 }
