@@ -447,11 +447,8 @@ func TestPromptReachesNoWriter(t *testing.T) {
 // The files that make up the prompt name no writer, runner or process: a source-level guard beside
 // the behavior test above.
 func TestPromptSourcesNameNoWriter(t *testing.T) {
-	banned := map[string]bool{
-		"Applier": true, "Apply": true, "RunTask": true, "BuildTaskArgv": true, "PlanTaskChange": true, "WritePlan": true, "TaskWriter": true,
-		"BoardWriter": true, "Confirm": true, "ExecProcess": true, "Command": true, "ExecRunner": true, "Audit": true, "Record": true,
-		"beginConfirm": true, "toConfirm": true, "applier": true, "writer": true, "handoff": true, "fullView": true,
-	}
+	// fragments of an identifier that mean writing, confirming, auditing, running or handing off
+	banned := []string{"Appl", "Writ", "RunTask", "Argv", "Confirm", "Audit", "Exec", "Handoff", "handoff", "FullView", "fullView", "Plan", "Record", "Runner"}
 	for _, f := range []string{"prompt.go", "describe.go", "jsonview.go", "header_context.go", "tasks_prompt.go"} {
 		af, err := parser.ParseFile(token.NewFileSet(), f, nil, 0)
 		if err != nil {
@@ -463,8 +460,12 @@ func TestPromptSourcesNameNoWriter(t *testing.T) {
 			}
 		}
 		ast.Inspect(af, func(n ast.Node) bool {
-			if id, ok := n.(*ast.Ident); ok && banned[id.Name] {
-				t.Errorf("%s names %s", f, id.Name)
+			if id, ok := n.(*ast.Ident); ok {
+				for _, b := range banned {
+					if strings.Contains(id.Name, b) {
+						t.Errorf("%s names %s", f, id.Name)
+					}
+				}
 			}
 			return true
 		})

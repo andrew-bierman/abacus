@@ -147,6 +147,7 @@ func TestCompleteCommandTable(t *testing.T) {
 		{"filter -pri", []string{"filter -priority:"}},
 		{"search in:", []string{"search in:tasks", "search in:board", "search in:leases", "search in:queues"}},
 		{"filter label:ui st", []string{"filter label:ui status:"}},
+		{"filter ar", nil}, // "parent" contains "ar" but does not start with it
 		{"ctx ", nil},
 	}
 	for _, c := range cases {
@@ -164,7 +165,7 @@ func TestCommonPrefix(t *testing.T) {
 	for _, c := range []struct {
 		in   []string
 		want string
-	}{{nil, ""}, {[]string{"tasks"}, "tasks"}, {[]string{"tasks", "task"}, "task"}, {[]string{"a", "b"}, ""}, {[]string{"é1", "é2"}, "é"}} {
+	}{{nil, ""}, {[]string{"tasks"}, "tasks"}, {[]string{"tasks", "task"}, "task"}, {[]string{"task", "tasks"}, "task"}, {[]string{"ab", "ab"}, "ab"}, {[]string{"a", "b"}, ""}, {[]string{"é1", "é2"}, "é"}} {
 		if got := CommonPrefix(c.in); got != c.want {
 			t.Errorf("CommonPrefix(%q) = %q, want %q", c.in, got, c.want)
 		}
