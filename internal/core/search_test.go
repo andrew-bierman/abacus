@@ -358,3 +358,27 @@ func TestSearchScanIsCappedPerDomain(t *testing.T) {
 		t.Errorf("total %d, reason %q", r.Groups[0].Total, r.Domains[0].Reason)
 	}
 }
+
+// A reply is shown by its thread: the jump target is the row that exists, not the message id.
+func TestSearchResultJumpUsesTheTargetRow(t *testing.T) {
+	r, _ := core.NewSearchIndex(searchFixtures()[1]).Search("rolled back", core.SearchOptions{Now: searchNow})
+	x := r.Groups[0].Results[0]
+	if x.ID != "m:17" || x.Jump() != "t:15" {
+		t.Errorf("id %q jump %q, want m:17 -> t:15", x.ID, x.Jump())
+	}
+	r, _ = core.NewSearchIndex(searchFixtures()[0]).Search("ac-41", core.SearchOptions{Now: searchNow})
+	if y := r.Groups[0].Results[0]; y.Jump() != "ac-41" {
+		t.Errorf("a task jumps to its own id, got %q", y.Jump())
+	}
+}
+
+func TestSearchLimitIsClampedToTheMaximum(t *testing.T) {
+	docs := make([]core.SearchDoc, 300)
+	for i := range docs {
+		docs[i] = core.SearchDoc{Domain: core.DomainTasks, Kind: core.KindTask, ID: fmt.Sprint(i), Ref: fmt.Sprint(i), Title: "same"}
+	}
+	r, _ := core.NewSearchIndex(core.SearchFeed{Domain: core.DomainTasks, Docs: docs}).Search("same", core.SearchOptions{Now: searchNow, Limit: 100000})
+	if got := len(r.Groups[0].Results); got != core.MaxSearchLimit || r.Groups[0].Truncated != 100 {
+		t.Errorf("%d results, %d truncated", got, r.Groups[0].Truncated)
+	}
+}

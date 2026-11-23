@@ -271,11 +271,14 @@ func TestJumpClearsTheListFilterThatHidesTheTask(t *testing.T) {
 }
 
 func TestJumpToBoardThreadReplyAndTask(t *testing.T) {
+	// the cursor starts on the other thread, so a jump has to move it; the reply (m:17) is shown by its thread
 	for q, want := range map[string]string{"checkout": "t:15", "rolled back": "t:15", "CVE-123": "k:16", "deploys": "t:2"} {
-		m := jump(t, q)
-		bs := secAt(m, tabBoard).(*boardSection)
-		if activeTab(m) != "Board" || bs.selected != want || bs.ids()[bs.cursor] != want {
-			t.Errorf("%q: tab %s selected %q, want %q", q, activeTab(m), bs.selected, want)
+		for _, from := range []string{"t:15", "t:2"} {
+			m := jump(t, q, "1", map[string]string{"t:15": "up", "t:2": "down"}[from])
+			bs := secAt(m, tabBoard).(*boardSection)
+			if activeTab(m) != "Board" || bs.selected != want || bs.ids()[bs.cursor] != want {
+				t.Errorf("%q from %s: tab %s selected %q, want %q", q, from, activeTab(m), bs.selected, want)
+			}
 		}
 	}
 }
