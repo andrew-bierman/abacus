@@ -24,6 +24,33 @@ may change behavior, and patch versions are fixes and small additions.
   and shows a Doctor warning. Doctor says which engine is active. The report has the same shape,
   so the Tasks tab and JSON output do not change. How the two differ is in
   `docs/tool-contract.md` ("Graph engine"). The assessment is marked "prototype built".
+- `scripts/dev-bundle.sh` (`make bundle`, `make dev`): a locally built binary gets abacus's own
+  pinned, sha256-verified copies of bd, bv, lambe and beads-lease in `bin/bundled/`, so Doctor shows
+  every tool as `bundled` and tabs are no longer "not connected" on a dev machine. It fails closed
+  on any hash mismatch, builds in a temp directory and moves it into place, is idempotent and has a
+  `--check` mode. `package-release.sh` now also verifies every manifest tool landed in `bundled/`,
+  and a test fails when a tool in `bundled-tools.json` lacks an asset for a release platform.
+- `abacus doctor` and `abacus version` report "Bundled tools: 4 of 4 verified" (or what is wrong);
+  JSON gains `bundled` (version) and `overview.bundled` (doctor) and tool lines gain `bundled_tool`
+  and `optional`, all additive (schema_version stays 1). Doctor's header says `Ready` only when bd,
+  lambe and beads-lease are usable; bv (graph insights) is optional: it still counts in "Bundled
+  tools: N of 4" and is listed as an optional thing to set up, but never blocks `Ready`.
+- `scripts/dev-bundle.sh --out DIR` refuses a DIR that is not empty and does not look like its own
+  install (it replaces the whole directory), re-checks each kept tool's license and file modes (and
+  drops tools the manifest no longer lists), and manifest tool names must match `^[a-z0-9-]+$`.
+- `core.HowToConnect` (map) and `core.HowToConnectInsights` (var) are now `core.HowToConnectFor(domain)`
+  and `core.HowToConnectInsights()`, computed from the build kind: no shared state, race-free.
+
+### Changed
+
+- A bundled tool abacus cannot use is never "missing" or "install X" to the user. In a release the
+  text says abacus's own copy is damaged or was moved, gives the refusal reason when a copy was
+  refused, and says to re-extract the archive and keep the folder together; in a dev build
+  (`version` is `dev`) it says to run `scripts/dev-bundle.sh`. Optional tools that abacus does not
+  ship (Vercel Board CLI, b9s) say they are optional and what they add. Doctor's tool badge reads
+  `unavailable` or `optional` instead of `missing`; the raw `where: "missing"` in JSON is unchanged.
+
+
 - Assessment of bv and b9s as importable Go packages for the Tasks graph insights
   (`docs/plans/2026-11-22-graph-core-assessment.md`): measurements, a decision and the bv license
   rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
@@ -61,6 +88,11 @@ may change behavior, and patch versions are fixes and small additions.
   two hues it can tell apart. Each color is also carried by a glyph or word, so nothing depends on color:
   the bar uses a different glyph per state and the dot is a character. Selected rows stay plain on
   the highlight. In `--demo`, Doctor now lists the demo tools as demo instead of missing.
+- Internal: Leases, Queues, Board and Tasks share one list-navigation piece (`listNav`: cursor,
+  scroll, selected row identity, drill), with direct tests. Selection and key behavior are unchanged
+  (Leases and Queues still pin the selection when its row disappears; Board and Tasks follow the
+  clamped row). The Tasks section moved to its own file, and the Board builds only the selected
+  row's detail text instead of one per row on every render. No output changed.
 - Tasks and Board are drawn in framed panels with aligned columns. Tasks shows the counts and an
   aligned task table in a list panel and the graph insights in their own panel, beside the list from
   100 columns and under it below that. Board shows the summary, channels and aligned thread and task

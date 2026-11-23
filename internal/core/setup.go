@@ -126,7 +126,7 @@ func (s *Setup) Plan(step StepID) (SetupPlan, error) {
 	case StepWorkspace:
 		d, ok := s.writer.(InitDirer)
 		if s.writer == nil || !ok || d.InitDir() == "" {
-			return SetupPlan{}, errors.New("a tracker is already set up (or bd was not found): nothing to create")
+			return SetupPlan{}, errors.New("a tracker is already set up (or abacus's own bd is unavailable: see `abacus doctor`): nothing to create")
 		}
 		if HasOwnTracker(d.InitDir()) {
 			return SetupPlan{}, errors.New("the workspace already has a tracker: nothing to create")
@@ -154,7 +154,7 @@ func (s *Setup) Plan(step StepID) (SetupPlan, error) {
 
 func (s *Setup) planQueues() (SetupPlan, error) {
 	if s.lambe == nil {
-		return SetupPlan{}, errors.New("Lambe was not found: nothing to set up")
+		return SetupPlan{}, errors.New("abacus's own Lambe is unavailable (see `abacus doctor`): nothing to set up")
 	}
 	if s.o.Workspace == "" || s.o.LambeConfig == "" {
 		return SetupPlan{}, errors.New("no home directory to keep the config in")
@@ -325,7 +325,7 @@ func (s *Setup) Steps(ctx context.Context) []StepInfo {
 		g := s.Guide(ctx, d)
 		switch {
 		case s.guiders[d] == nil:
-			info.State, info.Message = "unavailable", d.Title()+": the tool for this was not found"
+			info.State, info.Message = "unavailable", d.Title()+": abacus's own tool for this is unavailable (see `abacus doctor`)"
 		case g == nil:
 		default:
 			info.Message = g.CLILine()

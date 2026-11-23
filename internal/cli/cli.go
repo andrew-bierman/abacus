@@ -44,6 +44,7 @@ func Run(args []string, d Deps) int {
 		usage(d)
 		return core.ExitUsage
 	}
+	core.SetBuildVersion(d.Version) // a dev build and a release word a missing bundled tool differently
 	cmd, rest := args[0], args[1:]
 	switch cmd {
 	case "version", "doctor", "status", "tui":
@@ -111,7 +112,18 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 	if cmd == "version" {
 		fmt.Fprintf(w, "%s %s\n", brand.Name, r.Version)
 		for _, m := range r.Modules {
-			fmt.Fprintf(w, "  %-10s %s %s\n", m.ID, m.Detection.State, strings.TrimSpace(m.Detection.Version+" "+m.Detection.Detail))
+			detail := m.Detection.Detail
+			state := string(m.Detection.State)
+			if m.Detection.State == core.Absent {
+				detail = core.AbsentSentence(m.ID, detail)
+				if core.IsBundledTool(m.ID) {
+					state = "unavailable"
+				}
+			}
+			fmt.Fprintf(w, "  %-10s %s %s\n", m.ID, state, strings.TrimSpace(m.Detection.Version+" "+detail))
+		}
+		if r.Bundled != nil {
+			fmt.Fprintf(w, "%s\n", r.Bundled.Line)
 		}
 		return
 	}
@@ -168,13 +180,14 @@ func renderOverview(w io.Writer, o core.Overview) {
 	for _, a := range o.Attention {
 		fmt.Fprintf(w, "  - %s\n", a)
 	}
+	fmt.Fprintln(w, "\n"+o.Bundled.Line)
 	fmt.Fprintln(w, "\nAreas")
 	for _, d := range o.Domains {
 		fmt.Fprintf(w, "  %-7s %s\n", d.Title, d.Line)
 	}
 	fmt.Fprintln(w, "\nTools")
 	for _, t := range o.Tools {
-		fmt.Fprintf(w, "  %-12s %-8s %s\n", t.ID, t.Where, strings.TrimSpace(t.Version+"  "+t.Path))
+		fmt.Fprintf(w, "  %-12s %-8s %s\n", t.ID, t.Label(), strings.TrimSpace(t.Version+"  "+t.Path))
 		if t.Note != "" {
 			fmt.Fprintf(w, "    %s\n", t.Note)
 		}

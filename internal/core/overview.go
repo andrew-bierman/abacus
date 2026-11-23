@@ -21,6 +21,29 @@ type ToolLine struct {
 	// Note is an informational line: a bundled copy that was refused (and what ran instead), or a
 	// version that differs from the pinned one. It never blocks anything.
 	Note string `json:"note,omitempty"`
+	// Bundled is true for the tools abacus ships itself; Optional for a tool it does not ship and
+	// does not need (the Vercel Board CLI): its absence is not a problem.
+	Bundled  bool `json:"bundled_tool,omitempty"`
+	Optional bool `json:"optional,omitempty"`
+}
+
+// Label is the one word shown for where a tool came from. A tool that was not located is never
+// "missing" to the user: abacus's own copy is "unavailable" (and Note says what to do), and an
+// optional tool is "optional". Where keeps the raw value for JSON consumers.
+func (t ToolLine) Label() string {
+	if t.Where == "" && t.State == Ready {
+		return "found"
+	}
+	if t.Where != "missing" && t.Where != "" {
+		return t.Where
+	}
+	if t.Bundled {
+		return "unavailable"
+	}
+	if t.Optional {
+		return "optional"
+	}
+	return "not installed"
 }
 
 // DomainLine is one domain in the overview, in one plain line.
@@ -40,11 +63,16 @@ type Overview struct {
 	Attention []string     `json:"attention,omitempty"`
 	Domains   []DomainLine `json:"domain_lines"`
 	Tools     []ToolLine   `json:"tools"`
+	// Bundled is the self-contained check: how many of the tools abacus ships were found as its
+	// own verified copies. Additive. Ready needs bd, lambe and beads-lease usable; bv (graph
+	// insights) is counted here but never blocks Ready.
+	Bundled BundledSummary `json:"bundled"`
 }
 
 // BuildOverview reads each domain (without graph insights, which Doctor does not need) and
-// summarizes it. Ready means Tasks works and no tool is broken; the other domains are
-// optional and only add attention items.
+// summarizes it. Ready means Tasks works, no tool is broken, and abacus's own bd, lambe and
+// beads-lease are usable; bv (graph insights) and the other domains are optional and only add
+// attention items.
 func BuildOverview(ctx context.Context, entries []Entry) Overview {
 	return overviewFrom(entries, readDomainsLite(ctx, entries))
 }
@@ -64,22 +92,47 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 	pinned := PinnedVersions()
 	var required []string
 	broken := false
+	var shown []ModuleReport
+	var unusable []string
 	for _, e := range entries {
 		if q, ok := e.Module.(interface{ Quiet() bool }); ok && q.Quiet() {
 			continue
 		}
 		t := ToolLine{ID: e.Module.ID(), Name: e.Module.Name(), State: e.Detection.State, Where: string(e.Detection.Source),
-			Version: e.Detection.Version, Path: e.Detection.Path, Detail: e.Detection.Detail}
+			Version: e.Detection.Version, Path: e.Detection.Path, Detail: e.Detection.Detail, Bundled: IsBundledTool(e.Module.ID())}
+		_, t.Optional = optionalAdds[t.ID]
 		if e.Detection.State == Absent {
 			t.Where = "missing"
 		}
 		t.Note = toolNote(e, t.Where, pinned)
+		shown = append(shown, base(e))
 		if e.Detection.State == Broken {
 			broken = true
 			required = append(required, t.Name+" is installed but cannot run: "+e.Detection.Detail)
 		}
+		switch {
+		case t.Bundled && IsOptionalBundled(t.ID) && (e.Detection.State == Incompatible || e.Detection.State == Absent):
+			// Graph insights are optional: bv alone unusable never blocks Ready. It still counts in
+			// "Bundled tools: N of M" and is listed as an optional thing to set up.
+			why := AbsentSentence(t.ID, e.Detection.Detail)
+			if e.Detection.State == Incompatible {
+				why = t.ID + " cannot be used: " + e.Detection.Detail
+			}
+			o.Attention = append(o.Attention, "Graph insights: "+strings.TrimSuffix(why, ".")+". Everything else works without it.")
+		case t.Bundled && e.Detection.State == Incompatible: // usable by nobody: Ready needs a reason to wait
+			required = append(required, t.ID+" cannot be used: "+e.Detection.Detail)
+		case t.Bundled && e.Detection.State == Absent:
+			unusable = append(unusable, t.ID)
+			if !IsDevBuild() {
+				required = append(required, AbsentSentence(t.ID, e.Detection.Detail))
+			}
+		}
 		o.Tools = append(o.Tools, t)
 	}
+	if IsDevBuild() && len(unusable) > 0 {
+		required = append(required, fmt.Sprintf("abacus's own tools are not set up for this build (%s): run %s (or make bundle) in the abacus source folder.", strings.Join(unusable, ", "), DevBundleCommand))
+	}
+	o.Bundled = SummarizeBundled(shown)
 	lines := []DomainLine{
 		domainLine(d.Tasks.Header, func() string {
 			if d.Tasks.Counts.Total == 0 {
@@ -106,6 +159,9 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 		o.Domains = append(o.Domains, l)
 		if l.State == Connected {
 			continue
+		}
+		if tool, ok := bundledOwner(l.Domain); ok && l.State == NotConnected && contains(unusable, tool) {
+			continue // the bundled-tool line above already says what is wrong and how to fix it
 		}
 		item := l.Title + ": " + l.Line
 		if l.Domain == DomainTasks {
@@ -154,24 +210,44 @@ func domainLine(h Header, connected func() string) DomainLine {
 
 func trimV(v string) string { return strings.TrimPrefix(strings.TrimSpace(v), "v") }
 
-// toolNote explains a bundled tool that was refused and what ran in its place, and notes (only
-// informationally) a bundled version that differs from the pin in bundled-tools.json.
+// toolNote explains, in plain words, a tool that is not abacus's own verified copy: a bundled
+// tool that is unavailable (and how to restore it), one that fell back to PATH (and why), an
+// optional tool that is not installed (and what it adds), and, only informationally, a bundled
+// version that differs from the pin in bundled-tools.json.
 func toolNote(e Entry, where string, pinned map[string]string) string {
 	d, id := e.Detection, e.Module.ID()
 	var parts []string
-	if d.Ignored != "" {
-		n := "bundled " + id + " ignored: " + d.Ignored
-		if where == "missing" {
-			n += "; no " + id + " on PATH either"
-		} else {
-			n += "; using PATH " + id + " " + d.Version
+	if where == "missing" {
+		if s := AbsentSentence(id, d.Detail); s != d.Detail {
+			parts = append(parts, s)
 		}
-		parts = append(parts, strings.TrimSpace(n))
+	} else if IsBundledTool(id) {
+		if n := bundledNote(id, d); n != "" {
+			parts = append(parts, n)
+		}
 	}
 	if p := pinned[id]; where == "bundled" && p != "" && d.Version != "" && trimV(d.Version) != trimV(p) {
 		parts = append(parts, fmt.Sprintf("version %s differs from the pinned %s (informational)", trimV(d.Version), trimV(p)))
 	}
 	return strings.Join(parts, "; ")
+}
+
+func bundledOwner(d DomainID) (string, bool) {
+	for tool, dom := range bundledDomain {
+		if dom == d {
+			return tool, true
+		}
+	}
+	return "", false
+}
+
+func contains(l []string, s string) bool {
+	for _, x := range l {
+		if x == s {
+			return true
+		}
+	}
+	return false
 }
 
 // PinnedVersions reads bundled-tools.json as shipped in the archive (third_party/ next to the

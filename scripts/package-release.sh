@@ -49,23 +49,7 @@ trap 'rm -rf "$work"' EXIT
 mkdir "$work/out"
 tools=()
 while IFS= read -r t; do tools+=("$t"); done < <(jq -r '.tools[].name' "$manifest")
-
-# fetch TOOL PLATFORM -> prints the path of the verified asset in the cache
-fetch() {
-  local tool="$1" p="$2" asset want got
-  asset="$(tool_field "$tool" ".assets[\"$p\"].asset")"; want="$(tool_field "$tool" ".assets[\"$p\"].sha256")"
-  [ -n "$asset" ] && [ "$asset" != null ] && [ -n "$want" ] && [ "$want" != null ] \
-    || die "$tool has no pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
-  mkdir -p "$cache/$tool"
-  if [ ! -f "$cache/$tool/$asset" ]; then
-    need gh
-    gh release download "$(tag_for "$tool" "$(tool_field "$tool" .version)")" -R "$(tool_field "$tool" .repo)" \
-      -p "$asset" -D "$cache/$tool" || die "cannot download $asset"
-  fi
-  got="$(sha "$cache/$tool/$asset")"
-  [ "$got" = "$want" ] || die "$asset: sha256 $got does not match the pin $want (delete $cache/$tool/$asset to refetch)"
-  echo "$cache/$tool/$asset"
-}
+check_tool_names "${tools[@]}"
 
 for p in $platforms; do
   os="${p%-*}"; arch="${p#*-}"
@@ -82,46 +66,18 @@ for p in $platforms; do
   fi
 
   notices="$stage/THIRD_PARTY_NOTICES.md"
-  {
-    echo "# Third-party notices"
-    echo
-    echo "This archive ships these tools unmodified, as separate programs in \`bundled/\`. abacus runs"
-    echo "them as subprocesses. Each tool's own license is in \`third_party/<tool>/LICENSE\`, copied"
-    echo "verbatim from the pinned release."
-    echo
-  } >"$notices"
-
+  notices_header >"$notices"
   for tool in "${tools[@]}"; do
     asset_path="$(fetch "$tool" "$p")"
-    member="$(tool_field "$tool" ".assets[\"$p\"].member")"
-    extract_member "$asset_path" "$member" "$stage/bundled/$tool"
-    chmod 0755 "$stage/bundled/$tool"
-
-    mkdir -p "$stage/third_party/$tool"
-    lic="$stage/third_party/$tool/LICENSE"
-    if [ "$(tool_field "$tool" .license_source.from)" = archive ]; then
-      extract_member "$asset_path" "$(tool_field "$tool" .license_source.member)" "$lic"
-    else
-      fetch_license "$tool" "$(tool_field "$tool" .version)" "$lic"
-    fi
-    [ "$(sha "$lic")" = "$(tool_field "$tool" .license_sha256)" ] || die "$tool: license changed from its pin; review it, then re-pin"
-    chmod 0644 "$lic"
-
-    {
-      echo "## $tool $(tool_field "$tool" .version)"
-      echo
-      echo "- License: $(tool_field "$tool" .license)"
-      echo "- Source: https://github.com/$(tool_field "$tool" .repo)"
-      echo "- Shipped as: \`bundled/$tool\` (asset \`$(basename "$asset_path")\`, sha256 \`$(tool_field "$tool" ".assets[\"$p\"].sha256")\`)"
-      echo "- License text: \`third_party/$tool/LICENSE\`"
-      echo
-    } >>"$notices"
+    install_tool "$stage/bundled" "$stage/third_party" "$tool" "$p" "$asset_path"
+    notices_entry "$tool" "$p" "$asset_path" >>"$notices"
   done
-  {
-    echo "abacus itself is GPL-3.0-or-later (\`LICENSE\`). lambe is GPL-3.0 and shipped as a separate program."
-    echo "The bv license adds a rider about use with OpenAI and Anthropic products; read"
-    echo "\`third_party/bv/LICENSE\` before redistributing."
-  } >>"$notices"
+  notices_footer >>"$notices"
+  # Every manifest tool must have landed as a non-empty executable; a release never ships a gap.
+  for tool in "${tools[@]}"; do
+    f="$stage/bundled/$tool"
+    [ -f "$f" ] && [ ! -L "$f" ] && [ -s "$f" ] && [ -x "$f" ] || die "$tool is missing from bundled/ in $name"
+  done
 
   # The Go code linked into the binary (bv's analysis packages and every other module).
   go_licenses_section "$root" "$os" "$arch" >>"$notices" \

@@ -14,6 +14,11 @@ made with real numbers.
 ## Where things stand
 
 `GOOS=windows go build ./cmd/abacus` succeeds with `CGO_ENABLED=0`. Nothing else has been run on Windows.
+
+Bundled tools are out of scope for the same reason: `bundled-tools.json` pins darwin and linux
+(amd64, arm64) only, and `scripts/package-release.sh` and `scripts/dev-bundle.sh` stop with "has no pin
+for windows-amd64". A Windows release would need pinned `.exe` assets (or zip members) per tool and the
+same `bundled/` sidecar lookup; until then a Windows user would have to supply the tools themselves.
 Four places have non-unix fallbacks, and two of them weaken a guarantee instead of failing:
 
 | Area | File | Windows behavior today | Needed |
