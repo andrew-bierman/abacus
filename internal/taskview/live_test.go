@@ -174,13 +174,13 @@ func TestPollerBacksOffOnSlowOrFailedAndRecovers(t *testing.T) {
 	if p.Wait() != 40*time.Second {
 		t.Errorf("failure at the cap stays at the cap, got %v", p.Wait())
 	}
-	for i := 0; i < quickToRecover; i++ { // one quick check is not recovery: it takes three in a row
+	for i := 0; i < 3; i++ { // one quick check is not recovery: it takes three in a row (a literal, not the constant)
 		now = now.Add(p.Wait())
 		if !p.Start(now) {
 			t.Fatalf("check %d not due", i)
 		}
 		p.Done(now, time.Millisecond, true)
-		if want := 40 * time.Second; i < quickToRecover-1 && p.Wait() != want {
+		if want := 40 * time.Second; i < 2 && p.Wait() != want {
 			t.Errorf("after %d quick checks the wait is %v, want it still %v", i+1, p.Wait(), want)
 		}
 	}
