@@ -218,18 +218,37 @@ func (s *lambeSection) attentionLines() []string {
 	return out
 }
 
-// listLines is the scrolling part of the list pane and the line the cursor is on.
-func (s *lambeSection) listLines(lw int) ([]string, int) {
-	th := s.th
-	runs := s.runs()
-	head := s.countLabel("Runs", len(runs))
+// listTitle is the list panel's title: the run count and, when it applies, where the data came from.
+func (s *lambeSection) listTitle() string {
+	title := fmt.Sprintf("Runs %d", len(s.runs()))
 	if s.view.Source == lambe.SourceTracker {
-		head += " " + th.Badge(KindWarn, lambe.SourceTracker)
+		title += " · " + lambe.SourceTracker
 	}
 	if s.m.IsDemo() {
-		head += " " + th.Badge(KindWarn, "demo data")
+		title += " · demo data"
 	}
-	out := []string{head}
+	return title
+}
+
+// runCols are the run table's columns: issue, state, a stalled flag only when some visible run is
+// stalled, then phase, machine, workflow and last event. A higher prio number drops first as the
+// panel narrows, so the last two appear only on a wide terminal.
+func runCols(withFlag bool) []column {
+	cols := []column{{min: 14, max: 14, prio: 0}, {min: 10, max: 10, prio: 0}}
+	if withFlag {
+		cols = append(cols, column{min: 9, max: 9, prio: 1})
+	}
+	return append(cols,
+		column{min: 8, max: 16, prio: 2}, column{min: 10, max: 20, prio: 3},
+		column{min: 8, max: 16, prio: 4}, column{min: 5, max: 8, prio: 5, right: true})
+}
+
+// listLines is the scrolling part of the list panel (the title carries the count) and the line the
+// cursor is on.
+func (s *lambeSection) listLines(iw int) ([]string, int) {
+	th := s.th
+	runs := s.runs()
+	var out []string
 	if s.view.Source == lambe.SourceTracker {
 		out = append(out, th.Text(KindMuted, "no live daemon, no phases or queue"))
 	}
@@ -242,36 +261,52 @@ func (s *lambeSection) listLines(lw int) ([]string, int) {
 	}
 	cursorLine := len(out)
 	if len(runs) == 0 {
-		out = append(out, th.Text(KindMuted, "  no runs"))
+		out = append(out, th.Text(KindMuted, "no runs"))
 	}
-	iw := 6
+	stalled := false
 	for _, r := range runs {
-		iw = max(iw, min(14, len([]rune(san(r.Issue)))))
+		stalled = stalled || r.Stalled
 	}
-	for i, r := range runs {
-		issue, state, phase := padTo(trunc(san(r.Issue), iw), iw), orDash(r.State), orDash(r.Phase)
-		if i == s.cursor {
-			row := "▸ " + issue + "  " + state + "  " + phase
-			if r.Stalled {
-				row += "  (stalled)"
+	tb := table{cols: runCols(stalled), gap: 2}
+	var styled, plain [][]string // the selected row is drawn without per-cell color
+	for _, r := range runs {
+		state := orDash(r.State)
+		flag, plainFlag := "", ""
+		if r.Stalled {
+			flag, plainFlag = th.Badge(KindWarn, "stalled"), "(stalled)"
+		}
+		mk := func(state, flag string) []string {
+			cells := []string{san(r.Issue), state}
+			if stalled {
+				cells = append(cells, flag)
 			}
-			out = append(out, th.Selected.Render(padTo(trunc(row, lw), lw)))
+			return append(cells, orDash(r.Phase), orDash(r.Machine), orDash(r.Workflow), orDash(r.LastEventAge))
+		}
+		styled = append(styled, mk(th.Text(stateKind(r.State), state), flag))
+		plain = append(plain, mk(state, plainFlag))
+	}
+	widths := tb.fitRows(max(iw-2, 1), styled) // two cells for the selection marker
+	for i := range runs {
+		if i == s.cursor {
+			out = append(out, th.Selected.Render(padTo(trunc("▸ "+tb.row(widths, plain[i]), iw), iw)))
 			continue
 		}
-		row := "  " + issue + "  " + th.Text(stateKind(r.State), state) + "  " + phase
-		if r.Stalled {
-			row += "  " + th.Badge(KindWarn, "stalled")
-		}
-		out = append(out, row)
+		out = append(out, "  "+tb.row(widths, styled[i]))
 	}
 	if s.view.Source != lambe.SourceTracker {
 		out = append(out, "", s.countLabel("Queue", len(s.view.Queue.Rows)))
+		qt := table{cols: []column{{min: 14, max: 14, prio: 0}, {min: 9, max: 9, prio: 0}, {min: 4, prio: 1}}, gap: 2}
+		var qrows [][]string
 		for _, q := range s.view.Queue.Rows {
 			state := th.Text(KindOK, "ready")
 			if q.Blocked {
 				state = th.Badge(KindWarn, "blocked")
 			}
-			out = append(out, fmt.Sprintf("  %s  %s  %s", san(q.ID), state, san(q.Title)))
+			qrows = append(qrows, []string{san(q.ID), state, san(q.Title)})
+		}
+		qw := qt.fitRows(max(iw-2, 1), qrows)
+		for _, r := range qrows {
+			out = append(out, "  "+qt.row(qw, r))
 		}
 	}
 	return out, cursorLine + s.cursor
@@ -321,10 +356,10 @@ func (s *lambeSection) View() string {
 		if s.notice != "" && h > 0 {
 			h = max(1, h-1)
 		}
-		lw, _ := paneWidths(w)
-		scrolling, cursorLine := s.listLines(lw)
-		list := s.compose(scrolling, cursorLine, h)
-		body = panes(s.th, w, h, list, s.detailLines(), s.drilled)
+		g := duoLayout(w, h)
+		scrolling, cursorLine := s.listLines(g.listInner())
+		list := s.compose(scrolling, cursorLine, g.inner)
+		body = g.draw(s.th, h, s.listTitle(), list, "Run", s.detailLines(), s.drilled)
 	}
 	if s.notice != "" {
 		body = append(body, trunc(s.th.Text(KindWarn, s.notice), w))
