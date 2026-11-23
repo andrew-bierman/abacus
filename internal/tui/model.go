@@ -271,7 +271,11 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !sec.Capturing()) {
 		return m, tea.Quit
 	}
+	hidden := tooSmall(m.width(), m.h) // the section is not drawn, so it must not act on keys
 	if sec.Capturing() {
+		if hidden {
+			return m, nil
+		}
 		_, cmd := sec.Update(k)
 		return m, cmd
 	}
@@ -291,6 +295,9 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(k, keyJump):
 		return m, m.goTo(int(k.Runes[0] - '1'))
 	default:
+		if hidden {
+			return m, nil
+		}
 		_, cmd := sec.Update(k)
 		return m, cmd
 	}
@@ -334,15 +341,14 @@ func (m *Model) headerLines(w int) []string {
 	return out
 }
 
-// helpCols lays the help overlay out: the key name, then what it does.
 var helpCols = []column{{min: 13, max: 13, prio: 0}, {min: 1, prio: 1}}
 
 // overlayLines is the help overlay for a body w wide and h tall (h <= 0: unknown). It is a
 // focused panel when the whole text fits inside one, and a plain indented list when a frame
 // would cost rows the text needs.
 func (m *Model) overlayLines(w, h int) []string {
-	var rows []string // blank lines separate the key groups
-	widths := fitColumns(helpCols, max(w-4, 1), 1)
+	var rows []string
+	widths := fitColumns(helpCols, max(w-panelChromeW, 1), 1)
 	for gi, g := range m.FullHelp() {
 		if gi > 0 {
 			rows = append(rows, "")
@@ -355,7 +361,7 @@ func (m *Model) overlayLines(w, h int) []string {
 		}
 	}
 	hint := m.th.Text(KindMuted, "? or esc closes")
-	if w >= 4 && (h <= 0 || len(rows)+2+2 <= h) {
+	if w >= panelMinW && (h <= 0 || len(rows)+2+panelChromeH <= h) { // +2: the blank line and the hint
 		return panel(m.th, "Keys", append(rows, "", hint), w, 0, true)
 	}
 	out := []string{m.th.Header.Render("Keys"), ""}

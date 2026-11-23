@@ -220,3 +220,49 @@ func TestHelpOverlayDropsItsFrameRatherThanLoseRowsWhenShort(t *testing.T) {
 		t.Fatalf("a short help overlay must stay a plain list:\n%s", m.View())
 	}
 }
+
+func TestTooSmallBodyWinsOverTheHelpOverlay(t *testing.T) {
+	for _, size := range [][2]int{{39, 30}, {100, 11}} {
+		var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+		m = sized(m, size[0], size[1])
+		m = press(m, "?")
+		if !strings.Contains(m.View(), "Terminal too small") || strings.Contains(m.View(), "Keys") {
+			t.Fatalf("%v: the too-small message must stay in charge:\n%s", size, m.View())
+		}
+	}
+}
+
+// The overlay is framed exactly when the whole text fits inside a frame, and otherwise a plain list
+// that keeps every key row. Scan the heights so the boundary itself is pinned, not just two points.
+func TestHelpOverlayFrameBoundaryIsExact(t *testing.T) {
+	build := func(h int) string {
+		var m tea.Model = New(entriesFor(fake("a", core.Ready)), WithTheme(asciiTheme()))
+		m = sized(m, 100, h)
+		return press(m, "?").View()
+	}
+	framedFrom := -1
+	for h := hMin; h <= 40; h++ {
+		v := build(h)
+		framed := strings.Contains(v, "╭")
+		if framed && framedFrom < 0 {
+			framedFrom = h
+		}
+		if framedFrom >= 0 && !framed {
+			t.Fatalf("height %d lost the frame it had at %d:\n%s", h, framedFrom, v)
+		}
+		if framed && (!strings.Contains(v, "? or esc closes") || !strings.Contains(v, "╰")) {
+			t.Fatalf("height %d: a framed overlay must be whole:\n%s", h, v)
+		}
+		if !framed && !strings.Contains(v, "jump to tab") {
+			t.Fatalf("height %d: a plain overlay must keep its key rows:\n%s", h, v)
+		}
+	}
+	if framedFrom < 0 {
+		t.Fatal("the overlay is never framed")
+	}
+	// One row short of the frame, the plain list has already lost its hint row: that is why the
+	// frame waits for the full text instead of clipping it.
+	if framedFrom > hMin && strings.Contains(build(framedFrom-1), "? or esc closes") {
+		t.Fatalf("the plain list at %d should not fit its hint, so the frame could have started earlier", framedFrom-1)
+	}
+}

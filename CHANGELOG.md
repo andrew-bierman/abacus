@@ -24,10 +24,10 @@ may change behavior, and patch versions are fixes and small additions.
 
 - TUI foundations for the redesign: named breakpoints (`bpMin`, `bpCompact`, `bpWide`, `bpUltra`,
   `hMin`, `hRule`, `hSummary`, `hTall`) in one file with unchanged values, new layout helpers
-  (`split`, aligned flexing `columns`, titled rounded `panel`) and panel and focus styles in the
+  (`split`, aligned flexing `fitColumns` and `formatRow`, titled rounded `panel`) and panel and focus styles in the
   theme. The help overlay is now a framed panel with aligned keys. Below 40 columns or 12 rows
   the body says "Terminal too small" and what is needed, with the tab bar and footer kept. The
-  golden height 10 became 12 (a 10-row terminal now shows the too-small message). Keybindings,
+  golden height 10 became 12 (a 10-row terminal now shows the too-small message). While the terminal is too small the hidden tab gets no keys (tab switching, help and quit still work), so a confirm screen the user cannot see can never be answered; growing the window brings it back. Keybindings,
   CLI output and JSON are unchanged.
 - Leases tab renders the typed `LeasesReport` (each lease's own state, tone and detail) instead of
   re-shaping it into text lines first. Output and JSON are unchanged.

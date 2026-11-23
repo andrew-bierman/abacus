@@ -141,3 +141,16 @@ func TestFitColumnsDropsByPriorityNotPosition(t *testing.T) {
 		t.Fatalf("a tie drops the rightmost: %v", ws)
 	}
 }
+
+// When the slack cannot fill every bounded column, the most important one is filled first.
+func TestFitColumnsFillsBoundedColumnsInPriorityOrder(t *testing.T) {
+	cols := []column{{min: 4, max: 10, prio: 1}, {min: 4, max: 10, prio: 0}}
+	ws := fitColumns(cols, 4+4+1+3, 1) // three cells of slack, headroom for twelve
+	if ws[1] != 7 || ws[0] != 4 {
+		t.Fatalf("the more important column takes the slack first: %v", ws)
+	}
+	ws = fitColumns(cols, 4+4+1+9, 1) // nine: more than the most important column can take
+	if ws[1] != 10 || ws[0] != 7 {
+		t.Fatalf("the rest spills to the next column: %v", ws)
+	}
+}
