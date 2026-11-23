@@ -101,7 +101,7 @@ func (m *Module) Domain() core.DomainID { return core.DomainTasks }
 // bd was used for reading instead: a write never silently falls back to a different binary.
 func (m *Module) writeBlocked() error {
 	if f := m.Located(); f.Src == core.SourcePATH && f.Ignored != "" {
-		return fmt.Errorf("not writing: %s; fix or remove the bundled bd rather than writing with the PATH one", f.Ignored)
+		return fmt.Errorf("not writing: %s; not writing with a different copy of bd", f.Ignored)
 	}
 	return nil
 }

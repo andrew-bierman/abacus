@@ -105,7 +105,7 @@ func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 			m := base(e)
 			switch e.Detection.State {
 			case Broken:
-				m.Checks = []Check{{Name: "installation", Status: StatusFail, Detail: e.Detection.Detail}}
+				m.Checks = []Check{{Name: "tool", Status: StatusFail, Detail: e.Detection.Detail}}
 			case Incompatible:
 				m.Checks = []Check{{Name: "compatibility", Status: StatusWarn, Detail: e.Detection.Detail}}
 			default:

@@ -2,13 +2,12 @@ package core_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
+	"github.com/andrew-bierman/abacus/internal/embedtools/embedtest"
 )
 
 type tasksMod struct {
@@ -28,7 +27,7 @@ func TestOverviewLeadsWithReadyAndListsWhereEachToolCameFrom(t *testing.T) {
 	}
 	o := core.BuildOverview(context.Background(), entries)
 	// abacus's own lambe is unavailable: that is abacus's problem, so it is not Ready.
-	if o.Ready || !strings.HasPrefix(o.Headline, "Needs attention: abacus's own copy of lambe") {
+	if o.Ready || o.Headline != "Needs attention: lambe is not available in this development build." {
 		t.Fatalf("%+v", o)
 	}
 	var tools []string
@@ -59,7 +58,7 @@ func TestOverviewEmptyDomainsExplainThemselves(t *testing.T) {
 	for _, d := range o.Domains {
 		by[d.Domain] = d
 	}
-	if l := by[core.DomainBoard].Line; strings.Contains(l, "board-beads") || strings.Contains(l, "b9s") || !strings.Contains(l, "npm i -g @vercel/board") {
+	if l := by[core.DomainBoard].Line; strings.Contains(l, "board-beads") || strings.Contains(l, "b9s") || strings.Contains(l, "npm") || !strings.Contains(l, "board") {
 		t.Errorf("board: %q", l)
 	}
 	if !strings.Contains(by[core.DomainTasks].Line, "no tasks yet") {
@@ -75,25 +74,17 @@ func TestOverviewSaysWhenABundledToolWasIgnoredAndWhatRanInstead(t *testing.T) {
 	e := core.Entry{Module: bd, Detection: core.Detection{State: core.Ready, Version: "1.3.0", Source: core.SourcePATH, Path: "/usr/local/bin/bd",
 		Ignored: "world-writable (/app/bundled/bd)"}}
 	o := core.BuildOverview(context.Background(), []core.Entry{e})
-	want := "abacus's own copy cannot be used (world-writable (/app/bundled/bd)); using the bd on your PATH 1.3.0 instead (re-extract the download to restore it)"
+	want := "the copy next to abacus was not used (world-writable (/app/bundled/bd))"
 	if o.Tools[0].Note != want {
 		t.Fatalf("note %q, want %q", o.Tools[0].Note, want)
 	}
 }
 
-func TestOverviewNotesAVersionThatDiffersFromThePinWithoutBlocking(t *testing.T) {
-	root := t.TempDir()
-	dir := filepath.Join(root, "bundled")
-	if err := os.MkdirAll(filepath.Join(root, "third_party"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(root, "third_party", "bundled-tools.json"), []byte(`{"tools":[{"name":"bd","version":"1.3.4"}]}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	withSidecarDirs(t, dir)
+func TestOverviewNotesAVersionThatDiffersFromTheBuiltInOneWithoutBlocking(t *testing.T) {
+	t.Cleanup(core.SetEmbeddedForTest(embedtest.New("n", nil, embedtest.Tool{Name: "bd", Version: "1.3.4", Body: "x"}).FS))
 	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 1}}}
-	for ver, want := range map[string]string{"1.3.5": "version 1.3.5 differs from the pinned 1.3.4 (informational)", "v1.3.4": ""} {
-		o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready, Version: ver, Source: core.SourceBundled}}})
+	for ver, want := range map[string]string{"1.3.5": "version 1.3.5 differs from the built-in 1.3.4 (informational)", "v1.3.4": ""} {
+		o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready, Version: ver, Source: core.SourceEmbedded}}})
 		if o.Tools[0].Note != want || !o.Ready {
 			t.Errorf("%s: note %q ready=%v", ver, o.Tools[0].Note, o.Ready)
 		}

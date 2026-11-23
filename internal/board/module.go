@@ -136,13 +136,11 @@ func versionAtLeast(v string, min [3]int) bool {
 	return true
 }
 
-// Detect looks for `board` (preferred) then `vb`, or only ABACUS_BOARD_BIN when set, and trusts
-// a binary only when identify says it is Vercel Board.
+// Detect locates the built-in `board` (or ABACUS_BOARD_BIN when set) and trusts the binary only
+// when identify says it is Vercel Board. There is no `vb` fallback: the npm package of that name is
+// an unrelated project, and nothing but the built-in copy or an explicit override is run.
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	names := []string{"board", "vb"}
-	if m.o.Bin != "" {
-		names = []string{"board"}
-	}
+	names := []string{"board"}
 	var rejected []string
 	for _, name := range names {
 		f, absent := core.LocateFound(name, m.o.Bin, m.o.LookPath)
@@ -155,14 +153,14 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 			return core.Detection{State: core.Ready, Version: ver}
 		}
 		if why == "too old" {
-			return core.Detection{State: core.Incompatible, Version: m.clean(ver), Detail: m.clean(fmt.Sprintf("Vercel Board %s is too old: abacus needs 0.54.0 or newer. Update it with: npm i -g @vercel/board", ver))}
+			return core.Detection{State: core.Incompatible, Version: m.clean(ver), Detail: m.clean(fmt.Sprintf("Vercel Board %s is too old: abacus needs 0.54.0 or newer", ver))}
 		}
 		rejected = append(rejected, fmt.Sprintf("%s at %s: %s", name, f.Bin, why))
 	}
 	if len(rejected) > 0 {
-		return core.Detection{State: core.Incompatible, Detail: m.clean("not Vercel Board (" + strings.Join(rejected, "; ") + "). The npm package named vb is a different project: install @vercel/board")}
+		return core.Detection{State: core.Incompatible, Detail: m.clean("not Vercel Board (" + strings.Join(rejected, "; ") + "). ABACUS_BOARD_BIN must point at the Vercel Board CLI")}
 	}
-	return core.Detection{State: core.Absent, Detail: "the Vercel Board CLI (board or vb) was not found on PATH"}
+	return core.Detection{State: core.Absent, Detail: "the Vercel Board CLI was not found"}
 }
 
 func (m *Module) setErr(err error) {
@@ -184,7 +182,7 @@ func (m *Module) Doctor(context.Context) []core.Check {
 	if last != "" {
 		return []core.Check{{Name: "board", Status: core.StatusWarn, Detail: "the last board read failed: " + last, Fix: "check the board URL (abacus config get board_url) or sign in, then press r"}}
 	}
-	return []core.Check{{Name: "installation", Status: core.StatusOK, Detail: "found at " + m.clean(m.Bin())}}
+	return []core.Check{{Name: "tool", Status: core.StatusOK, Detail: "found at " + m.clean(m.Bin())}}
 }
 
 func (m *Module) Status(ctx context.Context) core.Status {

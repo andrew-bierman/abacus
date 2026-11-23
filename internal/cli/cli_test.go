@@ -237,7 +237,7 @@ func TestVersionTextNeverPrintsControlCharactersFromATool(t *testing.T) {
 func TestBrokenToolFailsDoctorThroughTheCLI(t *testing.T) {
 	broken := &modtest.Fake{IDStr: "b", Det: core.Detection{State: core.Broken, Detail: "version exited 2"}}
 	code, out, _ := run(t, []core.Module{broken}, "doctor")
-	if code != 1 || !strings.Contains(out, "installation") || !strings.Contains(out, "version exited 2") {
+	if code != 1 || !strings.Contains(out, "tool ") || !strings.Contains(out, "version exited 2") {
 		t.Fatalf("code=%d out=%q", code, out)
 	}
 	code, out, _ = run(t, []core.Module{broken}, "status")

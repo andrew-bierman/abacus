@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "note": "Pinned sidecar tools shipped in every release archive, and the licenses of Go modules linked into the binary that must ship verbatim. Fields and which are hand-edited versus script-written are documented in scripts/lib/bundle.sh. Re-pin with scripts/update-bundled-tools.sh, never by hand.",
+  "note": "Pinned tools built into the abacus binary (a release or `make build` embeds them), and the licenses of Go modules linked into the binary that must ship verbatim. Fields and which are hand-edited versus script-written are documented in scripts/lib/bundle.sh. Re-pin with scripts/update-bundled-tools.sh, never by hand.",
   "tools": [
     {
       "name": "bd",
@@ -112,6 +112,45 @@
         }
       },
       "license_sha256": "1e10ac301ec8ef373fde87cac16a5b2372c35dbd0cc737d8711fb23bf895ce84"
+    },
+    {
+      "name": "board",
+      "kind": "npm-bun",
+      "repo": "vercel/board",
+      "package": "@vercel/board",
+      "license": "Apache-2.0",
+      "version": "0.54.0",
+      "npm_integrity": "sha512-JPsKFnPVgSQpZGxtj/8TrPbHnJzebIMXXdzDeAZkfkXq9B0d0L3diAq5TByWtvP+4nDgrOqCHQxnzxdvsFNJ2A==",
+      "lockfile": "scripts/board/package-lock.json",
+      "lockfile_sha256": "5792091f6a64eac63251d81923b84126b47301dff84db88f8a74132dc160f8fd",
+      "bun_version": "1.4.4",
+      "entry": "dist/cli.mjs",
+      "runtime_license": {
+        "repo": "oven-sh/bun",
+        "tag": "bun-v1.4.4",
+        "path": "LICENSE.md",
+        "sha256": "362fe32c954ec829240bd7429c53d705eef08c6bfa45ffc2d02005f857cba4dd",
+        "note": "the Bun runtime compiled into the executable (MIT, with LGPL-2 JavaScriptCore)"
+      },
+      "license_source": {
+        "from": "npm",
+        "path": "LICENSE"
+      },
+      "assets": {
+        "darwin-amd64": {
+          "bun_target": "bun-darwin-x64"
+        },
+        "darwin-arm64": {
+          "bun_target": "bun-darwin-arm64"
+        },
+        "linux-amd64": {
+          "bun_target": "bun-linux-x64"
+        },
+        "linux-arm64": {
+          "bun_target": "bun-linux-arm64"
+        }
+      },
+      "license_sha256": "2bb477965038ed36b0bcb8316ff12428cdd5b4ee7d513147bb6f37bdef0b372c"
     }
   ],
   "linked_licenses": [

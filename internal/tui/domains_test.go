@@ -152,11 +152,11 @@ func TestTasksListsEveryTaskAndKeepsTheSummaryAndInsightsInTheirOwnView(t *testi
 	}
 }
 
-func TestInsightsNotConnectedShowsHowToInstall(t *testing.T) {
+func TestInsightsNotConnectedSaysWhatIsWrongNotToInstall(t *testing.T) {
 	r := newTasksRig(t)
 	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights()}}})
 	m = press(m, "V") // the Insights view (the last view)
-	if v := m.View(); !strings.Contains(v, "own copy of") || strings.Contains(v, "brew install") || !strings.Contains(v, "not connected") {
+	if v := m.View(); !strings.Contains(v, "development") || strings.Contains(v, "install") || !strings.Contains(v, "not connected") {
 		t.Fatalf("%s", v)
 	}
 }
@@ -329,14 +329,14 @@ func TestFullViewHandoffOnlyOnOAndOnlyForTasks(t *testing.T) {
 	press(m, "o")
 }
 
-func TestFullViewMissingIsAnErrorNoticeWithAnInstallHint(t *testing.T) {
+func TestFullViewMissingIsAnErrorNoticeThatSaysItIsOptional(t *testing.T) {
 	r := newTasksRig(t)
-	m, _ := r.m.Update(fullViewDoneMsg{err: errors.New(core.FullViewInstallHint)})
-	if v := m.View(); !strings.Contains(v, "b9s is optional") || !strings.Contains(v, "github.com/vanderheijden86/b9s") {
+	m, _ := r.m.Update(fullViewDoneMsg{err: errors.New(core.FullViewMissing)})
+	if v := m.View(); !strings.Contains(v, "b9s") || !strings.Contains(v, "optional") || strings.Contains(v, "install") {
 		t.Fatalf("%s", v)
 	}
 	m = press(m, "j") // any key clears the notice
-	if strings.Contains(m.View(), "not installed") {
+	if strings.Contains(m.View(), "did not find") {
 		t.Fatal("notice must clear")
 	}
 }
@@ -345,7 +345,7 @@ func TestDefaultFullViewProbesOnlyWhenRunAndReportsAMissingTool(t *testing.T) {
 	t.Setenv("PATH", t.TempDir()) // b9s cannot be found
 	msg := defaultFullView("/tmp")()
 	d, ok := msg.(fullViewDoneMsg)
-	if !ok || d.err == nil || !strings.Contains(d.err.Error(), "not installed") {
+	if !ok || d.err == nil || !strings.Contains(d.err.Error(), "did not find") {
 		t.Fatalf("%#v", msg)
 	}
 }

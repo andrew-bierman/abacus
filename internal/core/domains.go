@@ -328,17 +328,19 @@ type (
 	}
 )
 
-// HowToConnectBoardDegraded is the hint for a Board read that failed although the CLI is there:
-// an install message would be wrong.
+// HowToConnectBoardDegraded is the hint for a Board read that failed although the tool is there.
 const HowToConnectBoardDegraded = "Check board_url and the network, then press r."
 
-// degradedHint is the hint under a failed read of a present provider: the install message for
-// most domains, a board-specific one for the Board (whose CLI is, by then, installed).
+// HowToConnectDegraded is the hint for any other domain whose read failed although the tool is
+// there: the tool is fine, so there is nothing to set up.
+const HowToConnectDegraded = "Press r to read again; abacus doctor shows the details."
+
+// degradedHint is the hint under a failed read of a present provider.
 func degradedHint(d DomainID) string {
 	if d == DomainBoard {
 		return HowToConnectBoardDegraded
 	}
-	return HowToConnectFor(d)
+	return HowToConnectDegraded
 }
 
 func header(d DomainID) Header { return Header{Domain: d, Title: d.Title()} }
@@ -346,7 +348,7 @@ func header(d DomainID) Header { return Header{Domain: d, Title: d.Title()} }
 // notConnected builds the header for a domain with no usable provider.
 func notConnected(d DomainID, reason string) Header {
 	h := header(d)
-	h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(reason), HowToConnectFor(d)
+	h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(reason), howToConnectFor(d, reason)
 	return h
 }
 
@@ -362,6 +364,9 @@ func pick[P any](entries []Entry) (p P, reason string, ok bool) {
 		case Ready:
 			return prov, "", true
 		case Absent:
+			if id := e.Module.ID(); reason == "" && IsBundledTool(id) {
+				reason = bundledWhat(id, refusedReason(e.Detection.Detail))
+			}
 		default:
 			if reason == "" {
 				reason = fmt.Sprintf("provider %s: %s", e.Detection.State, e.Detection.Detail)

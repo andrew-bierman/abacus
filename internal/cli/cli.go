@@ -47,7 +47,6 @@ func Run(args []string, d Deps) int {
 		usage(d)
 		return core.ExitUsage
 	}
-	core.SetBuildVersion(d.Version) // a dev build and a release word a missing bundled tool differently
 	cmd, rest := args[0], args[1:]
 	switch cmd {
 	case "version", "doctor", "status", "tui":

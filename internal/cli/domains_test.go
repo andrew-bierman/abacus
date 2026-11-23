@@ -214,7 +214,7 @@ func (insMod) Insights(context.Context) (core.InsightsReport, error) {
 		TopPicks: []core.Pick{{ID: "fx-1", Title: "base", Unblocks: 1}}, Cycles: [][]string{{"a", "b", "a"}}, TotalActionable: 1}, nil
 }
 
-func TestTasksShowsInsightsOrHowToInstall(t *testing.T) {
+func TestTasksShowsInsightsOrSaysWhatIsWrong(t *testing.T) {
 	_, out, _, _ := runIn(t, "", []core.Module{newTaskMod(), insMod{&modtest.Fake{IDStr: "g", Det: core.Detection{State: core.Ready}}}}, "tasks")
 	for _, want := range []string{"graph analysis", "next fx-1", "cycle a -> b -> a"} {
 		if !strings.Contains(out, want) {
@@ -222,7 +222,7 @@ func TestTasksShowsInsightsOrHowToInstall(t *testing.T) {
 		}
 	}
 	_, out, _, _ = runIn(t, "", []core.Module{newTaskMod()}, "tasks")
-	if !strings.Contains(out, "abacus's own copy of bd") || strings.Contains(out, "brew install") {
+	if !strings.Contains(out, "bd is not available") || strings.Contains(out, "install") {
 		t.Errorf("a missing bundled bd is abacus's problem, not an install task:\n%s", out)
 	}
 }
@@ -522,7 +522,7 @@ func TestBoardWriteFailsClosedAndSaysUnknownOutcomeHonestly(t *testing.T) {
 	if strings.Contains(e, "not applied") || !strings.Contains(e, "result unknown") {
 		t.Fatalf("%s", e)
 	}
-	if code, _, e, _ := runIn(t, "", nil, "board", "post", "dev", "hi", "--yes"); code == 0 || !strings.Contains(e, "npm i -g @vercel/board") {
+	if code, _, e, _ := runIn(t, "", nil, "board", "post", "dev", "hi", "--yes"); code == 0 || !strings.Contains(e, "board is not available") || strings.Contains(e, "npm") {
 		t.Fatalf("not connected says how: %d %s", code, e)
 	}
 }

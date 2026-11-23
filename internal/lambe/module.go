@@ -445,7 +445,7 @@ func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
 		return errors.New("abacus's own lambe is unavailable (see `abacus doctor`)")
 	}
 	if f := m.Located(); f.Src == core.SourcePATH && f.Ignored != "" {
-		return fmt.Errorf("not writing: bundled lambe was refused (%s); not running init with the PATH one", f.Ignored)
+		return fmt.Errorf("not writing: the copy of lambe next to abacus was refused (%s); not running init with a different one", f.Ignored)
 	}
 	if _, err := os.Stat(configPath); err == nil {
 		return fmt.Errorf("refused: %s already exists", configPath)
