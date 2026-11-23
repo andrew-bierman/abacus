@@ -1,31 +1,31 @@
 === 40x12 ===
  Board  Tasks  Leases  [Queues]  Doctor
-Runs 3 (tracker subset) (demo data)
-no live daemon, no phases or queue
-▸ T-1     running  gating
-  T-2     deferred  deferred
-  T-3     running  running  (stalled)
-
-Needs attention 1
-  T-2  gate_failed  gh:pr rejected: mer…
-
-
+╭─ ▸ Runs 3 · tracker subset · demo … ─╮
+│ no live daemon, no phases or queue   │
+│ ▸ T-1  running              gating   │
+│   T-2  deferred             deferred │
+│   T-3  running   (stalled)  running  │
+│                                      │
+│ Needs attention 1                    │
+│   T-2  gate_failed  gh:pr rejected:… │
+│                                      │
+╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────
-Runs 3 (tracker subset) (demo data)
-no live daemon, no phases or queue
-▸ T-1     running  gating
-  T-2     deferred  deferred
-  T-3     running  running  (stalled)
-
-Needs attention 1
-  T-2  gate_failed  gh:pr rejected: mer…
-
-
-
-
+╭─ ▸ Runs 3 · tracker subset · demo … ─╮
+│ no live daemon, no phases or queue   │
+│ ▸ T-1  running              gating   │
+│   T-2  deferred             deferred │
+│   T-3  running   (stalled)  running  │
+│                                      │
+│ Needs attention 1                    │
+│   T-2  gate_failed  gh:pr rejected:… │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
 
 
 
@@ -44,32 +44,32 @@ Needs attention 1
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
-Runs 3 (tracker subset) (demo data)
-no live daemon, no phases or queue
-▸ T-1     running  gating
-  T-2     deferred  deferred
-  T-3     running  running  (stalled)
-
-Needs attention 1
-  T-2  gate_failed  gh:pr rejected: merge conflict
-
-
+╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────────────╮
+│ no live daemon, no phases or queue                                           │
+│ ▸ T-1  running              gating    operators-mac  general  30s            │
+│   T-2  deferred             deferred  operators-mac  -        n/a            │
+│   T-3  running   (stalled)  running   operators-mac  review   12m            │
+│                                                                              │
+│ Needs attention 1                                                            │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                           │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
 === 80x30 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Runs 3 (tracker subset) (demo data)
-no live daemon, no phases or queue
-▸ T-1     running  gating
-  T-2     deferred  deferred
-  T-3     running  running  (stalled)
-
-Needs attention 1
-  T-2  gate_failed  gh:pr rejected: merge conflict
-
-
-
-
+╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────────────╮
+│ no live daemon, no phases or queue                                           │
+│ ▸ T-1  running              gating    operators-mac  general  30s            │
+│   T-2  deferred             deferred  operators-mac  -        n/a            │
+│   T-3  running   (stalled)  running   operators-mac  review   12m            │
+│                                                                              │
+│ Needs attention 1                                                            │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                           │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 
 
@@ -88,32 +88,32 @@ Needs attention 1
 ? help · q quit · tab/→ next tab · ↑/↓ move · enter details · / filter …
 === 120x12 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
-Runs 3 (tracker subset) (demo data)              │ T-1 (running)
-no live daemon, no phases or queue               │
-▸ T-1     running  gating                        │ phase      gating
-  T-2     deferred  deferred                     │ workflow   general
-  T-3     running  running  (stalled)            │ session    ses-t1
-                                                 │ attempt    2
-Needs attention 1                                │ machine    operators-mac
-  T-2  gate_failed  gh:pr rejected: merge confl… │ actor      lambe@operators-mac
-                                                 │ last event 30s
-
+╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
+│ no live daemon, no phases or queue                                   │ │ T-1 (running)                               │
+│ ▸ T-1  running              gating    operators-mac  general  30s    │ │                                             │
+│   T-2  deferred             deferred  operators-mac  -        n/a    │ │ phase      gating                           │
+│   T-3  running   (stalled)  running   operators-mac  review   12m    │ │ workflow   general                          │
+│                                                                      │ │ session    ses-t1                           │
+│ Needs attention 1                                                    │ │ attempt    2                                │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                   │ │ machine    operators-mac                    │
+│                                                                      │ │ actor      lambe@operators-mac              │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · ↑/↓ move · / filter · o open session
 === 120x30 ===
 abacus   Board  Tasks  Leases  [Queues]  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Runs 3 (tracker subset) (demo data)              │ T-1 (running)
-no live daemon, no phases or queue               │
-▸ T-1     running  gating                        │ phase      gating
-  T-2     deferred  deferred                     │ workflow   general
-  T-3     running  running  (stalled)            │ session    ses-t1
-                                                 │ attempt    2
-Needs attention 1                                │ machine    operators-mac
-  T-2  gate_failed  gh:pr rejected: merge confl… │ actor      lambe@operators-mac
-                                                 │ last event 30s
-
-
-
+╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
+│ no live daemon, no phases or queue                                   │ │ T-1 (running)                               │
+│ ▸ T-1  running              gating    operators-mac  general  30s    │ │                                             │
+│   T-2  deferred             deferred  operators-mac  -        n/a    │ │ phase      gating                           │
+│   T-3  running   (stalled)  running   operators-mac  review   12m    │ │ workflow   general                          │
+│                                                                      │ │ session    ses-t1                           │
+│ Needs attention 1                                                    │ │ attempt    2                                │
+│   T-2  gate_failed  gh:pr rejected: merge conflict                   │ │ machine    operators-mac                    │
+│                                                                      │ │ actor      lambe@operators-mac              │
+│                                                                      │ │ last event 30s                              │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 
 
 
