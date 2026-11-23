@@ -185,7 +185,7 @@ func (s *leasesSection) View() string {
 	case !s.loaded:
 		return joinLines([]string{th.Text(KindMuted, "loading…")})
 	case s.got.unavailable != "" && s.got.howToConnect != "":
-		return joinLines(box(th, "Leases", notConnectedBody(th, s.got.unavailable, s.got.howToConnect, innerW(w)), w, s.h))
+		return joinLines(notConnectedBox(th, "Leases", s.got.unavailable, s.got.howToConnect, w, s.h))
 	case s.got.unavailable != "":
 		return joinLines(box(th, "Leases", unavailableBody(th, s.got.unavailable, innerW(w)), w, s.h))
 	}

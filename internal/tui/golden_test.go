@@ -352,7 +352,13 @@ func invariantErrs(sc scenario, out string, w, h int) []string {
 		errs = append(errs, fmt.Sprintf("header %q does not mark %q active", ls[0], sc.tab))
 	}
 	last := ls[len(ls)-1]
-	for _, hint := range []string{"? help", "q quit"} {
+	hints := []string{"? help", "q quit"}
+	if !strings.HasPrefix(last, "? help") {
+		// A screen that asks for a decision leads its footer with its own keys (y apply, n cancel),
+		// and at 40 columns the lower-priority "? help" is the first to go; q quit stays.
+		hints = hints[1:]
+	}
+	for _, hint := range hints {
 		if !strings.Contains(last, hint) {
 			errs = append(errs, fmt.Sprintf("footer %q lacks %q", last, hint))
 		}

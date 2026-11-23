@@ -7,10 +7,10 @@
 │                                      │
 │   close task ac-12                   │
 │   title: "wire the lease heartbeat"  │
-│                                      │
-│   ↕ +2 more                          │
+│ ↕ +3 more: enlarge the terminal to   │
+│ review                               │
 ╰──────────────────────────────────────╯
-? help · q quit · tab/→ next tab …
+n/esc cancel · q quit · ? help …
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
@@ -41,7 +41,7 @@
 
 
 
-? help · q quit · tab/→ next tab …
+y apply · n/esc cancel · q quit · ? hel…
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ exact command:                                                               │
 │   bd close ac-12                                                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · y apply · n/esc cancel
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · y apply · n/esc cancel
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -98,7 +98,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │   bd close ac-12                                                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-? help · q quit · tab/→ next tab · y apply · n/esc cancel
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · y apply · n/esc cancel
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · y apply · n/esc cancel
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · y apply · n/esc cancel
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab

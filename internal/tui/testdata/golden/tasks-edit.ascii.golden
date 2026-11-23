@@ -10,7 +10,7 @@
 │   Status (blank: keep)               │
 │                                      │
 ╰──────────────────────────────────────╯
-? help · q quit · tab/→ next tab …
+enter next/review · esc back · q quit …
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
@@ -41,7 +41,7 @@
 
 
 
-? help · q quit · tab/→ next tab …
+enter next/review · esc back · q quit …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────────────────────────╮
@@ -54,7 +54,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · enter next/review · esc back
+enter next/review · esc back · q quit · ? help · tab/→ next tab
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · enter next/review · esc back
+enter next/review · esc back · q quit · ? help · tab/→ next tab
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Edit task ac-12 ──────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -98,7 +98,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · enter next/review · esc back
+enter next/review · esc back · q quit · ? help · tab/→ next tab
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · enter next/review · esc back
+enter next/review · esc back · q quit · ? help · tab/→ next tab
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · enter next/review …
+enter next/review · esc back · q quit · ? help …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · enter next/review · esc back
+enter next/review · esc back · q quit · ? help · tab/→ next tab

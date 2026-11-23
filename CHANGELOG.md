@@ -75,6 +75,12 @@ may change behavior, and patch versions are fixes and small additions.
   states of Tasks, Board, Leases and Queues, are framed too. Wording, keys and the write gate are
   unchanged: nothing is written before `y` on the confirm screen. Long titles and commands wrap
   instead of being cut, and a body that does not fit a short terminal ends in a "+N more" row.
+  A confirm screen that does not fit cannot be applied: its more-row says to enlarge the terminal
+  to review, `y apply` leaves the footer and `y` does nothing until the whole plan and command are
+  visible (the same for the first-run setup confirm). The command shown is the command run: an
+  argument with an invisible, bidi or control character is shown quoted. While a form or confirm is
+  open its keys lead the footer. The not-connected panels of Board, Leases and Queues put how to
+  connect first when the height cannot hold everything, and a one-row panel still marks hidden rows.
 - Internal: Leases, Queues, Board and Tasks share one list-navigation piece (`listNav`: cursor,
   scroll, selected row identity, drill), with direct tests. Selection and key behavior are unchanged
   (Leases and Queues still pin the selection when its row disappears; Board and Tasks follow the

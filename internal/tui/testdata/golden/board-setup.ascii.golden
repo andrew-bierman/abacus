@@ -1,13 +1,13 @@
 === 40x12 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Board ────────────────────────────╮
-│ (not connected)                      │
-│                                      │
-│ No board is selected yet.            │
-│                                      │
 │ how to connect: Point abacus at one  │
 │ with: abacus config set board_url    │
 │ <url> (a local board from `vb serve` │
+│ prints its URL), or set BOARD_URL. A │
+│ team board needs `vercel login`      │
+│ first.                               │
+│                                      │
 │   ↕ +3 more                          │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …

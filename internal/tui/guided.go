@@ -91,6 +91,9 @@ func (s *guidedSection) setupKey() key.Binding {
 func (s *guidedSection) Bindings() []key.Binding {
 	switch {
 	case s.mode == guidedConfirm:
+		if !s.confirmWhole() {
+			return []key.Binding{keyNo}
+		}
 		return []key.Binding{keyYes, keyNo}
 	case s.mode == guidedBusy:
 		return nil
@@ -175,6 +178,9 @@ func (s *guidedSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case guidedConfirm:
 		switch {
 		case key.Matches(k, keyYes):
+			if !s.confirmWhole() { // a clipped plan is not what was reviewed: y waits for room
+				return s, nil
+			}
 			s.mode = guidedBusy
 			return s, s.apply(s.plan.Confirm())
 		case key.Matches(k, keyNo):
@@ -201,6 +207,11 @@ func (s *guidedSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return s, c
 }
 
+// confirmWhole is whether the confirm screen shows the whole plan and exact command at this size.
+func (s *guidedSection) confirmWhole() bool {
+	return confirmFits(s.th, "", s.plan.Lines, s.plan.Argv, s.width(), s.h)
+}
+
 func (s *guidedSection) apply(p core.SetupPlan) tea.Cmd {
 	d := s.domain
 	return func() tea.Msg {
@@ -222,7 +233,7 @@ func (s *guidedSection) panelLines() []string {
 		if s.mode == guidedBusy {
 			title = "Applying this setup step"
 		}
-		return box(th, title, confirmBody(th, "", s.plan.Lines, s.plan.Argv, s.mode == guidedBusy, inner), w, s.h)
+		return reviewBox(th, title, confirmBody(th, "", s.plan.Lines, s.plan.Argv, s.mode == guidedBusy, inner), w, s.h)
 	}
 	g := s.guide
 	body := []string{th.Badge(KindWarn, "needs setup"), ""}

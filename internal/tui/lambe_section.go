@@ -336,7 +336,7 @@ func (s *lambeSection) View() string {
 		body = []string{s.th.Text(KindMuted, "loading…")}
 	case errors.Is(s.err, lambe.ErrNoDaemon):
 		// Not a failure: nothing is supervising. Say so plainly and how to start it.
-		body = box(s.th, "Queues", notConnectedBody(s.th, lambe.NoDaemonReason, s.m.StartHint(), innerW(w)), w, s.bodyH(s.notice))
+		body = notConnectedBox(s.th, "Queues", lambe.NoDaemonReason, s.m.StartHint(), w, s.bodyH(s.notice))
 	case s.err != nil:
 		body = box(s.th, "Queues", unavailableBody(s.th, s.err.Error(), innerW(w)), w, s.bodyH(s.notice))
 	default:

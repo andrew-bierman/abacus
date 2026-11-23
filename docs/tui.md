@@ -53,8 +53,14 @@ shows without color), the label column, then the value column; a long value wrap
 When the value column would be narrower than 12 cells (the edit form below 45 columns) the label sits above its value instead. The form error is a row under the fields.
 The confirm screen shows the "changed since you opened it" note when there is one, the plan lines
 and "exact command:" with the command wrapped in full, never cut. Only a body taller than the
-terminal is clipped, and then a `↕ +N more` row says so. None of this changes a key or the gate:
-nothing writes before `y` on the confirm screen, and a state that hides a screen still blocks keys.
+terminal is clipped, and then a `↕ +N more` row says so. A confirm that is clipped cannot be
+answered with `y`: the row reads "enlarge the terminal to review", `y apply` leaves the footer, and
+the key does nothing until the whole plan and command are on screen (the same for the first-run
+setup confirm). The command shown is the command run: an argument with an invisible, bidi or
+control character is shown quoted, as an escape, so nothing is hidden between the screen and what
+runs. While a form or confirm screen is open, its own keys lead the footer, so a narrow footer cuts
+"? help" and the tab hint first. None of this changes the gate: nothing writes before `y` on the
+confirm screen, and a state that hides a screen still blocks keys.
 
 ## Board
 
@@ -102,7 +108,9 @@ terminal:
 
 Rule for any state that hides a screen (too small, an overlay, a collapsed pane): it must also stop
 input reaching that screen, because a key pressed on a screen the user cannot see can still act
-on it (a hidden confirm answered with `y` would apply a change unseen). Global keys (tabs, help,
+on it (a hidden confirm answered with `y` would apply a change unseen). A clipped confirm is a
+partly hidden screen: it blocks `y` the same way (`TestConfirmAppliesOnlyWhenTheWholeCommandIsVisible`).
+Global keys (tabs, help,
 quit) keep working; keys for the hidden section are dropped. Each input path needs its own test,
 capturing and non-capturing, since a guard on one path alone survives mutation of the other
 (`TestTooSmallTerminalCannotApplyAHiddenConfirm`, `TestTooSmallTerminalGivesAHiddenListNoKeys`).

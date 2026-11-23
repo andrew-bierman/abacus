@@ -103,6 +103,9 @@ func (s *tasksSection) Bindings() []key.Binding {
 	case modeForm:
 		return []key.Binding{key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "next/review")), keyBack}
 	case modeConfirm:
+		if !s.confirmWhole() {
+			return []key.Binding{keyNo}
+		}
 		return []key.Binding{keyYes, keyNo}
 	case modeVerify:
 		return []key.Binding{keyBack}
@@ -239,6 +242,11 @@ func (s *tasksSection) current() (core.Task, bool) {
 	return core.Task{}, false
 }
 
+// confirmWhole is whether the confirm screen shows the whole plan and exact command at this size.
+func (s *tasksSection) confirmWhole() bool {
+	return confirmFits(s.th, s.changedNote, s.plan.Lines, s.plan.Argv, s.width(), s.h)
+}
+
 func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch s.mode {
 	case modeForm:
@@ -246,7 +254,11 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case modeConfirm:
 		switch {
 		case key.Matches(k, keyYes):
-			// The only path to a write: an explicit y on the confirm screen.
+			// The only path to a write: an explicit y on the confirm screen, and only while that
+			// screen shows the whole plan and command: a clipped one is not what was reviewed.
+			if !s.confirmWhole() {
+				return s, nil
+			}
 			s.mode = modeBusy
 			return s, s.apply(s.plan.Confirm())
 		case key.Matches(k, keyNo):
@@ -432,7 +444,7 @@ func (s *tasksSection) modalView() []string {
 	if s.mode == modeBusy {
 		title = "Applying this change"
 	}
-	return box(th, title, confirmBody(th, s.changedNote, s.plan.Lines, s.plan.Argv, s.mode == modeBusy, inner), w, s.h)
+	return reviewBox(th, title, confirmBody(th, s.changedNote, s.plan.Lines, s.plan.Argv, s.mode == modeBusy, inner), w, s.h)
 }
 
 // stateView is the Tasks tab before it has anything to list: loading, or why the read failed.

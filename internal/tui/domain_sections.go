@@ -315,7 +315,7 @@ func (s *boardSection) stateView() string {
 		if how == nc.Reason {
 			how = ""
 		}
-		return joinLines(box(th, "Board", notConnectedBody(th, nc.Reason, how, inner), w, s.h))
+		return joinLines(notConnectedBox(th, "Board", nc.Reason, how, w, s.h))
 	}
 	body := unavailableBody(th, s.err.Error(), inner)
 	body = append(body, "")
