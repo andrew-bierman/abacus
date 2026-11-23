@@ -225,6 +225,8 @@ type (
 	}
 	// filterer applies (or, with "", clears) the section's list filter.
 	filterer interface{ setFilter(text string) string }
+	// trackerSwitcher opens the confirm screen for switching to the tracker named; a non-empty note says why not.
+	trackerSwitcher interface{ switchTo(name string) string }
 	// contexter says what the header may show about this section.
 	contexter interface{ contextLine() core.ContextLine }
 )
@@ -254,8 +256,16 @@ func (m *Model) runAction(a core.Action) tea.Cmd {
 		}
 		return cmd
 	case core.ActContext:
-		if a.Arg != "" {
-			m.note = "switching trackers is not available yet"
+		if a.Arg != "" { // :ctx NAME opens the same confirm screen as P; nothing changes until y
+			i := m.tabIndex(core.DomainTasks.Title())
+			if i >= 0 {
+				if sw, ok := inner(m.tabs[i].sec).(trackerSwitcher); ok {
+					cmd := m.goTo(i)
+					m.note = sw.switchTo(a.Arg)
+					return cmd
+				}
+			}
+			m.note = "switching trackers is not available here"
 			return nil
 		}
 		if c := m.contextLine().String(); c != "" {

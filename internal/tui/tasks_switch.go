@@ -160,7 +160,7 @@ func (s *tasksSection) switchWhole() bool {
 }
 
 // switchView is the picker, the confirm screen or the busy screen.
-func (s *tasksSection) switchView() []string {
+func (s *tasksSection) trackerView() []string {
 	th, w, inner := s.th, s.width(), innerW(s.width())
 	sw := &s.sw
 	if sw.mode != switchPick {
@@ -257,7 +257,7 @@ func (s *tasksSection) overlayView() (string, bool) {
 	case s.fil.mode != filterNone:
 		return joinLines(s.filterView()), true
 	case s.sw.mode != switchNone:
-		return joinLines(s.switchView()), true
+		return joinLines(s.trackerView()), true
 	}
 	return "", false
 }
@@ -286,3 +286,36 @@ func WithRecentTrackers(r core.RecentTrackers) Option {
 
 // WithTrackerSwitcher replaces the tracker switcher (tests inject one over fakes).
 func WithTrackerSwitcher(sw *core.Switcher) Option { return func(c *config) { c.switcher = sw } }
+
+// switchTo is `:ctx NAME`: find the known tracker called NAME (its folder name, any case; a unique
+// prefix also works) and open the same confirm screen P does. It switches nothing by itself.
+func (s *tasksSection) switchTo(name string) string {
+	w := &s.sw
+	if w.sw == nil {
+		return "switching tracker is not available here"
+	}
+	cands, cur := w.sw.Candidates()
+	var hit []core.RecentTracker
+	for _, c := range cands {
+		if b := filepath.Base(c.Dir); strings.EqualFold(b, name) {
+			hit = []core.RecentTracker{c}
+			break
+		} else if len(name) > 0 && len(b) >= len(name) && strings.EqualFold(b[:len(name)], name) {
+			hit = append(hit, c)
+		}
+	}
+	switch {
+	case len(hit) == 0:
+		return "no known tracker called " + san(name) + ": P lists the ones you opened"
+	case len(hit) > 1:
+		return san(name) + " matches more than one tracker: P lists them"
+	case hit[0].Dir == cur:
+		return san(filepath.Base(hit[0].Dir)) + " is already the tracker in use"
+	}
+	p, err := w.sw.Plan(hit[0].Dir)
+	if err != nil {
+		return core.Sanitize(err.Error())
+	}
+	w.cands, w.current, w.plan, w.mode = cands, cur, p, switchConfirm
+	return ""
+}

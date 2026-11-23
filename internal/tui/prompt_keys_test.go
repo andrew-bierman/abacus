@@ -72,7 +72,7 @@ func TestColonAndCtrlKHaveOneOwnerEach(t *testing.T) {
 		t.Errorf("ctrl+k is owned by %v", got)
 	}
 	for k, allowed := range map[string][]string{
-		"d": {"keyDescribe", "keyViewerClose"},
+		"d": {"keyDescribe", "keyPickDelete", "keyViewerClose"}, // keyPickDelete: the saved-filter picker captures every key while open
 		"y": {"keyJSON", "keyViewerClose", "keyYes"},
 	} {
 		got := append([]string(nil), o[k]...)
@@ -85,7 +85,10 @@ func TestColonAndCtrlKHaveOneOwnerEach(t *testing.T) {
 	}
 	// ctrl+p and ctrl+n are history in whichever modal is open; there are exactly two modals that use them
 	for _, k := range []string{"ctrl+p", "ctrl+n"} {
-		if got := o[k]; len(got) != 1 || got[0] != "keySearchHist" {
+		got := append([]string(nil), o[k]...)
+		sort.Strings(got)
+		// keyRecall: recent `/` queries while the Tasks filter is being typed, a capturing mode of its own
+		if strings.Join(got, ",") != "keyRecall,keySearchHist" {
 			t.Errorf("%s is owned by %v (the prompt reads it as a key type, not a binding)", k, got)
 		}
 	}

@@ -195,6 +195,14 @@ func TestKeyMapWithLiveKeysHasNoCollisions(t *testing.T) {
 			global[k] = name
 		}
 	}
+	// the shell's keys from the command prompt unit: this unit's keys must never be among them
+	for _, k := range []string{":", "ctrl+k", "d", "y"} {
+		for _, m := range []string{"F", "H", "P", "ctrl+s", "ctrl+o"} {
+			if k == m {
+				t.Errorf("%q is the shell's key", k)
+			}
+		}
+	}
 	mine := map[string]bool{"F": true, "H": true, "P": true, "ctrl+s": true, "ctrl+o": true, "ctrl+p": true, "ctrl+n": true}
 	rig := func(s *tasksSection) { s.live.newest = "ac-09" } // so F is offered
 	modes := map[string]func(s *tasksSection){
