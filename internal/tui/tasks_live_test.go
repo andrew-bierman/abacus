@@ -256,6 +256,20 @@ func TestLiveNeverOverlapsReads(t *testing.T) {
 	}
 }
 
+// A read the user asked for (r, or after a write) is in flight: the poll never starts a check beside it.
+func TestLiveNoCheckWhileAUserReadIsInFlight(t *testing.T) {
+	r := newLiveRig(t, 100, 32)
+	cmd := r.s.fetchTasks() // r pressed: both reads are started, not yet answered
+	r.c.advance(time.Hour)
+	if c := r.s.livePoll(); c != nil {
+		t.Fatal("a check started beside a read in flight")
+	}
+	r.run(cmd)
+	if r.s.livePoll() == nil {
+		t.Error("after the reads answered a check is due again")
+	}
+}
+
 func TestLiveSlowReadBacksOffThenRecovers(t *testing.T) {
 	r := newLiveRig(t, 100, 32)
 	r.p.took = 3 * time.Second // slower than tasksSlowRead
