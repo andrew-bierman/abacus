@@ -6,6 +6,23 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+> **0.3.0 candidate.** The headline changes below, in plain words. Releasing, tagging and
+> publishing are the owner's call; nothing here has been published.
+>
+> - **Self-sufficient builds:** abacus ships its own pinned, checksum-verified copies of the tools it
+>   uses, and `make dev` gives a local build the same set. A missing tool is abacus's problem to
+>   report, never the user's.
+> - **A framed, responsive TUI** on every tab, form and confirm screen, from 40 to 140+ columns, with
+>   a restrained visual language that never depends on color alone.
+> - **A demo** (`abacus tui --demo`) that shows every tab with invented data and never touches a real
+>   fleet.
+> - **Optional Rex workspace layer** (core, adapter and TUI): where each item lives, and a gated jump
+>   that runs only one validated step on an explicit keypress.
+> - **Optional in-process graph engine** (`ABACUS_GRAPH_ENGINE=library`) using bv's analysis as a Go
+>   package. The default is unchanged. Building now needs Go 1.26.11 or newer.
+> - **Safer confirms:** a confirm that does not fit on screen cannot be applied, and the command shown
+>   is always the command that runs.
+
 ### Added
 
 - The TUI shows the optional workspace layer: the Queues, Leases and Tasks detail shows where the
