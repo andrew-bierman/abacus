@@ -196,11 +196,22 @@ swapped in only when complete; archive members that are links, absolute or conta
 refused. The scripts are tested offline (`internal/release`) with fake archives, a fake `gh`,
 `npm` and `bun`.
 
-**Size tradeoff.** The tools are the size: bd alone is 144 MB uncompressed, the Board CLI 90 MB
-(the bun runtime is most of it), so the single file is about 87 MB on darwin-arm64 (see
-CHANGELOG for the figures per platform) against 10 MB for a build without them. zstd was chosen
-over xz: xz (`-9e`) made the embedded set about 15% smaller, but zstd unpacks the biggest tool in
-about 0.1 s.
+**Size tradeoff.** The tools are the size: bd alone is 144 MB uncompressed and the Board CLI is
+90 to 110 MB (the bun runtime is most of it). Measured for version 0.0.0-embed1 (a real build of
+each platform); a build without the tools is about 10 MB:
+
+| Platform | Tools compressed in the binary | `abacus` binary | Release archive (.tar.gz) |
+| --- | --- | --- | --- |
+| darwin-arm64 | 76.4 MB | 87.5 MB | 79.5 MB |
+| darwin-amd64 | 84.3 MB | 95.6 MB | 87.2 MB |
+| linux-arm64 | 86.3 MB | 96.6 MB | 88.6 MB |
+| linux-amd64 | 91.5 MB | 102.6 MB | 94.3 MB |
+
+On darwin-arm64 (the only platform run): the four tools are 254.8 MB extracted, 243 MB on disk. A
+cold first run (extraction included) took 3.3 s for `abacus doctor` and showed the TUI's first
+frame after 2.9 s; every later start is about 0.3 s. zstd was chosen over xz: xz (`-9e`) made the
+two big tools about 17% smaller, but zstd unpacks the biggest tool in about 0.1 s and needs no
+second compression library.
 
 ## Architecture
 

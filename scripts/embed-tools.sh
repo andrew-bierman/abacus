@@ -74,9 +74,7 @@ check_tool_names "${tools[@]}"
 # writable_by_others PATH: true when group or other may write to PATH (the same refusal abacus
 # itself applies to a bundled tool, so a copy that passes here is accepted at run time).
 writable_by_others() {
-  local perms
-  perms="$(ls -ld "$1" | cut -c1-10)"
-  [ "${perms:5:1}" = w ] || [ "${perms:8:1}" = w ]
+  [ -n "$(find "$1" -maxdepth 0 \( -perm -020 -o -perm -002 \) -print)" ]
 }
 
 # verified TOOL DIR: succeeds when DIR/TOOL is the executable installed from the manifest's
