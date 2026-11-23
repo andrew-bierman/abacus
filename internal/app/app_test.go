@@ -212,7 +212,7 @@ func TestAnUnsafeBundledBdFallsBackToPATHForReadingButNeverForWriting(t *testing
 			note = tl.Note
 		}
 	}
-	if !strings.HasPrefix(note, "bundled bd ignored: world-writable") || !strings.HasSuffix(note, "using PATH bd path") {
+	if !strings.HasPrefix(note, "abacus's own copy cannot be used (world-writable") || !strings.Contains(note, "using the bd on your PATH path instead") {
 		t.Fatalf("Doctor must not be silent about it: %q", note)
 	}
 	w := bd.Module.(core.TaskWriter)

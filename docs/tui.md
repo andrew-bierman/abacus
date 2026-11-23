@@ -25,7 +25,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
 | `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
-| `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice with an install hint if it is missing). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
+| `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice saying b9s is optional and where to get it if it is not there). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues, narrow layout only: open the run detail; `esc` closes it, a second `esc` clears the filter |
@@ -43,7 +43,8 @@ Counts by state, ready work and the most recent changes (an aligned table with a
 issues that block the most, the critical path and dependency cycles. From 100 columns the insights
 sit beside the list; below that they sit under it (the list keeps two thirds of the rows). Insights
 are read on start and on `r`, not on a timer, because they run several processes. Without an
-insights provider the panel says it is not connected and how to install one.
+insights provider the panel says it is not connected and what is wrong with abacus's own bv (a
+release: damaged or moved, re-extract; a dev build: run `scripts/dev-bundle.sh`).
 
 The new and edit forms, the "Checking the current state…" screen, the confirm screen and its
 "applying…" state are each one framed panel with the title in the border. The form is a table: a
@@ -144,8 +145,10 @@ A provider that was found but cannot be used (`broken`, `incompatible`) leaves i
 detected provider.
 
 The Doctor tab (the one place providers are listed by name) leads with "Ready" or "Needs attention",
-one line per area, and each tool with where it was found (`bundled`, `PATH`, `override`, `demo` or
-`missing`) and its version, then the detailed checks. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
+one line per area, a "Bundled tools: 4 of 4 verified" line, and each tool with where it was found
+(`bundled`, `PATH`, `override`, `demo`; or `unavailable` for abacus's own copy that cannot be used,
+`optional` for the Board CLI, which abacus does not ship) and its version, then the detailed checks.
+"Ready" needs bd, lambe and beads-lease usable; bv (graph insights) counts in the bundled line but is optional. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
 other modules every 30 seconds.

@@ -103,8 +103,27 @@ directory of the abacus executable (symlinks resolved), `../libexec/abacus/` and
 next to it; then your `PATH`. A bundled copy is run only if it resolves (through symlinks) to a regular,
 executable file that is not group- or world-writable, is owned by you or root, and sits (with its
 link, if any) in a directory nobody else can write to. Doctor shows, for every tool,
-whether it is `bundled`, from `PATH` or an override, or missing, with its version. Child tools
-see the sidecar directories first on `PATH`, so bv finds the bundled bd.
+whether it is `bundled`, from `PATH` or an override, or `unavailable` (abacus's own copy is damaged
+or was moved), with its version, and leads with "Bundled tools: 4 of 4 verified". Doctor is
+`Ready` only when bd, lambe and beads-lease are usable (bv adds graph insights and is optional: it counts in the line but never blocks `Ready`); the Vercel Board CLI is reported separately as
+`optional`. Child tools see the sidecar directories first on `PATH`, so bv finds the bundled bd.
+
+A missing bundled tool is never your job. In a release, abacus says its own copy is damaged or was
+moved (with the reason when a copy was refused: world-writable, not executable, ...) and to
+re-extract the archive and keep the folder together. In a locally built binary it says to run
+`scripts/dev-bundle.sh`, below. Only tools abacus does not ship (the Vercel Board CLI, Rex, b9s)
+are optional extras, and each says what it adds.
+
+**Local builds: `scripts/dev-bundle.sh`.** `go build` leaves no `bundled/` beside the binary, so
+the tools would look unavailable. `scripts/dev-bundle.sh` (or `make bundle`; `make dev` builds and
+bundles) downloads the same pinned assets with `gh` for this OS and CPU (`--platform linux-amd64`
+for another), checks every sha256 against `bundled-tools.json` (any mismatch aborts and changes
+nothing), and puts the four executables, their licenses and `THIRD_PARTY_NOTICES.md` in
+`bin/bundled/`, where `bin/abacus` finds them. It builds in a temp directory and moves it into
+place, is idempotent (a tool that still matches its install record is kept, not downloaded), and
+`--check` only verifies. `--out` must be new, empty or a previous install (anything else is refused
+untouched, because the directory is replaced as a whole). Linux and macOS on amd64 and arm64 are bundled; Windows is out of scope
+for now (see `docs/plans/2026-11-22-1900-plan-windows-support.md`) and has no pins.
 
 **The manifest, field by field.** Hand-edited: `schema`, `note`, and per tool `name` (the file
 name in `bundled/`; it must equal the tool names abacus looks for, a test checks it), `repo`,
@@ -149,14 +168,14 @@ or error messages that help you fix one.
 - **Lambe**: Queues (read only, plus the one confirmed `lambe init` of the first-run setup; demo
   and a tracker-only fallback exist).
 - **bv**: graph insights for Tasks only (the Board is a message board, not a graph), run as a subprocess in `--robot-*` JSON mode only.
-  Not found? Tasks says so and how to get it.
+  It is bundled; if abacus's own copy is unusable, Tasks says so and how to restore it.
 - **b9s**: works with b9s for the full tree and graph view: press `o` on Tasks to open it in the
-  tracker directory (probes for it first; shows an install hint if it is missing).
-- **Board**: composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`, same CLI),
+  tracker directory (probes for it first). It is optional: without it `o` says what b9s adds and where to get it.
+- **Board** (optional, not bundled): composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`, same CLI),
   run as a subprocess only: bounded `channels list`, `read` and `tasks` reads with `--json`,
   `--limit` and a deadline, behind an argv allowlist and a scrubbed environment (only `HOME`,
   `PATH`, the XDG dirs, `BOARD_*`, `VERCEL_AUTH_TOKEN`, `VERCEL_ORG_ID`, proxy and CA variables
-  are passed on). It never runs `serve`, `tail` or `wait`. Install it with
+  are passed on). It never runs `serve`, `tail` or `wait`. To turn the Board on, install it with
   `npm i -g @vercel/board`, never `npx vb` or `npm i vb`: **`vb` on npm is an unrelated
   package**, so a binary is trusted only after its own `--help` identifies Vercel Board
   (`ABACUS_BOARD_BIN` overrides the lookup, which prefers `board` over `vb`). Without a board
@@ -189,6 +208,18 @@ or error messages that help you fix one.
   tools tests run are `bd` and `bv`, against temp projects with an isolated `HOME`, and they skip when absent.
   Sidecar tests use fake binaries in temp dirs.
 - Use a private `GOCACHE` for builds.
+
+### Building from source
+
+```
+go build -o bin/abacus ./cmd/abacus
+scripts/dev-bundle.sh        # or: make dev (build + bundle)
+./bin/abacus doctor          # leads with: Bundled tools: 4 of 4 verified
+```
+
+The bundle step needs `gh` (logged in) and `jq`; it fetches the pinned tools into `bin/bundled/`
+(git-ignored). Run it again after `bundled-tools.json` changes; `scripts/dev-bundle.sh --check`
+verifies without downloading.
 
 Note: the two `signalZero` bodies under `internal/lambe` are kept separate on purpose; they port
 Lambe's own process-liveness logic per platform, and merging them would drift from it.

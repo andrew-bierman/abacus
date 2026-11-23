@@ -119,13 +119,14 @@ func newRig(t *testing.T, members func(platform string) []member) *rig {
 	must(t, os.MkdirAll(bin, 0o755))
 	must(t, os.WriteFile(filepath.Join(bin, "gh"), []byte(`#!/bin/sh
 name=""; outfile=""; outdir="."
+[ -z "$FAKE_GH_LOG" ] || echo "$*" >>"$FAKE_GH_LOG"
 while [ $# -gt 0 ]; do case "$1" in -p) name=$2; shift 2;; -O) outfile=$2; shift 2;; -D) outdir=$2; shift 2;; *) shift;; esac; done
 src="$FAKE_GH_REMOTE/$name"; [ -f "$src" ] || { echo "fake gh: no $name" >&2; exit 1; }
 if [ -n "$outfile" ]; then cp "$src" "$outfile"; else cp "$src" "$outdir/$name"; fi
 `), 0o755))
 	r.env = append(os.Environ(),
 		"PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"),
-		"HOME="+r.root, "FAKE_GH_REMOTE="+r.remote,
+		"HOME="+r.root, "FAKE_GH_REMOTE="+r.remote, "FAKE_GH_LOG="+filepath.Join(r.root, "gh.log"),
 		"ABACUS_BUNDLE_MANIFEST="+r.manifest, "ABACUS_BUNDLE_CACHE="+r.cache, "ABACUS_PACKAGE_PREBUILT_BIN="+prebuilt)
 	return r
 }
