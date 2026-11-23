@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                             7 tasks · 2 ready
+focus tr-jbt.1.2.1 · depth 2 · blocking links
+╭─ ▸ Graph · tr-jbt.1.2.1 ───────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│                  ┌─────────────────────────┐                   │ │ longest chain (4):            │
+│                  │ ○ tr-jbt.1.0.1 Chain… * │                   │ │ tr-jbt.1.0.1 → tr-jbt.1.1.1 → │
+│                  └────────────┬────────────┘                   │ │ tr-jbt.1.2.1 → tr-jbt.1.3.1   │
+│                ┌──────────────┘                                │ │                               │
+│                │                                               │ │ cycle tr-jbt.1.1.3 →          │
+│   ┌────────────┴────────────┐  ┌─────────────────────────┐     │ │ tr-jbt.1.1.4 → tr-jbt.1.1.3   │
+│   │ ○ tr-jbt.1.1.1 Sibl… *^ │  │ ○ tr-jbt.1.1.2 Sibli… ? │     │ │                               │
+│   └────────────┬────────────┘  └────────────┬────────────┘     │ │ blockers open: 3              │
+│                │                            │         +1 more  │ │ freed when closed: 1          │
+│                └──────────────┬─────────────┘                  │ │ +1 more not drawn             │
+│                               │                                │ │                               │
+│                  ╔════════════╧════════════╗                   │ │ ○ open ◐ active ● blocked     │
+│                  ║ ○ tr-jbt.1.2.1 Focu… *^ ║                   │ │ ✓ closed ◇ deferred           │
+│                  ╚════════════╤════════════╝                   │ │ * longest chain · ~ cycle     │
+│                               │                                │ │ ^ bottleneck · ! self-dep     │
+│                               │                                │ │ ? blocker not in tracker      │
+│                  ┌────────────┴────────────┐                   │ │ ═ focus · ┃ selected          │
+│                  │ ○ tr-jbt.1.3.1 Depen… * │                   │ │                               │
+│                  └─────────────────────────┘                   │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                         7 tasks · 2 ready
+focus tr-jbt.1.2.1 · depth 2 · blocking links
+╭─ ▸ Graph · tr-jbt.1.2.1 ─────────────────────────────────────────────────────╮
+│ blocked by                                                                   │
+│   ○ tr-jbt.1.1.1 Sibling on the chain                                ⊘1→1 *^ │
+│     ○ tr-jbt.1.0.1 Chain root                                           →1 * │
+│   ○ tr-jbt.1.1.2 Sibling with a missing blocker                         →1 ? │
+│   ○ tr-jbt.1.1.3 Sibling in a cycle                                  ⊘1→2 ~^ │
+│     ○ tr-jbt.1.1.4 Cycle partner                                      ⊘1→1 ~ │
+│                                                                              │
+│ ▸ ○ tr-jbt.1.2.1 Focus with long id                                  ⊘3→1 *^ │
+│                                                                              │
+│ blocks                                                                       │
+│   ○ tr-jbt.1.3.1 Dependent                                              ⊘1 * │
+│                                                                              │
+│ longest chain (4):                                                           │
+│ tr-jbt.1.0.1 → tr-jbt.1.1.1 → tr-jbt.1.2.1 → tr-jbt.1.3.1                    │
+│ cycle tr-jbt.1.1.3 → tr-jbt.1.1.4 → tr-jbt.1.1.3                             │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                     7 tasks · 2 ready
+focus tr-jbt.1.2.1 · depth 2 · blocking links
+╭─ ▸ Graph · tr-jbt.1.2.1 ─────────────────────────────────╮
+│ blocked by                                               │
+│   ○ tr-jbt.1.1.1 Sibling on the chain            ⊘1→1 *^ │
+│     ○ tr-jbt.1.0.1 Chain root                       →1 * │
+│   ○ tr-jbt.1.1.2 Sibling with a missing blocker     →1 ? │
+│   ○ tr-jbt.1.1.3 Sibling in a cycle              ⊘1→2 ~^ │
+│     ○ tr-jbt.1.1.4 Cycle partner                  ⊘1→1 ~ │
+│                                                          │
+│ ▸ ○ tr-jbt.1.2.1 Focus with long id              ⊘3→1 *^ │
+│                                                          │
+│ blocks                                                   │
+│   ○ tr-jbt.1.3.1 Dependent                          ⊘1 * │
+│                                                          │
+│ longest chain (4):                                       │
+│ tr-jbt.1.0.1 → tr-jbt.1.1.1 → tr-jbt.1.2.1 →             │
+│ tr-jbt.1.3.1                                             │
+│ cycle tr-jbt.1.1.3 → tr-jbt.1.1.4 → tr-jbt.1.1.3         │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open …

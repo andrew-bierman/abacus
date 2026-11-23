@@ -12,7 +12,7 @@ focus gr-6yh · depth 2 · blocking links
 │ ┌────────┴────────┐  ┌────────┴────────┐  ┌────────┴────────┐  │ │ depends on itself gr-1fm      │
 │ │ ○ gr-1wu Fan… * │  │ ○ gr-33j Fan i… │  │ ○ gr-347 Fan i… │  │ │                               │
 │ └─────────────────┘  └─────────────────┘  └─────────────────┘  │ │ blockers open: 0              │
-│                            +9 more                             │ │ freed when closed: 12         │
+│                                                       +9 more  │ │ freed when closed: 12         │
 │                                                                │ │ +9 more not drawn             │
 │                                                                │ │                               │
 │                                                                │ │ ○ open ◐ active ● blocked     │

@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +16,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/demo"
@@ -20,7 +24,9 @@ import (
 	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
-// graphSnap is a real bd export (see internal/taskview/testdata/README.md).
+// graphSnap reads a fixture export from internal/taskview/testdata (see its README: graph-export.jsonl
+// is a real bd export, graph-export-edges.jsonl is that export plus a hand-added cycle, self-dependency
+// and missing target).
 func graphSnap(t testing.TB, name string) core.TaskSnapshot {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join("..", "taskview", "testdata", name))
@@ -232,32 +238,40 @@ func TestGraphWithoutDependenciesSaysSo(t *testing.T) {
 type graphScenario struct {
 	name string
 	keys []string
+	snap func(testing.TB) core.TaskSnapshot // nil: the edited real export
 }
 
 // graphScenarios are the Graph view goldens: each focuses a task of the real export (with the
 // hand-added cycle) from the list with a filter, then presses g.
 func graphScenarios() []graphScenario {
-	focus := func(id string) []string { return append(append([]string{"2", "/"}, typed(id)...), "enter", "g") }
+	focus := func(id string) []string { return append(append([]string{"2", "/"}, typed("id:"+id)...), "enter", "g") }
 	return []graphScenario{
-		{"tasks-graph-diamond", focus("gr-ko8")},
-		{"tasks-graph-chain", focus("gr-hsy")},
-		{"tasks-graph-fanout", focus("gr-6yh")},
-		{"tasks-graph-cycle", focus("gr-syt")},
-		{"tasks-graph-hostile", focus("gr-67z")},
-		{"tasks-graph-whole", append(focus("gr-ko8"), "g")},
+		{"tasks-graph-diamond", focus("gr-ko8"), nil},
+		{"tasks-graph-chain", focus("gr-hsy"), nil},
+		{"tasks-graph-fanout", focus("gr-6yh"), nil},
+		{"tasks-graph-cycle", focus("gr-syt"), nil},
+		{"tasks-graph-hostile", focus("gr-67z"), nil},
+		{"tasks-graph-whole", append(focus("gr-ko8"), "g"), nil},
+		// constructed shapes (not bd captures)
+		{"tasks-graph-shortcut", focus("sc-f"), shortcutSnap},
+		{"tasks-graph-bus", focus("bs-f"), busSnap},
+		{"tasks-graph-longids", focus("tr-jbt.1.2.1"), longIDSnap},
 	}
 }
 
 func TestGraphGoldens(t *testing.T) {
 	th := asciiTheme()
-	edges := graphSnap(t, "graph-export-edges.jsonl")
 	for _, c := range graphScenarios() {
 		t.Run(c.name, func(t *testing.T) {
 			var b strings.Builder
 			valid := true
 			sc := scenario{name: c.name, tab: "Tasks"}
 			for _, sz := range [][2]int{{100, 32}, {80, 24}, {60, 24}} {
-				m := sized(graphShell(t, th, edges), sz[0], sz[1])
+				snap := graphSnap(t, "graph-export-edges.jsonl")
+				if c.snap != nil {
+					snap = c.snap(t)
+				}
+				m := sized(graphShell(t, th, snap), sz[0], sz[1])
 				for _, k := range c.keys {
 					m = press(m, k)
 				}
@@ -357,5 +371,429 @@ func TestGraphFiveThousandTasksRenderFast(t *testing.T) {
 	}
 	if d := time.Since(start); d > 5*time.Second {
 		t.Errorf("5000 tasks: %v", d)
+	}
+}
+
+// ---- constructed shapes ----
+
+func tg(id, title, status string, blockers ...string) core.TaskIssue {
+	it := core.TaskIssue{ID: id, Title: title, Status: status, Priority: 2, CreatedAt: goldenNow, UpdatedAt: goldenNow}
+	for _, b := range blockers {
+		it.Deps = append(it.Deps, core.TaskDep{DependsOn: b, Type: "blocks"})
+	}
+	return it
+}
+
+func snapOf(issues ...core.TaskIssue) core.TaskSnapshot {
+	return core.TaskSnapshot{Issues: issues, ReadAt: goldenNow, Tracker: "shapes"}
+}
+
+// shortcutSnap: f <- a <- b <- c, and b blocks f directly. c is two steps above f by the shortest path.
+func shortcutSnap(testing.TB) core.TaskSnapshot {
+	return snapOf(tg("sc-c", "Root cause", "open"), tg("sc-b", "Middle step", "open", "sc-c"), tg("sc-a", "Side step", "open", "sc-b"), tg("sc-f", "Shortcut focus", "open", "sc-a", "sc-b"))
+}
+
+// busSnap: A->C, B->C, B->D, C->F, D->F: one bus would also seem to say A->D.
+func busSnap(testing.TB) core.TaskSnapshot {
+	return snapOf(tg("bs-a", "Blocker A", "open"), tg("bs-b", "Blocker B", "open"), tg("bs-c", "Dependent C", "open", "bs-a", "bs-b"), tg("bs-d", "Dependent D", "open", "bs-b"), tg("bs-f", "Bus focus", "open", "bs-c", "bs-d"))
+}
+
+// longIDSnap: real-length ids (tr-jbt.1.1.1) with the flags that must stay visible: a chain, a
+// missing blocker and a cycle among three siblings above the focus.
+func longIDSnap(testing.TB) core.TaskSnapshot {
+	return snapOf(
+		tg("tr-jbt.1.1.1", "Sibling on the chain", "open", "tr-jbt.1.0.1"),
+		tg("tr-jbt.1.1.2", "Sibling with a missing blocker", "open", "tr-gone.9"),
+		tg("tr-jbt.1.1.3", "Sibling in a cycle", "open", "tr-jbt.1.1.4"),
+		tg("tr-jbt.1.1.4", "Cycle partner", "open", "tr-jbt.1.1.3"),
+		tg("tr-jbt.1.0.1", "Chain root", "open"),
+		tg("tr-jbt.1.2.1", "Focus with long id", "open", "tr-jbt.1.1.1", "tr-jbt.1.1.2", "tr-jbt.1.1.3"),
+		tg("tr-jbt.1.3.1", "Dependent", "open", "tr-jbt.1.2.1"))
+}
+
+func boxText(s *tasksSection, gv core.GraphView, w int) []string {
+	lines, _, _ := s.boxLines(gv, graphGeom(w, 0).listInner())
+	for i, l := range lines {
+		lines[i] = strings.TrimRight(l, " ")
+	}
+	return lines
+}
+
+// Flags are reserved before the title is cut: with real-length ids the box still shows * (chain),
+// ? (missing blocker) and ~ (cycle).
+func TestGraphBoxFlagsSurviveRealLengthIds(t *testing.T) {
+	s := graphAt(t, longIDSnap(t), 140, 32, "tr-jbt.1.2.1")
+	gv := s.graphModel()
+	lines := boxText(s, gv, 140)
+	want := map[string]string{"tr-jbt.1.1.1": "*", "tr-jbt.1.1.2": "?", "tr-jbt.1.1.3": "~"}
+	for id, flag := range want {
+		found := false
+		for _, l := range lines {
+			if strings.Contains(l, id) {
+				found = true
+				if !strings.Contains(l, flag) {
+					t.Errorf("%s lost its %s flag: %q", id, flag, l)
+				}
+			}
+		}
+		if !found {
+			t.Errorf("no box for %s:\n%s", id, strings.Join(lines, "\n"))
+		}
+	}
+}
+
+// At 100 columns three 12-character ids do not fit three boxes: two show whole and the third is
+// counted ("+1 more"), never an id cut so that siblings look alike.
+func TestGraphBoxesShowIdsWholeOrCollapse(t *testing.T) {
+	s := graphAt(t, longIDSnap(t), 100, 32, "tr-jbt.1.2.1")
+	gv := s.graphModel()
+	text := strings.Join(boxText(s, gv, 100), "\n")
+	for _, l := range gv.Layers {
+		for _, id := range l.Nodes {
+			if !strings.Contains(text, id) {
+				t.Errorf("box for %s is cut:\n%s", id, text)
+			}
+		}
+	}
+	if gv.Hidden != 1 || !strings.Contains(text, "+1 more") {
+		t.Errorf("hidden %d:\n%s", gv.Hidden, text)
+	}
+}
+
+func TestGraphNodeTextNeverLosesFlagsOrOverflows(t *testing.T) {
+	s := graphAt(t, longIDSnap(t), 100, 32, "tr-jbt.1.2.1")
+	n := core.GraphNode{ID: "tr-jbt.1.1.1.1.1.1", Title: "a title", Status: "open", OnChain: true, InCycle: true, Bottleneck: true, Blocks: 2, BlockedBy: 1}
+	for w := 1; w <= 40; w++ {
+		styled, plain := s.nodeText(n, w, true)
+		if lipgloss.Width(plain) > w || lipgloss.Width(styled) > w {
+			t.Fatalf("w=%d overflows: %q", w, plain)
+		}
+		if w >= 12 && !strings.HasSuffix(strings.TrimSpace(plain), "*~^") {
+			t.Errorf("w=%d dropped the flags: %q", w, plain)
+		}
+	}
+}
+
+// ---- connectors ----
+
+// connectedPairs reads the connectors back off the canvas: which (blocker, dependent) pairs a line
+// of box-drawing joins, found by following the cells from under each blocker.
+func connectedPairs(bl boxLayout, gv core.GraphView) map[[2]string]bool {
+	out := map[[2]string]bool{}
+	layerOf := map[string]int{}
+	for i, l := range gv.Layers {
+		for _, id := range l.Nodes {
+			layerOf[id] = i
+		}
+	}
+	type cell struct{ x, y int }
+	for _, e := range gv.Edges {
+		_ = e
+	}
+	for id, p := range bl.pos {
+		i := layerOf[id]
+		if i+1 >= len(gv.Layers) || bl.c.mask[min(bl.bottom[i], len(bl.c.mask)-1)][p.cx]&dU == 0 {
+			continue
+		}
+		seen := map[cell]bool{}
+		stack := []cell{{p.cx, bl.bottom[i]}}
+		for len(stack) > 0 {
+			c := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			if seen[c] {
+				continue
+			}
+			seen[c] = true
+			m := bl.c.mask[c.y][c.x]
+			if c.y == bl.layerY[i+1]-1 && m&dD != 0 {
+				for cid, cp := range bl.pos {
+					if layerOf[cid] == i+1 && cp.cx == c.x {
+						out[[2]string{id, cid}] = true
+					}
+				}
+			}
+			step := func(bit, opp uint8, dx, dy int) {
+				nx, ny := c.x+dx, c.y+dy
+				if m&bit != 0 && ny >= 0 && ny < len(bl.c.mask) && nx >= 0 && nx < bl.c.w && bl.c.mask[ny][nx]&opp != 0 && ny < bl.layerY[i+1] {
+					stack = append(stack, cell{nx, ny})
+				}
+			}
+			step(dL, dR, -1, 0)
+			step(dR, dL, 1, 0)
+			step(dD, dU, 0, 1)
+		}
+	}
+	return out
+}
+
+// No connector path joins a pair that is not a dependency, and every link the view says is drawn
+// is joined unless the layout reported dropping it.
+func TestGraphConnectorsJoinExactlyTheDrawnLinks(t *testing.T) {
+	snaps := map[string]core.TaskSnapshot{
+		"bus": busSnap(t), "shortcut": shortcutSnap(t), "longids": longIDSnap(t),
+		"real": graphSnap(t, "graph-export-edges.jsonl"), "hostile": graphHostileSnapshot(),
+	}
+	r := rand.New(rand.NewSource(11))
+	for k := 0; k < 60; k++ {
+		n := 6 + r.Intn(12)
+		var is []core.TaskIssue
+		for i := 0; i < n; i++ {
+			var bl []string
+			for j := 0; j < i; j++ {
+				if r.Intn(4) == 0 {
+					bl = append(bl, fmt.Sprintf("r%02d", j))
+				}
+			}
+			is = append(is, tg(fmt.Sprintf("r%02d", i), "random", "open", bl...))
+		}
+		snaps[fmt.Sprintf("random%d", k)] = snapOf(is...)
+	}
+	for name, snap := range snaps {
+		for _, w := range []int{100, 120} {
+			for _, it := range snap.Issues {
+				if len(snap.Issues) > 40 && it.ID != "gr-ko8" && it.ID != "gr-6yh" && it.ID != "gr-syt" && it.ID != "gr-67z" {
+					continue
+				}
+				s := graphAt(t, snap, w, 200, it.ID)
+				gv := s.graphModel()
+				if gv.Focus != it.ID {
+					continue
+				}
+				bl := s.layoutBoxes(gv, graphGeom(w, 0).listInner())
+				got := connectedPairs(bl, gv)
+				drawn := map[[2]string]bool{}
+				for _, e := range gv.Edges {
+					if e.Drawn {
+						drawn[[2]string{e.From, e.To}] = true
+					}
+				}
+				for p := range got {
+					if !drawn[p] {
+						t.Fatalf("%s focus %s: connectors join %s and %s, which is not a drawn link", name, it.ID, p[0], p[1])
+					}
+				}
+				missing := 0
+				for p := range drawn {
+					if !got[p] {
+						missing++
+					}
+				}
+				if missing != s.graph.undrawn {
+					t.Fatalf("%s focus %s w%d: %d drawn links not joined, layout reported %d dropped", name, it.ID, w, missing, s.graph.undrawn)
+				}
+			}
+		}
+	}
+}
+
+// ---- invariants that do not depend on a golden ----
+
+var moreRE = regexp.MustCompile(`\+(\d+) more`)
+
+func TestGraphBoxInvariants(t *testing.T) {
+	for name, snap := range map[string]core.TaskSnapshot{"real": graphSnap(t, "graph-export-edges.jsonl"), "bus": busSnap(t), "longids": longIDSnap(t), "shortcut": shortcutSnap(t)} {
+		for _, it := range snap.Issues {
+			if len(snap.Issues) > 40 && it.ID != "gr-6yh" && it.ID != "gr-ko8" && it.ID != "gr-67z" {
+				continue
+			}
+			for _, w := range []int{100, 140} {
+				s := graphAt(t, snap, w, 200, it.ID)
+				gv := s.graphModel()
+				lines := boxText(s, gv, w)
+				text := strings.Join(lines, "\n")
+				// the focus box is there: double border with its id
+				focusRow := false
+				for _, l := range lines {
+					focusRow = focusRow || (strings.Contains(l, "║") && strings.Contains(l, gv.Focus))
+				}
+				if !focusRow {
+					t.Errorf("%s %s w%d: no focus box\n%s", name, it.ID, w, text)
+				}
+				more := 0
+				for _, m := range moreRE.FindAllStringSubmatch(text, -1) {
+					n, _ := strconv.Atoi(m[1])
+					more += n
+				}
+				if more != gv.Hidden {
+					t.Errorf("%s %s w%d: +N more lines add up to %d, view says %d hidden\n%s", name, it.ID, w, more, gv.Hidden, text)
+				}
+			}
+		}
+	}
+}
+
+// ---- keys and behavior ----
+
+func TestGraphWholeToNearbyFocusesTheSelectedNode(t *testing.T) {
+	s := graphAt(t, graphSnap(t, "graph-export-edges.jsonl"), 100, 32, "gr-ko8")
+	send(s, "g")
+	if !s.graph.whole {
+		t.Fatal("g opens the whole graph")
+	}
+	s.graph.sel = "gr-hsy"
+	send(s, "g")
+	if s.graph.whole || s.graph.focus != "gr-hsy" || s.graphModel().Focus != "gr-hsy" {
+		t.Errorf("whole -> nearby: whole %v focus %q", s.graph.whole, s.graph.focus)
+	}
+}
+
+func TestGraphStepTable(t *testing.T) {
+	near := core.GraphView{Mode: core.GraphNeighborhood, Layers: []core.GraphLayer{{Layer: -1, Nodes: []string{"a", "b", "c"}}, {Layer: 0, Nodes: []string{"f"}}}}
+	whole := core.GraphView{Mode: core.GraphWhole, Layers: []core.GraphLayer{{Nodes: []string{"a", "b"}}, {Layer: 1, Nodes: []string{"c"}}, {Layer: 2, Nodes: []string{"d", "e"}}}}
+	for _, c := range []struct {
+		name string
+		gv   core.GraphView
+		sel  string
+		d    int
+		want string
+	}{
+		{"near right", near, "a", 1, "b"}, {"near left", near, "c", -1, "b"},
+		{"near left end", near, "a", -1, ""}, {"near right end", near, "c", 1, ""},
+		{"near lone node", near, "f", 1, ""}, {"near not listed", near, "zz", 1, ""},
+		{"whole next layer", whole, "a", 1, "c"}, {"whole previous layer", whole, "d", -1, "c"},
+		{"whole first layer back", whole, "b", -1, ""}, {"whole last layer on", whole, "e", 1, ""},
+	} {
+		if got := graphStep(c.gv, c.sel, c.d); got != c.want {
+			t.Errorf("%s: %q, want %q", c.name, got, c.want)
+		}
+	}
+	// key level: l moves to the sibling box, h at the end of a layer stays put
+	s := graphAt(t, graphSnap(t, "graph-export-edges.jsonl"), 100, 32, "gr-ko8")
+	s.graph.sel = "gr-bac"
+	send(s, "l")
+	if s.graph.sel != "gr-nqy" {
+		t.Errorf("l steps to the next sibling: %q", s.graph.sel)
+	}
+	send(s, "l")
+	if s.graph.sel != "gr-nqy" {
+		t.Errorf("l at the end of a layer stays: %q", s.graph.sel)
+	}
+	send(s, "h")
+	if s.graph.sel != "gr-bac" {
+		t.Errorf("h steps back: %q", s.graph.sel)
+	}
+}
+
+func TestVIntoTheGraphFocusesTheSelectedTask(t *testing.T) {
+	s := listAt(100, 32)
+	send(s, "v")
+	first := s.graph.focus
+	send(s, "V") // back to the list
+	send(s, "j", "j")
+	want := s.rows()[s.cursor].ID
+	send(s, "v")
+	if s.list.cur != viewGraph || s.graph.focus != want || want == first {
+		t.Errorf("v opens the graph on the selected task %q, got focus %q (first was %q)", want, s.graph.focus, first)
+	}
+}
+
+func TestGraphLayerHeadersMakeNoClaims(t *testing.T) {
+	s := graphAt(t, graphSnap(t, "graph-export-edges.jsonl"), 100, 40, "gr-ko8")
+	send(s, "g")
+	out := s.View()
+	for _, bad := range []string{"nothing blocks", "waits for"} {
+		if strings.Contains(out, bad) {
+			t.Errorf("layer header claims %q", bad)
+		}
+	}
+	if !strings.Contains(out, "layer 0") || !strings.Contains(out, "includes a cycle") {
+		t.Errorf("headers:\n%s", out)
+	}
+}
+
+func TestGraphPanelTitleShowsStaleReads(t *testing.T) {
+	s := graphAt(t, graphSnap(t, "graph-export-edges.jsonl"), 100, 32, "gr-ko8")
+	if strings.Contains(s.View(), "stale") {
+		t.Fatal("a fresh read is not stale")
+	}
+	s.list.readAt = goldenNow.Add(-10 * time.Minute)
+	if out := s.View(); !strings.Contains(out, "Graph · gr-ko8 · stale 10m") {
+		t.Errorf("stale tag:\n%s", out)
+	}
+}
+
+func TestGraphChainPanelShowsAClipMarker(t *testing.T) {
+	var is []core.TaskIssue
+	for i := 0; i < 30; i++ {
+		var b []string
+		if i > 0 {
+			b = []string{fmt.Sprintf("ch-%02d", i-1)}
+		}
+		is = append(is, tg(fmt.Sprintf("ch-%02d", i), "step", "open", b...))
+	}
+	s := graphAt(t, snapOf(is...), 100, 16, "ch-15")
+	out := s.View()
+	chain := false
+	for _, l := range strings.Split(out, "\n") {
+		if i := strings.Index(l, "│ │"); i >= 0 {
+			chain = chain || strings.Contains(l[i:], "↕")
+		}
+	}
+	if !chain {
+		t.Errorf("a clipped Chain panel says so:\n%s", out)
+	}
+}
+
+// ---- engine marks ----
+
+type fakeInsights struct{ calls *int }
+
+func (f fakeInsights) Insights(context.Context) (core.InsightsReport, error) {
+	*f.calls++
+	return core.InsightsReport{}, nil
+}
+
+func TestGraphDropsMarksFromAReportThatPredatesTheSnapshot(t *testing.T) {
+	snap := graphSnap(t, "graph-export-edges.jsonl")
+	s := graphAt(t, snap, 100, 32, "gr-ko8")
+	s.insights = &core.InsightsReport{Bottlenecks: []core.Ranked{{ID: "gr-ko8", Value: 9}}}
+	s.graph.insStart = goldenNow // as fresh as the snapshot
+	if !strings.Contains(strings.Join(boxText(s, s.graphModel(), 100), "\n"), "^") {
+		t.Fatal("a fresh report marks the bottleneck")
+	}
+	// a newer snapshot arrives: the report on hand describes the old one
+	snap.ReadAt = goldenNow.Add(time.Minute)
+	s.Update(taskSnapshotMsg{snap: snap})
+	if gv := s.graphModel(); gv.MarksSource != "" || strings.Contains(strings.Join(boxText(s, gv, 100), "\n"), "^") {
+		t.Errorf("a stale report must not mark the new snapshot: source %q", gv.MarksSource)
+	}
+	// and the section asks for a fresh read when the graph is on screen
+	calls := 0
+	s.ins = fakeInsights{&calls}
+	s.insBusy = false
+	_, cmd := s.Update(taskSnapshotMsg{snap: snap})
+	if cmd == nil || !s.insBusy {
+		t.Fatal("a stale report on the Graph view is read again")
+	}
+}
+
+// ---- colors ----
+
+// Without color the marks are text; with it, closed work is muted and the chain flag is accented.
+func TestGraphColorsMuteClosedWorkAndAccentTheChain(t *testing.T) {
+	th := NewTheme(rendererFor(termenv.TrueColor, true))
+	for _, w := range []int{60, 100} {
+		s := graphAt(t, graphSnap(t, "graph-export-edges.jsonl"), w, 40, "gr-ko8")
+		s.SetTheme(th)
+		out := s.View()
+		var closed, chain string
+		for _, l := range strings.Split(out, "\n") {
+			if strings.Contains(l, "gr-9ik") && strings.Contains(l, "Snapshot") {
+				closed = l
+			}
+			if strings.Contains(l, "gr-bac") && strings.Contains(l, "Sanitize") {
+				chain = l
+			}
+		}
+		if !regexp.MustCompile(`\x1b\[[0-9;]*m[^\x1b]*Snapshot`).MatchString(closed) {
+			t.Errorf("w%d: the closed task's title is not styled: %q", w, closed)
+		}
+		if !regexp.MustCompile(`\x1b\[[0-9;]*m\*`).MatchString(chain) {
+			t.Errorf("w%d: the chain flag is not accented: %q", w, chain)
+		}
+		plain := graphAt(t, graphSnap(t, "graph-export-edges.jsonl"), w, 40, "gr-ko8").View()
+		if strings.Contains(plain, "\x1b") {
+			t.Errorf("w%d: the ascii theme emitted an escape", w)
+		}
 	}
 }

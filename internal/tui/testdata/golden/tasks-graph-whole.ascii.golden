@@ -8,7 +8,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │   ○ gr-syt Cycle beta                                   ⊘1→1 ~ │ │ gr-q7z → gr-hsy → gr-3k9 →    │
 │   ○ gr-tse Cycle gamma                                  ⊘1→1 ~ │ │ gr-hoz → gr-fdz → gr-l5l      │
 │   ○ gr-vgy Cycle alpha                                  ⊘1→1 ~ │ │                               │
-│ ── layer 1 · 16 tasks · waits for an earlier layer             │ │ cycle gr-syt → gr-tse →       │
+│ ── layer 1 · 16 tasks                                          │ │ cycle gr-syt → gr-tse →       │
 │   ○ gr-1wu Fan item 7                                       ⊘1 │ │ gr-vgy → gr-syt               │
 │   ○ gr-33j Fan item 11                                      ⊘1 │ │ depends on itself gr-1fm      │
 │   ○ gr-347 Fan item 12                                      ⊘1 │ │                               │
@@ -25,7 +25,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │   ○ gr-bac Sanitize text                                    →1 │ │                               │
 │   ◐ gr-nqy Parse export                                     →1 │ │                               │
 │   ○ gr-jz5 Island two                                       ⊘1 │ │                               │
-│ ── layer 2 · 2 tasks · waits for an earlier layer              │ │                               │
+│ ── layer 2 · 2 tasks                                           │ │                               │
 │   ◐ gr-q7z Chain step 3                                   →1 * │ │                               │
 │ ▸ ○ gr-ko8 Graph layout                                 ⊘2→2 ^ │ │                               │
 │   ↕ +20 more                                                   │ │                               │
@@ -50,7 +50,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │   ○ gr-bac Sanitize text                                                  →1 │
 │   ◐ gr-nqy Parse export                                                   →1 │
 │   ○ gr-jz5 Island two                                                     ⊘1 │
-│ ── layer 2 · 2 tasks · waits for an earlier layer                            │
+│ ── layer 2 · 2 tasks                                                         │
 │   ◐ gr-q7z Chain step 3                                                 →1 * │
 │ ▸ ○ gr-ko8 Graph layout                                               ⊘2→2 ^ │
 │   ↕ +31 more                                                                 │
@@ -75,7 +75,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │   ○ gr-bac Sanitize text                              →1 │
 │   ◐ gr-nqy Parse export                               →1 │
 │   ○ gr-jz5 Island two                                 ⊘1 │
-│ ── layer 2 · 2 tasks · waits for an earlier layer        │
+│ ── layer 2 · 2 tasks                                     │
 │   ◐ gr-q7z Chain step 3                             →1 * │
 │ ▸ ○ gr-ko8 Graph layout                           ⊘2→2 ^ │
 │   ↕ +31 more                                             │
