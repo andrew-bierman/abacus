@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "query": "e",
+  "total": 10,
+  "groups": [
+    {
+      "domain": "tasks",
+      "title": "Tasks",
+      "total": 4,
+      "truncated": 2,
+      "results": [
+        {
+          "domain": "tasks",
+          "kind": "task",
+          "id": "ac-41",
+          "label": "ac-41",
+          "title": "Lease heartbeat misses on resume",
+          "status": "in_progress",
+          "matched": [
+            "title"
+          ],
+          "rank": 3
+        },
+        {
+          "domain": "tasks",
+          "kind": "task",
+          "id": "ac-38",
+          "label": "ac-38",
+          "title": "Queue filter ignores machine",
+          "status": "open",
+          "matched": [
+            "title"
+          ],
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "domain": "board",
+      "title": "Board",
+      "total": 3,
+      "truncated": 1,
+      "results": [
+        {
+          "domain": "board",
+          "kind": "message",
+          "id": "m:17",
+          "target": "t:15",
+          "label": "#17",
+          "title": "rolled back, renewal fixed",
+          "meta": "reply · mei · #15",
+          "matched": [
+            "title"
+          ],
+          "rank": 3
+        },
+        {
+          "domain": "board",
+          "kind": "thread",
+          "id": "t:15",
+          "label": "#15",
+          "title": "checkout times out",
+          "meta": "dev/web · ada · 1 replies",
+          "matched": [
+            "title"
+          ],
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "domain": "leases",
+      "title": "Leases",
+      "total": 3,
+      "truncated": 1,
+      "results": [
+        {
+          "domain": "leases",
+          "kind": "lease",
+          "id": "export-job",
+          "label": "export-job",
+          "title": "export-job",
+          "meta": "stale · last holder mei",
+          "status": "stale",
+          "matched": [
+            "id"
+          ],
+          "rank": 1,
+          "stale": true,
+          "age": "5m"
+        },
+        {
+          "domain": "leases",
+          "kind": "lease",
+          "id": "idle-slot",
+          "label": "idle-slot",
+          "title": "idle-slot",
+          "meta": "free",
+          "status": "free",
+          "matched": [
+            "title"
+          ],
+          "rank": 3,
+          "stale": true,
+          "age": "5m"
+        }
+      ]
+    }
+  ],
+  "domains": [
+    {
+      "domain": "tasks",
+      "title": "Tasks",
+      "state": "searched",
+      "docs": 4,
+      "read_at": "2026-11-23T12:00:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "board",
+      "title": "Board",
+      "state": "searched",
+      "reason": "only recent threads and open tasks were searched",
+      "docs": 3,
+      "read_at": "2026-11-23T12:00:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "leases",
+      "title": "Leases",
+      "state": "searched",
+      "docs": 3,
+      "read_at": "2026-11-23T11:55:00Z",
+      "age": "5m",
+      "stale": true
+    },
+    {
+      "domain": "queues",
+      "title": "Queues",
+      "state": "degraded",
+      "reason": "the read failed",
+      "docs": 0
+    }
+  ]
+}

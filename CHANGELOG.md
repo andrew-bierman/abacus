@@ -29,7 +29,8 @@ may change behavior, and patch versions are fixes and small additions.
   queries in the abacus state directory. `abacus search QUERY [--domain] [--limit] [--json]` prints
   the same hits (`schema_version` 1, exit codes 0/1/2). The core `SearchIndex` is built only from
   the reports the tabs already hold, so search runs no tool of its own. `queues --json` runs gain an
-  additive `workflow` field.
+  additive `workflow` field. `expires` durations point ahead (`expires>2h` is more than two hours from now);
+  `search_history` is a new config key (`off` keeps no query history).
 
 ### Changed
 

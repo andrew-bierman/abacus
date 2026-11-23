@@ -141,7 +141,7 @@ what needs attention, history). It is live as you type, groups the hits by domai
 `+N more` for the rest) and uses the same query grammar as the Tasks `/` filter: words, `"a phrase"`,
 `field:value`, `!field:value`, `status:open,blocked`, `priority:<=1`, `updated>7d`, `in:board`,
 `who:ada` (also `assignee:`, `author:`, `holder:`, `machine:`), `is:blocked`, `is:ready`,
-`is:stale`. A field a domain does not have excludes that domain, so `label:ui` finds tasks only.
+`is:stale`, `expires<30m`. A field a domain does not have excludes that domain, so `label:ui` finds tasks only. A duration on a time field points back (`updated>7d`: touched in the last week) except on `expires`, where it points ahead (`expires>2h`: more than two hours from now).
 
 | Key (while the box is open) | Action |
 | --- | --- |
@@ -155,9 +155,10 @@ what needs attention, history). It is live as you type, groups the hits by domai
 Search reads what each tab already holds; opening it runs nothing, except one read of a domain
 that never loaded (the Board, until its tab is first shown). A domain read longer ago than twice
 its refresh interval is marked "may be out of date". A domain that is not connected, still loading
-or unreadable is named in one muted line. The last 100 queries that led to a jump are kept in the
+or unreadable is named in one muted line, and a domain searched only in part says how (only recent changes for Tasks when the full list could not be read, only recent threads for a capped Board, the first 20,000 documents). The last 100 queries that led to a jump are kept in the
 abacus state directory (`search-history.json`, mode 0600, never in a tracker directory; a demo
-session keeps none). `abacus search "QUERY" [--domain D] [--limit N] [--json]` prints the same hits
+session keeps none). The queries are stored as plain text: `abacus config set search_history off`
+keeps none. If the history file is busy the jump still happens and the footer says it was not saved. `abacus search "QUERY" [--domain D] [--limit N] [--json]` prints the same hits
 (exit 0 with an answer, 1 when no domain could be searched, 2 for a bad invocation or query; nothing
 on stdout on a failure under `--json`).
 
