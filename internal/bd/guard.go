@@ -43,8 +43,14 @@ func readAllowed(a []string, dir string) bool {
 	if len(a) == 4 && a[0] == "--readonly" && a[1] == "show" && a[3] == "--json" && core.TaskIDRE.MatchString(a[2]) {
 		return true
 	}
+	// history of one task: the event log, newest first, bounded (the only flags are fixed).
+	if len(a) == 6 && a[0] == "--readonly" && a[1] == "history" && a[3] == "--events" && a[4] == "--json" && core.TaskIDRE.MatchString(a[2]) && historyLimitRE.MatchString(a[5]) {
+		return true
+	}
 	return slices.Equal(a, readVersion) || slices.Equal(a, readStatus) || slices.Equal(a, readList) || slices.Equal(a, readExport)
 }
+
+var historyLimitRE = regexp.MustCompile(`^--limit=[1-9][0-9]{0,2}$`)
 
 var prioRE = regexp.MustCompile(`^--priority=[0-4]$`)
 
