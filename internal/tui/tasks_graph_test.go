@@ -767,6 +767,24 @@ func TestGraphDropsMarksFromAReportThatPredatesTheSnapshot(t *testing.T) {
 	}
 }
 
+// Opening the Graph view on a stale report reads insights again, so the marks match what is shown.
+func TestOpeningTheGraphRefreshesStaleInsights(t *testing.T) {
+	snap := graphSnap(t, "graph-export-edges.jsonl")
+	s := graphAt(t, snap, 100, 32, "gr-ko8")
+	calls := 0
+	s.ins = fakeInsights{&calls}
+	s.insights = &core.InsightsReport{}
+	s.graph.insStart = goldenNow.Add(-time.Hour)
+	send(s, "esc")
+	_, cmd := s.Update(keyRunes("g"))
+	if cmd == nil || !s.insBusy {
+		t.Fatal("g into the graph with a stale report reads insights again")
+	}
+	if msg := cmd(); msg == nil || calls != 1 {
+		t.Errorf("the read ran %d times", calls)
+	}
+}
+
 // ---- colors ----
 
 // Without color the marks are text; with it, closed work is muted and the chain flag is accented.
