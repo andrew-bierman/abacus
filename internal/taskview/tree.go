@@ -19,8 +19,8 @@ import (
 // cannot push the title off a narrow screen: levels beyond the last few collapse into "… ".
 const MaxGuideWidth = 16
 
-// maxGuideLevels is how many ancestor levels a guide draws.
-const maxGuideLevels = 5
+// MaxGuideLevels is how many ancestor levels a guide draws at most; TreeOptions.GuideLevels may ask for fewer.
+const MaxGuideLevels = 5
 
 // Guide is the drawing prefix of a tree row. depth is 0 for a root; anc holds, for each ancestor
 // between the root and the parent, whether that ancestor was the last of its siblings (its line stops),
@@ -146,6 +146,9 @@ func (v *View) Foldable() []string {
 type TreeOptions struct {
 	ListOptions
 	Folded map[string]bool
+	// GuideLevels is how many ancestor levels the guides draw (1 to MaxGuideLevels; 0 means the
+	// maximum): a narrow screen asks for fewer so the title keeps its cells.
+	GuideLevels int
 }
 
 // Tree is the filtered, sorted tree. A task shows when it matches the preset and query, or when a
@@ -157,6 +160,10 @@ func (v *View) Tree(o TreeOptions) core.TaskTreeReport {
 	}
 	if o.Sort.Key == "" {
 		o.Sort = DefaultSort()
+	}
+	levels := o.GuideLevels
+	if levels <= 0 || levels > MaxGuideLevels {
+		levels = MaxGuideLevels
 	}
 	f := v.forest()
 	order := make([]row, 0, len(f.ids))
@@ -228,8 +235,8 @@ func (v *View) Tree(o TreeOptions) core.TaskTreeReport {
 		next := anc
 		if depth > 0 {
 			next = append(slices.Clone(anc), last)
-			if len(next) > maxGuideLevels {
-				next = next[len(next)-maxGuideLevels:]
+			if len(next) > levels {
+				next = next[len(next)-levels:]
 			}
 		}
 		for i, k := range vk {

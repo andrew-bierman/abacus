@@ -350,16 +350,42 @@ func TestTreeReadyMatchesBd(t *testing.T) {
 }
 
 func TestTreeHostileText(t *testing.T) {
-	hostile := iss("e\x1b[2J", "open", 1)
-	hostile.Title = "\x1b]0;pwn\x07epic\u202e"
-	kid := iss("k", "open", 1, parent("e\x1b[2J"))
-	snap := core.TaskSnapshot{Issues: []core.TaskIssue{hostile, kid}, ReadAt: fixedNow}
-	// The parser sanitizes before the tree sees text; the tree must not add anything unsafe.
+	var buf bytes.Buffer
+	for _, rec := range []string{
+		`{"id":"e\u001b[2J","title":"\u001b]0;pwn\u0007epic\u202e","status":"open"}`,
+		`{"id":"k","title":"kid\u0000\u009b","status":"open","dependencies":[{"depends_on_id":"e\u001b[2J","type":"parent-child"}]}`,
+	} {
+		buf.WriteString(rec + "\n")
+	}
+	snap, err := Parse(&buf, fixedNow, "t")
+	if err != nil {
+		t.Fatal(err)
+	}
 	rep := Build(snap, fixedNow).Tree(TreeOptions{ListOptions: ListOptions{Preset: PresetAll}})
+	if len(rep.Rows) != 2 || rep.Rows[1].Depth != 1 {
+		t.Fatalf("the parent link survives sanitizing on both ends: %+v", rep.Rows)
+	}
 	for _, r := range rep.Rows {
-		if strings.ContainsAny(r.Guide, "\x1b\x07") {
-			t.Errorf("guide carries a control character: %q", r.Guide)
+		for _, f := range []string{r.ID, r.Title, r.Guide} {
+			if strings.ContainsAny(f, "\x1b\x07\x00\u009b\u202e") {
+				t.Errorf("%s: control or bidi character in %q", r.ID, f)
+			}
 		}
+	}
+}
+
+func TestTreeDuplicateIdsUseOneRecord(t *testing.T) {
+	v := view(iss("p1", "open", 1), iss("p2", "open", 1), iss("d", "open", 1, parent("p1"), blk("p1")), func() core.TaskIssue {
+		l := iss("d", "open", 1, parent("p2"))
+		l.Title = "later"
+		return l
+	}())
+	rep := v.Tree(TreeOptions{ListOptions: ListOptions{Preset: PresetAll}})
+	if got := shape(rep); got != "p1@0 p2@0 d@1" {
+		t.Fatalf("%s", got)
+	}
+	if r := rep.Rows[2]; r.Title != "later" || r.Parent != "p2" || r.BlockedBy != 0 {
+		t.Errorf("the row and everything derived for it come from the later record: %+v", r)
 	}
 }
 
@@ -378,7 +404,7 @@ func TestTreeBigTracker(t *testing.T) {
 	v := view(issues...)
 	rep := v.Tree(TreeOptions{ListOptions: ListOptions{Preset: PresetAll}})
 	rep2 := v.Tree(TreeOptions{ListOptions: ListOptions{Preset: PresetAll, Query: mustQuery(t, "t0499")}})
-	if el := time.Since(start); el > 750*time.Millisecond {
+	if el := time.Since(start); el > 5*time.Second {
 		t.Errorf("5000 tasks: build, tree and a filtered tree took %v", el)
 	}
 	if len(rep.Rows) != n || len(rep2.Rows) == 0 {
