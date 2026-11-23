@@ -39,7 +39,7 @@ Detection has four states, and one exit-code rule covers all of them:
 | State | Meaning | `doctor` shows | Exit |
 |---|---|---|---|
 | `absent` | the binary is not found | nothing (listed by `version` only) | 0 |
-| `broken` | found, but `version` errors, exits non-zero or times out | a failing `installation` check | 1 |
+| `broken` | found, but `version` errors, exits non-zero or times out | a failing `tool` check | 1 |
 | `incompatible` | runs, but the `api_version` is unsupported or the output is unreadable | a `compatibility` warning | 0 |
 | `ready` | usable | the tool's own checks | 1 only if one is `fail` |
 
@@ -110,14 +110,30 @@ held, stale or free.
 - Override the binary with `ABACUS_BEADSLEASE_BIN`. The tool reads the coordination hub named
   in its own config, so run abacus with the environment you would use for beads-lease itself.
 
-## Vercel Board (`board` / `vb`)
+## Built-in tools: one resolver
+
+bd, lambe, beads-lease and the Board CLI are inside the binary (`internal/embedtools`, linked with
+`-tags embedtools`). `core.LocateFound` is the one resolver, first match wins: an explicit
+`ABACUS_BD_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_BEADSLEASE_BIN` or `ABACUS_BOARD_BIN`; the built-in
+copy, extracted to `$ABACUS_TOOLS_DIR/<content hash>/<name>` (default
+`$XDG_DATA_HOME/abacus/tools`, directory 0700, files 0700, owned by the user) and checked on every
+start; then, in a build without embedded tools only, the sidecar folders next to the executable and
+the `PATH`. An embedded build never reaches the sidecar or the `PATH` for a built-in tool: a failed
+extraction is an absent tool with the reason. Extraction is atomic and serialized by a lock file, and
+a hash mismatch against the manifest inside the binary fails closed. Child tools run with a private
+directory of links to the verified built-in copies first on `PATH`, so a tool that runs another
+finds the built-in one. `abacus licenses` prints the notices and license texts built into the file.
+
+## Vercel Board (`board`, built in)
 
 Verified against `@vercel/board` 0.54.0 (Apache-2.0) with its own `--help`, and its real `--json`
 output (`internal/board/testdata`). Provides the Board domain (read) and Board post/reply (write).
 
 - Identity (run with an environment that has no tokens, no team and no board setting): `board --help` must start with `board X.Y.Z: your Vercel team's message board` and
-  contain `usage: board <command>` and the version must be 0.54.0 or newer; anything else (the unrelated npm package `vb` included) is
-  reported as not Vercel Board and never run again. Lookup: `ABACUS_BOARD_BIN`, else `board`, else `vb`.
+  contain `usage: board <command>` and the version must be 0.54.0 or newer; anything else is
+  reported as not Vercel Board and never run again. The check runs on the extracted built-in
+  binary with a token-free environment. Lookup: `ABACUS_BOARD_BIN`, else the built-in `board`. The
+  unrelated npm package `vb` is never looked for or run.
 - Read argvs, element by element, optionally followed by `--url URL`: `channels list --json
   --limit N`, `read CHANNEL --json --limit N`, `read ID --json`, `tasks --json --limit N`
   (N 1-100). One Board read is at most 1 + 3 + 1 calls. Never `serve`, `tail`, `wait`, `inspect`

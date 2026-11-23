@@ -219,8 +219,8 @@ func (s *doctorSection) toolLines(ov core.Overview, iw int) []string {
 			where = th.Badge(KindWarn, san(t.Label())) // abacus's own copy is the problem, not the user
 		}
 		switch t.Where {
-		case "bundled":
-			where = th.Badge(KindOK, "bundled")
+		case "bundled", string(core.SourceEmbedded):
+			where = th.Badge(KindOK, san(t.Label()))
 		case "PATH", "override":
 			where = th.Badge(KindMuted, san(t.Where))
 		case string(core.SourceDemo):

@@ -11,7 +11,7 @@ import (
 
 // devRig is a rig whose cache is empty, so every fetch goes through the fake gh (and shows up in
 // its log), plus the output directory the script is pointed at.
-func newDevRig(t *testing.T) (*rig, string) {
+func newEmbedRig(t *testing.T) (*rig, string) {
 	t.Helper()
 	r := newRig(t, nil)
 	must(t, os.RemoveAll(filepath.Join(r.cache, "bd")))
@@ -19,7 +19,7 @@ func newDevRig(t *testing.T) (*rig, string) {
 }
 
 func (r *rig) dev(out string, args ...string) (string, error) {
-	return r.run("dev-bundle.sh", append([]string{"--platform", "linux-amd64", "--out", out}, args...)...)
+	return r.run("embed-tools.sh", append([]string{"--platform", "linux-amd64", "--out", out}, args...)...)
 }
 
 func (r *rig) ghLines() int {
@@ -43,13 +43,13 @@ func leftovers(t *testing.T, out string) []string {
 	return n
 }
 
-func TestDevBundleInstallsVerifiedToolsLicensesAndNotices(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsInstallsVerifiedToolsLicensesAndNotices(t *testing.T) {
+	r, out := newEmbedRig(t)
 	o, err := r.dev(out)
 	if err != nil {
 		t.Fatalf("%v\n%s", err, o)
 	}
-	if !strings.Contains(o, "Bundled tools: 1 of 1 verified") {
+	if !strings.Contains(o, "Tools: 1 of 1 verified") {
 		t.Fatalf("summary line missing:\n%s", o)
 	}
 	if b, _ := os.ReadFile(filepath.Join(out, "bd")); !strings.Contains(string(b), "fake bd") {
@@ -77,8 +77,8 @@ func TestDevBundleInstallsVerifiedToolsLicensesAndNotices(t *testing.T) {
 	}
 }
 
-func TestDevBundleFailsClosedOnAShaMismatchAndLeavesNothing(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsFailsClosedOnAShaMismatchAndLeavesNothing(t *testing.T) {
+	r, out := newEmbedRig(t)
 	p := filepath.Join(r.remote, "fake_linux_amd64.tar.gz")
 	b, _ := os.ReadFile(p)
 	b[len(b)-1] ^= 0xff
@@ -95,8 +95,8 @@ func TestDevBundleFailsClosedOnAShaMismatchAndLeavesNothing(t *testing.T) {
 	}
 }
 
-func TestDevBundleFailureLeavesAnExistingGoodInstallUntouched(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsFailureLeavesAnExistingGoodInstallUntouched(t *testing.T) {
+	r, out := newEmbedRig(t)
 	if o, err := r.dev(out); err != nil {
 		t.Fatalf("%v\n%s", err, o)
 	}
@@ -118,8 +118,8 @@ func TestDevBundleFailureLeavesAnExistingGoodInstallUntouched(t *testing.T) {
 	}
 }
 
-func TestDevBundleSecondRunDownloadsNothing(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsSecondRunDownloadsNothing(t *testing.T) {
+	r, out := newEmbedRig(t)
 	if o, err := r.dev(out); err != nil {
 		t.Fatalf("%v\n%s", err, o)
 	}
@@ -145,10 +145,10 @@ func TestDevBundleSecondRunDownloadsNothing(t *testing.T) {
 	}
 }
 
-func TestDevBundleCheckOnlyVerifies(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsCheckOnlyVerifies(t *testing.T) {
+	r, out := newEmbedRig(t)
 	o, err := r.dev(out, "--check")
-	if err == nil || !strings.Contains(o, "PROBLEM  bd: not installed") {
+	if err == nil || !strings.Contains(o, "PROBLEM  bd: not built in yet") {
 		t.Fatalf("--check on an empty dir must fail: %v\n%s", err, o)
 	}
 	if _, err := os.Stat(out); !os.IsNotExist(err) || r.ghLines() != 0 {
@@ -159,7 +159,7 @@ func TestDevBundleCheckOnlyVerifies(t *testing.T) {
 	}
 	calls := r.ghLines()
 	o, err = r.dev(out, "--check")
-	if err != nil || !strings.Contains(o, "Bundled tools: 1 of 1 verified") {
+	if err != nil || !strings.Contains(o, "Tools: 1 of 1 verified") {
 		t.Fatalf("%v\n%s", err, o)
 	}
 	must(t, os.WriteFile(filepath.Join(out, "bd"), []byte("#!/bin/sh\necho evil\n"), 0o755))
@@ -172,13 +172,13 @@ func TestDevBundleCheckOnlyVerifies(t *testing.T) {
 	}
 }
 
-func TestDevBundleRefusesAPlatformWithNoPin(t *testing.T) {
-	r, out := newDevRig(t)
-	o, err := r.run("dev-bundle.sh", "--platform", "windows-amd64", "--out", out)
+func TestEmbedToolsRefusesAPlatformWithNoPin(t *testing.T) {
+	r, out := newEmbedRig(t)
+	o, err := r.run("embed-tools.sh", "--platform", "windows-amd64", "--out", out)
 	if err == nil || !strings.Contains(o, "has no pin for windows-amd64") {
 		t.Fatalf("%v\n%s", err, o)
 	}
-	o, err = r.run("dev-bundle.sh", "--platform", "../etc", "--out", out)
+	o, err = r.run("embed-tools.sh", "--platform", "../etc", "--out", out)
 	if err == nil || !strings.Contains(o, "bad platform") {
 		t.Fatalf("%v\n%s", err, o)
 	}
@@ -187,8 +187,8 @@ func TestDevBundleRefusesAPlatformWithNoPin(t *testing.T) {
 	}
 }
 
-func TestDevBundleOneToolWithoutAPinInstallsNothing(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsOneToolWithoutAPinInstallsNothing(t *testing.T) {
+	r, out := newEmbedRig(t)
 	var m map[string]any
 	b, _ := os.ReadFile(r.manifest)
 	must(t, json.Unmarshal(b, &m))
@@ -217,9 +217,14 @@ func TestTheRealManifestPinsEveryToolForEveryPlatform(t *testing.T) {
 	must(t, err)
 	var m struct {
 		Tools []struct {
-			Name   string
-			Assets map[string]struct{ Asset, Sha256, Member string }
-			Lic    string `json:"license_sha256"`
+			Name      string
+			Kind      string
+			Integrity string `json:"npm_integrity"`
+			Assets    map[string]struct {
+				Asset, Sha256, Member string
+				BunTarget             string `json:"bun_target"`
+			}
+			Lic string `json:"license_sha256"`
 		}
 	}
 	must(t, json.Unmarshal(b, &m))
@@ -236,6 +241,12 @@ func TestTheRealManifestPinsEveryToolForEveryPlatform(t *testing.T) {
 		}
 		for _, p := range platforms {
 			a, ok := tool.Assets[p]
+			if tool.Kind == "npm-bun" { // built from its npm package: pinned by integrity, compiled per target
+				if !ok || !strings.HasPrefix(a.BunTarget, "bun-") || !strings.HasPrefix(tool.Integrity, "sha512-") {
+					t.Errorf("%s has no complete build pin for %s", tool.Name, p)
+				}
+				continue
+			}
 			if !ok || a.Asset == "" || a.Member == "" || !hex64.MatchString(a.Sha256) {
 				t.Errorf("%s has no complete pin for %s (run scripts/update-bundled-tools.sh)", tool.Name, p)
 			}
@@ -252,7 +263,7 @@ func TestPackageRefusesAToolThatDidNotLandInBundled(t *testing.T) {
 		return []member{{name: "./bd", body: ""}, {name: "./LICENSE", body: "FAKE LICENSE TEXT\n"}}
 	})
 	out, err := empty.pkg("--platforms", "linux-amd64")
-	if err == nil || !strings.Contains(out, "missing from bundled/") {
+	if err == nil || !strings.Contains(out, "packing the tools failed") {
 		t.Fatalf("an empty executable must stop the build: %v\n%s", err, out)
 	}
 	if len(empty.outFiles()) != 0 {
@@ -269,14 +280,14 @@ func writeTree(t *testing.T, dir string, files map[string]string) {
 	}
 }
 
-func TestDevBundleRefusesAnOutputDirectoryThatHoldsForeignFiles(t *testing.T) {
+func TestEmbedToolsRefusesAnOutputDirectoryThatHoldsForeignFiles(t *testing.T) {
 	for name, files := range map[string]map[string]string{
 		"plain files":         {"precious.txt": "keep me", "sub/notes.md": "and me"},
 		"notices but no pins": {"THIRD_PARTY_NOTICES.md": "x", "precious.txt": "keep me"},
 		"pins but no notices": {".pins/bd": "x", "precious.txt": "keep me"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			r, out := newDevRig(t)
+			r, out := newEmbedRig(t)
 			writeTree(t, out, files)
 			o, err := r.dev(out)
 			if err == nil || !strings.Contains(o, "is not empty and does not look like an abacus bundle") {
@@ -297,8 +308,8 @@ func TestDevBundleRefusesAnOutputDirectoryThatHoldsForeignFiles(t *testing.T) {
 	}
 }
 
-func TestDevBundleRefusesAnOutputThatIsAFileOrASymlink(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsRefusesAnOutputThatIsAFileOrASymlink(t *testing.T) {
+	r, out := newEmbedRig(t)
 	must(t, os.MkdirAll(filepath.Dir(out), 0o755))
 	must(t, os.WriteFile(out, []byte("a file"), 0o644))
 	if o, err := r.dev(out); err == nil || !strings.Contains(o, "not a directory") {
@@ -316,8 +327,8 @@ func TestDevBundleRefusesAnOutputThatIsAFileOrASymlink(t *testing.T) {
 	}
 }
 
-func TestDevBundleAcceptsAnEmptyOutputDirectoryAndUpgradesItsOwnInstall(t *testing.T) {
-	r, out := newDevRig(t)
+func TestEmbedToolsAcceptsAnEmptyOutputDirectoryAndUpgradesItsOwnInstall(t *testing.T) {
+	r, out := newEmbedRig(t)
 	must(t, os.MkdirAll(out, 0o755))
 	if o, err := r.dev(out); err != nil {
 		t.Fatalf("an empty --out is fine: %v\n%s", err, o)
@@ -332,16 +343,16 @@ func TestDevBundleAcceptsAnEmptyOutputDirectoryAndUpgradesItsOwnInstall(t *testi
 func (r *rig) failStageMove() {
 	bin := filepath.Join(r.root, "bin")
 	must(r.t, os.WriteFile(filepath.Join(bin, "mv"), []byte(`#!/bin/sh
-case "$1" in *.bundled.*.old) ;; *.bundled.*) echo "fake mv: refusing to move the stage" >&2; exit 1 ;; esac
+case "$1" in *.tools.*.old) ;; *.tools.*) echo "fake mv: refusing to move the stage" >&2; exit 1 ;; esac
 exec /bin/mv "$@"
 `), 0o755))
 }
 
-func TestDevBundleRestoresThePreviousInstallWhenTheSwapFails(t *testing.T) {
+func TestEmbedToolsRestoresThePreviousInstallWhenTheSwapFails(t *testing.T) {
 	if _, err := os.Stat("/bin/mv"); err != nil {
 		t.Skip("no /bin/mv")
 	}
-	r, out := newDevRig(t)
+	r, out := newEmbedRig(t)
 	if o, err := r.dev(out); err != nil {
 		t.Fatalf("%v\n%s", err, o)
 	}
@@ -364,9 +375,9 @@ func TestDevBundleRestoresThePreviousInstallWhenTheSwapFails(t *testing.T) {
 	}
 }
 
-func TestDevBundleVerifiedAlsoChecksTheLicenseModesAndStaleTools(t *testing.T) {
+func TestEmbedToolsVerifiedAlsoChecksTheLicenseModesAndStaleTools(t *testing.T) {
 	setup := func(t *testing.T) (*rig, string) {
-		r, out := newDevRig(t)
+		r, out := newEmbedRig(t)
 		if o, err := r.dev(out); err != nil {
 			t.Fatalf("%v\n%s", err, o)
 		}
@@ -425,9 +436,9 @@ func TestDevBundleVerifiedAlsoChecksTheLicenseModesAndStaleTools(t *testing.T) {
 
 func TestScriptsRefuseUnsafeToolNames(t *testing.T) {
 	for _, name := range []string{"../evil", "a/b", "Bd", "bd x", ""} {
-		r, out := newDevRig(t)
+		r, out := newEmbedRig(t)
 		r.editManifest(func(tool map[string]any) { tool["name"] = name })
-		for _, script := range []string{"dev-bundle.sh", "package-release.sh"} {
+		for _, script := range []string{"embed-tools.sh", "package-release.sh"} {
 			args := []string{"--platform", "linux-amd64", "--out", out}
 			if script == "package-release.sh" {
 				args = []string{"0.0.1", "--out", r.out, "--platforms", "linux-amd64"}

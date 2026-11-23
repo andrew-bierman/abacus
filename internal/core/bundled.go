@@ -1,41 +1,34 @@
 package core
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"path/filepath"
+	"runtime"
 	"strings"
-	"sync/atomic"
+	"syscall"
 )
 
-// abacus brings its own copies of bd, lambe and beads-lease (a release archive carries them in
-// bundled/ beside the program), so a missing tool is never the user's job: it is either a damaged
-// or moved download (release builds) or an unfinished dev setup (go build). This file owns the
-// words for both, so every surface says the same thing.
+// abacus carries its own bd, lambe, beads-lease and Vercel Board CLI inside the binary (see
+// embedded.go), so a missing tool is never the user's job to install. This file owns the words for
+// the two ways one can still be unusable: a development build that does not include it, and a
+// built-in copy that could not be set up. Every surface says the same thing through these.
 
-// DevBundleCommand sets a locally built binary up with its own tools.
-const DevBundleCommand = "scripts/dev-bundle.sh"
+// DevBuildLine is the one sentence for a development build. It appears only in Doctor's
+// tool summary, never in a domain tab.
+const DevBuildLine = "Development build: tools are not built in; build with make build"
 
-var devBuild atomic.Bool
+// bundledDomain is the domain each built-in tool carries; a tool that is unusable already explains
+// its domain, so the domain is not listed a second time.
+var bundledDomain = map[string]DomainID{"bd": DomainTasks, "beads-lease": DomainLeases, "lambe": DomainQueues, "board": DomainBoard}
 
-// SetBuildVersion tells core which kind of build this is: "dev" (or empty, or a -dev suffix) is a
-// locally built binary; anything else is a release. The CLI calls it once at start-up; it is safe
-// to call and to read from any goroutine. A zero value reads as a release.
-func SetBuildVersion(v string) {
-	devBuild.Store(v == "" || v == "dev" || strings.HasSuffix(v, "-dev"))
-}
-
-// IsDevBuild reports whether this is a locally built binary (no release archive around it).
-func IsDevBuild() bool { return devBuild.Load() }
-
-// bundledDomain is the Tasks, Leases and Queues domain each bundled tool carries; a bundled tool
-// that is unusable already explains these domains, so they are not listed a second time.
-var bundledDomain = map[string]DomainID{"bd": DomainTasks, "beads-lease": DomainLeases, "lambe": DomainQueues}
-
-// optionalAdds names what an optional, not bundled tool adds, by module ID.
+// optionalAdds names what a tool that nothing else needs adds, by module ID.
 var optionalAdds = map[string]string{
 	"board": "optional: adds the Board tab (channels, threads and tasks); everything else works without it",
 }
 
-// IsBundledTool reports whether abacus ships tool itself.
+// IsBundledTool reports whether abacus carries tool itself.
 func IsBundledTool(tool string) bool {
 	for _, t := range KnownTools {
 		if t == tool {
@@ -45,17 +38,36 @@ func IsBundledTool(tool string) bool {
 	return false
 }
 
-// BundledProblem is the one sentence for a bundled tool abacus cannot use. refused is the specific
-// reason a copy that exists was turned down ("world-writable", "not executable", ...), or "" when
-// the copy is simply not there.
+// bundledWhat says what is wrong with a built-in tool. refused is the specific reason a copy was
+// turned down, or "" when there is none.
+func bundledWhat(tool, refused string) string {
+	switch {
+	case !EmbeddedEnabled():
+		return fmt.Sprintf("%s is not available in this development build.", tool)
+	case refused == "":
+		return fmt.Sprintf("The built-in %s could not be set up.", tool)
+	}
+	return fmt.Sprintf("The built-in %s could not be set up: %s.", tool, strings.TrimSuffix(refused, "."))
+}
+
+// bundledFix is the one user-level fix: a folder abacus may write to, or a fresh download. It is
+// never an install. A development build has none to offer.
+func bundledFix(refused string) string {
+	switch {
+	case !EmbeddedEnabled():
+		return ""
+	case strings.Contains(refused, damagedMark):
+		return "This copy of abacus is damaged; download it again."
+	}
+	return "Choose a folder you can write to with " + ToolsDirEnv + "=<folder>, then press r."
+}
+
+// BuiltInFix is the one user-level fix for an absent built-in tool whose detail is given.
+func BuiltInFix(detail string) string { return bundledFix(refusedReason(detail)) }
+
+// BundledProblem is the sentence for a built-in tool abacus cannot use.
 func BundledProblem(tool, refused string) string {
-	if IsDevBuild() {
-		return fmt.Sprintf("abacus's own %s is not set up for this build: run %s (or make bundle) in the abacus source folder.", tool, DevBundleCommand)
-	}
-	if refused != "" {
-		return fmt.Sprintf("abacus's own copy of %s cannot be used (%s). Re-extract the download and keep the folder together.", tool, refused)
-	}
-	return fmt.Sprintf("abacus's own copy of %s is damaged or was moved. Re-extract the download and keep the folder together.", tool)
+	return strings.TrimSpace(bundledWhat(tool, refused) + " " + bundledFix(refused))
 }
 
 // refusedMarker is how LocateFound words a refused bundled copy inside an absent detail.
@@ -71,7 +83,7 @@ func refusedReason(detail string) string {
 }
 
 // AbsentSentence is what to show for a tool that was not located, in place of "not found": the
-// bundled-tool problem for one abacus ships, the optional note for one it does not, else detail.
+// built-in problem for one abacus carries, the optional note for one it does not, else detail.
 func AbsentSentence(tool, detail string) string {
 	if IsBundledTool(tool) {
 		return BundledProblem(tool, refusedReason(detail))
@@ -82,46 +94,56 @@ func AbsentSentence(tool, detail string) string {
 	return detail
 }
 
-// HowToConnectFor is the fix message shown for a domain with no usable provider. It may name the
-// provider command because it helps the user fix a provider. The bundled-tool texts are computed
-// from the current build kind on every call, so there is no shared state to race on.
-func HowToConnectFor(d DomainID) string {
-	switch d {
-	case DomainBoard:
-		return HowToConnectBoard
-	case DomainTasks:
-		return BundledProblem("bd", "")
-	case DomainLeases:
-		return BundledProblem("beads-lease", "")
-	case DomainQueues:
-		return BundledProblem("lambe", "")
+// toolOfDomain is the built-in tool behind a domain.
+func toolOfDomain(d DomainID) (string, bool) {
+	for tool, dom := range bundledDomain {
+		if dom == d {
+			return tool, true
+		}
 	}
-	return ""
+	return "", false
 }
 
+// howToConnectFor is the text shown for a domain with no usable provider. reason is what pick
+// found: when it already says what is wrong, only the fix is added; with no reason it says both.
+// Nothing here says to install anything.
+func howToConnectFor(d DomainID, reason string) string {
+	tool, ok := toolOfDomain(d)
+	switch {
+	case !ok:
+		return ""
+	case reason == "":
+		return BundledProblem(tool, "")
+	}
+	return bundledFix(reason)
+}
+
+// HowToConnectFor is the text for a domain with no usable provider and no more specific reason.
+func HowToConnectFor(d DomainID) string { return howToConnectFor(d, "") }
+
 // HowToConnectInsights is shown when no graph-analysis provider is available. The analysis runs
-// inside abacus on the tracker bd keeps, so the fix is about bd (a release and a dev build word it
-// differently).
+// inside abacus on the tracker bd keeps, so the fix is about bd.
 func HowToConnectInsights() string {
 	return "Graph insights are computed inside abacus from the tracker. " + BundledProblem("bd", "")
 }
 
-// BundledSummary is the self-contained check: how many of the tools abacus ships were found as its
-// own verified copies. Additive to the doctor and version reports.
+// BundledSummary is the self-contained check: how many of abacus's built-in tools are ready.
+// Additive to the doctor and version reports.
 type BundledSummary struct {
 	Total     int      `json:"total"`
-	Verified  int      `json:"verified"`            // found as abacus's own copy (bundled)
-	Elsewhere []string `json:"elsewhere,omitempty"` // usable, but from PATH or an override
+	Verified  int      `json:"verified"`            // ready as abacus's own built-in copy
+	Elsewhere []string `json:"elsewhere,omitempty"` // usable, but from an override or a development build's PATH
 	Unusable  []string `json:"unusable,omitempty"`  // absent, broken or incompatible
+	Embedded  bool     `json:"embedded"`            // this binary carries its tools
 	Line      string   `json:"line"`
 }
 
-// Complete means every bundled tool is usable from some source.
+// Complete means every built-in tool is usable from some source.
 func (b BundledSummary) Complete() bool { return len(b.Unusable) == 0 }
 
-// SummarizeBundled counts the bundled tools among mods. A demo session has nothing to verify.
+// SummarizeBundled counts the built-in tools among mods. A demo session has nothing to check.
 func SummarizeBundled(mods []ModuleReport) BundledSummary {
-	var b BundledSummary
+	b := BundledSummary{Embedded: EmbeddedEnabled()}
 	demo := 0
 	for _, m := range mods {
 		if !IsBundledTool(m.ID) {
@@ -134,7 +156,7 @@ func SummarizeBundled(mods []ModuleReport) BundledSummary {
 			b.Unusable = append(b.Unusable, m.ID)
 		case d.Source == SourceDemo:
 			demo++
-		case d.Source == SourceBundled:
+		case d.Source == SourceEmbedded:
 			b.Verified++
 		default:
 			b.Elsewhere = append(b.Elsewhere, m.ID)
@@ -142,11 +164,11 @@ func SummarizeBundled(mods []ModuleReport) BundledSummary {
 	}
 	switch {
 	case demo > 0 && demo == b.Total-len(b.Unusable):
-		b.Line = "Bundled tools: demo data, nothing to verify"
-	case len(b.Elsewhere) == 0 && len(b.Unusable) == 0:
-		b.Line = fmt.Sprintf("Bundled tools: %d of %d verified", b.Verified, b.Total)
+		b.Line = "Built-in tools: demo data, nothing to check"
+	case !b.Embedded:
+		b.Line = DevBuildLine
 	default:
-		b.Line = fmt.Sprintf("Bundled tools: %d of %d verified", b.Verified, b.Total)
+		b.Line = fmt.Sprintf("Built-in tools: %d of %d ready", b.Verified, b.Total)
 		if n := len(b.Elsewhere); n > 0 {
 			b.Line += fmt.Sprintf("; %d using your own copy (%s)", n, strings.Join(b.Elsewhere, ", "))
 		}
@@ -157,26 +179,44 @@ func SummarizeBundled(mods []ModuleReport) BundledSummary {
 	return b
 }
 
-// bundledNote explains where a bundled tool came from when it is not abacus's own verified copy.
+// bundledNote explains where a built-in tool came from when it is not abacus's own copy.
 func bundledNote(id string, d Detection) string {
-	switch d.Source {
-	case SourcePATH:
-		why := "abacus's own copy was not found next to abacus"
-		fix := "keep the download folder together to use it"
-		if IsDevBuild() {
-			why, fix = "abacus's own copy is not set up for this build", "run "+DevBundleCommand+" to use it"
-		}
-		if d.Ignored != "" {
-			why = "abacus's own copy cannot be used (" + d.Ignored + ")"
-			if !IsDevBuild() {
-				fix = "re-extract the download to restore it"
-			}
-		}
-		n := fmt.Sprintf("%s; using the %s on your PATH", why, id)
-		if d.Version != "" {
-			n += " " + d.Version
-		}
-		return n + " instead (" + fix + ")"
+	switch {
+	case d.Source == SourceOverride:
+		return "using the copy you chose with the ABACUS_*_BIN setting instead of the built-in one"
+	case d.Ignored != "":
+		return "the copy next to abacus was not used (" + d.Ignored + ")"
 	}
 	return ""
+}
+
+// BuiltInExecProblem says, in plain words, why a built-in tool could not even be started: the
+// folder it was unpacked into does not allow running programs (a noexec mount), or the system
+// blocked it (macOS quarantine or Gatekeeper, a security tool), or the system killed it with a
+// signal right away. "" when path is not a built-in copy or the failure is something else (a timeout,
+// a normal exit code). The one shared wording; every module's Detect uses it.
+func BuiltInExecProblem(path string, exit int, err error) string {
+	if !IsBuiltInPath(path) || errors.Is(err, ErrTimedOut) || errors.Is(err, ErrCanceled) || errors.Is(err, ErrOutputTooLarge) {
+		return ""
+	}
+	var why string
+	switch {
+	case err != nil:
+		low := strings.ToLower(err.Error())
+		if !(errors.Is(err, fs.ErrPermission) || errors.Is(err, syscall.EACCES) || errors.Is(err, syscall.EPERM) || errors.Is(err, syscall.ENOEXEC) ||
+			strings.Contains(low, "permission denied") || strings.Contains(low, "not permitted") || strings.Contains(low, "exec format")) {
+			return ""
+		}
+		why = plainWhy(err)
+	case exit < 0:
+		why = "it was stopped by a signal"
+	default:
+		return ""
+	}
+	dir := filepath.Dir(path)
+	msg := fmt.Sprintf("The built-in %s could not be started from %s (%s). This folder may not allow running programs, or the system blocked it: choose another folder with %s=<folder>, then press r.", filepath.Base(path), dir, why, ToolsDirEnv)
+	if runtime.GOOS == "darwin" {
+		msg += " If macOS blocked it, you can also run: xattr -dr com.apple.quarantine " + dir
+	}
+	return msg
 }

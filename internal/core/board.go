@@ -15,14 +15,14 @@ import (
 	"unicode"
 )
 
-// HowToConnectBoard is shown when the Vercel Board CLI is missing or is not Vercel Board. It
-// names the real package on purpose: `vb` on npm is an unrelated project.
-const HowToConnectBoard = "The Board tab is optional: it adds channels, threads and tasks from a Vercel Board, and nothing else needs it. To turn it on, install the Vercel Board CLI with: npm i -g @vercel/board (never `npm i vb` or `npx vb`: that is a different package). Docs: https://github.com/vercel/board"
+// HowToConnectBoard is shown when the Board tab has no board to read yet: the Board CLI is built
+// into abacus, so the only thing missing is which board.
+const HowToConnectBoard = BoardNotSetUp
 
-// The two "installed but not usable yet" states of a Board CLI: the reason, and the exact next step.
+// The two "built in but not usable yet" states of the Board CLI: the reason, and the exact next step.
 const (
 	BoardNotSetUpReason = "No board is selected yet."
-	BoardNotSetUp       = "Point abacus at one with: abacus config set board_url <url> (a local board from `vb serve` prints its URL), or set BOARD_URL. A team board needs `vercel login` first."
+	BoardNotSetUp       = "Point abacus at a board with: abacus config set board_url <url> (or set BOARD_URL). A team board needs `vercel login` first."
 
 	BoardNotSignedInReason = "Not signed in to the board."
 	BoardNotSignedIn       = "Run `vercel login`, or set BOARD_TOKEN, then press r."

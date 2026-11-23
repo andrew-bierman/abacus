@@ -125,8 +125,9 @@ differ by a refresh.)
 - **Insights.** `v` switches to the graph insights panel: the counts bar, the next pick, the issues
   that block the most, the critical path and dependency cycles. Insights are read on start and on
   `r`, not on a timer, because each read analyzes the whole tracker. Without an insights provider the panel says it is not connected and what is
-  wrong with abacus's own bd (a release: damaged or moved, re-extract; a dev build: run
-  `scripts/dev-bundle.sh`).
+  wrong with abacus's own bd (a built-in copy that could not be set up: choose a folder with
+  `ABACUS_TOOLS_DIR`, or download abacus again if it is damaged; a development build says its
+  bd is not available).
 - **Live refresh.** Tasks checks the tracker about every 5 seconds without running anything: an
   embedded tracker keeps a small manifest file that changes on every write and never on a read, so
   abacus compares it with the one kept from the last full read and reads the whole tracker only when
@@ -385,10 +386,11 @@ A provider that was found but cannot be used (`broken`, `incompatible`) leaves i
 detected provider.
 
 The Doctor tab (the one place providers are listed by name) leads with "Ready" or "Needs attention",
-one line per area, a "Bundled tools: 4 of 4 verified" line, and each tool with where it was found
-(`bundled`, `PATH`, `override`, `demo`; or `unavailable` for abacus's own copy that cannot be used,
-`optional` for the Board CLI, which abacus does not ship) and its version, then the detailed checks.
-"Ready" needs bd, lambe and beads-lease usable. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
+one line per area, a "Built-in tools: 4 of 4 ready" line (a development build says "Development
+build: tools are not built in; build with make build" instead), and each tool with where it was
+found (`built in`, `override`, `demo`; `bundled` or `PATH` in a development build; or `unavailable`
+for a built-in copy that cannot be set up) and its version, then the detailed checks.
+"Ready" needs bd, lambe and beads-lease usable; the Board CLI, also built in, never blocks it. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo), Tasks
 checks every 5 seconds while its tab is shown (see "Live refresh"), other modules every 30 seconds.

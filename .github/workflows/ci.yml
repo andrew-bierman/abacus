@@ -37,3 +37,12 @@ jobs:
         run: |
           mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_CONFIG_HOME" "$XDG_DATA_HOME"
           go test ./...
+      # The embedtools build needs generated blobs (fetched with gh, built with npm and bun), which
+      # this job does not make: the script says so and skips. Run it locally after make build.
+      - name: tagged build (skips without blobs)
+        env:
+          HOME: ${{ runner.temp }}/home
+          XDG_STATE_HOME: ${{ runner.temp }}/state
+          XDG_CONFIG_HOME: ${{ runner.temp }}/config
+          XDG_DATA_HOME: ${{ runner.temp }}/data
+        run: scripts/check-embedtools.sh

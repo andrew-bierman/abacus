@@ -1,0 +1,8 @@
+{
+  "name": "abacus-board-build",
+  "private": true,
+  "description": "Build-time only: pins the Vercel Board CLI and its whole dependency tree for scripts/embed-tools.sh. Re-pin with scripts/update-bundled-tools.sh board VERSION.",
+  "dependencies": {
+    "@vercel/board": "0.54.0"
+  }
+}

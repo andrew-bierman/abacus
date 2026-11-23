@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -92,6 +93,7 @@ func VersionReport(version string, entries []Entry) Report {
 // check; an incompatible tool is a warn.
 func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 	r := newReport(version)
+	ClearEmbeddedFailures() // a Doctor run tries a failed built-in tool again
 	dom := readDomainsLite(ctx, entries)
 	ov := overviewFrom(entries, dom)
 	r.Overview = &ov
@@ -105,7 +107,7 @@ func DoctorReport(ctx context.Context, version string, entries []Entry) Report {
 			m := base(e)
 			switch e.Detection.State {
 			case Broken:
-				m.Checks = []Check{{Name: "installation", Status: StatusFail, Detail: e.Detection.Detail}}
+				m.Checks = []Check{{Name: "tool", Status: StatusFail, Detail: e.Detection.Detail}}
 			case Incompatible:
 				m.Checks = []Check{{Name: "compatibility", Status: StatusWarn, Detail: e.Detection.Detail}}
 			default:
@@ -168,7 +170,7 @@ func ReadDoctor(tool string, out []byte, exit int, err error) []Check {
 	}
 	failed := false
 	for i := range raw {
-		raw[i].Name, raw[i].Detail, raw[i].Fix = Sanitize(raw[i].Name), Sanitize(raw[i].Detail), Sanitize(raw[i].Fix)
+		raw[i].Name, raw[i].Detail, raw[i].Fix = Sanitize(raw[i].Name), Sanitize(raw[i].Detail), builtInFix(Sanitize(raw[i].Fix))
 		raw[i].Status = raw[i].Status.Normalize()
 		failed = failed || raw[i].Status == StatusFail
 	}
@@ -176,4 +178,11 @@ func ReadDoctor(tool string, out []byte, exit int, err error) []Check {
 		raw = append(raw, Check{Name: name, Status: StatusFail, Detail: fmt.Sprintf("exited %d without reporting a failed check", exit)})
 	}
 	return raw
+}
+
+// builtInFix rewrites a built-in tool's own advice to run one of its commands: the built-in tools
+// are not on the user's PATH, so the step to take is abacus's own setup.
+func builtInFix(fix string) string {
+	fix = strings.ReplaceAll(fix, " (or pass -config FILE)", "")
+	return strings.ReplaceAll(fix, "`lambe init`", "abacus setup")
 }

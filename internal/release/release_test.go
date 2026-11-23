@@ -10,9 +10,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/andrew-bierman/abacus/internal/embedtools"
+	"github.com/klauspost/compress/zstd"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -126,7 +130,7 @@ if [ -n "$outfile" ]; then cp "$src" "$outfile"; else cp "$src" "$outdir/$name";
 `), 0o755))
 	r.env = append(os.Environ(),
 		"PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"),
-		"HOME="+r.root, "GOMODCACHE="+goEnv(t, "GOMODCACHE"), "GOCACHE="+goEnv(t, "GOCACHE"),
+		"HOME="+r.root, "ABACUS_EMBED_BLOBS_DIR="+filepath.Join(r.root, "blobs"), "GOMODCACHE="+goEnv(t, "GOMODCACHE"), "GOCACHE="+goEnv(t, "GOCACHE"),
 		"GOFLAGS=-mod=mod", "FAKE_GH_REMOTE="+r.remote, "FAKE_GH_LOG="+filepath.Join(r.root, "gh.log"),
 		"ABACUS_BUNDLE_MANIFEST="+r.manifest, "ABACUS_BUNDLE_CACHE="+r.cache, "ABACUS_PACKAGE_PREBUILT_BIN="+prebuilt)
 	return r
@@ -215,7 +219,7 @@ func TestPackageUntouchedArchivePasses(t *testing.T) {
 		t.Fatalf("%v\n%s", err, out)
 	}
 	files := strings.Join(r.outFiles(), " ")
-	if files != "SHA256SUMS abacus_0.0.1_linux_amd64.tar.gz" {
+	if files != "EMBEDDED_TOOLS.md SHA256SUMS abacus_0.0.1_linux_amd64.tar.gz" {
 		t.Fatalf("out: %s", files)
 	}
 	if b, _ := os.ReadFile(filepath.Join(r.out, "SHA256SUMS")); strings.Contains(string(b), "stale") || !strings.Contains(string(b), "abacus_0.0.1_linux_amd64.tar.gz") {
@@ -225,20 +229,56 @@ func TestPackageUntouchedArchivePasses(t *testing.T) {
 	dir := t.TempDir()
 	must(t, exec.Command("tar", "-xzf", filepath.Join(r.out, "abacus_0.0.1_linux_amd64.tar.gz"), "-C", dir).Run())
 	base := filepath.Join(dir, "abacus_0.0.1_linux_amd64")
-	if b, _ := os.ReadFile(filepath.Join(base, "bundled", "bd")); !strings.Contains(string(b), "fake bd") {
-		t.Fatalf("bundled/bd: %q", b)
-	}
 	if b, _ := os.ReadFile(filepath.Join(base, "third_party", "bd", "LICENSE")); string(b) != r.license {
 		t.Fatalf("license not verbatim: %q", b)
 	}
-	fi, _ := os.Stat(filepath.Join(base, "bundled", "bd"))
-	if fi.Mode().Perm()&0o022 != 0 || fi.Mode().Perm()&0o100 == 0 {
-		t.Fatalf("bundled mode %v", fi.Mode().Perm())
-	}
-	for _, f := range []string{"THIRD_PARTY_NOTICES.md", "LICENSE", "README.md", "abacus", "third_party/bundled-tools.json"} {
-		if _, err := os.Stat(filepath.Join(base, f)); err != nil {
-			t.Errorf("missing %s", f)
+	// The archive is one binary plus notices: no sidecar folder, no scripts, no manifest, no README.
+	listing, err := exec.Command("tar", "-tzf", filepath.Join(r.out, "abacus_0.0.1_linux_amd64.tar.gz")).Output()
+	must(t, err)
+	var members []string
+	for _, l := range strings.Split(strings.TrimSpace(string(listing)), "\n") {
+		if !strings.HasSuffix(l, "/") {
+			members = append(members, strings.TrimPrefix(l, "abacus_0.0.1_linux_amd64/"))
 		}
+	}
+	sort.Strings(members)
+	if got := strings.Join(members, " "); got != "LICENSE THIRD_PARTY_NOTICES.md abacus third_party/bd/LICENSE third_party/bv/LICENSE" {
+		t.Fatalf("archive files: %s", got)
+	}
+	fi, _ := os.Stat(filepath.Join(base, "abacus"))
+	if fi.Mode().Perm() != 0o755 {
+		t.Fatalf("abacus mode %v", fi.Mode().Perm())
+	}
+	// The notices in the archive are the very file embedded in the binary's blob set, and the blob
+	// round-trips to the verified executable.
+	blobs := filepath.Join(r.root, "blobs", "linux-amd64")
+	an, _ := os.ReadFile(filepath.Join(base, "THIRD_PARTY_NOTICES.md"))
+	bn, _ := os.ReadFile(filepath.Join(blobs, "THIRD_PARTY_NOTICES.md"))
+	if len(an) == 0 || !bytes.Equal(an, bn) {
+		t.Fatal("the archive notices differ from the embedded ones")
+	}
+	mb, err := os.ReadFile(filepath.Join(blobs, "manifest.json"))
+	must(t, err)
+	m, err := embedtools.Parse(mb)
+	must(t, err)
+	tl, ok := m.Tool("bd")
+	if !ok || tl.SHA256 != sum([]byte("#!/bin/sh\necho fake bd\n")) || tl.Version != "1.0.0" || tl.LicenseFile != "licenses/bd/LICENSE" {
+		t.Fatalf("manifest: %+v", m)
+	}
+	f, err := os.Open(filepath.Join(blobs, tl.File))
+	must(t, err)
+	defer f.Close()
+	dec, err := zstd.NewReader(f)
+	must(t, err)
+	defer dec.Close()
+	raw, err := io.ReadAll(dec)
+	must(t, err)
+	if string(raw) != "#!/bin/sh\necho fake bd\n" {
+		t.Fatalf("blob round trip: %q", raw)
+	}
+	rel, _ := os.ReadFile(filepath.Join(r.out, "EMBEDDED_TOOLS.md"))
+	if !strings.Contains(string(rel), "| linux-amd64 | bd | 1.0.0 | `"+tl.SHA256+"` |") {
+		t.Fatalf("release notes lack the executable hash:\n%s", rel)
 	}
 }
 
@@ -286,7 +326,7 @@ func TestPackageNoticesAreTruthfulAboutLinkedGoCode(t *testing.T) {
 	n := string(b)
 	_, version, _ := realLinkedPin(t)
 	for _, want := range []string{
-		"unmodified", "subprocesses",
+		"unmodified", "single file", "subprocess",
 		"## bv " + version + " (linked library)",
 		"statically links parts of bv's Go packages (bv " + version, "pkg/analysis",
 		"MIT with OpenAI/Anthropic rider",
@@ -349,14 +389,8 @@ func TestPackageShipsBvLicenseVerbatimMatchingThePin(t *testing.T) {
 	if !bytes.Equal(got, want) {
 		t.Fatal("third_party/bv/LICENSE is not the module's LICENSE byte for byte")
 	}
-	if _, err := os.Stat(filepath.Join(base, "bundled", "bv")); !os.IsNotExist(err) {
-		t.Fatalf("no bv program may ship: %v", err)
-	}
-	// The manifest copy inside the archive carries the same pin.
-	mb, err := os.ReadFile(filepath.Join(base, "third_party", "bundled-tools.json"))
-	must(t, err)
-	if !strings.Contains(string(mb), pin) {
-		t.Error("the shipped manifest does not carry the license pin")
+	if _, err := os.Stat(filepath.Join(base, "bundled")); !os.IsNotExist(err) {
+		t.Fatalf("no sidecar folder may ship: %v", err)
 	}
 }
 

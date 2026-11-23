@@ -1,14 +1,14 @@
 === 40x12 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Board ────────────────────────────╮
-│ how to connect: Point abacus at one  │
-│ with: abacus config set board_url    │
-│ <url> (a local board from `vb serve` │
-│ prints its URL), or set BOARD_URL. A │
-│ team board needs `vercel login`      │
+│ how to connect: Point abacus at a    │
+│ board with: abacus config set        │
+│ board_url <url> (or set BOARD_URL).  │
+│ A team board needs `vercel login`    │
 │ first.                               │
 │                                      │
-│   ↕ +3 more                          │
+│ (not connected)                      │
+│   ↕ +2 more                          │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
@@ -19,13 +19,13 @@
 │                                      │
 │ No board is selected yet.            │
 │                                      │
-│ how to connect: Point abacus at one  │
-│ with: abacus config set board_url    │
-│ <url> (a local board from `vb serve` │
-│ prints its URL), or set BOARD_URL. A │
-│ team board needs `vercel login`      │
+│ how to connect: Point abacus at a    │
+│ board with: abacus config set        │
+│ board_url <url> (or set BOARD_URL).  │
+│ A team board needs `vercel login`    │
 │ first.                               │
 ╰──────────────────────────────────────╯
+
 
 
 
@@ -49,10 +49,10 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                                              │
 │ No board is selected yet.                                                    │
 │                                                                              │
-│ how to connect: Point abacus at one with: abacus config set board_url <url>  │
-│ (a local board from `vb serve` prints its URL), or set BOARD_URL. A team     │
-│ board needs `vercel login` first.                                            │
+│ how to connect: Point abacus at a board with: abacus config set board_url    │
+│ <url> (or set BOARD_URL). A team board needs `vercel login` first.           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
+
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 80x30 ===
@@ -63,10 +63,10 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                                              │
 │ No board is selected yet.                                                    │
 │                                                                              │
-│ how to connect: Point abacus at one with: abacus config set board_url <url>  │
-│ (a local board from `vb serve` prints its URL), or set BOARD_URL. A team     │
-│ board needs `vercel login` first.                                            │
+│ how to connect: Point abacus at a board with: abacus config set board_url    │
+│ <url> (or set BOARD_URL). A team board needs `vercel login` first.           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
+
 
 
 
@@ -93,8 +93,8 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                                                                                      │
 │ No board is selected yet.                                                                                            │
 │                                                                                                                      │
-│ how to connect: Point abacus at one with: abacus config set board_url <url> (a local board from `vb serve` prints    │
-│ its URL), or set BOARD_URL. A team board needs `vercel login` first.                                                 │
+│ how to connect: Point abacus at a board with: abacus config set board_url <url> (or set BOARD_URL). A team board     │
+│ needs `vercel login` first.                                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -107,8 +107,8 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                                                                                      │
 │ No board is selected yet.                                                                                            │
 │                                                                                                                      │
-│ how to connect: Point abacus at one with: abacus config set board_url <url> (a local board from `vb serve` prints    │
-│ its URL), or set BOARD_URL. A team board needs `vercel login` first.                                                 │
+│ how to connect: Point abacus at a board with: abacus config set board_url <url> (or set BOARD_URL). A team board     │
+│ needs `vercel login` first.                                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -138,11 +138,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                          │
 │ No board is selected yet.                                │
 │                                                          │
-│ how to connect: Point abacus at one with: abacus config  │
-│ set board_url <url> (a local board from `vb serve`       │
-│ prints its URL), or set BOARD_URL. A team board needs    │
-│ `vercel login` first.                                    │
+│ how to connect: Point abacus at a board with: abacus     │
+│ config set board_url <url> (or set BOARD_URL). A team    │
+│ board needs `vercel login` first.                        │
 ╰──────────────────────────────────────────────────────────╯
+
 
 
 
@@ -163,8 +163,8 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │                                                                                                  │
 │ No board is selected yet.                                                                        │
 │                                                                                                  │
-│ how to connect: Point abacus at one with: abacus config set board_url <url> (a local board from  │
-│ `vb serve` prints its URL), or set BOARD_URL. A team board needs `vercel login` first.           │
+│ how to connect: Point abacus at a board with: abacus config set board_url <url> (or set          │
+│ BOARD_URL). A team board needs `vercel login` first.                                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 

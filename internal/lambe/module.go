@@ -147,6 +147,9 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 		return core.Detection{State: core.Absent, Detail: absent}
 	}
 	out, exit, err := m.o.Runner.Run(ctx, bin, "version", "--json")
+	if p := core.BuiltInExecProblem(bin, exit, err); p != "" {
+		return core.Detection{State: core.Broken, Detail: p}
+	}
 	if err != nil {
 		return core.Detection{State: core.Broken, Detail: "lambe version --json could not run: " + core.Sanitize(err.Error())}
 	}
@@ -155,7 +158,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	}
 	var v versionInfo
 	if json.Unmarshal(out, &v) != nil || v.Version == "" {
-		return core.Detection{State: core.Incompatible, Detail: "lambe version --json: unparsable output (upgrade lambe)"}
+		return core.Detection{State: core.Incompatible, Detail: "lambe version --json: unparsable output"}
 	}
 	if v.APIVersion != SupportedAPIVersion {
 		return core.Detection{State: core.Incompatible, Version: v.Version, APIVersion: v.APIVersion,
@@ -445,7 +448,7 @@ func (m *Module) RunInit(ctx context.Context, dir, configPath string) error {
 		return errors.New("abacus's own lambe is unavailable (see `abacus doctor`)")
 	}
 	if f := m.Located(); f.Src == core.SourcePATH && f.Ignored != "" {
-		return fmt.Errorf("not writing: bundled lambe was refused (%s); not running init with the PATH one", f.Ignored)
+		return fmt.Errorf("not writing: the copy of lambe next to abacus was refused (%s); not running init with a different one", f.Ignored)
 	}
 	if _, err := os.Stat(configPath); err == nil {
 		return fmt.Errorf("refused: %s already exists", configPath)

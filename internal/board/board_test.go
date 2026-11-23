@@ -99,11 +99,11 @@ func TestDetectTrustsOnlyAnIdentifiedVercelBoard(t *testing.T) {
 	}
 }
 
-func TestDetectRejectsTheUnrelatedVbPackageAndSaysSo(t *testing.T) {
-	f := &fakeRun{out: map[string]string{"--help": "vb 1.0.2\nusage: vb [options] <file>\n"}, errs: map[string]string{}, exit: map[string]int{}, err: map[string]error{}}
-	m := New(Options{Runner: f, LookPath: look("vb")})
+func TestDetectRejectsAnUnrelatedProgramNamedBoardAndSaysSo(t *testing.T) {
+	f := &fakeRun{out: map[string]string{"--help": "board 1.0.2\nusage: board [options] <file>\n"}, errs: map[string]string{}, exit: map[string]int{}, err: map[string]error{}}
+	m := New(Options{Runner: f, LookPath: look("board")})
 	d := m.Detect(context.Background())
-	if d.State != core.Incompatible || !strings.Contains(d.Detail, "not Vercel Board") || !strings.Contains(d.Detail, "@vercel/board") {
+	if d.State != core.Incompatible || !strings.Contains(d.Detail, "not Vercel Board") || !strings.Contains(d.Detail, "ABACUS_BOARD_BIN") || strings.Contains(d.Detail, "install") {
 		t.Fatalf("%+v", d)
 	}
 	if m.Bin() != "" {
@@ -122,32 +122,27 @@ func TestDetectNeedsTheUsageLineToo(t *testing.T) {
 	}
 }
 
-func TestDetectPrefersBoardThenFallsBackToVb(t *testing.T) {
+func TestDetectNeverRunsAProgramNamedVb(t *testing.T) {
+	// The npm package named vb is an unrelated project: only `board` (built in) is looked for.
 	f := &fakeRun{out: map[string]string{"--help": fx(t, "help.txt")}, errs: map[string]string{}, exit: map[string]int{}, err: map[string]error{}}
-	m := New(Options{Runner: f, LookPath: look("board", "vb")})
-	if m.Detect(context.Background()); m.Bin() != "/fake/board" {
-		t.Fatalf("board is preferred: %s", m.Bin())
+	m := New(Options{Runner: f, LookPath: look("vb")})
+	if d := m.Detect(context.Background()); d.State != core.Absent || m.Bin() != "" {
+		t.Fatalf("a vb on the PATH must never be used: %+v %q", d, m.Bin())
 	}
-	// A `board` that is something else does not hide a real vb.
-	g := &fakeRun{out: map[string]string{"--help": "board 2.0: some other tool\n"}, errs: map[string]string{}, exit: map[string]int{}, err: map[string]error{}}
-	m = New(Options{Runner: g, LookPath: look("board", "vb")})
-	if d := m.Detect(context.Background()); d.State != core.Incompatible {
-		t.Fatalf("%+v", d)
-	}
-	h := &fakeRun{out: map[string]string{"--help": fx(t, "help.txt")}, errs: map[string]string{}, exit: map[string]int{}, err: map[string]error{}}
-	m = New(Options{Runner: h, LookPath: look("vb")})
-	if d := m.Detect(context.Background()); d.State != core.Ready || m.Bin() != "/fake/vb" {
+	g := &fakeRun{out: map[string]string{"--help": fx(t, "help.txt")}, errs: map[string]string{}, exit: map[string]int{}, err: map[string]error{}}
+	m = New(Options{Runner: g, LookPath: look("board")})
+	if d := m.Detect(context.Background()); d.State != core.Ready || m.Bin() != "/fake/board" {
 		t.Fatalf("%+v %s", d, m.Bin())
 	}
 }
 
-func TestDetectAbsentNamesTheRealPackage(t *testing.T) {
+func TestDetectAbsentSaysWhatIsWrongNeverToInstall(t *testing.T) {
 	m := New(Options{Runner: helpRuns(t), LookPath: look()})
 	if d := m.Detect(context.Background()); d.State != core.Absent || !strings.Contains(d.Detail, "Vercel Board CLI") {
 		t.Fatalf("%+v", d)
 	}
-	if !strings.Contains(core.HowToConnectFor(core.DomainBoard), "npm i -g @vercel/board") || strings.Contains(core.HowToConnectFor(core.DomainBoard), "npx vb") && !strings.Contains(core.HowToConnectFor(core.DomainBoard), "never") {
-		t.Fatalf("the install hint must name @vercel/board and warn off vb: %s", core.HowToConnectFor(core.DomainBoard))
+	if h := core.HowToConnectFor(core.DomainBoard); !strings.Contains(h, "board") || strings.Contains(h, "npm") || strings.Contains(h, "install") {
+		t.Fatalf("an absent Board says what is wrong, never to install: %s", h)
 	}
 }
 
@@ -720,8 +715,8 @@ func TestMinimumCliVersion(t *testing.T) {
 		if ok != (d.State == core.Ready) {
 			t.Errorf("%s: %+v", ver, d)
 		}
-		if !ok && (d.State != core.Incompatible || !strings.Contains(d.Detail, "0.54.0") || !strings.Contains(d.Detail, "npm i -g @vercel/board")) {
-			t.Errorf("%s: an old CLI says what to install: %+v", ver, d)
+		if !ok && (d.State != core.Incompatible || !strings.Contains(d.Detail, "0.54.0") || strings.Contains(d.Detail, "npm")) {
+			t.Errorf("%s: an old CLI says what is wrong, not how to install: %+v", ver, d)
 		}
 	}
 }

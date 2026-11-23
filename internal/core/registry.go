@@ -25,6 +25,7 @@ var DetectDeadline = 8 * time.Second
 // order, absent ones included. A module that has not answered by DetectDeadline is reported
 // broken ("detection timed out"), not waited for.
 func (r *Registry) Detect(ctx context.Context) []Entry {
+	ClearEmbeddedFailures() // a refresh tries a failed built-in tool again
 	ctx, cancel := context.WithTimeout(ctx, DetectDeadline)
 	defer cancel()
 	chans := make([]chan Detection, len(r.mods))

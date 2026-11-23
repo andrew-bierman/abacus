@@ -53,8 +53,9 @@ type Module struct {
 	core.Locator
 	o Options
 
-	mu      sync.Mutex
-	lastErr string
+	mu       sync.Mutex
+	lastErr  string
+	deferred bool // the built-in copy is unpacked on first use, not at start
 }
 
 func New(o Options) *Module {
@@ -106,6 +107,9 @@ func (m *Module) identify(ctx context.Context, bin string) (version, why string)
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
 	out, _, exit, err := m.o.Probe.RunSplit(ctx, bin, "--help")
+	if p := core.BuiltInExecProblem(bin, exit, err); p != "" {
+		return "", "exec:" + p
+	}
 	if err != nil || exit != 0 {
 		return "", "did not answer --help"
 	}
@@ -136,33 +140,67 @@ func versionAtLeast(v string, min [3]int) bool {
 	return true
 }
 
-// Detect looks for `board` (preferred) then `vb`, or only ABACUS_BOARD_BIN when set, and trusts
-// a binary only when identify says it is Vercel Board.
+// Detect locates the built-in `board` (or ABACUS_BOARD_BIN when set) and trusts the binary only
+// when identify says it is Vercel Board. There is no `vb` fallback: the npm package of that name is
+// an unrelated project, and nothing but the built-in copy or an explicit override is run.
 func (m *Module) Detect(ctx context.Context) core.Detection {
-	names := []string{"board", "vb"}
-	if m.o.Bin != "" {
-		names = []string{"board"}
+	// The built-in Board CLI is the largest tool and the optional one: it is unpacked and identified
+	// when the Board is first read or written (or Doctor runs), so a start that never needs the Board
+	// does not unpack it. Detection says what is built in; the first use proves it.
+	if v := core.EmbeddedVersions()["board"]; m.o.Bin == "" && core.EmbeddedEnabled() && v != "" {
+		m.mu.Lock()
+		m.deferred = true
+		m.mu.Unlock()
+		m.SetFound(core.Found{Src: core.SourceEmbedded})
+		return core.Detection{State: core.Ready, Version: v}
 	}
+	return m.locate(ctx)
+}
+
+// ensure unpacks and identifies a deferred built-in Board CLI the first time it is needed.
+func (m *Module) ensure(ctx context.Context) error {
+	m.mu.Lock()
+	deferred := m.deferred
+	m.mu.Unlock()
+	if !deferred || m.Bin() != "" {
+		return nil
+	}
+	if d := m.locate(ctx); d.State != core.Ready {
+		return &core.NotConnectedError{Reason: core.AbsentSentence("board", d.Detail), HowToConnect: core.BuiltInFix(d.Detail)}
+	}
+	return nil
+}
+
+func (m *Module) locate(ctx context.Context) core.Detection {
+	names := []string{"board"}
 	var rejected []string
+	var absentWhy string
 	for _, name := range names {
 		f, absent := core.LocateFound(name, m.o.Bin, m.o.LookPath)
 		if absent != "" {
+			absentWhy = absent
 			continue
 		}
 		ver, why := m.identify(ctx, f.Bin)
+		if p, ok := strings.CutPrefix(why, "exec:"); ok {
+			return core.Detection{State: core.Broken, Detail: m.clean(p)}
+		}
 		if why == "" {
 			m.SetFound(f)
 			return core.Detection{State: core.Ready, Version: ver}
 		}
 		if why == "too old" {
-			return core.Detection{State: core.Incompatible, Version: m.clean(ver), Detail: m.clean(fmt.Sprintf("Vercel Board %s is too old: abacus needs 0.54.0 or newer. Update it with: npm i -g @vercel/board", ver))}
+			return core.Detection{State: core.Incompatible, Version: m.clean(ver), Detail: m.clean(fmt.Sprintf("Vercel Board %s is too old: abacus needs 0.54.0 or newer", ver))}
 		}
 		rejected = append(rejected, fmt.Sprintf("%s at %s: %s", name, f.Bin, why))
 	}
 	if len(rejected) > 0 {
-		return core.Detection{State: core.Incompatible, Detail: m.clean("not Vercel Board (" + strings.Join(rejected, "; ") + "). The npm package named vb is a different project: install @vercel/board")}
+		return core.Detection{State: core.Incompatible, Detail: m.clean("not Vercel Board (" + strings.Join(rejected, "; ") + "). ABACUS_BOARD_BIN must point at the Vercel Board CLI")}
 	}
-	return core.Detection{State: core.Absent, Detail: "the Vercel Board CLI (board or vb) was not found on PATH"}
+	if strings.Contains(absentWhy, "ignored: ") { // a built-in copy that could not be set up says why
+		return core.Detection{State: core.Absent, Detail: absentWhy}
+	}
+	return core.Detection{State: core.Absent, Detail: "the Vercel Board CLI was not found"}
 }
 
 func (m *Module) setErr(err error) {
@@ -174,7 +212,10 @@ func (m *Module) setErr(err error) {
 	}
 }
 
-func (m *Module) Doctor(context.Context) []core.Check {
+func (m *Module) Doctor(ctx context.Context) []core.Check {
+	if err := m.ensure(ctx); err != nil {
+		return []core.Check{{Name: "tool", Status: core.StatusFail, Detail: m.clean(err.Error())}}
+	}
 	m.mu.Lock()
 	last := m.lastErr
 	m.mu.Unlock()
@@ -184,7 +225,7 @@ func (m *Module) Doctor(context.Context) []core.Check {
 	if last != "" {
 		return []core.Check{{Name: "board", Status: core.StatusWarn, Detail: "the last board read failed: " + last, Fix: "check the board URL (abacus config get board_url) or sign in, then press r"}}
 	}
-	return []core.Check{{Name: "installation", Status: core.StatusOK, Detail: "found at " + m.clean(m.Bin())}}
+	return []core.Check{{Name: "tool", Status: core.StatusOK, Detail: "found at " + m.clean(m.Bin())}}
 }
 
 func (m *Module) Status(ctx context.Context) core.Status {
@@ -291,6 +332,9 @@ type failure struct {
 func (m *Module) call(ctx context.Context, argv []string, ok func([]string) bool) (out, errOut []byte, exit int, err error) {
 	if !ok(argv) {
 		return nil, nil, 0, fmt.Errorf("refused: %v is not an allowed argv", argv)
+	}
+	if err := m.ensure(ctx); err != nil {
+		return nil, nil, 0, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
 	defer cancel()
@@ -651,6 +695,8 @@ func (m *Module) RunBoard(ctx context.Context, argv []string, ch core.BoardChang
 	switch {
 	case err != nil && strings.HasPrefix(err.Error(), "refused:"):
 		return core.BoardResult{}, err
+	case errors.As(err, new(*core.NotConnectedError)): // nothing was run: definitely not applied
+		return core.BoardResult{}, err
 	case err != nil:
 		return core.BoardResult{}, ambiguous("the board did not answer (" + m.clean(err.Error()) + ")")
 	case exit != 0:
@@ -689,6 +735,7 @@ func (m *Module) InspectCmd() *exec.Cmd {
 	if m.o.URL != "" {
 		a = append(a, "--url", m.o.URL)
 	}
+	_ = m.ensure(context.Background())
 	c := exec.Command(m.Bin(), a...)
 	c.Env = core.ScrubBoardEnvFor(m.o.URL)(os.Environ())
 	return c

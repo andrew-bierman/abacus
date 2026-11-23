@@ -20,10 +20,10 @@ func (r *recRun) Run(_ context.Context, name string, args ...string) ([]byte, in
 	return nil, r.exit, r.err
 }
 
-func TestProbeFullViewMissingGivesAnInstallHintAndRunsNothing(t *testing.T) {
+func TestProbeFullViewMissingSaysItIsOptionalAndRunsNothing(t *testing.T) {
 	r := &recRun{}
 	_, err := core.ProbeFullView(context.Background(), func(string) (string, error) { return "", errors.New("nope") }, r)
-	if err == nil || !strings.Contains(err.Error(), "install") || len(r.calls) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "optional program") || strings.Contains(err.Error(), "install") || len(r.calls) != 0 {
 		t.Fatalf("%v %v", err, r.calls)
 	}
 }

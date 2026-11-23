@@ -16,14 +16,15 @@ import (
 type Source string
 
 const (
-	SourceBundled  Source = "bundled"  // a sidecar shipped next to abacus
-	SourcePATH     Source = "PATH"     // found on the user's PATH
+	SourceEmbedded Source = "built-in" // built into the abacus binary, extracted to the private tool cache
+	SourceBundled  Source = "bundled"  // a sidecar folder next to abacus (a development override)
+	SourcePATH     Source = "PATH"     // found on the PATH (development builds only, for built-in tools)
 	SourceDemo     Source = "demo"     // fixture data in a demo session: nothing was located
 	SourceOverride Source = "override" // an explicit ABACUS_*_BIN
 )
 
 // KnownTools are the tools abacus bundles and composes, by the name it looks them up under.
-var KnownTools = []string{"bd", "lambe", "beads-lease"}
+var KnownTools = []string{"bd", "lambe", "beads-lease", "board"}
 
 // SidecarDirs lists where bundled tools are looked for, in order. It is a variable so tests
 // can point it at temp dirs; the default follows the running executable.
@@ -147,12 +148,22 @@ func sidecar(tool string) (path, ignored string) {
 
 // LocateFound finds a tool's binary. An explicit override wins; a path override is checked
 // on disk and a bare name is resolved on PATH, never against the working directory. With no
-// override it looks in the sidecar directories first, then on PATH; a bundled copy that exists
+// override: an embedded build uses the built-in copy and never anything else for a built-in tool
+// (no sidecar, no PATH: another version must not run), reporting why when it cannot be set up. A
+// development build looks in the sidecar directories first, then on PATH; a sidecar that exists
 // but fails the safety checks is recorded in Found.Ignored (or the detail, if PATH has none
-// either). A non-empty detail means the tool is absent and says why.
+// either). Tools abacus does not carry (Rex) use the sidecar and PATH lookup in every build. A
+// non-empty detail means the tool is absent and says why.
 func LocateFound(tool, explicit string, look func(string) (string, error)) (Found, string) {
 	var ignored string
 	if explicit == "" {
+		if IsBundledTool(tool) && EmbeddedEnabled() {
+			p, why := ResolveEmbedded(tool)
+			if why != "" {
+				return Found{}, embeddedAbsentDetail(tool, why)
+			}
+			return Found{Bin: p, Src: SourceEmbedded}, ""
+		}
 		var p string
 		if p, ignored = sidecar(tool); p != "" {
 			return Found{Bin: p, Src: SourceBundled}, ""
@@ -172,7 +183,7 @@ func LocateFound(tool, explicit string, look func(string) (string, error)) (Foun
 			return Found{Bin: p, Src: SourcePATH, Ignored: ignored}, ""
 		}
 	}
-	detail := fmt.Sprintf("%s not found on PATH", tool)
+	detail := fmt.Sprintf("%s was not found", tool)
 	if ignored != "" {
 		detail += " " + refusedMarker + ignored + ")"
 	}
@@ -231,6 +242,16 @@ func CleanupSidecarEnv() {
 	}
 }
 
+// toolPath is the verified path of a built-in tool: the extracted copy in an embedded build, else
+// the sidecar. "" when there is none.
+func toolPath(t string) string {
+	if EmbeddedEnabled() {
+		return ResolvedEmbedded(t) // only what is already set up: a child's PATH never forces an extraction
+	}
+	p, _ := sidecar(t)
+	return p
+}
+
 // SidecarEnv returns env with a private directory of links to the verified bundled tools first
 // on PATH, so a tool that shells out to another finds the bundled one. Only known
 // tools that pass the same checks as Locate are exposed, never the sidecar directory itself. env
@@ -238,7 +259,7 @@ func CleanupSidecarEnv() {
 func SidecarEnv(env []string) []string {
 	tools := map[string]string{}
 	for _, t := range KnownTools {
-		if p, _ := sidecar(t); p != "" {
+		if p := toolPath(t); p != "" {
 			tools[t] = p
 		}
 	}

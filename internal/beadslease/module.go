@@ -110,7 +110,11 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 	m.hasDoctor = false
 	// Only non-JSON or api_version-less output (an older binary) takes the legacy path; an
 	// explicit unsupported api_version is incompatible.
-	if out, exit, err := m.run.Run(ctx, bin, "version", "--json"); err == nil && exit == 0 {
+	vout, vexit, verr := m.run.Run(ctx, bin, "version", "--json")
+	if p := core.BuiltInExecProblem(bin, vexit, verr); p != "" {
+		return core.Detection{State: core.Broken, Detail: p}
+	}
+	if out, exit, err := vout, vexit, verr; err == nil && exit == 0 {
 		var v versionInfo
 		if json.Unmarshal(out, &v) == nil && v.APIVersion != nil {
 			ver := core.Sanitize(v.Version)
@@ -145,7 +149,7 @@ func (m *Module) Detect(ctx context.Context) core.Detection {
 // check is itself a failure, so a red tool never reads green. Older binaries get a skip.
 func (m *Module) Doctor(ctx context.Context) []core.Check {
 	if !m.hasDoctor {
-		return []core.Check{{Name: "doctor", Status: core.StatusSkip, Detail: "this beads-lease predates `doctor --json`; upgrade to a build with api_version 1"}}
+		return []core.Check{{Name: "doctor", Status: core.StatusSkip, Detail: "this beads-lease has no `doctor --json` report, so its own checks are skipped"}}
 	}
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()

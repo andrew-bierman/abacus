@@ -2,10 +2,7 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -14,7 +11,7 @@ type ToolLine struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	State   State  `json:"state"`
-	Where   string `json:"where"` // bundled, PATH, override, demo or missing
+	Where   string `json:"where"` // built-in, bundled, PATH, override, demo or missing
 	Version string `json:"version,omitempty"`
 	Path    string `json:"path,omitempty"`
 	Detail  string `json:"detail,omitempty"`
@@ -34,6 +31,9 @@ func (t ToolLine) Label() string {
 	if t.Where == "" && t.State == Ready {
 		return "found"
 	}
+	if t.Where == string(SourceEmbedded) {
+		return "built in"
+	}
 	if t.Where != "missing" && t.Where != "" {
 		return t.Where
 	}
@@ -43,7 +43,7 @@ func (t ToolLine) Label() string {
 	if t.Optional {
 		return "optional"
 	}
-	return "not installed"
+	return "not found"
 }
 
 // DomainLine is one domain in the overview, in one plain line.
@@ -92,7 +92,7 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 	var required []string
 	broken := false
 	var shown []ModuleReport
-	var unusable []string
+	var unusable, optionalGone []string
 	for _, e := range entries {
 		if q, ok := e.Module.(interface{ Quiet() bool }); ok && q.Quiet() {
 			continue
@@ -107,21 +107,20 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 		shown = append(shown, base(e))
 		if e.Detection.State == Broken {
 			broken = true
-			required = append(required, t.Name+" is installed but cannot run: "+e.Detection.Detail)
+			required = append(required, t.Name+" cannot run: "+e.Detection.Detail)
 		}
 		switch {
 		case t.Bundled && e.Detection.State == Incompatible: // usable by nobody: Ready needs a reason to wait
 			required = append(required, t.ID+" cannot be used: "+e.Detection.Detail)
 		case t.Bundled && e.Detection.State == Absent:
 			unusable = append(unusable, t.ID)
-			if !IsDevBuild() {
+			if t.Optional {
+				optionalGone = append(optionalGone, AbsentSentence(t.ID, e.Detection.Detail))
+			} else {
 				required = append(required, AbsentSentence(t.ID, e.Detection.Detail))
 			}
 		}
 		o.Tools = append(o.Tools, t)
-	}
-	if IsDevBuild() && len(unusable) > 0 {
-		required = append(required, fmt.Sprintf("abacus's own tools are not set up for this build (%s): run %s (or make bundle) in the abacus source folder.", strings.Join(unusable, ", "), DevBundleCommand))
 	}
 	o.Bundled = SummarizeBundled(shown)
 	lines := []DomainLine{
@@ -161,7 +160,7 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 		}
 		o.Attention = append(o.Attention, item)
 	}
-	o.Attention = append(required, o.Attention...)
+	o.Attention = append(append(required, optionalGone...), o.Attention...)
 	switch {
 	case len(required) > 0 || broken:
 		o.Ready = false
@@ -201,10 +200,9 @@ func domainLine(h Header, connected func() string) DomainLine {
 
 func trimV(v string) string { return strings.TrimPrefix(strings.TrimSpace(v), "v") }
 
-// toolNote explains, in plain words, a tool that is not abacus's own verified copy: a bundled
-// tool that is unavailable (and how to restore it), one that fell back to PATH (and why), an
-// optional tool that is not installed (and what it adds), and, only informationally, a bundled
-// version that differs from the pin in bundled-tools.json.
+// toolNote explains, in plain words, a tool that is not abacus's own built-in copy: a built-in
+// tool that is unavailable (and the one fix), one the user chose with an ABACUS_*_BIN override,
+// and, only informationally, a version that differs from the one built in.
 func toolNote(e Entry, where string, pinned map[string]string) string {
 	d, id := e.Detection, e.Module.ID()
 	var parts []string
@@ -217,8 +215,8 @@ func toolNote(e Entry, where string, pinned map[string]string) string {
 			parts = append(parts, n)
 		}
 	}
-	if p := pinned[id]; where == "bundled" && p != "" && d.Version != "" && trimV(d.Version) != trimV(p) {
-		parts = append(parts, fmt.Sprintf("version %s differs from the pinned %s (informational)", trimV(d.Version), trimV(p)))
+	if p := pinned[id]; where == string(SourceEmbedded) && p != "" && d.Version != "" && trimV(d.Version) != trimV(p) {
+		parts = append(parts, fmt.Sprintf("version %s differs from the built-in %s (informational)", trimV(d.Version), trimV(p)))
 	}
 	return strings.Join(parts, "; ")
 }
@@ -241,28 +239,6 @@ func contains(l []string, s string) bool {
 	return false
 }
 
-// PinnedVersions reads bundled-tools.json as shipped in the archive (third_party/ next to the
-// executable or its bundled/ directory) and returns tool -> pinned version. Absent or unreadable
-// means no pins are known; this is only ever used for an informational note.
-func PinnedVersions() map[string]string {
-	out := map[string]string{}
-	for _, d := range SidecarDirs() {
-		for _, p := range []string{filepath.Join(d, "third_party", "bundled-tools.json"), filepath.Join(d, "..", "third_party", "bundled-tools.json")} {
-			b, err := os.ReadFile(p)
-			if err != nil {
-				continue
-			}
-			var m struct {
-				Tools []struct{ Name, Version string } `json:"tools"`
-			}
-			if json.Unmarshal(b, &m) != nil {
-				continue
-			}
-			for _, t := range m.Tools {
-				out[t.Name] = t.Version
-			}
-			return out
-		}
-	}
-	return out
-}
+// PinnedVersions is tool -> the version built into this binary (empty in a development build).
+// It is only ever used for an informational note.
+func PinnedVersions() map[string]string { return EmbeddedVersions() }

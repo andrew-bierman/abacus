@@ -90,8 +90,8 @@ func TestBoardReadFailureNeverSaysTheCliIsMissing(t *testing.T) {
 	if h.State != core.Degraded || strings.Contains(h.HowToConnect, "npm i") || strings.Contains(h.HowToConnect, "not found") || !strings.Contains(h.HowToConnect, "board_url") {
 		t.Fatalf("a failed read of a present CLI is not an install problem: %+v", h)
 	}
-	if abs := core.ReadDomains(context.Background(), nil).Board.Header; !strings.Contains(abs.HowToConnect, "npm i -g @vercel/board") {
-		t.Fatalf("not found still says how to install: %+v", abs)
+	if abs := core.ReadDomains(context.Background(), nil).Board.Header; !strings.Contains(abs.HowToConnect, "board") || strings.Contains(abs.HowToConnect, "npm") {
+		t.Fatalf("an absent Board says what is wrong, never to install: %+v", abs)
 	}
 }
 
@@ -119,10 +119,10 @@ type insMod struct {
 
 func (m insMod) Insights(context.Context) (core.InsightsReport, error) { return m.rep, m.err }
 
-func TestInsightsNotConnectedNamesHowToInstallAndDoesNotHideTheDomain(t *testing.T) {
+func TestInsightsNotConnectedSaysWhatIsWrongAndDoesNotHideTheDomain(t *testing.T) {
 	d := core.ReadDomains(context.Background(), nil)
 	for _, in := range []*core.InsightsReport{d.Tasks.Insights} {
-		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "abacus's own copy of bd") || strings.Contains(in.HowToConnect, "brew install") {
+		if in == nil || in.State != core.NotConnected || !strings.Contains(in.HowToConnect, "bd is not available") || strings.Contains(in.HowToConnect, "install") {
 			t.Fatalf("%+v", in)
 		}
 	}
