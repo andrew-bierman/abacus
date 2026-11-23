@@ -201,6 +201,7 @@ func scenarios() []scenario {
 		{name: "leases", build: std, keys: []string{"3"}, tab: "Leases"},
 		{name: "board", build: std, tab: "Board"},
 		{name: "board-detail", build: std, keys: []string{"down"}, tab: "Board"},
+		{name: "board-drilled", build: std, keys: []string{"1", "enter"}, tab: "Board"},
 		{name: "board-task", build: std, keys: []string{"down", "down"}, tab: "Board"},
 		{name: "board-absent", tab: "Board", build: func(t *testing.T, th Theme) tea.Model {
 			return New(nil, WithTheme(th), WithFullView(noFullView))

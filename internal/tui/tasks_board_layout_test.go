@@ -215,11 +215,11 @@ func TestTasksEmptyStateIsAWordsLineInsideThePanel(t *testing.T) {
 func TestTasksSelectionAndWriteKeysStillWork(t *testing.T) {
 	r := newTasksRig(t)
 	m := press(sized(r.m, 120, 50), "j")
-	if v := m.View(); !strings.Contains(v, "▸ ac-09") && !strings.Contains(v, "ac-09") {
-		t.Fatalf("down moves the cursor:\n%s", v)
+	rowWith(t, m.View(), "▸", "ac-09") // down moves the cursor
+	m = pressRun(t, m, "x")            // close the selected task: the confirm screen, never straight to a write
+	if v := m.View(); !strings.Contains(v, "Confirm this change") || !strings.Contains(v, "ac-09") {
+		t.Fatalf("x on the selected task opens the confirm screen:\n%s", v)
 	}
-	m = press(m, "x") // close the selected task: goes to the confirm screen, never straight to a write
-	m = run(t, m, nil)
 	if len(*r.prov.ran) != 0 {
 		t.Fatal("a key must never write before the confirm")
 	}
@@ -341,5 +341,171 @@ func TestBoardDrillEndsWhenARefreshEmptiesTheRows(t *testing.T) {
 	m, _ = m.Update(boardMsg{report: core.BoardReport{Header: core.Header{Source: core.SourceLive}}})
 	if v := m.View(); strings.Contains(v, "▸ Message") || strings.Contains(v, "nothing selected") {
 		t.Fatalf("an empty board shows its list, not an empty detail:\n%s", v)
+	}
+}
+
+// ---- scrolling, clipping, the helpers and the strings the first pass did not reach ----
+
+func longBoard(n int) core.BoardReport {
+	r := core.BoardReport{Header: core.Header{Source: core.SourceLive}}
+	for i := 0; i < n; i++ {
+		r.Threads = append(r.Threads, core.BoardThread{Root: core.BoardMessage{ID: fmt.Sprint(100 + i), Channel: "dev", Author: "ada", Text: fmt.Sprintf("thread %02d", i)}})
+	}
+	for i := 0; i < n; i++ {
+		r.Tasks = append(r.Tasks, core.BoardTask{ID: fmt.Sprint(500 + i), Channel: "work", State: "ready", Text: fmt.Sprintf("task %02d", i)})
+	}
+	return r
+}
+
+func longTasks(n int) core.TasksReport {
+	r := core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: n, Open: n}}
+	for i := 0; i < n; i++ {
+		r.Recent = append(r.Recent, core.Task{ID: fmt.Sprintf("T-%02d", i), Title: fmt.Sprintf("title %02d", i), Status: "open", Priority: 2})
+	}
+	return r
+}
+
+func TestLongBoardKeepsTheCursorVisibleWithAMoreMarkerAtEverySize(t *testing.T) {
+	for _, w := range []int{40, 100, 140} {
+		for _, h := range []int{12, 16, 24, 40} {
+			m := boardAt(w, h, longBoard(20))
+			clipped := m.View()
+			if !strings.Contains(clipped, "more") {
+				t.Errorf("%dx%d: a long board is clipped with a marker:\n%s", w, h, clipped)
+			}
+			for i := 0; i < 39; i++ { // down through every thread and task to the last row
+				m = press(m, "j")
+			}
+			v := m.View()
+			rowWith(t, v, "▸", "#519") // the last task is on screen with the cursor
+			rows := strings.Split(strings.TrimRight(v, "\n"), "\n")
+			if len(rows) > h {
+				t.Fatalf("%dx%d: %d rows", w, h, len(rows))
+			}
+			for _, l := range rows {
+				if lipgloss.Width(l) > w {
+					t.Fatalf("%dx%d: %q is %d wide", w, h, l, lipgloss.Width(l))
+				}
+			}
+		}
+	}
+}
+
+func TestLongTasksKeepTheCursorVisibleWideAndStacked(t *testing.T) {
+	for _, w := range []int{60, 99, 100, 140} {
+		for _, h := range []int{14, 20, 30, 50} {
+			m := sized(newTasksRig(t).m, w, h)
+			m, _ = m.Update(tasksMsg{report: longTasks(70)})
+			if v := m.View(); !strings.Contains(v, "more") {
+				t.Errorf("%dx%d: a long task list is clipped with a marker:\n%s", w, h, v)
+			}
+			for i := 0; i < 69; i++ {
+				m = press(m, "j")
+			}
+			v := m.View()
+			rowWith(t, v, "▸", "T-69")
+			if rows := strings.Split(strings.TrimRight(v, "\n"), "\n"); len(rows) > h {
+				t.Fatalf("%dx%d: %d rows", w, h, len(rows))
+			}
+		}
+	}
+}
+
+func TestBoardDetailIsClippedToTheBodyWithAMarker(t *testing.T) {
+	var text []string
+	for i := 0; i < 30; i++ {
+		text = append(text, fmt.Sprintf("line %02d of a long message", i))
+	}
+	r := core.BoardReport{Header: core.Header{Source: core.SourceLive},
+		Threads: []core.BoardThread{{Root: core.BoardMessage{ID: "9", Channel: "dev", Author: "ada", Text: strings.Join(text, "\n")}}}}
+	for _, w := range []int{100, 120} {
+		v := boardAt(w, 14, r).View()
+		rows := strings.Split(strings.TrimRight(v, "\n"), "\n")
+		if len(rows) > 14 || !strings.Contains(v, "more") || strings.Count(v, "╯") != 2 {
+			t.Errorf("w=%d: the detail is clipped to the body, says so, and both frames close (%d rows):\n%s", w, len(rows), v)
+		}
+		if strings.Contains(v, "line 29") {
+			t.Errorf("w=%d: the end of a clipped message is not shown:\n%s", w, v)
+		}
+	}
+}
+
+func TestHostileTextReachesNoBoardHeaderNoticeOrDetailTail(t *testing.T) {
+	bad := "x\x1b[2J\u202etxt\u200b\u200d\ufeff\x07y\x00日本語"
+	r := core.BoardReport{Header: core.Header{Source: bad, Reason: bad}, Truncated: bad,
+		Threads: []core.BoardThread{{Root: core.BoardMessage{ID: "1", Text: "x"}, Replies: 2, Last: &core.BoardMessage{ID: bad, Author: bad, At: bad, Text: bad + "\n" + bad}}}}
+	for _, w := range []int{40, 120} {
+		m := boardAt(w, 40, r)
+		hostileOK(t, fmt.Sprintf("board header %d", w), m.View(), w)
+		hostileOK(t, fmt.Sprintf("board detail %d", w), press(m, "enter").View(), w)
+	}
+	s := newBoardSection(boardFake())
+	s.SetTheme(asciiTheme())
+	var m tea.Model = s
+	m, _ = m.Update(boardMsg{report: demo.BoardReport()})
+	m, _ = m.Update(boardInspectDoneMsg{err: fmt.Errorf("%s", bad)})
+	hostileOK(t, "board notice", sized(m, 100, 40).View(), 100)
+}
+
+func TestHostileTextReachesNoTasksInsightsBranch(t *testing.T) {
+	bad := "x\x1b[2J\u202etxt\u200b\u200d\ufeff\x07y\x00日本語"
+	for name, in := range map[string]core.InsightsReport{
+		"note":     {Header: core.Header{Source: bad, State: core.Connected}, TotalActionable: 1, CriticalPathNote: bad},
+		"connect":  {Header: core.Header{State: core.NotConnected, HowToConnect: bad}},
+		"degraded": {Header: core.Header{State: core.Degraded, Reason: bad}},
+		"reason":   {Header: core.Header{Source: bad, State: core.Connected, Reason: bad}, TotalActionable: 1, TopPicks: []core.Pick{{ID: "a", Title: "b", Unblocks: 1}}},
+		"empty":    {Empty: true},
+		"unblocks": {Header: core.Header{Source: "graph", State: core.Connected}, TotalActionable: 1, Blockers: []core.Pick{{ID: bad, Title: bad, Unblocks: 99}}},
+	} {
+		for _, w := range []int{40, 120} {
+			m := sized(newTasksRig(t).m, w, 50)
+			m, _ = m.Update(insightsMsg{report: in})
+			hostileOK(t, fmt.Sprintf("insights %s %d", name, w), m.View(), w)
+		}
+	}
+}
+
+func TestWindowLinesAndClipLinesHandleEveryRowBudget(t *testing.T) {
+	th := asciiTheme()
+	lines := []string{"a", "b", "c", "d", "e", "f"}
+	top := 0
+	if got := windowLines(th, lines, 0, 0, &top); len(got) != 6 {
+		t.Fatalf("rows <= 0 shows everything: %v", got)
+	}
+	if got := windowLines(th, lines, 0, 10, &top); len(got) != 6 || strings.Contains(strings.Join(got, ""), "more") {
+		t.Fatalf("a body that fits has no marker: %v", got)
+	}
+	got := windowLines(th, lines, 5, 4, &top) // cursor on the last line, room for three plus the marker
+	if len(got) != 4 || !strings.Contains(got[3], "more") || !strings.Contains(strings.Join(got[:3], ""), "f") {
+		t.Fatalf("the window follows the cursor and ends in a marker: %v", got)
+	}
+	if top == 0 {
+		t.Fatal("the scroll state is kept")
+	}
+	if got := clipLines(th, lines, 1); len(got) != 1 || got[0] != "a" {
+		t.Fatalf("one row has no room for a marker: %v", got)
+	}
+	if got := clipLines(th, lines, 3); len(got) != 3 || !strings.Contains(got[2], "+4 more") {
+		t.Fatalf("a cut ends in a marker counting what it hides: %v", got)
+	}
+	if got := clipLines(th, lines, 6); len(got) != 6 {
+		t.Fatalf("content that fits is untouched: %v", got)
+	}
+	if got := clipLines(th, lines, 0); len(got) != 6 {
+		t.Fatalf("rows <= 0 shows everything: %v", got)
+	}
+}
+
+func TestStackRowsGivesTheBottomAThirdAndTheTopItsContentPlusAir(t *testing.T) {
+	for _, tc := range []struct{ h, top, bottom, wantTop, wantBottom int }{
+		{0, 7, 5, 7, 5},     // unknown height: both keep their content
+		{40, 4, 30, 10, 12}, // bottom capped at a third of (40-4); top gets content plus air to ten rows
+		{40, 30, 3, 30, 3},  // a short bottom keeps its content, the top uses the rest
+		{14, 30, 30, 7, 3},  // tiny: the bottom keeps a third, the top the rest
+	} {
+		top, bottom := stackRows(tc.h, tc.top, tc.bottom)
+		if top != tc.wantTop || bottom != tc.wantBottom {
+			t.Errorf("stackRows(%d, %d, %d) = %d, %d; want %d, %d", tc.h, tc.top, tc.bottom, top, bottom, tc.wantTop, tc.wantBottom)
+		}
 	}
 }
