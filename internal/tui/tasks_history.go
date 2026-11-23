@@ -93,6 +93,9 @@ func (s *tasksSection) histEnsure() tea.Cmd {
 	}
 }
 
+// histLoaded is whether the history of task id has been read (or failed to be).
+func (s *tasksSection) histLoaded(id string) bool { _, ok := s.hist.cache[id]; return ok }
+
 // histReceive stores an answer (dropped when the snapshot moved on while it was being read).
 func (s *tasksSection) histReceive(m histMsg) {
 	h := &s.hist

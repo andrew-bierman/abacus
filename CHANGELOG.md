@@ -17,6 +17,19 @@ may change behavior, and patch versions are fixes and small additions.
   (read-only panels). From 100 columns the tab bar shows the tracker, task counts and board target
   on its right; the cursor row fill is brighter; `?` lists the prompt commands and scrolls. The
   command table, parse, completion and closest match are pure code in `internal/core/commands.go`.
+- Tasks goes live (U10 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): the 30-second poll
+  is replaced by a cheap check about every 5 seconds (the embedded store's manifest file, which moves
+  on every write and never on a read) and the tracker is read in full only when it moved; one check
+  or read at a time, none while the tab is hidden, a longer wait after a slow read. A change by
+  someone else keeps the cursor on its task, adds a `● N changed just now` marker to the panel title,
+  and `F` follows the most recently changed task. `H` shows a task's history (who changed what, newest
+  first) in its detail, and `abacus tasks history ID [--limit N] [--json]` prints it. `ctrl+s` and
+  `ctrl+o` save and apply named queries (`saved-filters.json` in the abacus config directory), and
+  `ctrl+p` and `ctrl+n` recall recent `/` queries. `P` switches tracker among the ones you opened,
+  through a confirm screen that saves `tracker_dir`, audits it and re-points every Tasks view; no
+  tracker is written. New: `internal/taskview` fingerprint, diff, poll scheduler and history parser,
+  `core.SavedFilters`, `core.RecentTrackers`, `core.Switcher`, with fixtures captured from real `bd`
+  1.3.4 output.
 - Dependency graph view in Tasks (U5 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): `g` on
   a task (or `v`) shows what blocks it and what it blocks, as boxes with connectors from 100 columns
   and an indented outline below; `g` again shows the whole graph in topological layers with the

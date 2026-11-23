@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync/atomic"
 	"time"
+
+	"github.com/andrew-bierman/abacus/internal/brand"
 )
 
 // TrackerSwitch is the one gated action of the tracker switcher: point Tasks at another tracker. It
@@ -95,7 +97,7 @@ func (s *Switcher) Plan(dir string) (SwitchPlan, error) {
 	}
 	lines := []string{
 		"Tasks will read this tracker from now on.",
-		"This sets tracker_dir in " + Sanitize(s.Config.Path) + " and applies now.",
+		"This saves tracker_dir in the " + brand.Name + " settings and applies now.",
 		"No tracker is changed and no tool command runs.",
 		"At the next start, ABACUS_BD_DIR or a tracker at or above the working directory still wins.",
 	}

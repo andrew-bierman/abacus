@@ -398,6 +398,7 @@ func TestHistoryShowsEventsNewestFirstInTheDetail(t *testing.T) {
 		t.Fatal("history is off until H")
 	}
 	_, cmd := r.s.Update(keyRunes("H"))
+	_ = r.s.View() // drawn once before the answer arrives, as the real loop does
 	r.run(cmd)
 	out := r.s.View()
 	for _, want := range []string{"History", "reopened", "closed", "shipped", "dependency_added", "1d"} {
@@ -407,6 +408,9 @@ func TestHistoryShowsEventsNewestFirstInTheDetail(t *testing.T) {
 	}
 	if strings.Index(out, "reopened") > strings.Index(out, "closed") {
 		t.Error("newest first")
+	}
+	if !strings.Contains(out, "8d   created") { // the pane is scrolled to the heading, so the oldest event is in view too
+		t.Errorf("the whole history is in view once it is read:\n%s", out)
 	}
 	if r.p.histN != 1 {
 		t.Errorf("%d history reads", r.p.histN)

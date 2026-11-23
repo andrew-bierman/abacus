@@ -41,6 +41,9 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `:` | the command prompt (see "Command prompt"); not offered while a form, the confirm screen or a filter is open |
 | `d` `y` | Tasks (List and Graph): describe the selected task in a read-only panel; show it as typed JSON (the same report `abacus tasks show ID --json` prints). `esc` closes. `y` only means apply on the confirm screen, which keeps every key |
 | `?` | full help overlay (keys, then the prompt commands; `j` `k` scroll it); `?` or `esc` closes it |
+| `F`, `H`, `P` | Tasks list: `F` moves the cursor to the task that changed most recently (see "Live refresh"); `H` shows or hides the history of the selected task in its detail; `P` switches tracker (any Tasks view) |
+| `ctrl+s`, `ctrl+o` | Tasks list: save the query on screen under a name; pick a saved filter to apply, `d` deletes one after a `y` or `n`. While typing a `/` query, `ctrl+p` and `ctrl+n` walk the recent queries (from 80 columns the footer says so) |
+| `?` | full help overlay; `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
 While a form, the confirm screen or the filter is open, every key (including `q`, digits and `?`)
@@ -124,11 +127,37 @@ differ by a refresh.)
   `r`, not on a timer, because each read analyzes the whole tracker. Without an insights provider the panel says it is not connected and what is
   wrong with abacus's own bd (a release: damaged or moved, re-extract; a dev build: run
   `scripts/dev-bundle.sh`).
+- **Live refresh.** Tasks checks the tracker about every 5 seconds without running anything: an
+  embedded tracker keeps a small manifest file that changes on every write and never on a read, so
+  abacus compares it with the one kept from the last full read and reads the whole tracker only when
+  it moved (measured against bd 1.3.4; see `internal/bd/testdata/README.md`). A tracker with no such
+  file (a server-mode store) is read in full every 30 seconds instead. There is never more than one
+  check or read in flight, none while the Tasks tab is hidden (showing it checks at once), and a read
+  slower than 2 seconds doubles the wait up to a minute. A change by someone else keeps the cursor and
+  marks on the same task ids, adds `● 3 changed just now` to the panel title for 30 seconds, and `F`
+  goes to the most recently changed one (a task the query hides is named instead). `stale` means no
+  check or read confirmed the list for twice the current wait.
+- **History.** `H` adds a History section to the detail: what changed on the task and who did it,
+  newest first, up to 12 events (the event log of the tracker, read with a bounded read-only
+  command; adding a comment is not an event in bd 1.3.4). It reads one task at a time and keeps the
+  answers while the list on screen stays the same. `abacus tasks history ID [--limit N] [--json]`
+  prints the same report.
+- **Saved filters and recent queries.** `ctrl+s` names the query on screen and `ctrl+o` applies a
+  saved one. They live in `saved-filters.json` in the abacus config directory (names of at most 32
+  characters, 50 filters, written atomically, mode 0600, never in a tracker directory). The last 100
+  `/` queries are kept in the same search history file as global search (`search_history off` keeps
+  none).
+- **Tracker switcher.** `P` lists the trackers you opened (remembered in `recent-trackers.json` in the
+  abacus state directory, 20 at most) and the saved `tracker_dir`, never a folder abacus found by
+  looking. Choosing one opens a confirm screen: it validates that the folder holds `.beads/metadata.json`,
+  saves `tracker_dir` in the abacus settings, points every Tasks view at it now, and writes an audit
+  line before and after, as a setup step does. No tool runs and no tracker is written. At the next
+  start `ABACUS_BD_DIR` or a tracker at or above the working directory still wins.
 - **Fallbacks.** A provider that cannot read the whole tracker, or a read that failed before the
   first snapshot, lists the summary's recent changes (`recent only` in the panel title) with the
   reason. Dependencies were not read, so that list shows no ready count, no `⊘` marks, no blockers
   and no ready or blocked quick filter. A read that fails after a good one keeps the last list and says
-  `refresh failed`. A read that times out (or is over 64 MiB) is not retried on the 30 s poll: the
+  `refresh failed`. A read that times out (or is over 64 MiB) is not retried on the poll: the
   notice says `tracker too large to load quickly` and the next try is five minutes later, or at once on
   `r` or after a write. A write that lands while a read is in flight triggers one more read at once,
   and until it lands the notice says the list may not show your last change.
@@ -351,8 +380,8 @@ one line per area, a "Bundled tools: 4 of 4 verified" line, and each tool with w
 `optional` for the Board CLI, which abacus does not ship) and its version, then the detailed checks.
 "Ready" needs bd, lambe and beads-lease usable. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
-polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo),
-other modules every 30 seconds.
+polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo), Tasks
+checks every 5 seconds while its tab is shown (see "Live refresh"), other modules every 30 seconds.
 
 ## Theme and NO_COLOR
 

@@ -514,7 +514,7 @@ func (s *tasksSection) listView() string {
 		var off int
 		dl := s.detailLines(d, max(g.detail-panelChromeW, 1))
 		if hl := s.historyLines(d.Row.ID, max(g.detail-panelChromeW, 1)); len(hl) > 0 {
-			if s.hist.reveal { // H just opened it: put the History heading at the top of the pane
+			if s.hist.reveal && s.histLoaded(d.Row.ID) { // H just opened it: put the History heading at the top of the pane, once its lines are in
 				l.dOff, s.hist.reveal = len(dl)+1, false
 			}
 			dl = append(dl, hl...)
