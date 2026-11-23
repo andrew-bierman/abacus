@@ -29,7 +29,7 @@ func TestNoColorProfileEmitsNoEscapes(t *testing.T) {
 			}
 		}
 	}
-	for _, s := range []string{th.Selected.Render("x"), th.Header.Render("x"), th.TabActive.Render("x"), th.TabDim.Render("x")} {
+	for _, s := range []string{th.Selected.Render("x"), th.Header.Render("x"), th.TabActive.Render("x"), th.TabDim.Render("x"), th.Border.Render("x"), th.BorderFocus.Render("x")} {
 		if strings.Contains(s, "\x1b") {
 			t.Errorf("escape under Ascii: %q", s)
 		}
@@ -113,9 +113,30 @@ func TestSixteenColorMutedTextDoesNotUseBrightBlack(t *testing.T) {
 	for name, s := range map[string]string{
 		"muted": th.Text(KindMuted, "x"), "skip": th.Text(KindSkip, "x"),
 		"label": th.Label.Render("x"), "dim tab": th.TabDim.Render("x"), "divider": th.Divider.Render("x"),
+		"border": th.Border.Render("x"),
 	} {
 		if !strings.Contains(s, "\x1b[2m") || strings.Contains(s, "90") || strings.Contains(s, "30;1") {
 			t.Errorf("%s = %q, want faint text with no bright-black color", name, s)
+		}
+	}
+}
+
+// Focus is carried by color on a color terminal (and by the title glyph without one, see
+// panel_test.go), so the two border styles must differ wherever color exists.
+func TestFocusedBorderDiffersFromTheQuietBorder(t *testing.T) {
+	for name, p := range map[string]termenv.Profile{"truecolor": termenv.TrueColor, "256": termenv.ANSI256, "16": termenv.ANSI} {
+		th := NewTheme(rendererFor(p, true))
+		if th.Border.Render("│") == th.BorderFocus.Render("│") {
+			t.Errorf("%s: focused and quiet borders render identically", name)
+		}
+	}
+}
+
+func TestBorderStylesUseOnlyBasicEscapesOnSixteenColors(t *testing.T) {
+	th := NewTheme(rendererFor(termenv.ANSI, true))
+	for name, s := range map[string]string{"border": th.Border.Render("x"), "focus": th.BorderFocus.Render("x")} {
+		if strings.Contains(s, "38;2;") || strings.Contains(s, "38;5;") {
+			t.Errorf("%s used extended colors on a 16-color terminal: %q", name, s)
 		}
 	}
 }
