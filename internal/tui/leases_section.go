@@ -41,25 +41,37 @@ func readLeases(ctx context.Context, p core.LeaseProvider) leasesRead {
 	return leasesRead{report: r}
 }
 
-// leasesSection renders the typed LeasesReport: the lease's own state and tone decide each
-// badge, and no line of text is parsed.
+// leasesSection renders the typed LeasesReport as a table in a framed list panel with the selected
+// lease in a detail panel beside it. The lease's own state and tone decide each badge; no line of
+// text is parsed.
 type leasesSection struct {
 	read   func(ctx context.Context) leasesRead
 	got    leasesRead
 	loaded bool
 	tick   func() tea.Cmd // injectable so tests never sleep
-	linesSection
+	th     Theme
+	geom
+	cursor, top int
+	drilled     bool // stacked layout only: showing the detail panel
 }
 
 func newLeasesSection(read func(context.Context) leasesRead) *leasesSection {
-	return &leasesSection{read: read, linesSection: linesSection{th: DefaultTheme()}, tick: func() tea.Cmd {
+	return &leasesSection{read: read, th: DefaultTheme(), tick: func() tea.Cmd {
 		return tea.Tick(leasesPollEvery, func(time.Time) tea.Msg { return leasesTickMsg{} })
 	}}
 }
 
-func (s *leasesSection) SetTheme(t Theme)        { s.th = t }
-func (s *leasesSection) Capturing() bool         { return false }
-func (s *leasesSection) Bindings() []key.Binding { return moveBindings() }
+func (s *leasesSection) SetTheme(t Theme) { s.th = t }
+func (s *leasesSection) Capturing() bool  { return false }
+
+func (s *leasesSection) leases() []core.Lease { return s.got.report.Leases }
+
+func (s *leasesSection) Bindings() []key.Binding {
+	enter, back := keyEnter, keyBack
+	enter.SetEnabled(isStacked(s.width()) && !s.drilled && len(s.leases()) > 0)
+	back.SetEnabled(s.drilled)
+	return append(moveBindings(), enter, back)
+}
 
 func (s *leasesSection) fetch() tea.Cmd {
 	return func() tea.Msg {
@@ -77,47 +89,117 @@ func (s *leasesSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case leasesMsg:
 		s.got, s.loaded = m.read, true
+		s.cursor = min(s.cursor, max(0, len(s.leases())-1))
+		s.drilled = s.drilled && len(s.leases()) > 0
 	case leasesTickMsg:
 		return s, tea.Batch(s.fetch(), s.tick())
 	case tea.WindowSizeMsg:
 		s.resize(m)
 	case tea.KeyMsg:
-		s.scrollKey(m, len(s.lines()))
+		switch {
+		case key.Matches(m, keyUp):
+			s.cursor = max(0, s.cursor-1)
+		case key.Matches(m, keyDown):
+			s.cursor = min(max(0, len(s.leases())-1), s.cursor+1)
+		case key.Matches(m, keyEnter):
+			s.drilled = isStacked(s.width()) && len(s.leases()) > 0
+		case key.Matches(m, keyBack):
+			s.drilled = false
+		}
 	}
 	return s, nil
 }
 
-func (s *leasesSection) lines() []string {
-	head := s.th.Header.Render("Leases")
-	if s.loaded && s.got.unavailable != "" && s.got.howToConnect != "" {
-		head += " " + s.th.Badge(KindSkip, "not connected")
+// leaseCols are the table's columns: state, lease, holder, expiry. The state and the lease id keep
+// their whole width (min equals max; fitRows still shrinks them to the content), so an identifying
+// field is never clipped to make room for a lower-priority one. A higher prio number drops first.
+var leaseCols = table{cols: []column{
+	{min: 12, max: 12, prio: 0},
+	{min: 24, max: 24, prio: 0},
+	{min: 8, prio: 2},
+	{min: 6, max: 10, prio: 3, right: true},
+}, gap: 2}
+
+func (s *leasesSection) expiry(l core.Lease) string {
+	if l.ExpiresAt == "" && l.State == core.LeaseHeld {
+		return "?"
 	}
-	return append([]string{head}, s.bodyLines()...)
+	return san(l.ExpiresAt)
 }
 
-func (s *leasesSection) bodyLines() []string {
+// listTitle is the list panel's title: the counts and, for a reduced source, where it came from.
+func (s *leasesSection) listTitle() string {
+	r := s.got.report
+	title := "Leases · " + san(r.Summarize())
+	if r.Source != "" && r.Source != core.SourceLive {
+		title += " · " + san(string(r.Source))
+	}
+	return title
+}
+
+// listLines is the scrolling table and the empty-state line.
+func (s *leasesSection) listLines(g duoGeom) []string {
+	th := s.th
+	ls := s.leases()
+	if len(ls) == 0 {
+		return []string{th.Text(KindMuted, "no leases held")}
+	}
+	rows := make([][]string, len(ls))
+	for i, l := range ls {
+		resource := san(l.Resource)
+		if i == s.cursor {
+			resource = th.Header.Render(resource)
+		}
+		rows[i] = []string{th.Badge(toneKind(l.Tone()), san(string(l.State))), resource, san(l.Holder), s.expiry(l)}
+	}
+	widths := leaseCols.fitRows(max(g.listInner()-2, 1), rows) // two cells for the selection marker
+	lines := make([]string, len(rows))
+	for i, r := range rows {
+		marker := "  "
+		if i == s.cursor {
+			marker = "▸ "
+		}
+		lines[i] = marker + leaseCols.row(widths, r)
+	}
+	vis, top, hidden := windowMore(lines, s.cursor, g.inner, s.top)
+	s.top = top
+	if hidden > 0 && g.inner >= 2 {
+		vis = append(append([]string(nil), vis...), th.moreMarker(hidden))
+	}
+	return vis
+}
+
+// detailLines describes the selected lease.
+func (s *leasesSection) detailLines() []string {
+	th := s.th
+	ls := s.leases()
+	if s.cursor >= len(ls) {
+		return []string{th.Text(KindMuted, "select a row")}
+	}
+	l := ls[s.cursor]
+	field := func(label, v string) string { return th.Label.Render(padTo(label, 9)) + orDash(v) }
+	return []string{
+		th.Header.Render(orDash(l.Resource)) + " " + th.Badge(toneKind(l.Tone()), san(string(l.State))), "",
+		field("holder", l.Holder), field("expires", l.ExpiresAt),
+	}
+}
+
+func (s *leasesSection) View() string {
 	th := s.th
 	w := s.width()
+	head := th.Header.Render("Leases")
 	switch {
 	case !s.loaded:
-		return []string{th.Text(KindMuted, "loading…")}
+		return joinLines([]string{head, th.Text(KindMuted, "loading…")})
 	case s.got.unavailable != "" && s.got.howToConnect != "":
-		out := []string{""}
+		out := []string{head + " " + th.Badge(KindSkip, "not connected"), ""}
 		out = append(out, wrap(th.Text(KindWarn, san(s.got.unavailable)), w)...)
-		return append(append(out, ""), wrap(th.Text(KindAccent, "how to connect: ")+san(s.got.howToConnect), w)...)
+		out = append(out, "")
+		return joinLines(append(out, wrap(th.Text(KindAccent, "how to connect: ")+san(s.got.howToConnect), w)...))
 	case s.got.unavailable != "":
-		return wrap(th.Text(KindWarn, "state unavailable: "+san(s.got.unavailable)), w)
+		return joinLines(append([]string{head}, wrap(th.Text(KindWarn, "state unavailable: "+san(s.got.unavailable)), w)...))
 	}
-	r := s.got.report
-	head := th.Header.Render(san(r.Summarize()))
-	if r.Source != "" && r.Source != core.SourceLive {
-		head += " " + th.Badge(KindWarn, san(string(r.Source)))
-	}
-	out := []string{head}
-	for _, l := range r.Leases {
-		out = append(out, "  "+th.Badge(toneKind(l.Tone()), san(string(l.State)))+" "+san(l.Resource)+" "+th.Text(KindMuted, san(l.Detail())))
-	}
-	return out
+	g := duoLayout(w, s.h)
+	list := s.listLines(g)
+	return joinLines(g.draw(th, s.h, s.listTitle(), list, "Lease", s.detailLines(), s.drilled))
 }
-
-func (s *leasesSection) View() string { return s.render(s.lines()) }

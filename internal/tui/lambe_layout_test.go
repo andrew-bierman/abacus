@@ -95,6 +95,21 @@ func TestHostileFieldsAreSanitizedInEveryPane(t *testing.T) {
 	}
 }
 
+// rowWith finds the line of a rendered view that holds every part, or fails the test.
+func rowWith(t *testing.T, v string, parts ...string) {
+	t.Helper()
+	for _, l := range strings.Split(v, "\n") {
+		ok := true
+		for _, p := range parts {
+			ok = ok && strings.Contains(l, p)
+		}
+		if ok {
+			return
+		}
+	}
+	t.Errorf("no single row holds %q:\n%s", parts, v)
+}
+
 func TestLeaseStatesGetBadges(t *testing.T) {
 	r := leasesReport(
 		core.Lease{Resource: "ac-1", State: core.LeaseHeld, Holder: "alice", ExpiresAt: "5m"},
@@ -105,20 +120,23 @@ func TestLeaseStatesGetBadges(t *testing.T) {
 	var m tea.Model = s
 	m, _ = m.Update(leasesMsg{read: r})
 	v := m.View()
-	for _, want := range []string{"1 held, 1 stale, 1 free", "(held) ac-1 by alice (expires 5m)", "(stale) ac-2 (last holder bob)", "(free) ac-3"} {
+	for _, want := range []string{"1 held, 1 stale, 1 free"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("missing %q:\n%s", want, v)
 		}
 	}
+	rowWith(t, v, "(held)", "ac-1", "alice", "5m")
+	rowWith(t, v, "(stale)", "ac-2", "bob")
+	rowWith(t, v, "(free)", "ac-3")
 }
 
-func TestTrackerSubsetAndSourceLabelsAreBadges(t *testing.T) {
+func TestTrackerSubsetAndSourceLabelsAreInThePanelTitle(t *testing.T) {
 	r := leasesRead{report: core.LeasesReport{Header: core.Header{Source: "tracker subset"}}}
 	s := leasesWith(&r)
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
 	m, _ = m.Update(leasesMsg{read: r})
-	if !strings.Contains(m.View(), "(tracker subset)") {
+	if !strings.Contains(m.View(), "· tracker subset") {
 		t.Fatalf("source label missing:\n%s", m.View())
 	}
 }
