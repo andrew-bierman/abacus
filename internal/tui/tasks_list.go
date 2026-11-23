@@ -296,6 +296,9 @@ var listTable = table{cols: []column{
 
 var listHeader = []string{"id", "title", "st", "P", "dep", "type", "age", "who"}
 
+// labelsCol is the last column, drawn from bpUltra columns only (the detail always shows labels).
+var labelsCol = column{min: 6, max: 24, prio: 4}
+
 // listCells are one row's cells, styled and plain (the selected row is drawn from the plain ones).
 func (s *tasksSection) listCells(r core.TaskRow) (styled, plain []string) {
 	th := s.th
@@ -304,7 +307,11 @@ func (s *tasksSection) listCells(r core.TaskRow) (styled, plain []string) {
 		title += fmt.Sprintf(" %d/%d", r.ChildDone, r.ChildTotal)
 	}
 	prio := fmt.Sprintf("P%d", r.Priority)
-	plain = []string{san(r.ID), title, taskGlyph(r.Status), prio, depCell(r), s.typeLabel(orDashText2(san(r.Type))), orDashText2(san(r.Age)), orDashText2(san(r.Assignee))}
+	var labels []string
+	for _, l := range r.Labels {
+		labels = append(labels, san(l))
+	}
+	plain = []string{san(r.ID), title, taskGlyph(r.Status), prio, depCell(r), s.typeLabel(orDashText2(san(r.Type))), orDashText2(san(r.Age)), orDashText2(san(r.Assignee)), strings.Join(labels, ",")}
 	styled = append([]string(nil), plain...)
 	styled[2] = s.glyph(r.Status)
 	if k, ok := taskPriorityKind(r.Priority); ok {
@@ -339,6 +346,14 @@ func (s *tasksSection) listLines(iw int) ([]string, int) {
 	}
 	tb := listTable
 	hdr := append([]string(nil), listHeader...)
+	if s.width() >= bpUltra {
+		tb = table{cols: append(append([]column(nil), tb.cols...), labelsCol), gap: tb.gap}
+		hdr = append(hdr, "labels")
+	} else {
+		for i := range styled { // the labels cell is only shown from bpUltra columns
+			styled[i], plain[i] = styled[i][:len(listHeader)], plain[i][:len(listHeader)]
+		}
+	}
 	if s.ws.has() && len(rows) > 0 {
 		cells, plainCells := make([]string, len(rows)), make([]string, len(rows))
 		for i, r := range rows {
@@ -450,7 +465,7 @@ func (s *tasksSection) listView() string {
 		}
 		detail, off = scrollWindow(th, dl, l.dOff, rows)
 		l.dOff = off
-	} else if l.rep.Total > 0 {
+	} else {
 		detail = []string{th.Text(KindMuted, "no task selected")}
 	}
 	body := []string{s.strip(w), s.queryLine(w)}

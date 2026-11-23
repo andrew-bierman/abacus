@@ -188,3 +188,36 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │   ↕ +10 more                        │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter …
+=== 140x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                                                                                           14 tasks · 3 ready
+[open] / to filter                                                                                               12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────────────╮
+│   id    title                               st P  dep  type  age who labels      │ │ ac-12  bug                                          │
+│ ▸ ac-12 wire the lease heartbeat            ◐  P0 →1   bug   9d  ada core,leases │ │ wire the lease heartbeat                            │
+│   ac-01 Fleet workspace 1/5                 ○  P1      epic  30d mei workspace   │ │ ◐ in progress  P0  ada  9d                          │
+│   ac-15 lease holder column                 ○  P1 →1   feat  6d  mei leases,ui   │ │ labels  core, leases                                │
+│   ac-20 split graph source from export      ◐  P1 ⊘1→1 task  4d  ada core        │ │ parent  ○ ac-01 Fleet workspace                     │
+│   ac-09 queue attention digest              ○  P2 ⊘1   feat  12d -   queues      │ │                                                     │
+│   ac-16 stale lease warning                 ○  P2 ⊘1   task  5d  -   leases      │ │ Blocks (1)                                          │
+│   ac-21 export reader                       ○  P2 ⊘1→1 task  4d  -   core        │ │   ○ ac-09 queue attention digest                    │
+│   ac-25 doctor: stale export warning        ●  P2      bug   3d  ada doctor      │ │                                                     │
+│   ac-27 board thread digest                 ●  P3      feat  2d  -   later       │ │ The heartbeat misses a beat when a session resumes, │
+│   ac-30 saved filters                       ○  P3      feat  2d  -   later,ui    │ │ so a live lease looks stale for up to a minute.     │
+│   ac-33 help overlay per view               ◐  P3      task  1d  mei ui          │ │                                                     │
+│   ac-36 verify tool flags against help      ◇  P3      chore 40d mei later       │ │ Plan                                                │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │ • renew on resume, not on the next tick             │
+│                                                                                  │ │ • show the miss in Doctor                           │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │   renew --lease ac-zoj --now                        │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │ Uses renew with the --now flag.                     │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │ Acceptance                                          │
+│                                                                                  │ │ A resumed session keeps its lease without a stale   │
+│                                                                                  │ │ window.                                             │
+│                                                                                  │ │   ↕ +7 more                                         │
+╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · ↑/↓ move · n new · e edit · x close task…

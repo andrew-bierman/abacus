@@ -150,8 +150,11 @@ func TestMatchTable(t *testing.T) {
 		{"heartbeat", true, false, false},
 		{"lease heartbeat", true, false, false}, // every word must match
 		{"lease cards", false, false, false},
-		{"hb", true, true, false},                        // short word: subsequence of "heartbeat" and of "show blockers"
-		{"hbt", true, false, false},                      // still a subsequence
+		{"hb", true, true, false}, // short word: subsequence of "heartbeat" and of "show blockers"
+		{"hbt", true, false, false},
+		{"hbat", true, false, false},                     // exactly four characters is still a short word: a subsequence of "heartbeat"
+		{"hbtt", false, false, false},                    // but the letters must be in order                      // still a subsequence
+		{"hrtbt", false, false, false},                   // five characters is a long word: contiguous only, though a subsequence of "heartbeat"
 		{"heartbaet", false, false, false},               // long word: contiguous only
 		{`"misses on"`, true, false, false},              // phrase is contiguous
 		{`"on misses"`, false, false, false},             //

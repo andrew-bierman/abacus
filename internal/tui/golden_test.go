@@ -227,7 +227,7 @@ func scenarios() []scenario {
 		{name: "queues-tracker", keys: []string{"4"}, tab: "Queues", build: func(t *testing.T, th Theme) tea.Model {
 			return load(t, th, func(v lambe.View) lambe.View { v.Source, v.Queue = lambe.SourceTracker, lambe.Queue{}; return v })
 		}},
-		{name: "tasks", build: std, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks", build: std, keys: []string{"2"}, tab: "Tasks", extra: append(append([][2]int(nil), framedSizes...), [2]int{140, 32})},
 		{name: "tasks-detail", build: std, keys: []string{"2", "enter"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-sort", build: std, keys: []string{"2", "s", "S"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-ready", build: std, keys: []string{"2", "f"}, tab: "Tasks", extra: framedSizes},

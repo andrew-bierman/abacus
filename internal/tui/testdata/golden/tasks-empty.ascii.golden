@@ -91,7 +91,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Insights                                                                                        0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
-│ no tasks yet — press n to add the first one                          │ │                                             │
+│ no tasks yet — press n to add the first one                          │ │ no task selected                            │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -105,7 +105,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Insights                                                                                        0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
-│ no tasks yet — press n to add the first one                          │ │                                             │
+│ no tasks yet — press n to add the first one                          │ │ no task selected                            │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -161,7 +161,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Insights                                                                    0 tasks · 0 ready
 [open] / to filter                                                         0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ Task ──────────────────────────────╮
-│ no tasks yet — press n to add the first one              │ │                                     │
+│ no tasks yet — press n to add the first one              │ │ no task selected                    │
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │

@@ -161,10 +161,10 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Insights                                                                                                            3 tasks · 1 ready
 [all] / to filter                                                                                                  3 of 3 · sort: priority ↑
 ╭─ ▸ Tasks · recent only ──────────────────────────────────────────────────────────╮ ╭─ ac-09 ─────────────────────────────────────────────╮
-│   id    title                                             st P  dep type age who │ │ ac-09                                               │
-│   ac-12 wire the lease heartbeat                          ◐  P0     -    -   -   │ │ queue attention digest                              │
-│ ▸ ac-09 queue attention digest                            ○  P2     -    -   -   │ │ ○ open  P2                                          │
-│   ac-03 retire the old poller                             ✓  P3     -    -   -   │ │ ready                                               │
+│   id    title                                      st P  dep type age who labels │ │ ac-09                                               │
+│   ac-12 wire the lease heartbeat                   ◐  P0     -    -   -          │ │ queue attention digest                              │
+│ ▸ ac-09 queue attention digest                     ○  P2     -    -   -          │ │ ○ open  P2                                          │
+│   ac-03 retire the old poller                      ✓  P3     -    -   -          │ │ ready                                               │
 │                                                                                  │ │                                                     │
 │                                                                                  │ │ Workspace                                           │
 │                                                                                  │ │ where   Lambe · ac-09                               │
