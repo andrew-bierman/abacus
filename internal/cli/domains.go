@@ -160,6 +160,9 @@ func runDomain(cmd string, rest []string, d Deps) int {
 	if cmd == "tasks" && len(rest) > 0 && (rest[0] == "list" || rest[0] == "show" || rest[0] == "board") {
 		return runTaskView(rest[0], rest[1:], d)
 	}
+	if cmd == "tasks" && len(rest) > 0 && rest[0] == "history" {
+		return runTaskHistory(rest[1:], d)
+	}
 	if cmd == "tasks" && len(rest) > 0 && rest[0] == "graph" {
 		return runTaskGraph(rest[1:], d)
 	}
