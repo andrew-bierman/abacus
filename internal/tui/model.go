@@ -135,7 +135,7 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 	}
 	h, ok := p.Missing[d]
 	if !ok { // a provider exists but this front-end has no renderer for it
-		h = core.Header{Domain: d, Title: d.Title(), State: core.NotConnected, Reason: "no view for this provider", HowToConnect: core.HowToConnect[d]}
+		h = core.Header{Domain: d, Title: d.Title(), State: core.NotConnected, Reason: "no view for this provider", HowToConnect: core.HowToConnectFor(d)}
 	}
 	var fv func(string) tea.Cmd
 	if d == core.DomainTasks {

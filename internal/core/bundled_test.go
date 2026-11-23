@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -64,7 +65,7 @@ func TestABundledToolThatIsGoneIsAbacusProblemInAReleaseNotMissing(t *testing.T)
 			shown = append(shown, a)
 		}
 	}
-	for _, s := range append(append([]string{o.Headline, tl.Label(), tl.Note, o.Bundled.Line}, shown...), core.HowToConnect[core.DomainQueues]) {
+	for _, s := range append(append([]string{o.Headline, tl.Label(), tl.Note, o.Bundled.Line}, shown...), core.HowToConnectFor(core.DomainQueues)) {
 		if strings.Contains(strings.ToLower(s), "missing") || strings.Contains(s, "install") {
 			t.Errorf("a release user must not be told a bundled tool is missing or to install it: %q", s)
 		}
@@ -103,16 +104,16 @@ func TestADevBuildSaysRunDevBundleEverywhere(t *testing.T) {
 	if o.Ready || !strings.Contains(o.Headline, "scripts/dev-bundle.sh") || !strings.Contains(o.Headline, "bd, bv, lambe, beads-lease") {
 		t.Fatalf("%q", o.Headline)
 	}
-	for id, s := range map[string]string{"tasks": core.HowToConnect[core.DomainTasks], "leases": core.HowToConnect[core.DomainLeases],
-		"queues": core.HowToConnect[core.DomainQueues], "insights": core.HowToConnectInsights} {
+	for id, s := range map[string]string{"tasks": core.HowToConnectFor(core.DomainTasks), "leases": core.HowToConnectFor(core.DomainLeases),
+		"queues": core.HowToConnectFor(core.DomainQueues), "insights": core.HowToConnectInsights()} {
 		if !strings.Contains(s, "scripts/dev-bundle.sh") || strings.Contains(s, "download") {
 			t.Errorf("%s: %q", id, s)
 		}
 	}
 	// Setting a release version flips every text back.
 	core.SetBuildVersion("0.4.0")
-	if core.IsDevBuild() || !strings.Contains(core.HowToConnect[core.DomainTasks], "Re-extract the download") {
-		t.Fatalf("%q", core.HowToConnect[core.DomainTasks])
+	if core.IsDevBuild() || !strings.Contains(core.HowToConnectFor(core.DomainTasks), "Re-extract the download") {
+		t.Fatalf("%q", core.HowToConnectFor(core.DomainTasks))
 	}
 }
 
@@ -132,8 +133,8 @@ func TestAnOptionalToolIsOptionalNeverARequirement(t *testing.T) {
 	if tl.Label() != "optional" || !tl.Optional || tl.Bundled || !strings.Contains(tl.Note, "adds the Board tab") {
 		t.Fatalf("%+v label %q", tl, tl.Label())
 	}
-	if !strings.HasPrefix(core.HowToConnect[core.DomainBoard], "The Board tab is optional") {
-		t.Fatalf("%q", core.HowToConnect[core.DomainBoard])
+	if !strings.HasPrefix(core.HowToConnectFor(core.DomainBoard), "The Board tab is optional") {
+		t.Fatalf("%q", core.HowToConnectFor(core.DomainBoard))
 	}
 }
 
@@ -211,5 +212,43 @@ func TestTheOverviewAndVersionJSONAddBundledWithoutBumpingTheSchema(t *testing.T
 	bundled, _ := m["bundled"].(map[string]any)
 	if bundled["line"] != "Bundled tools: 4 of 4 verified" || bundled["verified"] != float64(4) || bundled["total"] != float64(4) {
 		t.Fatalf("%v", m["bundled"])
+	}
+}
+
+// TestBuildKindTextsAreSafeToReadWhileTheBuildVersionIsSet runs readers of every how-to-connect
+// text against SetBuildVersion; `go test -race` fails on any shared mutable text.
+func TestBuildKindTextsAreSafeToReadWhileTheBuildVersionIsSet(t *testing.T) {
+	t.Cleanup(func() { core.SetBuildVersion("1.0.0") })
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for n := 0; n < 200; n++ {
+				for _, d := range []core.DomainID{core.DomainTasks, core.DomainLeases, core.DomainQueues, core.DomainBoard} {
+					if core.HowToConnectFor(d) == "" {
+						t.Errorf("no text for %s", d)
+					}
+				}
+				if !strings.HasPrefix(core.HowToConnectInsights(), "Graph insights need bv.") {
+					t.Error("insights text")
+				}
+			}
+		}()
+	}
+	for n := 0; n < 200; n++ {
+		core.SetBuildVersion([]string{"dev", "1.2.3"}[n%2])
+	}
+	wg.Wait()
+}
+
+func TestHowToConnectFollowsTheBuildKindWithoutRefreshing(t *testing.T) {
+	asBuild(t, "dev")
+	if !strings.Contains(core.HowToConnectFor(core.DomainQueues), "scripts/dev-bundle.sh") || !strings.Contains(core.HowToConnectInsights(), "scripts/dev-bundle.sh") {
+		t.Fatalf("dev build: %q / %q", core.HowToConnectFor(core.DomainQueues), core.HowToConnectInsights())
+	}
+	core.SetBuildVersion("1.2.3")
+	if strings.Contains(core.HowToConnectFor(core.DomainQueues), "dev-bundle") || !strings.Contains(core.HowToConnectInsights(), "Re-extract") {
+		t.Fatalf("release build: %q / %q", core.HowToConnectFor(core.DomainQueues), core.HowToConnectInsights())
 	}
 }

@@ -149,10 +149,6 @@ type InsightsProvider interface {
 	Insights(context.Context) (InsightsReport, error)
 }
 
-// HowToConnectInsights is shown when no graph-analysis provider is available.
-// It is rewritten by SetBuildVersion (a release and a dev build word the fix differently).
-var HowToConnectInsights = "Graph insights need bv. " + BundledProblem("bv", "")
-
 // InsightsUnavailable is the plain one-liner for a bv read that failed on a tracker that has
 // tasks. The actual reason is kept for Doctor.
 const InsightsUnavailable = "Graph insights could not be read just now. Details are in Doctor."
@@ -327,16 +323,6 @@ type (
 	}
 )
 
-// HowToConnect is the fix message shown for a domain with no usable provider. It may name
-// the provider command because it helps the user fix a provider. The bundled-tool texts depend
-// on the build kind (release or dev) and are refreshed by SetBuildVersion at start-up.
-var HowToConnect = map[DomainID]string{
-	DomainBoard:  HowToConnectBoard,
-	DomainTasks:  BundledProblem("bd", ""),
-	DomainLeases: BundledProblem("beads-lease", ""),
-	DomainQueues: BundledProblem("lambe", ""),
-}
-
 // HowToConnectBoardDegraded is the hint for a Board read that failed although the CLI is there:
 // an install message would be wrong.
 const HowToConnectBoardDegraded = "Check board_url and the network, then press r."
@@ -347,7 +333,7 @@ func degradedHint(d DomainID) string {
 	if d == DomainBoard {
 		return HowToConnectBoardDegraded
 	}
-	return HowToConnect[d]
+	return HowToConnectFor(d)
 }
 
 func header(d DomainID) Header { return Header{Domain: d, Title: d.Title()} }
@@ -355,7 +341,7 @@ func header(d DomainID) Header { return Header{Domain: d, Title: d.Title()} }
 // notConnected builds the header for a domain with no usable provider.
 func notConnected(d DomainID, reason string) Header {
 	h := header(d)
-	h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(reason), HowToConnect[d]
+	h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(reason), HowToConnectFor(d)
 	return h
 }
 
@@ -605,7 +591,7 @@ func readInsightsFor(ctx context.Context, entries []Entry, tasks TasksReport) In
 func ReadInsights(ctx context.Context, p InsightsProvider, whyNot string) InsightsReport {
 	h := Header{Domain: DomainTasks, Title: "Insights"}
 	if p == nil {
-		h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(whyNot), HowToConnectInsights
+		h.State, h.Reason, h.HowToConnect = NotConnected, Sanitize(whyNot), HowToConnectInsights()
 		return InsightsReport{Header: h}
 	}
 	body, err := p.Insights(ctx)

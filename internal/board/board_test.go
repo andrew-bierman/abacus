@@ -146,8 +146,8 @@ func TestDetectAbsentNamesTheRealPackage(t *testing.T) {
 	if d := m.Detect(context.Background()); d.State != core.Absent || !strings.Contains(d.Detail, "Vercel Board CLI") {
 		t.Fatalf("%+v", d)
 	}
-	if !strings.Contains(core.HowToConnect[core.DomainBoard], "npm i -g @vercel/board") || strings.Contains(core.HowToConnect[core.DomainBoard], "npx vb") && !strings.Contains(core.HowToConnect[core.DomainBoard], "never") {
-		t.Fatalf("the install hint must name @vercel/board and warn off vb: %s", core.HowToConnect[core.DomainBoard])
+	if !strings.Contains(core.HowToConnectFor(core.DomainBoard), "npm i -g @vercel/board") || strings.Contains(core.HowToConnectFor(core.DomainBoard), "npx vb") && !strings.Contains(core.HowToConnectFor(core.DomainBoard), "never") {
+		t.Fatalf("the install hint must name @vercel/board and warn off vb: %s", core.HowToConnectFor(core.DomainBoard))
 	}
 }
 

@@ -17,11 +17,10 @@ const DevBundleCommand = "scripts/dev-bundle.sh"
 var devBuild atomic.Bool
 
 // SetBuildVersion tells core which kind of build this is: "dev" (or empty, or a -dev suffix) is a
-// locally built binary; anything else is a release. The CLI calls it once at start-up. It also
-// refreshes the how-to-connect texts that depend on the build kind. A zero value reads as a release.
+// locally built binary; anything else is a release. The CLI calls it once at start-up; it is safe
+// to call and to read from any goroutine. A zero value reads as a release.
 func SetBuildVersion(v string) {
 	devBuild.Store(v == "" || v == "dev" || strings.HasSuffix(v, "-dev"))
-	refreshHowToConnect()
 }
 
 // IsDevBuild reports whether this is a locally built binary (no release archive around it).
@@ -83,13 +82,26 @@ func AbsentSentence(tool, detail string) string {
 	return detail
 }
 
-// refreshHowToConnect rewrites the per-domain fix texts for the current build kind.
-func refreshHowToConnect() {
-	HowToConnect[DomainTasks] = BundledProblem("bd", "")
-	HowToConnect[DomainLeases] = BundledProblem("beads-lease", "")
-	HowToConnect[DomainQueues] = BundledProblem("lambe", "")
-	HowToConnectInsights = "Graph insights need bv. " + BundledProblem("bv", "")
+// HowToConnectFor is the fix message shown for a domain with no usable provider. It may name the
+// provider command because it helps the user fix a provider. The bundled-tool texts are computed
+// from the current build kind on every call, so there is no shared state to race on.
+func HowToConnectFor(d DomainID) string {
+	switch d {
+	case DomainBoard:
+		return HowToConnectBoard
+	case DomainTasks:
+		return BundledProblem("bd", "")
+	case DomainLeases:
+		return BundledProblem("beads-lease", "")
+	case DomainQueues:
+		return BundledProblem("lambe", "")
+	}
+	return ""
 }
+
+// HowToConnectInsights is shown when no graph-analysis provider is available (a release and a dev
+// build word the fix differently).
+func HowToConnectInsights() string { return "Graph insights need bv. " + BundledProblem("bv", "") }
 
 // BundledSummary is the self-contained check: how many of the tools abacus ships were found as its
 // own verified copies. Additive to the doctor and version reports.

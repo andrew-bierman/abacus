@@ -135,7 +135,7 @@ func TestTasksShowsCompactSummaryAndInsights(t *testing.T) {
 
 func TestInsightsNotConnectedShowsHowToInstall(t *testing.T) {
 	r := newTasksRig(t)
-	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights}}})
+	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights()}}})
 	if v := m.View(); !strings.Contains(v, "own copy of") || strings.Contains(v, "brew install") || !strings.Contains(v, "not connected") {
 		t.Fatalf("%s", v)
 	}
