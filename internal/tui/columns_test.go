@@ -8,6 +8,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+func sum(xs []int) (n int) {
+	for _, x := range xs {
+		n += x
+	}
+	return n
+}
+
 var testCols = []column{
 	{min: 6, max: 8, prio: 0},               // id
 	{min: 8, max: 12, prio: 1},              // state

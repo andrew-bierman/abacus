@@ -346,17 +346,13 @@ func (s *lambeSection) View() string {
 	case s.err != nil:
 		body = wrap(s.th.Text(KindWarn, "state unavailable: "+core.Sanitize(s.err.Error())), w)
 	default:
-		h := s.h
-		if s.notice != "" && h > 0 {
-			h = max(1, h-1)
-		}
-		g := duoLayout(w, h)
+		g := duoLayout(w, s.bodyH(s.notice))
 		scrolling, cursorLine := s.listLines(g.listInner())
 		list := s.compose(scrolling, cursorLine, g.inner)
-		body = g.draw(s.th, h, s.listTitle(), list, "Run", s.detailLines(), s.drilled)
+		body = g.draw(s.th, s.listTitle(), list, "Run", s.detailLines(), s.drilled)
 	}
 	if s.notice != "" {
-		body = append(body, trunc(s.th.Text(KindWarn, s.notice), w))
+		body = append(body, noticeLine(s.th, w, s.notice)...)
 	}
 	return joinLines(body)
 }

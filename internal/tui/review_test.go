@@ -417,11 +417,11 @@ func TestHostileUnicodeInLambeFields(t *testing.T) {
 func TestPaneBreakpointIsExactlyOneHundred(t *testing.T) {
 	th := asciiTheme()
 	list, detail := []string{"LIST"}, []string{"DETAIL"}
-	if g := duoLayout(99, 9); g.wide || strings.Contains(strings.Join(g.draw(th, 9, "L", list, "D", detail, false), "\n"), "DETAIL") {
+	if g := duoLayout(99, 9); g.wide || strings.Contains(strings.Join(g.draw(th, "L", list, "D", detail, false), "\n"), "DETAIL") {
 		t.Fatal("99 columns must be stacked")
 	}
 	g := duoLayout(100, 9)
-	if out := strings.Join(g.draw(th, 9, "L", list, "D", detail, false), "\n"); !g.wide || !strings.Contains(out, "DETAIL") || !strings.Contains(out, "LIST") {
+	if out := strings.Join(g.draw(th, "L", list, "D", detail, false), "\n"); !g.wide || !strings.Contains(out, "DETAIL") || !strings.Contains(out, "LIST") {
 		t.Fatalf("100 columns must be side by side: %q", out)
 	}
 }

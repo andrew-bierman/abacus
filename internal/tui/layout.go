@@ -5,6 +5,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 // Breakpoints. Every layout decision keys off one of these names, so a threshold is changed in
@@ -104,68 +106,6 @@ func (s *scroller) view(lines []string, h int) ([]string, int) {
 	return lines[s.off : s.off+n], len(lines) - n
 }
 
-// track is one slot in a split: a fixed length, a minimum that also shares leftover room, or
-// a pure share of the leftover room.
-type track struct {
-	kind   trackKind
-	n      int // length or minimum
-	weight int // share of the leftover room (flexible tracks)
-}
-
-type trackKind int
-
-const (
-	trackLength trackKind = iota
-	trackAtLeast
-	trackFill
-)
-
-func length(n int) track  { return track{kind: trackLength, n: max(n, 0)} }
-func atLeast(n int) track { return track{kind: trackAtLeast, n: max(n, 0), weight: 1} }
-func fill(weight int) track {
-	if weight <= 0 {
-		weight = 1
-	}
-	return track{kind: trackFill, weight: weight}
-}
-
-// split divides total cells among tracks, like a ratatui layout. Lengths and minimums are served
-// in order and clamped to what is left, then the rest is shared by weight among the flexible
-// tracks, remainders going to the earliest. The sizes never sum to more than total and are never
-// negative; with no flexible track the unclaimed room stays unassigned.
-func split(total int, tracks ...track) []int {
-	out := make([]int, len(tracks))
-	rem := max(total, 0)
-	weights := 0
-	for i, t := range tracks {
-		if t.kind != trackFill {
-			out[i] = min(t.n, rem)
-			rem -= out[i]
-		}
-		if t.kind != trackLength {
-			weights += t.weight
-		}
-	}
-	if weights == 0 || rem == 0 {
-		return out
-	}
-	given := 0
-	for i, t := range tracks {
-		if t.kind != trackLength {
-			share := rem * t.weight / weights
-			out[i] += share
-			given += share
-		}
-	}
-	for i := 0; given < rem && i < len(tracks); i++ {
-		if tracks[i].kind != trackLength {
-			out[i]++
-			given++
-		}
-	}
-	return out
-}
-
 // windowLines is the visible part of lines (rows <= 0: all) around the cursor line, with the
 // "+N more" marker in the last row when something is hidden. top is the scroll state.
 func windowLines(th Theme, lines []string, cursor, rows int, top *int) []string {
@@ -187,4 +127,26 @@ func clipLines(th Theme, lines []string, rows int) []string {
 		return lines[:1]
 	}
 	return append(append([]string(nil), lines[:rows-1]...), th.moreMarker(len(lines)-rows+1))
+}
+
+// titled is a panel title with where the data came from after it, when that is not the live source.
+func titled(name, source string) string {
+	if source == "" || source == core.SourceLive {
+		return name
+	}
+	return name + " · " + san(source)
+}
+
+// noticeLine is the one row under a section's panels that says what just happened or why a key did
+// nothing; it is cut to the width.
+func noticeLine(th Theme, w int, notice string) []string {
+	return []string{trunc(th.Text(KindWarn, san(notice)), w)}
+}
+
+// bodyH is the height left for panels when a notice row sits under them.
+func (g geom) bodyH(notice string) int {
+	if notice != "" && g.h > 0 {
+		return max(1, g.h-1)
+	}
+	return g.h
 }

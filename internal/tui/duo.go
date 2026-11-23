@@ -7,6 +7,7 @@ type duoGeom struct {
 	list   int // outer width of the list panel
 	detail int // outer width of the detail panel (the whole width when stacked)
 	inner  int // rows of content each panel holds; 0 means the body height is not known
+	h      int // the body height the geometry was laid out for (0: not known)
 }
 
 // duoMinRows is the fewest content rows a panel keeps when there is height to spare.
@@ -20,7 +21,7 @@ const (
 
 // duoLayout sizes the panels for a body w wide and h tall (h <= 0: as tall as the content).
 func duoLayout(w, h int) duoGeom {
-	g := duoGeom{wide: w >= bpWide, list: w, detail: w}
+	g := duoGeom{wide: w >= bpWide, list: w, detail: w, h: h}
 	if g.wide {
 		g.list = max(w*duoListFifths/5, duoListMinW)
 		g.detail = w - g.list - 1 // one blank column between the panels
@@ -36,7 +37,7 @@ func (g duoGeom) listInner() int { return max(g.list-panelChromeW, 1) }
 // draw frames the list and, when there is room or the user drilled in, the detail. The list panel
 // is the one focusable region; the detail is read-only. When the height is known both panels fill
 // it, so a short list does not leave a ragged bottom edge.
-func (g duoGeom) draw(th Theme, h int, listTitle string, list []string, detailTitle string, detail []string, drilled bool) []string {
+func (g duoGeom) draw(th Theme, listTitle string, list []string, detailTitle string, detail []string, drilled bool) []string {
 	rows := max(len(list), len(detail))
 	if !g.wide {
 		rows = len(list)
@@ -49,24 +50,17 @@ func (g duoGeom) draw(th Theme, h int, listTitle string, list []string, detailTi
 		// list in a 50-row terminal is a compact box, not a screen of empty frame.
 		rows = min(g.inner, max(rows, duoMinRows))
 	}
-	fill := func(lines []string) []string {
-		out := append([]string(nil), lines...)
-		for len(out) < rows {
-			out = append(out, "")
-		}
-		return out
-	}
 	height := rows + panelChromeH
-	if h > 0 {
-		height = min(height, h)
+	if g.h > 0 {
+		height = min(height, g.h)
 	}
 	if !g.wide {
 		if drilled {
-			return panel(th, detailTitle, fill(detail), g.detail, height, true)
+			return panel(th, detailTitle, padRows(detail, rows), g.detail, height, true)
 		}
-		return panel(th, listTitle, fill(list), g.list, height, true)
+		return panel(th, listTitle, padRows(list, rows), g.list, height, true)
 	}
-	return sideBySide(panel(th, listTitle, fill(list), g.list, height, true), panel(th, detailTitle, fill(detail), g.detail, height, false))
+	return sideBySide(panel(th, listTitle, padRows(list, rows), g.list, height, true), panel(th, detailTitle, padRows(detail, rows), g.detail, height, false))
 }
 
 // sideBySide joins two panels row by row with one blank column between them. The panels are the
@@ -99,13 +93,15 @@ func stackRows(h, topLen, bottomLen int) (top, bottom int) {
 // stackPanels draws two panels one above the other, the top one focused, each holding exactly the
 // rows it was given (padded with blanks).
 func stackPanels(th Theme, w int, topTitle string, top []string, topRows int, bottomTitle string, bottom []string, bottomRows int) []string {
-	fill := func(lines []string, n int) []string {
-		out := append([]string(nil), lines...)
-		for len(out) < n {
-			out = append(out, "")
-		}
-		return out
+	out := panel(th, topTitle, padRows(top, topRows), w, topRows+panelChromeH, true)
+	return append(out, panel(th, bottomTitle, padRows(bottom, bottomRows), w, bottomRows+panelChromeH, false)...)
+}
+
+// padRows is a copy of lines, extended with blank rows to n.
+func padRows(lines []string, n int) []string {
+	out := append([]string(nil), lines...)
+	for len(out) < n {
+		out = append(out, "")
 	}
-	out := panel(th, topTitle, fill(top, topRows), w, topRows+panelChromeH, true)
-	return append(out, panel(th, bottomTitle, fill(bottom, bottomRows), w, bottomRows+panelChromeH, false)...)
+	return out
 }
