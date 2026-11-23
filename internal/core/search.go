@@ -517,7 +517,14 @@ func snippetAround(body, word string) string {
 	}
 	start := max(0, at-16)
 	end := min(len(r), start+48)
-	s := string(r[start:end])
+	end = max(end, min(len(r), at+len([]rune(word))))  // never cut the match itself
+	for start > 0 && start < at && r[start-1] != ' ' { // begin and end on word boundaries
+		start++
+	}
+	for end < len(r) && end > at+len([]rune(word)) && r[end] != ' ' {
+		end--
+	}
+	s := strings.TrimSpace(string(r[start:end]))
 	if start > 0 {
 		s = "…" + s
 	}

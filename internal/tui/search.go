@@ -347,8 +347,12 @@ func (o *searchOverlay) region(iw int) (lines []string, at []int) {
 					ptitle += " · " + san(r.Snippet)
 					stitle += th.Text(KindMuted, " · "+san(r.Snippet))
 				}
-				plain = append(plain, []string{san(r.Label), ptitle, san(r.Meta)})
-				styled = append(styled, []string{san(r.Label), stitle, th.Text(KindMuted, san(r.Meta))})
+				meta := san(r.Meta)
+				if r.Title == r.Label { // a lease is its resource name: the label already says it, so the detail takes the title's room
+					ptitle, stitle, meta = meta, meta, ""
+				}
+				plain = append(plain, []string{san(r.Label), ptitle, meta})
+				styled = append(styled, []string{san(r.Label), stitle, th.Text(KindMuted, meta)})
 			}
 		}
 		widths := searchCols.fitRows(max(iw-2, 1), styled)

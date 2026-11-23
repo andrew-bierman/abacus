@@ -33,10 +33,10 @@ esc close · enter jump · ↑/↓ move …
 │   ac-36   verify to…  deferred · P3… │
 │                                      │
 │ Leases (4) · read 5m ago, may be ou… │
-│   ac-00h  ac-00h      held by codex… │
-│   ac-1k2  ac-1k2      stale · last … │
-│   ac-9x1  ac-9x1      free           │
-│   ac-zoj  ac-zoj      held by glm-s… │
+│   ac-00h  held by c…                 │
+│   ac-1k2  stale · l…                 │
+│   ac-9x1  free                       │
+│   ac-zoj  held by g…                 │
 │                                      │
 │                                      │
 │                                      │
@@ -47,11 +47,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                          18 hits │
 │ Tasks (14)                                                                   │
-│ ▸ ac-33   help overlay per view             in progress · P3 · mei           │
-│   ac-27   board thread digest               blocked · P3                     │
-│   ac-30   saved filters                     open · P3                        │
-│   ac-25   doctor: stale export warning      blocked · P2 · ada               │
-│   ac-20   split graph source from export    in progress · P1 · ada           │
+│ ▸ ac-33   help overlay per view                       in progress · P3 · mei │
+│   ac-27   board thread digest                         blocked · P3           │
+│   ac-30   saved filters                               open · P3              │
+│   ac-25   doctor: stale export warning                blocked · P2 · ada     │
+│   ac-20   split graph source from export              in progress · P1 · ada │
 │   ↕ +15 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
@@ -61,26 +61,26 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                          18 hits │
 │ Tasks (14)                                                                   │
-│ ▸ ac-33   help overlay per view             in progress · P3 · mei           │
-│   ac-27   board thread digest               blocked · P3                     │
-│   ac-30   saved filters                     open · P3                        │
-│   ac-25   doctor: stale export warning      blocked · P2 · ada               │
-│   ac-20   split graph source from export    in progress · P1 · ada           │
-│   ac-21   export reader                     open · P2                        │
-│   ac-16   stale lease warning               open · P2                        │
-│   ac-15   lease holder column               open · P1 · mei                  │
-│   ac-12   wire the lease heartbeat          in progress · P0 · ada           │
-│   ac-09   queue attention digest            open · P2                        │
-│   ac-04   document the write gate           closed · P2 · mei                │
-│   ac-03   retire the old poller             closed · P3 · ada                │
-│   ac-01   Fleet workspace                   open · P1 · mei                  │
-│   ac-36   verify tool flags against help    deferred · P3 · mei              │
+│ ▸ ac-33   help overlay per view                       in progress · P3 · mei │
+│   ac-27   board thread digest                         blocked · P3           │
+│   ac-30   saved filters                               open · P3              │
+│   ac-25   doctor: stale export warning                blocked · P2 · ada     │
+│   ac-20   split graph source from export              in progress · P1 · ada │
+│   ac-21   export reader                               open · P2              │
+│   ac-16   stale lease warning                         open · P2              │
+│   ac-15   lease holder column                         open · P1 · mei        │
+│   ac-12   wire the lease heartbeat                    in progress · P0 · ada │
+│   ac-09   queue attention digest                      open · P2              │
+│   ac-04   document the write gate                     closed · P2 · mei      │
+│   ac-03   retire the old poller                       closed · P3 · ada      │
+│   ac-01   Fleet workspace                             open · P1 · mei        │
+│   ac-36   verify tool flags against help              deferred · P3 · mei    │
 │                                                                              │
 │ Leases (4) · read 5m ago, may be out of date                                 │
-│   ac-00h  ac-00h                            held by codex-macbookpro · expi… │
-│   ac-1k2  ac-1k2                            stale · last holder claude-mac   │
-│   ac-9x1  ac-9x1                            free                             │
-│   ac-zoj  ac-zoj                            held by glm-scheduler-01 · expi… │
+│   ac-00h  held by codex-macbookpro · expires 3m                              │
+│   ac-1k2  stale · last holder claude-mac                                     │
+│   ac-9x1  free                                                               │
+│   ac-zoj  held by glm-scheduler-01 · expires 12m                             │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -91,11 +91,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                                                                  18 hits │
 │ Tasks (14)                                                                                                           │
-│ ▸ ac-33   help overlay per view                                                     in progress · P3 · mei           │
-│   ac-27   board thread digest                                                       blocked · P3                     │
-│   ac-30   saved filters                                                             open · P3                        │
-│   ac-25   doctor: stale export warning                                              blocked · P2 · ada               │
-│   ac-20   split graph source from export                                            in progress · P1 · ada           │
+│ ▸ ac-33   help overlay per view                                                               in progress · P3 · mei │
+│   ac-27   board thread digest                                                                 blocked · P3           │
+│   ac-30   saved filters                                                                       open · P3              │
+│   ac-25   doctor: stale export warning                                                        blocked · P2 · ada     │
+│   ac-20   split graph source from export                                                      in progress · P1 · ada │
 │   ↕ +15 more                                                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
@@ -105,26 +105,26 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                                                                  18 hits │
 │ Tasks (14)                                                                                                           │
-│ ▸ ac-33   help overlay per view                                                     in progress · P3 · mei           │
-│   ac-27   board thread digest                                                       blocked · P3                     │
-│   ac-30   saved filters                                                             open · P3                        │
-│   ac-25   doctor: stale export warning                                              blocked · P2 · ada               │
-│   ac-20   split graph source from export                                            in progress · P1 · ada           │
-│   ac-21   export reader                                                             open · P2                        │
-│   ac-16   stale lease warning                                                       open · P2                        │
-│   ac-15   lease holder column                                                       open · P1 · mei                  │
-│   ac-12   wire the lease heartbeat                                                  in progress · P0 · ada           │
-│   ac-09   queue attention digest                                                    open · P2                        │
-│   ac-04   document the write gate                                                   closed · P2 · mei                │
-│   ac-03   retire the old poller                                                     closed · P3 · ada                │
-│   ac-01   Fleet workspace                                                           open · P1 · mei                  │
-│   ac-36   verify tool flags against help                                            deferred · P3 · mei              │
+│ ▸ ac-33   help overlay per view                                                               in progress · P3 · mei │
+│   ac-27   board thread digest                                                                 blocked · P3           │
+│   ac-30   saved filters                                                                       open · P3              │
+│   ac-25   doctor: stale export warning                                                        blocked · P2 · ada     │
+│   ac-20   split graph source from export                                                      in progress · P1 · ada │
+│   ac-21   export reader                                                                       open · P2              │
+│   ac-16   stale lease warning                                                                 open · P2              │
+│   ac-15   lease holder column                                                                 open · P1 · mei        │
+│   ac-12   wire the lease heartbeat                                                            in progress · P0 · ada │
+│   ac-09   queue attention digest                                                              open · P2              │
+│   ac-04   document the write gate                                                             closed · P2 · mei      │
+│   ac-03   retire the old poller                                                               closed · P3 · ada      │
+│   ac-01   Fleet workspace                                                                     open · P1 · mei        │
+│   ac-36   verify tool flags against help                                                      deferred · P3 · mei    │
 │                                                                                                                      │
 │ Leases (4) · read 5m ago, may be out of date                                                                         │
-│   ac-00h  ac-00h                                                                    held by codex-macbookpro · expi… │
-│   ac-1k2  ac-1k2                                                                    stale · last holder claude-mac   │
-│   ac-9x1  ac-9x1                                                                    free                             │
-│   ac-zoj  ac-zoj                                                                    held by glm-scheduler-01 · expi… │
+│   ac-00h  held by codex-macbookpro · expires 3m                                                                      │
+│   ac-1k2  stale · last holder claude-mac                                                                             │
+│   ac-9x1  free                                                                                                       │
+│   ac-zoj  held by glm-scheduler-01 · expires 12m                                                                     │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
@@ -136,20 +136,20 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────╮
 │ search ac-▏                                      18 hits │
 │ Tasks (14)                                               │
-│ ▸ ac-33   help overla…  in progress · P3 · mei           │
-│   ac-27   board threa…  blocked · P3                     │
-│   ac-30   saved filte…  open · P3                        │
-│   ac-25   doctor: sta…  blocked · P2 · ada               │
-│   ac-20   split graph…  in progress · P1 · ada           │
-│   ac-21   export read…  open · P2                        │
-│   ac-16   stale lease…  open · P2                        │
-│   ac-15   lease holde…  open · P1 · mei                  │
-│   ac-12   wire the le…  in progress · P0 · ada           │
-│   ac-09   queue atten…  open · P2                        │
-│   ac-04   document th…  closed · P2 · mei                │
-│   ac-03   retire the …  closed · P3 · ada                │
-│   ac-01   Fleet works…  open · P1 · mei                  │
-│   ac-36   verify tool…  deferred · P3 · mei              │
+│ ▸ ac-33   help overlay per view   in progress · P3 · mei │
+│   ac-27   board thread digest     blocked · P3           │
+│   ac-30   saved filters           open · P3              │
+│   ac-25   doctor: stale export …  blocked · P2 · ada     │
+│   ac-20   split graph source fr…  in progress · P1 · ada │
+│   ac-21   export reader           open · P2              │
+│   ac-16   stale lease warning     open · P2              │
+│   ac-15   lease holder column     open · P1 · mei        │
+│   ac-12   wire the lease heartb…  in progress · P0 · ada │
+│   ac-09   queue attention digest  open · P2              │
+│   ac-04   document the write ga…  closed · P2 · mei      │
+│   ac-03   retire the old poller   closed · P3 · ada      │
+│   ac-01   Fleet workspace         open · P1 · mei        │
+│   ac-36   verify tool flags aga…  deferred · P3 · mei    │
 │                                                          │
 │ Leases (4) · read 5m ago, may be out of date             │
 │   ↕ +4 more                                              │
@@ -161,26 +161,26 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                                              18 hits │
 │ Tasks (14)                                                                                       │
-│ ▸ ac-33   help overlay per view                                 in progress · P3 · mei           │
-│   ac-27   board thread digest                                   blocked · P3                     │
-│   ac-30   saved filters                                         open · P3                        │
-│   ac-25   doctor: stale export warning                          blocked · P2 · ada               │
-│   ac-20   split graph source from export                        in progress · P1 · ada           │
-│   ac-21   export reader                                         open · P2                        │
-│   ac-16   stale lease warning                                   open · P2                        │
-│   ac-15   lease holder column                                   open · P1 · mei                  │
-│   ac-12   wire the lease heartbeat                              in progress · P0 · ada           │
-│   ac-09   queue attention digest                                open · P2                        │
-│   ac-04   document the write gate                               closed · P2 · mei                │
-│   ac-03   retire the old poller                                 closed · P3 · ada                │
-│   ac-01   Fleet workspace                                       open · P1 · mei                  │
-│   ac-36   verify tool flags against help                        deferred · P3 · mei              │
+│ ▸ ac-33   help overlay per view                                           in progress · P3 · mei │
+│   ac-27   board thread digest                                             blocked · P3           │
+│   ac-30   saved filters                                                   open · P3              │
+│   ac-25   doctor: stale export warning                                    blocked · P2 · ada     │
+│   ac-20   split graph source from export                                  in progress · P1 · ada │
+│   ac-21   export reader                                                   open · P2              │
+│   ac-16   stale lease warning                                             open · P2              │
+│   ac-15   lease holder column                                             open · P1 · mei        │
+│   ac-12   wire the lease heartbeat                                        in progress · P0 · ada │
+│   ac-09   queue attention digest                                          open · P2              │
+│   ac-04   document the write gate                                         closed · P2 · mei      │
+│   ac-03   retire the old poller                                           closed · P3 · ada      │
+│   ac-01   Fleet workspace                                                 open · P1 · mei        │
+│   ac-36   verify tool flags against help                                  deferred · P3 · mei    │
 │                                                                                                  │
 │ Leases (4) · read 5m ago, may be out of date                                                     │
-│   ac-00h  ac-00h                                                held by codex-macbookpro · expi… │
-│   ac-1k2  ac-1k2                                                stale · last holder claude-mac   │
-│   ac-9x1  ac-9x1                                                free                             │
-│   ac-zoj  ac-zoj                                                held by glm-scheduler-01 · expi… │
+│   ac-00h  held by codex-macbookpro · expires 3m                                                  │
+│   ac-1k2  stale · last holder claude-mac                                                         │
+│   ac-9x1  free                                                                                   │
+│   ac-zoj  held by glm-scheduler-01 · expires 12m                                                 │
 │                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │
