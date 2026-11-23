@@ -21,6 +21,11 @@
 #   tools[].assets             script  platform (os-arch) -> {asset, sha256, member}; for npm-bun
 #                                      {bun_target}, hand-edited: the compiled output is not pinned by a
 #                                      hash (bun output need not be reproducible) but by its inputs:
+#   tools[].bun_runtime        hand+script  platform -> {asset, sha256, member}: the official bun release
+#                                      archive (github.com/oven-sh/bun) the executable is compiled from.
+#                                      Downloaded with gh and verified fail closed; its bun binary is
+#                                      passed to `bun build --compile --compile-executable-path` for every
+#                                      target, so the runtime inside the Board CLI is the verified one.
 #   tools[].package, npm_integrity, lockfile, lockfile_sha256, bun_version, entry, runtime_license
 #                              npm-bun only. The whole npm tree comes from the committed lockfile
 #                              (npm ci --ignore-scripts); npm_integrity must equal the integrity the
@@ -49,6 +54,8 @@ need() { command -v "$1" >/dev/null || die "$1 is required"; }
 
 if command -v sha256sum >/dev/null; then sha() { sha256sum "$1" | cut -d' ' -f1; }
 else sha() { shasum -a 256 "$1" | cut -d' ' -f1; }; fi
+
+sha_stdin() { if command -v sha256sum >/dev/null; then sha256sum | cut -d' ' -f1; else shasum -a 256 | cut -d' ' -f1; fi; }
 
 # expand TEMPLATE VERSION OS ARCH
 expand() {
@@ -109,7 +116,10 @@ pin_of() {
   local v
   if is_npm "$1"; then
     v="$(tool_field "$1" ".assets[\"$2\"].bun_target // empty")"
-    [ -n "$v" ] && tool_field "$1" '.npm_integrity // empty'
+    [ -n "$v" ] || return 0
+    # Every input of the build, so changing any of them invalidates an install record.
+    printf '%s|%s|%s|%s|%s' "$(tool_field "$1" '.npm_integrity // empty')" "$(tool_field "$1" '.lockfile_sha256 // empty')" \
+      "$(tool_field "$1" '.bun_version // empty')" "$v" "$(tool_field "$1" ".bun_runtime[\"$2\"].sha256 // empty")" | sha_stdin
   else
     v="$(tool_field "$1" ".assets[\"$2\"].sha256 // empty")"; echo "$v"
   fi
@@ -188,6 +198,30 @@ install_tool() {
   chmod 0644 "$lic"
 }
 
+# fetch_bun TOOL PLATFORM -> prints the path of the verified bun executable for PLATFORM (the
+# runtime the Board CLI is compiled from): the official release archive, downloaded with gh, its
+# sha256 checked against the pin (fail closed), only the one named member extracted.
+fetch_bun() {
+  local tool="$1" p="$2" asset want member bunv dir zip exe
+  asset="$(tool_field "$tool" ".bun_runtime[\"$p\"].asset // empty")"; want="$(tool_field "$tool" ".bun_runtime[\"$p\"].sha256 // empty")"
+  member="$(tool_field "$tool" ".bun_runtime[\"$p\"].member // empty")"; bunv="$(tool_field "$tool" .bun_version)"
+  [ -n "$asset" ] && [ -n "$want" ] && [ -n "$member" ] || die "$tool has no bun runtime pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
+  [[ "$asset" =~ ^bun-[a-z0-9-]+\.zip$ ]] && [[ "$member" =~ ^bun-[a-z0-9-]+/bun$ ]] || die "$tool: unsafe bun runtime asset or member in the manifest"
+  dir="$cache/bun/$bunv-$p"; zip="$dir/$asset"; exe="$dir/bun"
+  mkdir -p "$dir"
+  if [ ! -f "$zip" ]; then
+    need gh
+    gh release download "bun-v$bunv" -R oven-sh/bun -p "$asset" -D "$dir" || die "$tool: cannot download $asset"
+  fi
+  [ "$(sha "$zip")" = "$want" ] || die "$tool: $asset sha256 $(sha "$zip") does not match the pin $want (delete $zip to refetch)"
+  need unzip
+  rm -f "$exe"
+  unzip -p "$zip" "$member" >"$exe" || die "$tool: cannot read $member from $asset"
+  [ -s "$exe" ] || die "$tool: empty bun runtime in $asset"
+  chmod 0755 "$exe"
+  echo "$exe"
+}
+
 # ensure_board_build TOOL PLATFORM -> prints the cache directory holding the compiled executable
 # and its licenses. Recipe (fail closed): copy the committed package.json and package-lock.json to a
 # temp dir; check the lockfile's sha256 and that the lockfile records the pinned npm integrity for the
@@ -195,7 +229,7 @@ install_tool() {
 # version; `bun build --compile` for the platform's target. Never `npx vb` (unrelated package).
 # A cached build is reused only when its record says it came from the same inputs.
 ensure_board_build() {
-  local tool="$1" p="$2" version integ lock lock_sha bunv entry target pkg key rec work lockdir
+  local tool="$1" p="$2" version integ lock lock_sha bunv entry target pkg key rec work lockdir bunexe
   version="$(tool_field "$tool" .version)"; integ="$(tool_field "$tool" .npm_integrity)"
   lock="$root/$(tool_field "$tool" .lockfile)"; lock_sha="$(tool_field "$tool" .lockfile_sha256)"
   bunv="$(tool_field "$tool" .bun_version)"; entry="$(tool_field "$tool" .entry)"
@@ -205,12 +239,13 @@ ensure_board_build() {
   [ -f "$lock" ] && [ "$(sha "$lock")" = "$lock_sha" ] || die "$tool: $(tool_field "$tool" .lockfile) does not match its pin lockfile_sha256; review it, then re-pin"
   jq -e --arg pkg "$pkg" --arg i "$integ" '.packages["node_modules/" + $pkg].integrity == $i' "$lock" >/dev/null \
     || die "$tool: the lockfile does not record the pinned npm integrity for $pkg"
-  key="$cache/$tool/$version-$p"; rec="$integ $lock_sha $bunv $target"
-  if [ -f "$key/board.build" ] && [ "$(cut -d' ' -f1-4 "$key/board.build")" = "$rec" ] \
-     && [ "$(sha "$key/$tool")" = "$(cut -d' ' -f5 "$key/board.build")" ] && [ -f "$key/LICENSE" ] && [ -f "$key/DEPENDENCY_LICENSES.txt" ] && [ -f "$key/BUN_LICENSE.md" ]; then
+  key="$cache/$tool/$version-$p"; rec="$integ $lock_sha $bunv $target $(tool_field "$tool" ".bun_runtime[\"$p\"].sha256 // empty")"
+  if [ -f "$key/board.build" ] && [ "$(cut -d' ' -f1-5 "$key/board.build")" = "$rec" ] \
+     && [ "$(sha "$key/$tool")" = "$(cut -d' ' -f6 "$key/board.build")" ] && [ -f "$key/LICENSE" ] && [ -f "$key/DEPENDENCY_LICENSES.txt" ] && [ -f "$key/BUN_LICENSE.md" ]; then
     echo "$key"; return 0
   fi
   need npm; need bun
+  bunexe="$(fetch_bun "$tool" "$p")" || exit 1
   [ "$(bun --version)" = "$bunv" ] || die "$tool: bun $(bun --version) is installed but the manifest pins bun $bunv"
   work="$(mktemp -d "${TMPDIR:-/tmp}/abacus-board.XXXXXX")"
   lockdir="$(dirname "$lock")"
@@ -218,7 +253,7 @@ ensure_board_build() {
   ( cd "$work" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null ) || { rm -rf "$work"; die "$tool: npm ci failed"; }
   [ -f "$work/node_modules/$pkg/$entry" ] || { rm -rf "$work"; die "$tool: $pkg has no $entry"; }
   bun build --compile --minify --no-compile-autoload-dotenv --no-compile-autoload-bunfig \
-    --target="$target" "$work/node_modules/$pkg/$entry" --outfile "$work/$tool.out" >/dev/null \
+    --target="$target" --compile-executable-path="$bunexe" "$work/node_modules/$pkg/$entry" --outfile "$work/$tool.out" >/dev/null \
     || { rm -rf "$work"; die "$tool: bun build failed"; }
   [ -s "$work/$tool.out" ] || { rm -rf "$work"; die "$tool: bun produced no executable"; }
   mkdir -p "$key.tmp"

@@ -19,7 +19,8 @@
 #
 # Environment: ABACUS_BUNDLE_CACHE (downloads and Board builds, default .cache/bundle),
 # ABACUS_BUNDLE_MANIFEST (manifest path, default bundled-tools.json), ABACUS_EMBED_BLOBS_DIR (where the
-# generated blobs go, default internal/embedtools/blobs) and, for tests, ABACUS_PACKAGE_PREBUILT_BIN
+# generated blobs go, default internal/embedtools/blobs) and, for tests, ABACUS_EMBED_SCRIPT (a stand-in for
+# embed-tools.sh) and ABACUS_PACKAGE_PREBUILT_BIN
 # (an existing binary to use instead of running go build).
 set -euo pipefail
 
@@ -77,7 +78,7 @@ for p in $platforms; do
   mkdir -p "$stage"
   echo "== $name"
 
-  bash "$root/scripts/embed-tools.sh" --platform "$p" --out "$work/tools-$p" --blobs "$blobs" \
+  bash "${ABACUS_EMBED_SCRIPT:-$root/scripts/embed-tools.sh}" --platform "$p" --out "$work/tools-$p" --blobs "$blobs" \
     || die "embed-tools.sh failed for $p"
   # Every manifest tool must be in the blob set as a non-empty compressed file; a release never ships a gap.
   for tool in "${tools[@]}"; do
@@ -110,6 +111,10 @@ for p in $platforms; do
     read -r _ _ exe_sha <"$work/tools-$p/.pins/$tool"
     echo "| $p | $tool | $(tool_field "$tool" .version) | \`$exe_sha\` | $(wc -c <"$blobs/$tool.zst" | tr -d ' ') bytes |" >>"$work/EMBEDDED_TOOLS.md"
   done < <(printf '%s\n' "${tools[@]}")
+  for tool in "${tools[@]}"; do
+    is_npm "$tool" || continue
+    echo "| $p | bun runtime inside $tool | $(tool_field "$tool" .bun_version) | \`$(tool_field "$tool" ".bun_runtime[\"$p\"].sha256")\` (verified release archive $(tool_field "$tool" ".bun_runtime[\"$p\"].asset")) | - |" >>"$work/EMBEDDED_TOOLS.md"
+  done
 
   cp "$root/LICENSE" "$stage/"
   chmod 0644 "$stage/LICENSE" "$stage/THIRD_PARTY_NOTICES.md"

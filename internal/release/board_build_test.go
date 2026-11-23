@@ -1,6 +1,8 @@
 package release
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -13,7 +15,8 @@ import (
 // bun runtime license.
 type boardRig struct {
 	*rig
-	out string
+	out      string
+	pristine map[string]any
 }
 
 const fakeBunLicense = "FAKE BUN LICENSE\n"
@@ -36,17 +39,44 @@ printf 'JOSE LICENSE\n' >node_modules/jose/LICENSE
 	must(t, os.WriteFile(filepath.Join(bin, "bun"), []byte(`#!/bin/sh
 echo "bun $*" >>"$FAKE_TOOLS_LOG"
 [ "$1" = --version ] && { echo "${FAKE_BUN_VERSION:-1.4.4}"; exit 0; }
-out=""; while [ $# -gt 0 ]; do [ "$1" = --outfile ] && out=$2; shift; done
+out=""; rt=""; for a in "$@"; do case "$a" in --compile-executable-path=*) rt=${a#*=} ;; esac; done
+while [ $# -gt 0 ]; do [ "$1" = --outfile ] && out=$2; shift; done
+[ -n "$rt" ] || { echo "fake bun: --compile-executable-path is required" >&2; exit 1; }
+echo "runtime $(cat "$rt")" >>"$FAKE_TOOLS_LOG"
 printf '#!/bin/sh\necho board 0.54.0 fake compiled\n' >"$out"
 `), 0o755))
 	// gh api answers the bun runtime license; gh release download keeps working as before.
 	gh, _ := os.ReadFile(filepath.Join(bin, "gh"))
 	must(t, os.WriteFile(filepath.Join(bin, "gh"), []byte(strings.Replace(string(gh), "name=\"\"; outfile", "[ \"$1\" = api ] && { printf 'FAKE BUN LICENSE\\n'; exit 0; }\nname=\"\"; outfile", 1)), 0o755))
+	// The bun runtime archives: tiny zips served by the fake gh, pinned in the manifest like the real ones.
+	rt := map[string]any{}
+	for p, v := range real["bun_runtime"].(map[string]any) {
+		e := v.(map[string]any)
+		z := zipOf(t, e["member"].(string), "FAKE BUN RUNTIME "+p+"\n")
+		must(t, os.WriteFile(filepath.Join(r.remote, e["asset"].(string)), z, 0o644))
+		rt[p] = map[string]any{"asset": e["asset"], "sha256": sum(z), "member": e["member"]}
+	}
+	real["bun_runtime"] = rt
 	real["license_sha256"] = sum([]byte("FAKE BOARD LICENSE\n"))
 	real["runtime_license"].(map[string]any)["sha256"] = sum([]byte(fakeBunLicense))
 	r.editTop(func(m map[string]any) { m["tools"] = append(m["tools"].([]any), real) })
 	r.env = append(r.env, "FAKE_TOOLS_LOG="+filepath.Join(r.root, "tools.log"))
-	return &boardRig{rig: r, out: filepath.Join(r.root, "tools")}
+	pristine := map[string]any{}
+	pb, _ := json.Marshal(real)
+	must(t, json.Unmarshal(pb, &pristine))
+	return &boardRig{rig: r, out: filepath.Join(r.root, "tools"), pristine: pristine}
+}
+
+func zipOf(t *testing.T, member, body string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, err := zw.Create(member)
+	must(t, err)
+	_, err = w.Write([]byte(body))
+	must(t, err)
+	must(t, zw.Close())
+	return buf.Bytes()
 }
 
 func realBoardEntry(t *testing.T) map[string]any {
@@ -94,15 +124,21 @@ func TestTheBoardCliIsBuiltFromItsPinnedNpmPackageNotDownloaded(t *testing.T) {
 			t.Errorf("the recipe must run %q:\n%s", want, log)
 		}
 	}
+	if !strings.Contains(log, "--compile-executable-path=") || !strings.Contains(log, "runtime FAKE BUN RUNTIME linux-amd64") {
+		t.Errorf("the executable must be compiled from the verified bun runtime for the target, the host included:\n%s", log)
+	}
 	for _, never := range []string{"npx", "npm install", "npm i "} {
 		if strings.Contains(log, never) {
 			t.Errorf("the recipe must never run %q:\n%s", never, log)
 		}
 	}
 	pin, _ := os.ReadFile(filepath.Join(b.out, ".pins", "board"))
-	want := realBoardEntry(t)["npm_integrity"].(string)
-	if !strings.HasPrefix(string(pin), want+" linux-amd64 ") {
-		t.Fatalf("the install record names the npm integrity: %q", pin)
+	ent := b.pristine
+	rtsha := ent["bun_runtime"].(map[string]any)["linux-amd64"].(map[string]any)["sha256"].(string)
+	inputs := ent["npm_integrity"].(string) + "|" + ent["lockfile_sha256"].(string) + "|" + ent["bun_version"].(string) + "|bun-linux-x64|" + rtsha
+	want := ent["npm_integrity"].(string)
+	if !strings.HasPrefix(string(pin), sum([]byte(inputs))+" linux-amd64 ") {
+		t.Fatalf("the install record is the digest of every build input: %q", pin)
 	}
 	for f, body := range map[string]string{"LICENSE": "FAKE BOARD LICENSE\n", "BUN_LICENSE.md": fakeBunLicense} {
 		if got, _ := os.ReadFile(filepath.Join(b.out, "third_party", "board", f)); string(got) != body {
@@ -178,6 +214,18 @@ func TestTheBoardBuildFailsClosed(t *testing.T) {
 				}
 			})
 		}, "license changed from its pin"},
+		"the bun runtime archive was tampered with": {func(b *boardRig) {
+			must(b.t, os.WriteFile(filepath.Join(b.remote, "bun-linux-x64.zip"), zipOf(b.t, "bun-linux-x64/bun", "EVIL\n"), 0o644))
+		}, "does not match the pin"},
+		"no bun runtime pin for the platform": {func(b *boardRig) {
+			b.editTop(func(m map[string]any) {
+				for _, tl := range m["tools"].([]any) {
+					if tl.(map[string]any)["name"] == "board" {
+						delete(tl.(map[string]any)["bun_runtime"].(map[string]any), "linux-amd64")
+					}
+				}
+			})
+		}, "no bun runtime pin"},
 		"an unsafe bun target": {func(b *boardRig) {
 			b.editTop(func(m map[string]any) {
 				for _, tl := range m["tools"].([]any) {
@@ -235,5 +283,45 @@ func TestEmbedToolsRefusesToPackWhenAMustShipLicenseHasNoEntry(t *testing.T) {
 	}
 	if _, e := os.Stat(blobs); e == nil {
 		t.Fatal("nothing may be packed")
+	}
+}
+
+func TestChangingAnyBoardBuildInputInvalidatesTheInstallRecord(t *testing.T) {
+	b := newBoardRig(t)
+	if o, err := b.embed(); err != nil {
+		t.Fatalf("%v\n%s", err, o)
+	}
+	if o, err := b.embed("--check"); err != nil {
+		t.Fatalf("a fresh build verifies: %v\n%s", err, o)
+	}
+	for name, edit := range map[string]func(tl map[string]any){
+		"bun version": func(tl map[string]any) { tl["bun_version"] = "9.9.9" },
+		"runtime hash": func(tl map[string]any) {
+			tl["bun_runtime"].(map[string]any)["linux-amd64"].(map[string]any)["sha256"] = strings.Repeat("a", 64)
+		},
+		"bun target": func(tl map[string]any) {
+			tl["assets"].(map[string]any)["linux-amd64"].(map[string]any)["bun_target"] = "bun-linux-x64-baseline"
+		},
+		"lockfile hash": func(tl map[string]any) { tl["lockfile_sha256"] = strings.Repeat("b", 64) },
+		"npm integrity": func(tl map[string]any) { tl["npm_integrity"] = "sha512-CHANGED" },
+	} {
+		b.editTop(func(m map[string]any) {
+			for _, tl := range m["tools"].([]any) {
+				if tl.(map[string]any)["name"] == "board" {
+					edit(tl.(map[string]any))
+				}
+			}
+		})
+		o, err := b.embed("--check")
+		if err == nil || !strings.Contains(o, "PROBLEM  board: does not match the pin") {
+			t.Errorf("%s: a changed input must make the installed Board CLI stale: %v\n%s", name, err, o)
+		}
+		b.editTop(func(m map[string]any) { // restore for the next case
+			for i, tl := range m["tools"].([]any) {
+				if tl.(map[string]any)["name"] == "board" {
+					m["tools"].([]any)[i] = b.pristine
+				}
+			}
+		})
 	}
 }

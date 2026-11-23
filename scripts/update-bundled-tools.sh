@@ -71,10 +71,37 @@ pin_npm() {
   echo "pinned $tool $version ($integ)"
 }
 
+# pin_bun TOOL: pin the official bun release archives the Board CLI is compiled from (the manifest's
+# bun_version): each platform's sha256 comes from upstream's SHASUMS256.txt, the archive is
+# downloaded with gh and must match it.
+pin_bun() {
+  local tool="$1" bunv dir p asset want got rt="{}" tmp
+  need gh
+  bunv="$(tool_field "$tool" .bun_version)"; dir="$cache/bun-pin/$bunv"; mkdir -p "$dir"
+  gh release download "bun-v$bunv" -R oven-sh/bun -p SHASUMS256.txt -D "$dir" --clobber || die "$tool: cannot read SHASUMS256.txt for bun $bunv"
+  for p in "${platforms[@]}"; do
+    case "$p" in
+      darwin-arm64) asset=bun-darwin-aarch64.zip ;; darwin-amd64) asset=bun-darwin-x64.zip ;;
+      linux-arm64) asset=bun-linux-aarch64.zip ;; linux-amd64) asset=bun-linux-x64.zip ;;
+      *) die "no bun asset known for $p" ;;
+    esac
+    want="$(awk -v a="$asset" '$2==a || $2=="*"a {print $1}' "$dir/SHASUMS256.txt" | head -n1)"
+    [ -n "$want" ] || die "$tool: bun $bunv publishes no checksum for $asset"
+    [ -f "$dir/$asset" ] || gh release download "bun-v$bunv" -R oven-sh/bun -p "$asset" -D "$dir" || die "$tool: cannot download $asset"
+    got="$(sha "$dir/$asset")"
+    [ "$got" = "$want" ] || die "$tool: $asset sha256 $got does not match upstream $want"
+    rt="$(jq -c --arg p "$p" --arg a "$asset" --arg h "$want" '. + {($p): {asset: $a, sha256: $h, member: (($a | sub("\\.zip$"; "")) + "/bun")}}' <<<"$rt")"
+  done
+  tmp="$(mktemp "$manifest.XXXXXX")"; tmps+=("$tmp")
+  jq --arg t "$tool" --argjson r "$rt" '(.tools[] | select(.name==$t)) |= (.bun_runtime=$r)' "$manifest" >"$tmp"
+  mv "$tmp" "$manifest"
+  echo "pinned the bun $bunv runtime for $tool"
+}
+
 pin_tool() {
   local tool="$1" version="$2"
   jq -e --arg t "$tool" '.tools[] | select(.name==$t)' "$manifest" >/dev/null || die "unknown tool $tool"
-  if is_npm "$tool"; then pin_npm "$tool" "$version"; return 0; fi
+  if is_npm "$tool"; then pin_npm "$tool" "$version"; pin_bun "$tool"; return 0; fi
   need gh
   local repo asset_t sums member_t tag dir sumfile
   repo="$(tool_field "$tool" .repo)"; asset_t="$(tool_field "$tool" .asset_template)"

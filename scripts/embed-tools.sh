@@ -129,6 +129,14 @@ if [ -e "$out" ]; then
     die "$out is not empty and does not look like an abacus bundle (no THIRD_PARTY_NOTICES.md and .pins/); refusing to replace it. Pass an empty or new --out directory."
   fi
 fi
+# One EXIT trap for every temp directory this script makes (RETURN traps do not fire on die/exit):
+# the build stage, and the blob work directory of pack_blobs. Nothing is left behind on failure.
+stage=""; old=""; pack_work=""
+on_exit() {
+  [ -z "$pack_work" ] || rm -rf "$pack_work"
+  if declare -F cleanup >/dev/null; then cleanup; fi
+}
+trap on_exit EXIT
 built=0
 if [ -f "$out/THIRD_PARTY_NOTICES.md" ]; then
   pending=0
@@ -144,13 +152,12 @@ build_raw() {
   stage="$(mktemp -d "$(dirname "$out")/.tools.XXXXXX")"
   old=""
   cleanup() {
-    rm -rf "$stage"
+    rm -rf "${stage:-}"
     # A swap that stopped half way puts the previous directory back.
     if [ -n "$old" ] && [ -d "$old" ]; then
       if [ -e "$out" ]; then rm -rf "$old"; else mv "$old" "$out"; fi
     fi
   }
-  trap cleanup EXIT
   mkdir "$stage/third_party" "$stage/.pins"
   notices_header >"$stage/THIRD_PARTY_NOTICES.md"
 
@@ -200,7 +207,7 @@ pack_blobs() {
   done
   mkdir -p "$(dirname "$blobs")"
   work="$(mktemp -d "$(dirname "$blobs")/.blobs.XXXXXX")"
-  trap 'rm -rf "$work"' RETURN
+  pack_work="$work"
   mkdir -p "$work/lic"
   cp -R "$out/third_party/." "$work/lic/"
   notices="$work/THIRD_PARTY_NOTICES.md"
@@ -219,8 +226,13 @@ pack_blobs() {
   for t in "${tools[@]}"; do args+=("$t=$(tool_field "$t" .version)"); done
   go run -C "$root" ./internal/embedtools/cmd/pack -src "$out" -licenses "$work/lic" -notices "$notices" \
     -out "$work/blobs" "${args[@]}" || die "packing the tools failed"
+  # What was packed must be exactly the tools the manifest lists, at the versions it pins.
+  [ "$(jq -S -c '[.tools[] | {name, version}] | sort_by(.name)' "$work/blobs/manifest.json")" = \
+    "$(jq -S -c '[.tools[] | {name, version}] | sort_by(.name)' "$manifest")" ] \
+    || die "the packed tool list does not match bundled-tools.json"
   rm -rf "$blobs"
   mv "$work/blobs" "$blobs"
+  rm -rf "$work"; pack_work=""
   echo "Packed ${#tools[@]} tools for $platform into $blobs ($(du -sh "$blobs" | cut -f1))"
 }
 [ -z "$blobs" ] || pack_blobs
