@@ -57,7 +57,7 @@ type module struct{ id, name, version string }
 func (m module) ID() string   { return m.id }
 func (m module) Name() string { return m.name }
 func (m module) Detect(context.Context) core.Detection {
-	return core.Detection{State: core.Ready, Version: m.version}
+	return core.Detection{State: core.Ready, Version: m.version, Source: core.SourceDemo}
 }
 func (m module) Doctor(context.Context) []core.Check {
 	return []core.Check{{Name: "demo data", Status: core.StatusOK, Detail: "fixtures, nothing contacted"}}

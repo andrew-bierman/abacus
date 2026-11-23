@@ -18,6 +18,7 @@ type Source string
 const (
 	SourceBundled  Source = "bundled"  // a sidecar shipped next to abacus
 	SourcePATH     Source = "PATH"     // found on the user's PATH
+	SourceDemo     Source = "demo"     // fixture data in a demo session: nothing was located
 	SourceOverride Source = "override" // an explicit ABACUS_*_BIN
 )
 

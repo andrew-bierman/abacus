@@ -591,3 +591,9 @@ func TestBareNameBinOverrideResolvesOnPathNotTheWorkingDirectory(t *testing.T) {
 		t.Fatalf("a bare-name override must resolve through PATH, got %+v", d)
 	}
 }
+
+func TestDemoModuleDetectsWithTheDemoSource(t *testing.T) {
+	if d := NewDemo().Detect(context.Background()); d.Source != core.SourceDemo || d.State != core.Ready {
+		t.Fatalf("demo detection = %+v", d)
+	}
+}

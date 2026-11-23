@@ -216,8 +216,14 @@ func (s *doctorSection) toolLines(ov core.Overview, iw int) []string {
 			where = th.Badge(KindOK, "bundled")
 		case "PATH", "override":
 			where = th.Badge(KindMuted, san(t.Where))
+		case string(core.SourceDemo):
+			where = th.Badge(KindAccent, "demo")
 		}
-		out = append(out, trunc(th.Label.Render(padTo(san(t.ID), 12))+" "+where+" "+th.Text(KindMuted, san(t.Version)), iw))
+		version := san(t.Version)
+		if t.Where == string(core.SourceDemo) {
+			version = "" // the badge already says it
+		}
+		out = append(out, trunc(th.Label.Render(padTo(san(t.ID), 12))+" "+where+" "+th.Text(KindMuted, version), iw))
 		if t.Note != "" {
 			out = append(out, hang("  ", th.Text(KindWarn, san(t.Note)), iw)...)
 		}

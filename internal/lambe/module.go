@@ -139,7 +139,7 @@ type versionInfo struct {
 
 func (m *Module) Detect(ctx context.Context) core.Detection {
 	if m.o.Demo {
-		return core.Detection{State: core.Ready, Version: "demo", APIVersion: SupportedAPIVersion}
+		return core.Detection{State: core.Ready, Version: "demo", APIVersion: SupportedAPIVersion, Source: core.SourceDemo}
 	}
 	f, absent := core.LocateFound("lambe", m.o.Bin, m.o.LookPath)
 	bin := f.Bin
