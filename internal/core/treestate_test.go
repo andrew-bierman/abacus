@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -151,5 +152,63 @@ func TestTreeStateNilAndRelativeAreSafe(t *testing.T) {
 	}
 	if err := NewTreeState("rel/path.json").Save("/t", TreeLayout{Folded: []string{"a"}}); err == nil {
 		t.Error("a relative path is refused, never written under the working directory")
+	}
+}
+
+func TestTreeStateDropsLegacyNameKeysOnSave(t *testing.T) {
+	s, p := newState(t)
+	_ = os.MkdirAll(filepath.Dir(p), 0o700)
+	_ = os.WriteFile(p, []byte(`{"schema_version":1,"trackers":{"name:api":{"folded":["a"]},"/abs/api":{"folded":["b"]}}}`), 0o600)
+	if err := s.Save("/other", TreeLayout{Folded: []string{"c"}}); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(p)
+	if strings.Contains(string(b), "name:api") || !strings.Contains(string(b), "/abs/api") {
+		t.Errorf("legacy basename keys (ambiguous between projects) go on the first save, rooted ones stay: %s", b)
+	}
+}
+
+func TestTreeStateConcurrentWritersLoseNothing(t *testing.T) {
+	_, p := newState(t)
+	const n = 20
+	var wg sync.WaitGroup
+	errs := make(chan error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			errs <- NewTreeState(p).Save(fmt.Sprintf("/trk/%02d", i), TreeLayout{Folded: []string{fmt.Sprintf("id-%02d", i)}})
+		}(i)
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("a writer failed: %v", err)
+		}
+	}
+	st := NewTreeState(p)
+	for i := 0; i < n; i++ {
+		if got := st.Load(fmt.Sprintf("/trk/%02d", i)).Folded; !slices.Equal(got, []string{fmt.Sprintf("id-%02d", i)}) {
+			t.Errorf("writer %d lost its update: %v", i, got)
+		}
+	}
+}
+
+func TestTreeStateSaveGivesUpWhenAnotherHoldsTheLock(t *testing.T) {
+	s, p := newState(t)
+	_ = os.MkdirAll(filepath.Dir(p), 0o700)
+	unlock, err := lockTree(p+".lock", time.Second)
+	if err != nil {
+		t.Skipf("no file locks here: %v", err)
+	}
+	defer unlock()
+	s.lockWait = 60 * time.Millisecond
+	start := time.Now()
+	if err := s.Save("/t", TreeLayout{Folded: []string{"a"}}); err == nil {
+		t.Fatal("a held lock must not be overwritten through")
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Error("the wait is bounded")
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,9 @@ const (
 	maxTrackers      = 64   // the least recently saved are dropped beyond this
 	maxFolded        = 5000 // per tracker
 	maxIDLen         = 200
+
+	// legacyKeyPrefix marks entries an earlier build keyed by the tracker's folder name alone.
+	legacyKeyPrefix = "name:"
 )
 
 // TreeLayout is one tracker's tree choices: which parents are folded, and whether the user chose the
@@ -33,12 +37,15 @@ func (l TreeLayout) empty() bool { return len(l.Folded) == 0 && l.View == "" }
 
 // TreeState reads and writes the layouts. A nil *TreeState keeps nothing (a demo session, a test).
 type TreeState struct {
-	path string
-	now  func() time.Time
+	path     string
+	now      func() time.Time
+	lockWait time.Duration // how long Save waits for another instance's save
 }
 
 // NewTreeState keeps layouts in the JSON file at path.
-func NewTreeState(path string) *TreeState { return &TreeState{path: path, now: time.Now} }
+func NewTreeState(path string) *TreeState {
+	return &TreeState{path: path, now: time.Now, lockWait: 500 * time.Millisecond}
+}
 
 // DefaultTreeStatePath is $XDG_STATE_HOME/abacus/tasks-tree.json (only when absolute) or
 // ~/.local/state/abacus/tasks-tree.json.
@@ -132,7 +139,20 @@ func (s *TreeState) Save(tracker string, l TreeLayout) error {
 	if !filepath.IsAbs(s.path) {
 		return errors.New("tree state: path is empty or not absolute")
 	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o700); err != nil {
+		return err
+	}
+	unlock, err := lockTree(s.path+".lock", s.lockWait)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	f := s.read()
+	for k := range f.Trackers { // keys by folder name alone were ambiguous between projects: dropped
+		if strings.HasPrefix(k, legacyKeyPrefix) {
+			delete(f.Trackers, k)
+		}
+	}
 	ids := cleanIDs(l.Folded)
 	sort.Strings(ids)
 	ids = slices.Compact(ids)

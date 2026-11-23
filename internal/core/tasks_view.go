@@ -57,6 +57,9 @@ type TaskSnapshot struct {
 	Issues  []TaskIssue
 	ReadAt  time.Time
 	Tracker string // display name of the tracker (its directory name), "" when unknown
+	// Root is the absolute directory that holds the tracker, "" when unknown. Per-tracker state
+	// (the tree's folds) is keyed on it: two projects can share a Tracker name, never a Root.
+	Root string
 	// Warnings say why the snapshot may be incomplete (a record that lost its dependencies,
 	// an unreadable time); empty for a clean read.
 	Warnings []string
