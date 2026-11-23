@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights
+[List] Kanban  Graph  Insights
 [open] / to f… 0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │ no tasks yet — press n to add the f… │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Graph  Insights
+[List] Kanban  Graph  Insights
 [open] / to f… 0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │ no tasks yet — press n to add the f… │
@@ -44,7 +44,7 @@
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights                                         0 tasks · 0 ready
+[List] Kanban  Graph  Insights                                 0 tasks · 0 ready
 [open] / to filter                                     0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │ no tasks yet — press n to add the first one                                  │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                         0 tasks · 0 ready
+[List] Kanban  Graph  Insights                                 0 tasks · 0 ready
 [open] / to filter                                     0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │ no tasks yet — press n to add the first one                                  │
@@ -88,7 +88,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · f quick filte…
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights                                                                                 0 tasks · 0 ready
+[List] Kanban  Graph  Insights                                                                         0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
 │ no tasks yet — press n to add the first one                          │ │ no task selected                            │
@@ -102,7 +102,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                                                                 0 tasks · 0 ready
+[List] Kanban  Graph  Insights                                                                         0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
 │ no tasks yet — press n to add the first one                          │ │ no task selected                            │
@@ -133,7 +133,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Graph  Insights                     0 tasks · 0 ready
+[List] Kanban  Graph  Insights             0 tasks · 0 ready
 [open] / to filter                 0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
 │ no tasks yet — press n to add the first one              │
@@ -158,7 +158,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                                             0 tasks · 0 ready
+[List] Kanban  Graph  Insights                                                     0 tasks · 0 ready
 [open] / to filter                                                         0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ Task ──────────────────────────────╮
 │ no tasks yet — press n to add the first one              │ │ no task selected                    │

@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+ List [Kanban] Graph  Insights
+group: status · closed 2 hidde… 14 of 14
+ Open 6 │[In progress 3]│ Blocked 2 ›
+╭─ ▸ In progress  3 ───────────────────╮
+│   wire the lease heartbeat           │
+│                                      │
+│ ▸ ac-20 P1 ⊘1→1 ada                  │
+│   split graph source from export     │
+│   ↕ +6 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+ List [Kanban] Graph  Insights
+group: status · closed 2 hidde… 14 of 14
+ Open 6 │[In progress 3]│ Blocked 2 ›
+╭─ ▸ In progress  3 ───────────────────╮
+│ 2 urgent · 1 held                    │
+│   ac-12 P0 →1 ada                    │
+│   wire the lease heartbeat           │
+│                                      │
+│ ▸ ac-20 P1 ⊘1→1 ada                  │
+│   split graph source from export     │
+│                                      │
+│   ac-33 P3 mei                       │
+│   help overlay per view              │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List [Kanban] Graph  Insights                                14 tasks · 3 ready
+group: status · closed 2 hidden (Z) · / to filter                       14 of 14
+ Open 6 │[In progress 3]│ Blocked 2 │ Deferred 1
+╭─ ▸ In progress  3 ───────────────────────────────────────────────────────────╮
+│   wire the lease heartbeat                                                   │
+│                                                                              │
+│ ▸ ac-20 P1 ⊘1→1 ada                                                          │
+│   split graph source from export                                             │
+│   ↕ +6 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights                                14 tasks · 3 ready
+group: status · closed 2 hidden (Z) · / to filter                       14 of 14
+ Open 6 │[In progress 3]│ Blocked 2 │ Deferred 1
+╭─ ▸ In progress  3 ───────────────────────────────────────────────────────────╮
+│ 2 urgent · 1 held                                                            │
+│   ac-12 P0 →1 ada                                                            │
+│   wire the lease heartbeat                                                   │
+│                                                                              │
+│ ▸ ac-20 P1 ⊘1→1 ada                                                          │
+│   split graph source from export                                             │
+│                                                                              │
+│   ac-33 P3 mei                                                               │
+│   help overlay per view                                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List [Kanban] Graph  Insights                                                                        14 tasks · 3 ready
+group: status · closed 2 hidden (Z) · / to filter                                                               14 of 14
+╭─ Open 6 ───────────────────╮╭─ ▸ In progress 3 ──────────╮╭─ Blocked 2 ────────────────╮╭─ Deferred 1 ───────────────╮
+│ 2 urgent · 3 held          ││   ac-12 P0 →1 ada          ││   ac-25 P2 ada             ││   ac-36 P3 mei             │
+│   ac-01 P1 mei             ││   wire the lease heartbeat ││   doctor: stale export wa… ││   verify tool flags again… │
+│   Fleet workspace          ││                            ││                            ││                            │
+│                            ││ ▸ ac-20 P1 ⊘1→1 ada        ││   ac-27 P3                 ││                            │
+│   ac-15 P1 →1 mei          ││   split graph source from… ││   board thread digest      ││                            │
+│   ↕ +14 more               ││   ↕ +5 more                ││                            ││                            │
+╰────────────────────────────╯╰────────────────────────────╯╰────────────────────────────╯╰────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move · enter details · s group · Z closed · g graph…
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights                                                                        14 tasks · 3 ready
+group: status · closed 2 hidden (Z) · / to filter                                                               14 of 14
+╭─ Open 6 ───────────────────╮╭─ ▸ In progress 3 ──────────╮╭─ Blocked 2 ────────────────╮╭─ Deferred 1 ───────────────╮
+│ 2 urgent · 3 held          ││ 2 urgent · 1 held          ││   ac-25 P2 ada             ││   ac-36 P3 mei             │
+│   ac-01 P1 mei             ││   ac-12 P0 →1 ada          ││   doctor: stale export wa… ││   verify tool flags again… │
+│   Fleet workspace          ││   wire the lease heartbeat ││                            ││                            │
+│                            ││                            ││   ac-27 P3                 ││                            │
+│   ac-15 P1 →1 mei          ││ ▸ ac-20 P1 ⊘1→1 ada        ││   board thread digest      ││                            │
+│   lease holder column      ││   split graph source from… ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│   ac-09 P2 ⊘1              ││   ac-33 P3 mei             ││                            ││                            │
+│   queue attention digest   ││   help overlay per view    ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│   ac-16 P2 ⊘1              ││                            ││                            ││                            │
+│   stale lease warning      ││                            ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│   ac-21 P2 ⊘1→1            ││                            ││                            ││                            │
+│   export reader            ││                            ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│   ac-30 P3                 ││                            ││                            ││                            │
+│   saved filters            ││                            ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│                            ││                            ││                            ││                            │
+│                            ││                            ││                            ││                            │
+╰────────────────────────────╯╰────────────────────────────╯╰────────────────────────────╯╰────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move · enter details · s group · Z closed · g graph…
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights            14 tasks · 3 ready
+group: status · closed 2 hidden (Z) · / to filter   14 of 14
+ Open 6 │[In progress 3]│ Blocked 2 │ Deferred 1
+╭─ ▸ In progress  3 ───────────────────────────────────────╮
+│ 2 urgent · 1 held                                        │
+│   ac-12 P0 →1 ada                                        │
+│   wire the lease heartbeat                               │
+│                                                          │
+│ ▸ ac-20 P1 ⊘1→1 ada                                      │
+│   split graph source from export                         │
+│                                                          │
+│   ac-33 P3 mei                                           │
+│   help overlay per view                                  │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights                                                    14 tasks · 3 ready
+group: status · closed 2 hidden (Z) · / to filter                                           14 of 14
+╭─ Open 6 ──────────────╮╭─ ▸ In progress 3 ─────╮╭─ Blocked 2 ───────────╮╭─ Deferred 1 ──────────╮
+│ 2 urgent · 3 held     ││ 2 urgent · 1 held     ││   ac-25 P2 ada        ││   ac-36 P3 mei        │
+│   ac-01 P1 mei        ││   ac-12 P0 →1 ada     ││   doctor: stale expo… ││   verify tool flags … │
+│   Fleet workspace     ││   wire the lease hea… ││                       ││                       │
+│                       ││                       ││   ac-27 P3            ││                       │
+│   ac-15 P1 →1 mei     ││ ▸ ac-20 P1 ⊘1→1 ada   ││   board thread digest ││                       │
+│   lease holder column ││   split graph source… ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│   ac-09 P2 ⊘1         ││   ac-33 P3 mei        ││                       ││                       │
+│   queue attention di… ││   help overlay per v… ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│   ac-16 P2 ⊘1         ││                       ││                       ││                       │
+│   stale lease warning ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│   ac-21 P2 ⊘1→1       ││                       ││                       ││                       │
+│   export reader       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│   ac-30 P3            ││                       ││                       ││                       │
+│   saved filters       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+│                       ││                       ││                       ││                       │
+╰───────────────────────╯╰───────────────────────╯╰───────────────────────╯╰───────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move · enter details · s group …

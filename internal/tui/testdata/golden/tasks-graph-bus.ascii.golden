@@ -1,7 +1,7 @@
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                                             5 tasks · 2 ready
+ List  Kanban [Graph] Insights                                                     5 tasks · 2 ready
 focus bs-f · depth 2 · blocking links
 ╭─ ▸ Graph · bs-f ───────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
 │   ┌─────────────────────────┐  ┌─────────────────────────┐     │ │ longest chain (3):            │
@@ -34,7 +34,7 @@ focus bs-f · depth 2 · blocking links
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                         5 tasks · 2 ready
+ List  Kanban [Graph] Insights                                 5 tasks · 2 ready
 focus bs-f · depth 2 · blocking links
 ╭─ ▸ Graph · bs-f ─────────────────────────────────────────────────────────────╮
 │ blocked by                                                                   │
@@ -59,7 +59,7 @@ focus bs-f · depth 2 · blocking links
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
- List [Graph] Insights                     5 tasks · 2 ready
+ List  Kanban [Graph] Insights             5 tasks · 2 ready
 focus bs-f · depth 2 · blocking links
 ╭─ ▸ Graph · bs-f ─────────────────────────────────────────╮
 │ blocked by                                               │

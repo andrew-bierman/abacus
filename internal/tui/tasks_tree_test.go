@@ -765,6 +765,8 @@ func TestMergedKeyMapKeepsHAndLPerView(t *testing.T) {
 		"tree folded":   {func(s *tasksSection) { send(s, "-") }, "fold"},
 		"flat":          {func(s *tasksSection) { send(s, "T") }, ""},
 		"insights":      {func(s *tasksSection) { send(s, "V") }, ""},
+		"kanban":        {func(s *tasksSection) { send(s, "v") }, "column"},
+		"kanban whole":  {func(s *tasksSection) { send(s, "v", "Z", "s") }, "column"},
 		"graph":         {func(s *tasksSection) { send(s, "g") }, "sibling"},
 		"graph whole":   {func(s *tasksSection) { send(s, "g", "g") }, "layer"},
 		"tree filtered": {func(s *tasksSection) { send(s, "/", "l", "e", "enter") }, "fold"},

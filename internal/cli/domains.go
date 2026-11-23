@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -162,7 +163,7 @@ func renderDomains(w io.Writer, d core.DomainsReport) {
 
 // runDomain handles `board|tasks|leases|queues [--json]` and `tasks create|update|close`.
 func runDomain(cmd string, rest []string, d Deps) int {
-	if cmd == "tasks" && len(rest) > 0 && (rest[0] == "list" || rest[0] == "show") {
+	if cmd == "tasks" && len(rest) > 0 && (rest[0] == "list" || rest[0] == "show" || rest[0] == "board") {
 		return runTaskView(rest[0], rest[1:], d)
 	}
 	if cmd == "tasks" && len(rest) > 0 && rest[0] == "graph" {
@@ -279,6 +280,28 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if w == nil {
 		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 		return core.ExitFail
+	}
+	if ch.Status != "" && !slices.Contains(core.TaskStatuses, ch.Status) {
+		fmt.Fprintf(d.Err, "tasks %s: status must be one of %s (use close to close)\n", verb, strings.Join(core.TaskStatuses, ", "))
+		return core.ExitUsage
+	}
+	if ch.Status != "" { // a status change names the status the task has now, read here, so a change by someone else is refused
+		r := core.ResolveProviders(entries).Reader
+		if r == nil {
+			fmt.Fprintf(d.Err, "tasks %s: cannot read the task's current status, so --status is not available\n", verb)
+			return core.ExitFail
+		}
+		cur, err := r.ReadTask(ctx, ch.ID)
+		if err != nil {
+			fmt.Fprintf(d.Err, "tasks %s: could not read %s first: %s\n", verb, core.Sanitize(ch.ID), core.Sanitize(err.Error()))
+			return core.ExitFail
+		}
+		ch.IfStatus, ch.Before = cur.Status, cur
+		// naming the status it already has is not a change: drop it (and its guard) when other fields
+		// are set; alone it stays the "already X" refusal
+		if ch.Status == cur.Status && (ch.Title != "" || ch.Description != "" || ch.Priority != nil) {
+			ch.Status, ch.IfStatus = "", ""
+		}
 	}
 	plan, err := core.PlanTaskChange(w, ch)
 	if err != nil {

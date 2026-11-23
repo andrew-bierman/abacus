@@ -3,8 +3,8 @@
 The TUI renders core's typed domain reports and holds no logic of its own. It is the fleet
 cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. Tasks is abacus's own work
 browser: every task listed, sorted and filtered, with a detail pane (see "Tasks" below); the
-tree of epics and children is the default list when a tracker has parent-child links, and the
-dependency graph is the Graph view (below); the kanban view is planned in `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`.
+tree of epics and children is the default list when a tracker has parent-child links, the kanban
+board is the Kanban view and the dependency graph is the Graph view (both below).
 The `o` handoff to the full b9s view stays as an optional extra. The Board is a message board for agents: channels,
 recent threads and open tasks, with the selected thread or task shown in full below the list. Providers (the tools behind each domain)
 are named only in Doctor and in "how to connect" or error messages, never in navigation.
@@ -33,10 +33,11 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues and Tasks, narrow layout only: open the detail; `esc` closes it, a second `esc` clears the filter. Tasks, wide layout: `enter` focuses the detail to scroll it, `esc` leaves |
 | `/` | Queues: filter runs by issue, state, phase, machine or workflow. Tasks: the query (below); `enter` keeps it, `esc` clears it |
-| `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Graph, Insights) |
+| `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Kanban, Graph, Insights) |
 | `g` | Tasks list: open the dependency graph on the selected task. In the Graph view: switch between the task's neighborhood and the whole graph. `[` `]` change the depth, `h` `l` step to a sibling (a layer in the whole graph), `enter` refocuses on the selected node (on the focus itself, or in the whole graph, it opens that task in the list), `esc` returns to the list |
 | `ctrl+k` | global search from any tab (see "Global search"); not offered while a form, the confirm screen or a filter is open |
 | `T`, `h` `l`, `+` `-` | Tasks list: switch between the tree of epics and children and the flat list; in the tree, `h` folds an expanded parent (on a leaf or a folded task it goes up to the parent), `l` unfolds a folded one (on an expanded one it goes to the first child), `+` expands all, `-` folds all |
+| `h` `l`, `H` `L`, `Z`, `s` | Tasks Kanban: previous, next column (the arrow keys stay tab navigation); move the card one column left or right (a confirmed write); show or hide the closed column; next grouping (status, priority, type); `g` opens the graph on the card, `v` and `V` change view |
 | `?` | full help overlay; `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
@@ -140,6 +141,38 @@ differ by a refresh.)
   break every tie, connectors are drawn only between neighboring layers (other links are counted),
   and the graph engine's bottlenecks are marked `^`. `abacus tasks graph [ID | --whole] [--depth N]
   [--json]` prints the same view.
+- **Kanban view.** Columns by stored status (Open, In progress, Blocked, Deferred, plus a column for
+  any other status a task holds, such as a custom one), each with its card count and, when there are
+  any, how many cards are urgent (P0 and P1) and how many are held by an unfinished dependency.
+  Closed work is folded to a count in the query line (`closed 2 hidden (Z)`); `Z` shows it as a
+  last column. A task held back only by a dependency keeps its stored column and shows `⊘N`: the
+  derived state is a badge, never a column. `s` regroups the columns by priority or type (moves
+  need the status grouping). From 100 columns the columns sit side by side (a column needs 20
+  cells: five columns, with `Z`, fit from 100 columns and six from 120); below that a tab strip shows one
+  column at a time, `h` and `l` change it. `j` and `k` move between cards, `enter` shows the card in
+  full (`esc` back), `/` edits the same query the list uses and applies to the board. The view order is List, Kanban, Graph, Insights. `g` (or `v` into the Graph) opens the graph on the selected card, and `V` back to the List puts the list cursor on it. `h` `l` `H` `L` and the tree keys (`T`, `+`, `-`) stay strictly per view. The selected
+  card is a task id: when a refresh moves it to another column the cursor follows it. All the
+  grouping, counting and ordering is core's (`internal/taskview` `Board`, printed by
+  `abacus tasks board [--json]`); the view only draws it.
+- **Moving a card.** `H` and `L` move the selected card to the previous or next column. That is a
+  write, and it goes the one way every Tasks write goes: the card's task is read again, and when its
+  status is no longer the one the board showed the move is dropped ("changed since you opened it");
+  otherwise the confirm screen shows the plan, before and after, a warning when an unfinished
+  blocker holds the card, and the exact command; only `y` applies it, once, audited before and after.
+  The legal moves: between the four working statuses (`bd update --status` with `--if-status`, so the
+  tracker itself refuses with exit 13 if another actor moved the task first); into closed (`bd
+  close`, no reason); out of closed only to open (`bd reopen`; `H` from the closed column goes
+  there). A custom status is a column to move out of, never into (stepping with `H` and `L` skips it). After the write the task is read
+  again and its status must be the one asked for. There is no delete.
+
+  Be clear about the guards. Moves between the working statuses are guarded by the tracker itself
+  (`--if-status`). `bd close` and `bd reopen` have **no** tracker-side guard, so their protection is
+  abacus's own: the task is read again when the confirm screen opens and again right before the write
+  after `y`, and the move is dropped ("changed since you opened it") on any mismatch. If the task cannot
+  be read at either point the move is refused ("could not verify the current status; nothing was
+  written"), never confirmed unchecked. What remains is the gap between that last read and the tracker
+  running the command. A write the tracker confirmed but whose re-read shows another status (someone
+  moved it again) is reported as written, not as failed, and audited as `applied-mismatch`.
 - **Insights view.** `n` works from any view; `e`, `x` and the workspace key act on the list's task,
   which this view does not show, so they only say `switch to the List view (v)`.
 - **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e` and `x` forms and
@@ -147,7 +180,8 @@ differ by a refresh.)
 
 `abacus tasks list [--query Q] [--sort KEY] [--reverse] [--preset P] [--tree] [--json]` and
 `abacus tasks show ID [--json]` print the same typed reports (`schema_version` 1, additive keys
-only) the TUI renders.
+only) the TUI renders. `abacus tasks board [--query Q] [--group status|priority|type] [--closed]
+[--json]` prints the kanban columns, counts and cards.
 
 The new and edit forms, the "Checking the current state…" screen, the confirm screen and its
 "applying…" state are each one framed panel with the title in the border. The form is a table: a

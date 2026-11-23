@@ -49,8 +49,23 @@ may change behavior, and patch versions are fixes and small additions.
   Orphans, cycles of parent links, duplicate ids and deep nesting are handled and tested; fixtures
   come from a real `bd` 1.3.4 tracker with nested epics. Read only.
 
+- Tasks Kanban view (U4 of the same plan; `v` after List): columns by stored status with card,
+  urgent and held counts, closed folded to a count (`Z` shows it), regrouping by priority or type
+  (`s`), a derived-blocked badge on the card (never a column), keyboard-first (`h` `l` between
+  columns, `j` `k` between cards, `H` `L` moves the card), side by side from 100 columns and a tab
+  strip below. Moving a card is a gated write: plan, re-read, confirm screen with the exact command,
+  single-use apply, audit before and after. New guarded verb `bd update ID --json --status=S
+  --if-status=OLD` (the tracker refuses with exit 13 if the status changed; reported as "changed
+  since you opened it"), `bd reopen` for the way out of closed, and a re-read after the write. New
+  `abacus tasks board [--json]` prints the same typed report. Core owns the board and the pure move
+  planner (`internal/taskview`).
+
 ### Changed
 
+- A status change now always names the status the task has (`--if-status`): the TUI edit form and
+  `abacus tasks update --status` read the task first and send it, and the write allowlist refuses a
+  status update without that guard (and `--force`). `abacus tasks update --status` therefore needs a
+  readable tracker. The view strip is now List, Kanban, Insights (`V` from List still reaches Insights).
 - abacus no longer says it has no issue browser: the Tasks tab is its own list and detail view. The
   summary counts and the graph insights moved from beside the list to a second view (`v`), the
   `o` handoff to b9s stays as an optional extra, and the demo tracker is now fourteen tasks with an

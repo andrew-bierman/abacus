@@ -674,16 +674,21 @@ func TestGraphStepTable(t *testing.T) {
 	}
 }
 
+// g from the List opens the graph on the selected task; v from the Kanban opens it on the selected card.
 func TestVIntoTheGraphFocusesTheSelectedTask(t *testing.T) {
 	s := listAt(100, 32)
-	send(s, "v")
-	first := s.graph.focus
-	send(s, "V") // back to the list
 	send(s, "j", "j")
 	want := s.rows()[s.cursor].ID
-	send(s, "v")
-	if s.list.cur != viewGraph || s.graph.focus != want || want == first {
-		t.Errorf("v opens the graph on the selected task %q, got focus %q (first was %q)", want, s.graph.focus, first)
+	send(s, "g")
+	if s.list.cur != viewGraph || s.graph.focus != want {
+		t.Errorf("g opens the graph on the selected task %q, got focus %q", want, s.graph.focus)
+	}
+	k := listAt(100, 32)
+	send(k, "v", "l", "j")
+	card := selID(k)
+	send(k, "v")
+	if k.list.cur != viewGraph || k.graph.focus != card || card == "" {
+		t.Errorf("v from the board opens the graph on the selected card %q, got focus %q (view %v)", card, k.graph.focus, k.list.cur)
 	}
 }
 
@@ -819,14 +824,14 @@ func TestGraphColorsMuteClosedWorkAndAccentTheChain(t *testing.T) {
 // A global-search jump onto a task while the Graph view is current lands on the List view with the
 // task selected, as a jump does from any other Tasks view.
 func TestSearchJumpFromTheGraphViewShowsTheTaskInTheList(t *testing.T) {
-	m := jump(t, "ac-16", "2", "v")
+	m := jump(t, "ac-16", "2", "v", "v")
 	ts := secAt(m, tabTasks).(*tasksSection)
 	if ts.list.cur != viewList || ts.selected != "ac-16" || ts.rows()[ts.cursor].ID != "ac-16" {
 		t.Errorf("view %v selected %q", ts.list.cur, ts.selected)
 	}
 	// and the jump into the Graph's own view first: it really was current before the jump
 	m = sized(load(t, asciiTheme(), nil), 100, 32)
-	m = press(press(m, "2"), "v")
+	m = press(press(press(m, "2"), "v"), "v")
 	if secAt(m, tabTasks).(*tasksSection).list.cur != viewGraph {
 		t.Fatal("v did not open the Graph view")
 	}

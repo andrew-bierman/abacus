@@ -2,11 +2,14 @@ package bd
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 type memAudit struct{ n int }
@@ -60,7 +63,7 @@ func TestRealBdWritePathAgainstAnIsolatedTemporaryTracker(t *testing.T) {
 	if err != nil || r.Counts.Open != 1 || len(r.Recent) != 1 {
 		t.Fatalf("after create: %+v %v", r, err)
 	}
-	if u := do(core.TaskChange{Op: core.TaskUpdate, ID: created.ID, Title: "renamed", Status: "in_progress"}); u.Title != "renamed" || u.Status != "in_progress" {
+	if u := do(core.TaskChange{Op: core.TaskUpdate, ID: created.ID, Title: "renamed", Status: "in_progress", IfStatus: "open"}); u.Title != "renamed" || u.Status != "in_progress" {
 		t.Fatalf("update %+v", u)
 	}
 	if c := do(core.TaskChange{Op: core.TaskClose, ID: created.ID, Reason: "done"}); c.Status != "closed" {
@@ -161,5 +164,103 @@ func TestRealBdIgnoresADecoyBEADS_DIR(t *testing.T) {
 	r, err := m.Tasks(ctx)
 	if err != nil || r.Counts.Total != 0 {
 		t.Fatalf("reads must see the workspace (empty), not the decoy with its issue: %+v %v", r, err)
+	}
+}
+
+// Card moves through the real bd, in an isolated temp tracker: every legal hop of the board, the
+// closed paths, and a stale guard that the real bd refuses with exit 13 (nothing written). Skips
+// without bd.
+func TestRealBdCardMovesAgainstAnIsolatedTemporaryTracker(t *testing.T) {
+	if _, err := exec.LookPath("bd"); err != nil {
+		t.Skip("bd is not installed")
+	}
+	home, proj := t.TempDir(), t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_STATE_HOME", home+"/s")
+	t.Setenv("XDG_CONFIG_HOME", home+"/c")
+	t.Setenv("XDG_DATA_HOME", home+"/d")
+	t.Setenv("BEADS_ACTOR", "abacus-test")
+	t.Setenv("BEADS_DIR", "")
+	for _, c := range [][]string{{"git", "init", "-q", "."}, {"bd", "init", "--non-interactive", "--quiet", "--skip-agents", "--skip-hooks", "--prefix=kb"}} {
+		cmd := exec.Command(c[0], c[1:]...)
+		cmd.Dir = proj
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Skipf("cannot set up an isolated tracker (%v): %s", err, out)
+		}
+	}
+	ctx := context.Background()
+	m := New(Options{Dir: proj})
+	if d := m.Detect(ctx); d.State != core.Ready {
+		t.Fatalf("detect %+v", d)
+	}
+	au := &memAudit{}
+	ap := core.NewApplier(m, au)
+	apply := func(ch core.TaskChange) (core.TaskResult, error) {
+		t.Helper()
+		p, err := core.PlanTaskChange(m, ch)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return ap.Apply(ctx, p.Confirm())
+	}
+	p1 := 1
+	created, err := apply(core.TaskChange{Op: core.TaskCreate, Title: "card", Priority: &p1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	statusNow := func() string {
+		t.Helper()
+		got, err := m.ReadTask(ctx, created.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got.Status
+	}
+	move := func(from, to string) (core.TaskResult, error) {
+		t.Helper()
+		ch, err := taskview.PlanMove(core.TaskRow{ID: created.ID, Title: "card", Status: from, Priority: 1}, to)
+		if err != nil {
+			t.Fatalf("%s -> %s: %v", from, to, err)
+		}
+		return apply(ch)
+	}
+	for _, hop := range [][2]string{{"open", "in_progress"}, {"in_progress", "blocked"}, {"blocked", "deferred"}, {"deferred", "open"}, {"open", "closed"}, {"closed", "open"}} {
+		res, err := move(hop[0], hop[1])
+		if err != nil || res.Status != hop[1] || statusNow() != hop[1] {
+			t.Fatalf("%s -> %s: %+v %v (now %s)", hop[0], hop[1], res, err, statusNow())
+		}
+	}
+	// reopen of a task that is already open says so instead of "bd wrote but returned no issue"
+	if _, err := apply(core.TaskChange{Op: core.TaskReopen, ID: created.ID}); err == nil || err.Error() != "already open: nothing to do" {
+		t.Fatalf("reopen of an open task: %v", err)
+	}
+	// closing a task held by an open blocker fails, and the reason is in the error
+	blocker, err := apply(core.TaskChange{Op: core.TaskCreate, Title: "blocker"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dep := exec.Command("bd", "dep", "add", created.ID, blocker.ID)
+	dep.Dir = proj
+	if out, err := dep.CombinedOutput(); err != nil {
+		t.Skipf("cannot add a dependency (%v): %s", err, out)
+	}
+	if _, err := move("open", "closed"); err == nil || !strings.Contains(err.Error(), "blocked") {
+		t.Fatalf("closing a held task: %v", err)
+	}
+	rm := exec.Command("bd", "dep", "remove", created.ID, blocker.ID)
+	rm.Dir = proj
+	_ = rm.Run()
+	// someone else moved it: a move planned against "open" is refused by the tracker itself and writes nothing
+	if _, err := move("open", "in_progress"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := move("open", "deferred"); !errors.Is(err, core.ErrChanged) {
+		t.Fatalf("stale guard: %v", err)
+	}
+	if statusNow() != "in_progress" {
+		t.Fatalf("a refused move wrote %s", statusNow())
+	}
+	if au.n != 2+2*6+2*2+2*3 {
+		t.Fatalf("audit lines = %d (attempt + result per write, refused ones included)", au.n)
 	}
 }

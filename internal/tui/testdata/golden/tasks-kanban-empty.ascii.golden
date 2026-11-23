@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+ List [Kanban] Graph  Insights
+group: status · / to filter       0 of 0
+╭─ ▸ Kanban ───────────────────────────╮
+│ no tasks yet — press n to add the f… │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+ List [Kanban] Graph  Insights
+group: status · / to filter       0 of 0
+╭─ ▸ Kanban ───────────────────────────╮
+│ no tasks yet — press n to add the f… │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List [Kanban] Graph  Insights                                 0 tasks · 0 ready
+group: status · / to filter                                               0 of 0
+╭─ ▸ Kanban ───────────────────────────────────────────────────────────────────╮
+│ no tasks yet — press n to add the first one                                  │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights                                 0 tasks · 0 ready
+group: status · / to filter                                               0 of 0
+╭─ ▸ Kanban ───────────────────────────────────────────────────────────────────╮
+│ no tasks yet — press n to add the first one                                  │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List [Kanban] Graph  Insights                                                                         0 tasks · 0 ready
+group: status · / to filter                                                                                       0 of 0
+╭─ ▸ Kanban ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ no tasks yet — press n to add the first one                                                                          │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move · enter details · s group · Z closed · g graph…
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights                                                                         0 tasks · 0 ready
+group: status · / to filter                                                                                       0 of 0
+╭─ ▸ Kanban ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ no tasks yet — press n to add the first one                                                                          │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move · enter details · s group · Z closed · g graph…
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights             0 tasks · 0 ready
+group: status · / to filter                           0 of 0
+╭─ ▸ Kanban ───────────────────────────────────────────────╮
+│ no tasks yet — press n to add the first one              │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Kanban] Graph  Insights                                                     0 tasks · 0 ready
+group: status · / to filter                                                                   0 of 0
+╭─ ▸ Kanban ───────────────────────────────────────────────────────────────────────────────────────╮
+│ no tasks yet — press n to add the first one                                                      │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · H/L move card · h/l column · ↑/↓ move · enter details · s group …

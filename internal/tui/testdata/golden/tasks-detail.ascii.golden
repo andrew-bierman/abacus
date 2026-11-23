@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights
+[List] Kanban  Graph  Insights
 [open] / to… 12 of 14 · sort: priority ↑
 ╭─ ▸ ac-12 ────────────────────────────╮
 │ ac-12  bug                           │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Graph  Insights
+[List] Kanban  Graph  Insights
 [open] / to… 12 of 14 · sort: priority ↑
 ╭─ ▸ ac-12 ────────────────────────────╮
 │ ac-12  bug                           │
@@ -44,7 +44,7 @@
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights                                        14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ ac-12 ────────────────────────────────────────────────────────────────────╮
 │ ac-12  bug                                                                   │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                        14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ ac-12 ────────────────────────────────────────────────────────────────────╮
 │ ac-12  bug                                                                   │
@@ -88,7 +88,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ? help · q quit · tab/→ next tab · ↑/↓ scroll · esc back · n new · e edit …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights                                                                                14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 · scrolling ─────────────────────────╮
 │   id    title                          done st P  dep  type  age who │ │ ac-12  bug                                  │
@@ -102,7 +102,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                                                                14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 · scrolling ─────────────────────────╮
 │   id    title                          done st P  dep  type  age who │ │ ac-12  bug                                  │
@@ -133,7 +133,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Graph  Insights                    14 tasks · 3 ready
+[List] Kanban  Graph  Insights            14 tasks · 3 ready
 [open] / to filter               12 of 14 · sort: priority ↑
 ╭─ ▸ ac-12 ────────────────────────────────────────────────╮
 │ ac-12  bug                                               │
@@ -158,7 +158,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                                            14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                                    14 tasks · 3 ready
 [open] / to filter                                                       12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-12 · scrolling ─────────────────╮
 │   id    title              done st P  dep  type  age who │ │ ac-12  bug                          │

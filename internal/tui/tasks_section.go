@@ -32,6 +32,9 @@ type taskVerifiedMsg struct {
 	task core.Task
 	err  error
 }
+
+var errCannotVerify = errors.New("could not verify the current status; nothing was written")
+
 type taskAppliedMsg struct {
 	res core.TaskResult
 	err error
@@ -95,6 +98,7 @@ type tasksSection struct {
 	wantIns     bool // insights are read after the next tasks read: an empty tracker skips the analysis
 
 	ws *wsLayer // the optional workspace layer; nil without one
+	kb kanban   // the Kanban view's cursor and options (tasks_kanban.go)
 
 	th Theme
 	geom
@@ -301,6 +305,19 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		ch := s.pending
 		s.changedNote = ""
+		// A change planned against a status (a card move, a status edit) is refused outright when the task
+		// has moved since: the board shows the current state again and the move is planned anew.
+		if m.err != nil && ch.Expect != "" { // a change planned against a status is never confirmed unchecked
+			s.mode = modeList
+			s.notice = "could not verify the current status; nothing was written"
+			return s, nil
+		}
+		if m.err == nil && ch.Expect != "" && m.task.Status != ch.Expect {
+			s.mode = modeList
+			s.notice = fmt.Sprintf("%s changed since you opened it (now %s): nothing was written", san(m.id), san(m.task.Status))
+			s.list.slowUntil = time.Time{}
+			return s, s.fetchTasks()
+		}
 		if m.err != nil {
 			s.changedNote = "could not re-read the issue (" + core.Sanitize(m.err.Error()) + "): its current values are unverified"
 		} else {
@@ -327,7 +344,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.err != nil {
 			s.notice = core.DescribeWriteError(m.err)
 		} else {
-			s.notice = fmt.Sprintf("%sd %s %s", m.op, san(m.res.ID), san(m.res.Title))
+			s.notice = fmt.Sprintf("%s %s %s", opVerb(m.op), san(m.res.ID), san(m.res.Title))
 		}
 		s.list.slowUntil = time.Time{} // the tracker changed: look again now
 		return s, s.fetchTasks()
@@ -508,6 +525,9 @@ func (s *tasksSection) submitForm() tea.Cmd {
 	}
 	if update {
 		ch.ID, ch.Status = s.target.ID, v(3)
+		if ch.Status != "" { // a status edit is guarded like a card move: it names the status it was made against
+			ch.IfStatus, ch.Expect = s.target.Status, s.target.Status
+		}
 	}
 	return s.beginConfirm(ch)
 }
@@ -521,6 +541,10 @@ func (s *tasksSection) beginConfirm(ch core.TaskChange) tea.Cmd {
 		if ch.Op == core.TaskClose {
 			s.notice, s.mode = s.formErr, modeList
 		}
+		return nil
+	}
+	if ch.Expect != "" && s.reader == nil {
+		s.notice, s.mode = "could not verify the current status; nothing was written", modeList
 		return nil
 	}
 	if ch.Op == core.TaskCreate || s.reader == nil {
@@ -548,6 +572,20 @@ func (s *tasksSection) apply(p core.WritePlan) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
 		defer cancel()
+		// close and reopen have no tracker-side guard, so the status is checked once more right before
+		// the write; an aborted plan runs nothing and writes no audit line.
+		if exp := p.Change.Expect; exp != "" {
+			if s.reader == nil {
+				return taskAppliedMsg{err: errCannotVerify, op: op}
+			}
+			t, err := s.reader.ReadTask(ctx, p.Change.ID)
+			switch {
+			case err != nil:
+				return taskAppliedMsg{err: errCannotVerify, op: op}
+			case t.Status != exp:
+				return taskAppliedMsg{err: core.ErrChanged, op: op}
+			}
+		}
 		res, err := s.applier.Apply(ctx, p)
 		return taskAppliedMsg{res: res, err: err, op: op}
 	}

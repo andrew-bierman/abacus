@@ -32,6 +32,37 @@ func (m *taskMod) RunTask(_ context.Context, argv []string) (core.TaskResult, er
 	return core.TaskResult{ID: "t-9", Title: "made", Status: "open"}, m.fail
 }
 func (m *taskMod) TrackerDir() string { return "" }
+func (m *taskMod) ReadTask(_ context.Context, id string) (core.Task, error) {
+	return core.Task{ID: id, Title: "current", Status: "open"}, nil
+}
+
+// readFailMod is a Tasks writer whose current-status read fails (or that cannot read at all).
+type readFailMod struct {
+	*taskMod
+	err error
+}
+
+func (m readFailMod) ReadTask(context.Context, string) (core.Task, error) { return core.Task{}, m.err }
+
+// writeOnlyMod provides the writer but no reader.
+type writeOnlyMod struct{ m *taskMod }
+
+func (w writeOnlyMod) ID() string                              { return "bd" }
+func (w writeOnlyMod) Name() string                            { return "bd" }
+func (w writeOnlyMod) Detect(c context.Context) core.Detection { return w.m.Detect(c) }
+func (w writeOnlyMod) Doctor(c context.Context) []core.Check   { return w.m.Doctor(c) }
+func (w writeOnlyMod) Status(c context.Context) core.Status    { return w.m.Status(c) }
+func (w writeOnlyMod) Domain() core.DomainID                   { return core.DomainTasks }
+func (w writeOnlyMod) Tasks(c context.Context) (core.TasksReport, error) {
+	return w.m.Tasks(c)
+}
+func (w writeOnlyMod) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
+	return w.m.BuildTaskArgv(ch)
+}
+func (w writeOnlyMod) RunTask(c context.Context, a []string) (core.TaskResult, error) {
+	return w.m.RunTask(c, a)
+}
+func (w writeOnlyMod) TrackerDir() string { return "" }
 
 type memAudit struct {
 	n   int
@@ -539,5 +570,48 @@ func TestBoardRenderHidesUnknownCountsAndShowsTruncation(t *testing.T) {
 	_, js, _, _ := runIn(t, "", []core.Module{m}, "board", "--json")
 	if !strings.Contains(js, `"truncated": "only the first 50`) || strings.Contains(js, `"state": "degraded"`) {
 		t.Fatalf("truncation is not degradation: %s", js)
+	}
+}
+
+// A status change reads the task first and sends its status as the guard, so a change made by
+// someone else in between is refused by the tracker, not overwritten.
+func TestUpdateStatusReadsTheCurrentStatusAsTheGuard(t *testing.T) {
+	m := newTaskMod()
+	code, out, _, _ := runIn(t, "", []core.Module{m}, "tasks", "update", "t-1", "--status", "blocked", "--dry-run")
+	if code != 0 || len(m.ran) != 0 || !strings.Contains(out, `status: "open" -> "blocked"`) {
+		t.Fatalf("code=%d ran=%v out=%s", code, m.ran, out)
+	}
+}
+
+// A status update that cannot read the task first never runs: each failure exits 1 with the reason.
+func TestUpdateStatusReadFailuresExitOneAndRunNothing(t *testing.T) {
+	base := newTaskMod()
+	for name, mod := range map[string]core.Module{
+		"read error": readFailMod{taskMod: base, err: errors.New("bd show timed out")},
+		"no reader":  writeOnlyMod{m: base},
+	} {
+		code, _, errOut, au := runIn(t, "", []core.Module{mod}, "tasks", "update", "t-1", "--status", "blocked", "--yes")
+		if code != 1 || len(base.ran) != 0 || au.n != 0 || errOut == "" {
+			t.Errorf("%s: code=%d ran=%v audit=%d err=%q", name, code, base.ran, au.n, errOut)
+		}
+		if name == "read error" && !strings.Contains(errOut, "could not read t-1 first: bd show timed out") {
+			t.Errorf("%s: %q", name, errOut)
+		}
+		if name == "no reader" && !strings.Contains(errOut, "cannot read the task's current status") {
+			t.Errorf("%s: %q", name, errOut)
+		}
+	}
+}
+
+// --title X --status <the current status> is a title change; the status alone is "already X".
+func TestUpdateWithTheCurrentStatusAndOtherFieldsDropsTheStatus(t *testing.T) {
+	m := newTaskMod()
+	code, out, _, _ := runIn(t, "", []core.Module{m}, "tasks", "update", "t-1", "--title", "X", "--status", "open", "--dry-run")
+	if code != 0 || strings.Contains(out, "status") {
+		t.Fatalf("code=%d out=%s", code, out)
+	}
+	code, _, errOut, _ := runIn(t, "", []core.Module{m}, "tasks", "update", "t-1", "--status", "open", "--dry-run")
+	if code != 2 || !strings.Contains(errOut, "already open") {
+		t.Fatalf("status alone: code=%d err=%q", code, errOut)
 	}
 }

@@ -52,7 +52,7 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
 `abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders, and
-`abacus tasks list|show|graph` print the task list, one task in full and the dependency graph (`--query`, `--sort`, `--json`), and
+`abacus tasks list|show|board|graph` print the task list, one task in full, the kanban columns and the dependency graph (`--query`, `--sort`, `--json`), and
 `abacus search "QUERY"` (or `ctrl+k` in the TUI) searches every domain at once.
 
 ## First run
@@ -322,7 +322,7 @@ using data from fixture providers:
 ```
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                        14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id    title                                  done st P  dep  type  age who │

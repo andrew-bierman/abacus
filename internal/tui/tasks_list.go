@@ -134,13 +134,24 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		if k.String() == "V" {
 			d = n - 1
 		}
+		prev := l.cur
 		l.cur = taskViewID((int(l.cur) + d) % n)
-		s.drilled, l.detailFocus = false, false
+		s.drilled, l.detailFocus, s.kb.detail = false, false, false
+		s.carrySelection(prev, l.cur)
 		if l.cur == viewGraph { // the graph is about the task selected now, not the one it last showed
-			s.openGraph()
+			if prev == viewKanban && s.kb.sel != "" { // ...and on the board that is the selected card
+				s.openGraphOn(s.kb.sel)
+			} else {
+				s.openGraph()
+			}
 			return s.graphRefresh(), true
 		}
 		return nil, true
+	}
+	if l.cur == viewKanban {
+		if cmd, ok := s.kanbanKey(k); ok {
+			return cmd, true
+		}
 	}
 	if l.cur == viewGraph {
 		if cmd, ok := s.graphKeys(k); ok {
@@ -276,6 +287,9 @@ func (s *tasksSection) listBindings() []key.Binding {
 	}
 	if l.cur == viewGraph {
 		return s.graphBindings()
+	}
+	if l.cur == viewKanban {
+		return s.kanbanBindings()
 	}
 	if l.cur != viewList {
 		return []key.Binding{keyView}

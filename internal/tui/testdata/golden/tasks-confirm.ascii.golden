@@ -3,11 +3,11 @@
 ╭─ ▸ Confirm this change ──────────────╮
 │   close task ac-12                   │
 │   title: "wire the lease heartbeat"  │
+│   status: "in_progress" -> "closed"  │
 │                                      │
 │ exact command:                       │
 │   bd close ac-12                     │
 ╰──────────────────────────────────────╯
-
 
 
 y apply · n/esc cancel · q quit · ? hel…
@@ -17,11 +17,11 @@ y apply · n/esc cancel · q quit · ? hel…
 ╭─ ▸ Confirm this change ──────────────╮
 │   close task ac-12                   │
 │   title: "wire the lease heartbeat"  │
+│   status: "in_progress" -> "closed"  │
 │                                      │
 │ exact command:                       │
 │   bd close ac-12                     │
 ╰──────────────────────────────────────╯
-
 
 
 
@@ -47,11 +47,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
 │   close task ac-12                                                           │
 │   title: "wire the lease heartbeat"                                          │
+│   status: "in_progress" -> "closed"                                          │
 │                                                                              │
 │ exact command:                                                               │
 │   bd close ac-12                                                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
 
 
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
@@ -61,11 +61,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
 │   close task ac-12                                                           │
 │   title: "wire the lease heartbeat"                                          │
+│   status: "in_progress" -> "closed"                                          │
 │                                                                              │
 │ exact command:                                                               │
 │   bd close ac-12                                                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
@@ -91,11 +91,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
 │   close task ac-12                                                                                                   │
 │   title: "wire the lease heartbeat"                                                                                  │
+│   status: "in_progress" -> "closed"                                                                                  │
 │                                                                                                                      │
 │ exact command:                                                                                                       │
 │   bd close ac-12                                                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
@@ -105,11 +105,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
 │   close task ac-12                                                                                                   │
 │   title: "wire the lease heartbeat"                                                                                  │
+│   status: "in_progress" -> "closed"                                                                                  │
 │                                                                                                                      │
 │ exact command:                                                                                                       │
 │   bd close ac-12                                                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
@@ -136,11 +136,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────╮
 │   close task ac-12                                       │
 │   title: "wire the lease heartbeat"                      │
+│   status: "in_progress" -> "closed"                      │
 │                                                          │
 │ exact command:                                           │
 │   bd close ac-12                                         │
 ╰──────────────────────────────────────────────────────────╯
-
 
 
 
@@ -161,11 +161,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────╮
 │   close task ac-12                                                                               │
 │   title: "wire the lease heartbeat"                                                              │
+│   status: "in_progress" -> "closed"                                                              │
 │                                                                                                  │
 │ exact command:                                                                                   │
 │   bd close ac-12                                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 

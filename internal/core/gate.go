@@ -35,8 +35,11 @@ func (g *gate) do(id uint64, e AuditEntry, run func() error) error {
 	e.Time, e.Phase = time.Now().UTC(), "ok"
 	if err != nil {
 		e.Phase, e.Error = "error", Sanitize(err.Error())
-		if errors.Is(err, ErrOutcomeUnknown) {
+		switch {
+		case errors.Is(err, ErrOutcomeUnknown):
 			e.Phase = "unknown"
+		case errors.Is(err, ErrAppliedMismatch):
+			e.Phase = "applied-mismatch" // it landed; the result is not the one asked for
 		}
 	}
 	_ = g.audit.Record(e) // the attempt line already exists; a failed result line must not mask the outcome
