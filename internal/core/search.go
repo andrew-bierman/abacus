@@ -572,7 +572,6 @@ func snippetAround(body, word string) string {
 	for end < len(r) && end > mend && r[end] != ' ' {
 		end--
 	}
-	start = min(start, end)
 	s := strings.TrimSpace(string(r[start:end]))
 	if start > 0 {
 		s = "…" + s

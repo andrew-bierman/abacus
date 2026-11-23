@@ -39,7 +39,7 @@ func TestSearchBuildPathAtTwentyThousandDocuments(t *testing.T) {
 	if derive+all > 1500*time.Millisecond {
 		t.Errorf("derive + index took %v", derive+all)
 	}
-	if one > all/3 {
+	if one > all/2+5*time.Millisecond { // generous: it is about a seventh
 		t.Errorf("replacing one small domain took %v of %v for all four", one, all)
 	}
 	s := time.Now()

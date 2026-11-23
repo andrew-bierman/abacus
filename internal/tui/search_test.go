@@ -685,8 +685,11 @@ func TestSearchCursorKeepsItsKindAcrossARefresh(t *testing.T) {
 func TestEnterOnAnInvalidQueryDoesNothingAndSavesNothing(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "abacus", "search-history.json")
 	m := historyModel(t, path)
-	for _, k := range ctrlK("ac-16 nosuch:x") { // results of "ac-16" are still shown, the query is invalid
+	for _, k := range ctrlK("ac-16 in:x") { // the hits of the last valid query stay on screen, the query is invalid
 		m = press(m, k)
+	}
+	if o := m.(*Model).search; o.qerr == nil || len(o.targets) == 0 {
+		t.Fatalf("fixture: want an invalid query over stale hits, got err %v and %d hits", o.qerr, len(o.targets))
 	}
 	m = press(m, "enter")
 	if !overlayOpen(m) || activeTab(m) != "Board" {
@@ -696,7 +699,7 @@ func TestEnterOnAnInvalidQueryDoesNothingAndSavesNothing(t *testing.T) {
 		t.Error("an invalid query was saved")
 	}
 	// a valid one is saved as typed, once it has run
-	for range typed(" nosuch:x") {
+	for range typed(" in:x") {
 		m = press(m, "backspace")
 	}
 	press(m, "enter")
