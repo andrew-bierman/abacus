@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights       14 tasks · 3 ready
+unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────╮
+│ no tasks match: esc clears the       │
+│ query, f changes the quick filter    │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+enter keep · esc clear · q quit · ? hel…
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+[List] Insights       14 tasks · 3 ready
+unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────╮
+│ no tasks match: esc clears the       │
+│ query, f changes the quick filter    │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+enter keep · esc clear · q quit · ? hel…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights                                               14 tasks · 3 ready
+[open] /lease foo:x▏                                 unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│ no tasks match: esc clears the query, f changes the quick filter             │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                               14 tasks · 3 ready
+[open] /lease foo:x▏                                 unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│ no tasks match: esc clears the query, f changes the quick filter             │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights                                                                                       14 tasks · 3 ready
+[open] /lease foo:x▏                                                                         unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
+│ no tasks match: esc clears the query, f changes the quick filter     │ │ no task selected                            │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                                                                       14 tasks · 3 ready
+[open] /lease foo:x▏                                                                         unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
+│ no tasks match: esc clears the query, f changes the quick filter     │ │ no task selected                            │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+[List] Insights                           14 tasks · 3 ready
+[open] /lease foo:x▏             unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
+│ no tasks match: esc clears the query, f changes the      │
+│ quick filter                                             │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                                                   14 tasks · 3 ready
+[open] /lease foo:x▏                                                     unknown field "foo" (col 7)
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ Task ──────────────────────────────╮
+│ no tasks match: esc clears the query, f changes the      │ │ no task selected                    │
+│ quick filter                                             │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab

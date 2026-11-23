@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,9 +11,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 const tasksPollEvery = 30 * time.Second
+
+// slowRetry is how long the list waits to read the whole tracker again after a read timed out.
+const slowRetry = 5 * time.Minute
 
 type tasksMsg struct {
 	report core.TasksReport
@@ -49,11 +54,12 @@ type formField struct {
 	edited bool // the user changed it, so it is sent even if it equals the old value
 }
 
-// tasksSection is a compact Tasks summary (counts, recent changes, graph insights) and the
-// confirmed write path: n new, e edit, x close. It is deliberately not an issue browser;
-// `o` hands off to the full view.
+// tasksSection is the Tasks tab: the list and detail of every task (tasks_list.go), the graph
+// insights (tasks_views.go) and the confirmed write path: n new, e edit, x close. `o` hands off to
+// the full view, which stays an optional extra.
 type tasksSection struct {
 	prov     core.TaskProvider
+	src      core.TaskSource // reads the whole tracker; nil falls back to the summary's recent changes
 	ins      core.InsightsProvider
 	insWhy   string
 	reader   core.TaskReader
@@ -67,7 +73,12 @@ type tasksSection struct {
 	loaded   bool
 	insights *core.InsightsReport
 	notice   string
-	listNav  // ids are the task IDs; Tasks has no drill (never enter/back)
+	listNav  // ids are the task IDs; below bpWide enter drills into the detail
+	list     tasksList
+	snapBusy bool // a snapshot read is in flight: another is not started
+	// snapDirty: a read was asked for while one was in flight (a write landed), so the answer that
+	// arrives may predate it and one more read follows at once.
+	snapDirty bool
 
 	mode        taskMode
 	op          core.TaskOp
@@ -93,10 +104,18 @@ func (s *tasksSection) setWorkspace(w *wsLayer) { s.ws = w }
 // taskItem is the workspace item of a task: its id.
 func taskItem(t core.Task) (core.WorkspaceItem, bool) { return itemOf(core.WorkspaceTask, t.ID, "") }
 
+// wsMaxItems bounds how many tasks the workspace layer is asked about.
+const wsMaxItems = 300
+
+// wsItems are the open tasks, whatever the list is filtered to, so a filter change never leaves a
+// row without its placement.
 func (s *tasksSection) wsItems() []core.WorkspaceItem {
+	if s.list.view == nil {
+		return nil
+	}
 	var items []core.WorkspaceItem
-	for _, t := range s.recent() {
-		if it, ok := taskItem(t); ok {
+	for _, r := range s.list.view.List(taskview.ListOptions{Preset: taskview.PresetOpen}).Rows {
+		if it, ok := taskItem(rowTask(r)); ok && len(items) < wsMaxItems {
 			items = append(items, it)
 		}
 	}
@@ -112,7 +131,7 @@ func (s *tasksSection) selectedItem() (core.WorkspaceItem, bool) {
 }
 
 func newTasksSection(p core.Providers, cfg *config) *tasksSection {
-	s := &tasksSection{prov: p.Tasks, ins: p.Insights, insWhy: p.InsightsWhy, reader: p.Reader, writer: p.Writer, fullView: cfg.fullView, th: DefaultTheme()}
+	s := &tasksSection{prov: p.Tasks, src: p.Source, list: newTasksList(), ins: p.Insights, insWhy: p.InsightsWhy, reader: p.Reader, writer: p.Writer, fullView: cfg.fullView, th: DefaultTheme()}
 	if p.Writer != nil {
 		s.applier = core.NewApplier(p.Writer, cfg.audit)
 	}
@@ -121,7 +140,7 @@ func newTasksSection(p core.Providers, cfg *config) *tasksSection {
 }
 
 func (s *tasksSection) SetTheme(t Theme) { s.th = t }
-func (s *tasksSection) Capturing() bool  { return s.mode != modeList }
+func (s *tasksSection) Capturing() bool  { return s.mode != modeList || s.list.typing }
 
 func (s *tasksSection) Bindings() []key.Binding {
 	switch s.mode {
@@ -137,17 +156,55 @@ func (s *tasksSection) Bindings() []key.Binding {
 	case modeBusy:
 		return nil
 	}
+	if s.list.typing {
+		return s.listBindings()
+	}
+	if s.list.cur != viewList { // e, x and the jump act on the list's task, which this view does not show
+		return append(s.listBindings(), keyNew, keyFull, keyReload)
+	}
 	it, ok := s.selectedItem()
-	return append(moveBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload)
+	return append(s.listBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload)
 }
 
 func (s *tasksSection) fetchTasks() tea.Cmd {
 	s.tasksBusy = true
-	return func() tea.Msg {
+	return tea.Batch(func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
 		r, err := s.prov.Tasks(ctx)
 		return tasksMsg{r, err}
+	}, s.fetchSnapshot())
+}
+
+// snapshotTimeout bounds one read of the whole tracker (longer than a summary read).
+const snapshotTimeout = 3 * fetchTimeout
+
+// fetchSnapshot reads the whole tracker, never two at once; nil without a source.
+func (s *tasksSection) fetchSnapshot() tea.Cmd {
+	if s.src == nil {
+		return nil
+	}
+	if s.snapBusy {
+		s.snapDirty = true
+		return nil
+	}
+	if nowFn().Before(s.list.slowUntil) { // the last read timed out: not again for a few minutes
+		return nil
+	}
+	s.snapBusy = true
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), snapshotTimeout)
+		defer cancel()
+		snap, err := s.src.Snapshot(ctx)
+		return taskSnapshotMsg{snap: snap, err: err}
+	}
+}
+
+// useFallback lists the summary's recent changes while no snapshot is on its way and none has
+// arrived: there is no source, or its read failed.
+func (s *tasksSection) useFallback() {
+	if s.loaded && s.err == nil && (s.list.view == nil || s.list.fallback) && (s.src == nil || s.list.snapErr != nil || !s.snapBusy) {
+		s.setSnapshot(taskview.FromRecent(s.report.Recent, nowFn()))
 	}
 }
 
@@ -182,13 +239,11 @@ func (s *tasksSection) refresh() tea.Cmd {
 	return s.fetchTasks()
 }
 
-func (s *tasksSection) recent() []core.Task { return s.report.Recent }
-
 func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case tasksMsg:
 		s.report, s.err, s.loaded, s.tasksBusy = m.report, m.err, true, false
-		s.reanchor(s.ids(), true) // follow: the clamped row under the cursor is selected
+		s.useFallback()
 		wsRead := s.ws.fetch(s.wsItems())
 		if s.err == nil {
 			wasEmpty := s.insights != nil && s.insights.Empty
@@ -204,6 +259,28 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return s, wsRead
+	case taskSnapshotMsg:
+		s.snapBusy = false
+		dirty := s.snapDirty
+		s.snapDirty = false
+		s.list.snapErr = m.err
+		if m.err != nil {
+			s.list.slow = errors.Is(m.err, core.ErrTimedOut) || errors.Is(m.err, taskview.ErrTooLarge)
+			s.list.slowUntil = time.Time{}
+			if s.list.slow {
+				s.list.slowUntil = nowFn().Add(slowRetry)
+			}
+			s.list.behind = false
+			s.useFallback()
+			return s, nil
+		}
+		s.list.slow, s.list.slowUntil = false, time.Time{}
+		s.setSnapshot(m.snap)
+		s.list.behind = dirty // a write landed during this read: it may not show it, so read again now
+		if dirty {
+			return s, tea.Batch(s.ws.fetch(s.wsItems()), s.fetchSnapshot())
+		}
+		return s, s.ws.fetch(s.wsItems())
 	case workspaceMsg:
 		s.ws.receive(m)
 	case handoffDoneMsg:
@@ -246,6 +323,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			s.notice = fmt.Sprintf("%sd %s %s", m.op, san(m.res.ID), san(m.res.Title))
 		}
+		s.list.slowUntil = time.Time{} // the tracker changed: look again now
 		return s, s.fetchTasks()
 	case fullViewDoneMsg:
 		if m.err != nil {
@@ -253,25 +331,29 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
+		s.fit(m.Width) // a resize drops the drill when side by side...
+		if isStacked(m.Width) {
+			s.list.detailFocus = false // ...and the detail focus when stacked, so j and k move the list again
+		}
 	case tea.KeyMsg:
 		return s.key(m)
 	}
 	return s, nil
 }
 
-// ids is one stable id per recent task: its ID.
+// ids is one stable id per listed task: its ID.
 func (s *tasksSection) ids() []string {
-	rec := s.recent()
-	out := make([]string, len(rec))
-	for i, t := range rec {
-		out[i] = t.ID
+	rows := s.rows()
+	out := make([]string, len(rows))
+	for i, r := range rows {
+		out[i] = r.ID
 	}
 	return out
 }
 
 func (s *tasksSection) current() (core.Task, bool) {
-	if s.cursor < len(s.recent()) {
-		return s.recent()[s.cursor], true
+	if s.cursor < len(s.rows()) {
+		return rowTask(s.rows()[s.cursor]), true
 	}
 	return core.Task{}, false
 }
@@ -311,18 +393,18 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if s.ws.swallow() {
 		return s, nil
 	}
+	if cmd, ok := s.listKey(k); ok {
+		return s, cmd
+	}
 	switch {
 	case key.Matches(k, keyWorkspace):
 		it, ok := s.selectedItem()
 		return s, s.ws.jump(it, ok)
-	case key.Matches(k, keyUp):
-		s.up(s.ids())
-	case key.Matches(k, keyDown):
-		s.down(s.ids())
 	case key.Matches(k, keyReload):
 		if s.tasksBusy {
 			return s, nil
 		}
+		s.list.slowUntil = time.Time{} // an explicit refresh always tries
 		s.wantIns = true
 		return s, s.fetchTasks()
 	case key.Matches(k, keyFull):
@@ -545,10 +627,6 @@ func (s *tasksSection) insightParts(iw int) (string, []string) {
 	return san(in.Source), out
 }
 
-// taskCols are the task table's columns: id, status, priority, title. The id and status stay; the
-// title takes the slack and is cut last.
-var taskTable = table{cols: []column{{min: 12, max: 12, prio: 0}, {min: 11, max: 11, prio: 0}, {min: 2, max: 3, prio: 1}, {min: 8, prio: 1}}, gap: 2}
-
 // taskStatusKind is the color role of a task status; a plain status (open) is not colored.
 func taskStatusKind(status string) (Kind, bool) {
 	switch status {
@@ -576,94 +654,15 @@ func taskPriorityKind(p int) (Kind, bool) {
 	return 0, false
 }
 
-// panelView is the Tasks list: the counts and a table of recent changes in a framed list panel and
-// the graph insights in a panel of their own, beside it from bpWide columns and below it under that.
-// The forms and the confirm screen are not drawn here.
-func (s *tasksSection) panelView() string {
-	th, w := s.th, s.width()
-	h := s.bodyH(s.notice)
-	g := duoLayout(w, h)
-	iw := g.listInner()
-	insW := max(w-panelChromeW, 1)
-	if g.wide {
-		insW = max(g.detail-panelChromeW, 1)
-	}
-
-	title := titled("Tasks", s.report.Source)
-	c := s.report.Counts
-	var lines []string
-	if bar := th.stackBar(min(iw, taskBarMax), taskBarSegments(c)); bar != "" {
-		lines = append(lines, bar)
-	}
-	lines = append(lines, wrap(fmt.Sprintf("%d tasks: %d open · %d in progress · %d blocked · %d deferred · %d closed", c.Total, c.Open, c.InProgress, c.Blocked, c.Deferred, c.Closed), iw)...)
-	lines = append(lines, "ready "+th.Text(KindOK, fmt.Sprint(c.Ready)), "", th.Section("Recent changes"))
-	cursorLine := len(lines)
-	if len(s.recent()) == 0 {
-		if c.Total == 0 {
-			lines = append(lines, th.Text(KindMuted, "no tasks yet — press n to add the first one"))
-		} else {
-			lines = append(lines, th.Text(KindMuted, "none"))
-		}
-	}
-	var styled, plain [][]string
-	for _, t := range s.recent() {
-		status, prio := orDash(t.Status), fmt.Sprintf("P%d", t.Priority)
-		plain = append(plain, []string{san(t.ID), status, prio, san(t.Title)})
-		if k, ok := taskStatusKind(t.Status); ok {
-			status = th.Text(k, status)
-		}
-		if k, ok := taskPriorityKind(t.Priority); ok {
-			prio = th.Text(k, prio)
-		}
-		styled = append(styled, []string{san(t.ID), status, prio, san(t.Title)})
-	}
-	tb := taskTable
-	if s.ws.has() {
-		cells, plainCells := make([]string, len(s.recent())), make([]string, len(s.recent()))
-		for i, t := range s.recent() {
-			it, ok := taskItem(t)
-			cells[i], plainCells[i] = s.ws.place(th, it, ok, false), s.ws.place(th, it, ok, true)
-		}
-		if wtb, ok := s.ws.whereCol(tb, w, iw, styled, cells); ok {
-			tb = wtb
-			for i := range styled {
-				styled[i], plain[i] = append(styled[i], cells[i]), append(plain[i], plainCells[i])
-			}
-		}
-	}
-	lines = append(lines, renderRows(th, tb, iw, styled, plain, s.cursor)...)
-	cursorLine += s.cursor
-	if it, ok := s.selectedItem(); s.ws.has() {
-		if det := s.ws.detail(th, it, ok, 8); len(det) > 1 {
-			lines = append(lines, "", th.Section("Workspace"))
-			lines = append(lines, det[1:]...)
-		}
-	}
-
-	sub, ins := s.insightParts(insW)
-	insTitle := "Insights"
-	if sub != "" {
-		insTitle += " · " + sub
-	}
-	var body []string
-	if g.wide {
-		body = g.draw(th, title, windowLines(th, lines, cursorLine, g.inner, &s.top), insTitle, clipLines(th, ins, g.inner), false)
-	} else {
-		topRows, botRows := stackRows(h, len(lines), len(ins))
-		body = stackPanels(th, w, title, windowLines(th, lines, cursorLine, topRows, &s.top), topRows, insTitle, clipLines(th, ins, botRows), botRows)
-	}
-	if s.notice != "" {
-		body = append(body, noticeLine(th, w, s.notice)...)
-	}
-	return joinLines(body)
-}
-
 func (s *tasksSection) View() string {
 	if s.mode == modeList && s.loaded && s.err == nil {
 		if box, ok := s.ws.noteBox(s.th, s.width(), s.h); ok {
 			return joinLines(box)
 		}
-		return s.panelView()
+		if s.list.view == nil { // the snapshot is on its way
+			return joinLines([]string{s.th.Text(KindMuted, "loading…")})
+		}
+		return s.body()
 	}
 	if s.mode != modeList {
 		return joinLines(s.modalView())

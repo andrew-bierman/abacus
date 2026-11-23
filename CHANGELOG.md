@@ -6,6 +6,29 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Added
+
+- Tasks is a real work browser (U1 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): every
+  task listed (no 8-row cap) with a full-row cursor, status mark, priority, blocked-by and blocks
+  marks, type, age, assignee and (from 140 columns) labels; a detail pane with the description,
+  comments, what blocks the task and what it blocks, and children with a progress bar; eight stable
+  sorts (`s`, `S`); quick filters (`f`: open, ready, blocked, closed, all); a live `/` query
+  (`status:open label:ui !assignee:none priority<=1 updated>7d ...`) that `enter` keeps and `esc`
+  clears, with typed errors that name the column; Insights as a second view (`v`). New
+  `abacus tasks list` and `abacus tasks show ID` print the same typed reports (`--json`,
+  `schema_version` 1). Everything derives from one read of the tracker (`bd --readonly export`, a
+  fixed read-only argv), so the list, detail and counts agree on what is blocked and ready. New
+  packages `internal/query` (the shared filter grammar) and `internal/taskview` (snapshot parse,
+  derive, sort, list, detail), with fixtures captured from real `bd` 1.3.4 output. Read only: no
+  write path changed.
+
+### Changed
+
+- abacus no longer says it has no issue browser: the Tasks tab is its own list and detail view. The
+  summary counts and the graph insights moved from beside the list to a second view (`v`), the
+  `o` handoff to b9s stays as an optional extra, and the demo tracker is now fourteen tasks with an
+  epic, a blocking chain and a cycle (the demo summary's ready count is 3).
+
 ## [0.3.0] - 2026-11-22
 
 The headline changes, in plain words:

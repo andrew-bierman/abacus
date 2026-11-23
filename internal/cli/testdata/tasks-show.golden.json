@@ -1,0 +1,59 @@
+{
+  "blocked_by": [
+    {
+      "id": "tk-0at.1",
+      "title": "Snapshot reader",
+      "status": "closed"
+    }
+  ],
+  "blocks": [
+    {
+      "id": "tk-0at.3",
+      "title": "Kanban cards",
+      "status": "open"
+    }
+  ],
+  "comments": [
+    {
+      "author": "ada",
+      "text": "Needs the snapshot first",
+      "created_at": "2026-11-23T04:09:53Z",
+      "age": "10m"
+    },
+    {
+      "author": "mei",
+      "text": "Agreed, after tk-0at.1",
+      "created_at": "2026-11-23T04:09:54Z",
+      "age": "10m"
+    }
+  ],
+  "description": "Render list.",
+  "domain": "tasks",
+  "parent": {
+    "id": "tk-0at",
+    "title": "Tasks workspace",
+    "status": "open"
+  },
+  "row": {
+    "id": "tk-0at.2",
+    "title": "List view",
+    "status": "open",
+    "priority": 1,
+    "type": "feature",
+    "assignee": "mei",
+    "labels": [
+      "ui"
+    ],
+    "created_at": "2026-11-23T04:09:49Z",
+    "updated_at": "2026-11-23T04:09:49Z",
+    "age": "10m",
+    "blocks": 1,
+    "ready": true,
+    "parent": "tk-0at",
+    "comments": 2
+  },
+  "schema_version": 1,
+  "source": "live",
+  "state": "connected",
+  "title": "Task"
+}

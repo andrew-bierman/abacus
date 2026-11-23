@@ -134,12 +134,21 @@ func TestEscPeelsTheDetailBeforeTheFilter(t *testing.T) {
 	}
 }
 
-func TestTasksNeverDrill(t *testing.T) {
+func TestTasksDrillIntoTheDetailBelowOneHundredAndBack(t *testing.T) {
 	s := newTasksSection(core.Providers{}, &config{})
 	s.Update(tea.WindowSizeMsg{Width: 60, Height: 30})
-	s.Update(tasksMsg{report: core.TasksReport{Recent: []core.Task{{ID: "a"}}, Counts: core.TaskCounts{Total: 1}}})
+	s.Update(tasksMsg{report: core.TasksReport{Recent: []core.Task{{ID: "a", Title: "alpha"}}, Counts: core.TaskCounts{Total: 1}}})
 	s.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if !s.drilled {
+		t.Fatal("enter drills into the detail in the stacked layout")
+	}
+	s.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	if s.drilled {
-		t.Fatal("Tasks has no detail panel to drill into")
+		t.Fatal("esc leaves the detail")
+	}
+	s.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	s.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if s.drilled || !s.list.detailFocus {
+		t.Fatalf("side by side the detail is always shown; enter only focuses it for scrolling: drilled=%v focus=%v", s.drilled, s.list.detailFocus)
 	}
 }

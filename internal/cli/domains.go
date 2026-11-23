@@ -162,6 +162,9 @@ func renderDomains(w io.Writer, d core.DomainsReport) {
 
 // runDomain handles `board|tasks|leases|queues [--json]` and `tasks create|update|close`.
 func runDomain(cmd string, rest []string, d Deps) int {
+	if cmd == "tasks" && len(rest) > 0 && (rest[0] == "list" || rest[0] == "show") {
+		return runTaskView(rest[0], rest[1:], d)
+	}
 	if cmd == "tasks" && len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
 		return runTaskWrite(rest[0], rest[1:], d)
 	}
@@ -215,7 +218,7 @@ func runDomain(cmd string, rest []string, d Deps) int {
 func runTaskWrite(verb string, rest []string, d Deps) int {
 	op := core.TaskOp(verb)
 	if op != core.TaskCreate && op != core.TaskUpdate && op != core.TaskClose {
-		fmt.Fprintf(d.Err, "unknown tasks command %q (create, update, close)\n", verb)
+		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, create, update, close)\n", verb)
 		return core.ExitUsage
 	}
 	ch := core.TaskChange{Op: op}

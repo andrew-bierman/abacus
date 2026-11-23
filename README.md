@@ -46,12 +46,13 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 | Domain | What you see | What you can change today |
 | --- | --- | --- |
 | Board | channels, recent threads and messages, open tasks (a message board for agents, not a kanban) | post a thread or reply from the command line (`abacus board post\|reply`, with a confirm step) |
-| Tasks | counts by state, ready work, recent changes, graph insights (next pick, blockers, critical path, cycles) | create, update, close (with a confirm step); first run: create the fleet workspace |
+| Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; graph insights (next pick, blockers, critical path, cycles) in a second view | create, update, close (with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
-`abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders.
+`abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders, and
+`abacus tasks list|show` print the task list and one task in full (`--query`, `--sort`, `--json`).
 
 ## First run
 
@@ -173,7 +174,8 @@ import no UI library.
 Providers are invisible in navigation and appear only here, in Doctor and in "how to connect"
 or error messages that help you fix one.
 
-- **Beads (`bd`)**: Tasks reads and writes. Reads always run `--readonly`; writes go through a
+- **Beads (`bd`)**: Tasks reads and writes. Reads always run `--readonly` (the task list is one
+  `bd --readonly export` of the tracker, a fixed argv); writes go through a
   separate allowlist (create, update, close, and the fixed `init` of the first-run workspace) and
   the confirm step.
 - **beads-lease**: Leases (read only).
@@ -183,8 +185,9 @@ or error messages that help you fix one.
   not a graph), computed in this process with bv's analysis package over the tracker's
   `.beads/issues.jsonl`. It is not a tool and has no switch: there is no bv program to bundle,
   find or run.
-- **b9s**: works with b9s for the full tree and graph view: press `o` on Tasks to open it in the
-  tracker directory (probes for it first). It is optional: without it `o` says what b9s adds and where to get it.
+- **b9s**: an optional extra for its full tree and graph view: press `o` on Tasks to open it in the
+  tracker directory (probes for it first). abacus's own Tasks list and detail do not need it: without
+  it `o` says what b9s adds and where to get it.
 - **Board** (optional, not bundled): composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`, same CLI),
   run as a subprocess only: bounded `channels list`, `read` and `tasks` reads with `--json`,
   `--limit` and a deadline, behind an argv allowlist and a scrubbed environment (only `HOME`,
@@ -317,24 +320,32 @@ using data from fixture providers:
 ```
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-╭─ ▸ Tasks ────────────────────────────────────────────────────────────────────╮
-│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
-│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
-│ ready 4                                                                      │
+[List] Insights                                               14 tasks · 3 ready
+[open] / to filter                                   12 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│   id    title                                       st P  dep  type  age who │
+│ ▸ ac-12 wire the lease heartbeat                    ◐  P0 →1   bug   9d  ada │
+│   ac-01 Fleet workspace 1/5                         ○  P1      epic  30d mei │
+│   ac-15 lease holder column                         ○  P1 →1   feat  6d  mei │
+│   ac-20 split graph source from export              ◐  P1 ⊘1→1 task  4d  ada │
+│   ac-09 queue attention digest                      ○  P2 ⊘1   feat  12d -   │
+│   ac-16 stale lease warning                         ○  P2 ⊘1   task  5d  -   │
+│   ac-21 export reader                               ○  P2 ⊘1→1 task  4d  -   │
+│   ac-25 doctor: stale export warning                ●  P2      bug   3d  ada │
+│   ac-27 board thread digest                         ●  P3      feat  2d  -   │
+│   ac-30 saved filters                               ○  P3      feat  2d  -   │
+│   ac-33 help overlay per view                       ◐  P3      task  1d  mei │
+│   ac-36 verify tool flags against help              ◇  P3      chore 40d mei │
 │                                                                              │
-│ Recent changes                                                               │
-│ ▸ ac-12  in_progress  P1  wire the lease heartbeat                           │
-│   ac-09  open         P2  queue attention digest                             │
-│   ac-03  closed       P3  retire the old poller                              │
 │                                                                              │
 │                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Insights · graph analysis ──────────────────────────────────────────────────╮
-│ 4 actionable · 2 blocked · 1 cycles                                          │
-│ next     ac-12  wire the lease heartbeat  (unblocks 2)                       │
-│ blocker  ac-12  wire the lease heartbeat  (unblocks 2)                       │
-│ critical path  ac-12 > ac-09                                                 │
-│ cycle  ac-20 -> ac-21 -> ac-20                                               │
-╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · ↑/↓ move · n new · e edit · x close task …
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
 ```

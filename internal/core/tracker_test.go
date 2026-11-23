@@ -100,3 +100,25 @@ func TestAnAncestorTrackerNeverCountsAsTheManagedWorkspace(t *testing.T) {
 		t.Fatal("own tracker")
 	}
 }
+
+func TestTrackerRootIsTheDirectoryHoldingTheTracker(t *testing.T) {
+	root := t.TempDir()
+	proj := filepath.Join(root, "fleet-proj")
+	deep := filepath.Join(proj, "a", "b")
+	for _, d := range []string{filepath.Join(proj, ".beads"), deep, filepath.Join(root, "bare", ".beads")} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(proj, ".beads", "metadata.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for in, want := range map[string]string{proj: proj, deep: proj, filepath.Join(root, "bare"): ""} {
+		if got := core.TrackerRoot(in); got != want {
+			t.Errorf("TrackerRoot(%q) = %q, want %q", in, got, want)
+		}
+	}
+	if core.HasTracker(deep) != true || core.HasTracker(filepath.Join(root, "bare")) {
+		t.Error("HasTracker agrees with TrackerRoot")
+	}
+}

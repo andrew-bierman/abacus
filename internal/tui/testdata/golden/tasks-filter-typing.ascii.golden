@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights       14 tasks · 3 ready
+[open] /pri▏  2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────╮
+│   id    title              st P  dep │
+│ ▸ ac-25 doctor: stale exp… ●  P2     │
+│   ac-33 help overlay per … ◐  P3     │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+enter keep · esc clear · q quit · ? hel…
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+[List] Insights       14 tasks · 3 ready
+[open] /pri▏  2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────╮
+│   id    title              st P  dep │
+│ ▸ ac-25 doctor: stale exp… ●  P2     │
+│   ac-33 help overlay per … ◐  P3     │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│ ⊘N held by N · →N holds N · ⊘↑ held… │
+│ ○ open ◐ active ● blocked ✓ closed … │
+╰──────────────────────────────────────╯
+enter keep · esc clear · q quit · ? hel…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights                                               14 tasks · 3 ready
+[open] /pri▏                                          2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│   id    title                                         st P  dep type age who │
+│ ▸ ac-25 doctor: stale export warning                  ●  P2     bug  3d  ada │
+│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                               14 tasks · 3 ready
+[open] /pri▏                                          2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
+│   id    title                                         st P  dep type age who │
+│ ▸ ac-25 doctor: stale export warning                  ●  P2     bug  3d  ada │
+│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+[List] Insights                                                                                       14 tasks · 3 ready
+[open] /pri▏                                                                                  2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-25 ─────────────────────────────────────╮
+│   id    title                                 st P  dep type age who │ │ ac-25  bug                                  │
+│ ▸ ac-25 doctor: stale export warning          ●  P2     bug  3d  ada │ │ doctor: stale export warning                │
+│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                          │
+│                                                                      │ │ created 3d ago · updated 1d ago             │
+│                                                                      │ │ labels  doctor                              │
+│                                                                      │ │   ↕ +8 more                                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                                                                       14 tasks · 3 ready
+[open] /pri▏                                                                                  2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-25 ─────────────────────────────────────╮
+│   id    title                                 st P  dep type age who │ │ ac-25  bug                                  │
+│ ▸ ac-25 doctor: stale export warning          ●  P2     bug  3d  ada │ │ doctor: stale export warning                │
+│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                          │
+│                                                                      │ │ created 3d ago · updated 1d ago             │
+│                                                                      │ │ labels  doctor                              │
+│                                                                      │ │                                             │
+│                                                                      │ │ Blocked by (0)                              │
+│                                                                      │ │   none                                      │
+│                                                                      │ │                                             │
+│                                                                      │ │ Blocks (0)                                  │
+│                                                                      │ │   none                                      │
+│                                                                      │ │                                             │
+│                                                                      │ │ no description                              │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+[List] Insights                           14 tasks · 3 ready
+[open] /pri▏                      2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
+│   id    title                     st P  dep type age who │
+│ ▸ ac-25 doctor: stale export war… ●  P2     bug  3d  ada │
+│   ac-33 help overlay per view     ◐  P3     task 1d  mei │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
+╰──────────────────────────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+[List] Insights                                                                   14 tasks · 3 ready
+[open] /pri▏                                                              2 of 14 · sort: priority ↑
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-25 ─────────────────────────────╮
+│   id    title                     st P  dep type age who │ │ ac-25  bug                          │
+│ ▸ ac-25 doctor: stale export war… ●  P2     bug  3d  ada │ │ doctor: stale export warning        │
+│   ac-33 help overlay per view     ◐  P3     task 1d  mei │ │ ● blocked  P2  ada                  │
+│                                                          │ │ created 3d ago · updated 1d ago     │
+│                                                          │ │ labels  doctor                      │
+│                                                          │ │                                     │
+│                                                          │ │ Blocked by (0)                      │
+│                                                          │ │   none                              │
+│                                                          │ │                                     │
+│                                                          │ │ Blocks (0)                          │
+│                                                          │ │   none                              │
+│                                                          │ │                                     │
+│                                                          │ │ no description                      │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │                                     │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+enter keep · esc clear · q quit · ? help · tab/→ next tab

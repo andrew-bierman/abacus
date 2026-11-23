@@ -4,6 +4,7 @@
 package bd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 // Options configure the module; every process boundary is injectable.
@@ -269,6 +271,33 @@ func (m *Module) Tasks(ctx context.Context) (core.TasksReport, error) {
 	return r, nil
 }
 
+// Snapshot reads the whole tracker once (`bd --readonly export`) for the Tasks list and detail.
+// Every view derives from this one read, so they cannot disagree about what is blocked or ready.
+func (m *Module) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
+	if nc := m.configMissing(); nc != nil {
+		return core.TaskSnapshot{}, nc
+	}
+	if g := m.Guide(ctx); g != nil {
+		return core.TaskSnapshot{}, &core.NeedsSetupError{Guide: *g}
+	}
+	out, err := m.Export(ctx) // capped, with the long export deadline
+	switch {
+	case errors.Is(err, core.ErrOutputTooLarge):
+		return core.TaskSnapshot{}, taskview.ErrTooLarge
+	case err != nil:
+		return core.TaskSnapshot{}, err
+	}
+	// Name the directory that holds the tracker, as bd finds it from the configured or working
+	// directory, so the header says which project the list and a write really use.
+	name := ""
+	if root := core.TrackerRoot(m.TrackerDir()); root != "" {
+		name = filepath.Base(root)
+	} else if d := m.TrackerDir(); d != "" {
+		name = filepath.Base(d)
+	}
+	return taskview.Parse(bytes.NewReader(out), time.Now(), name)
+}
+
 // RunTask runs a planned write. It re-checks the write allowlist, so nothing but a built
 // argv can reach the process, and decodes bd's `--json` answer (an object or a one-element array).
 func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, error) {
@@ -373,6 +402,8 @@ func (m *Module) Export(ctx context.Context) ([]byte, error) {
 	switch {
 	case errors.Is(err, core.ErrOutputTooLarge) || len(out) >= ExportMaxOut:
 		return nil, fmt.Errorf("bd export: %w", core.ErrOutputTooLarge)
+	case errors.Is(err, core.ErrTimedOut):
+		return nil, fmt.Errorf("bd timed out exporting the tracker: %w", core.ErrTimedOut)
 	case err != nil:
 		return nil, fmt.Errorf("bd export could not run: %s", core.Sanitize(err.Error()))
 	case exit != 0:

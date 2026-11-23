@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 var toolNames = []string{"Lambe", "lambe", "beads-lease", "board-beads", "b9s", "Rex", "bv", "bd"}
@@ -104,9 +105,17 @@ func newTasksRig(t *testing.T) tasksRig {
 	}))
 	m = sized(m, 100, 40)
 	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
+	m, _ = m.Update(taskSnapshotMsg{snap: fixtureSnapshot()})
 	m, _ = m.Update(insightsMsg{report: fixtureInsights()})
 	m = press(m, "2")
 	return tasksRig{m, p, au, &full}
+}
+
+// withTasks feeds a model a summary and, as the snapshot, the same tasks as the whole tracker.
+func withTasks(m tea.Model, rep core.TasksReport) tea.Model {
+	m, _ = m.Update(tasksMsg{report: rep})
+	m, _ = m.Update(taskSnapshotMsg{snap: fallbackAsSnapshot(rep.Recent)})
+	return m
 }
 
 // pressRun presses a key and runs the command it returns, feeding the results back (a Batch is
@@ -124,11 +133,21 @@ func typeText(m tea.Model, s string) tea.Model {
 	return m
 }
 
-func TestTasksShowsCompactSummaryAndInsights(t *testing.T) {
-	v := newTasksRig(t).m.View()
-	for _, want := range []string{"14 tasks", "ready 4", "Recent changes", "ac-12", "Insights · graph analysis", "next", "critical path", "cycle"} {
+func TestTasksListsEveryTaskAndKeepsTheSummaryAndInsightsInTheirOwnView(t *testing.T) {
+	m := newTasksRig(t).m
+	v := m.View()
+	for _, want := range []string{"[List] Insights", "14 tasks · 3 ready", "12 of 14", "ac-12", "ac-01", "ac-33", "sort: priority ↑"} {
 		if !strings.Contains(v, want) {
-			t.Errorf("missing %q:\n%s", want, v)
+			t.Errorf("list view: missing %q:\n%s", want, v)
+		}
+	}
+	if strings.Contains(v, "ac-03 ") {
+		t.Errorf("the default quick filter hides closed tasks:\n%s", v)
+	}
+	v = press(m, "v").View()
+	for _, want := range []string{"List [Insights]", "14 tasks:", "ready 3", "Insights · graph analysis", "next", "critical path", "cycle"} {
+		if !strings.Contains(v, want) {
+			t.Errorf("insights view: missing %q:\n%s", want, v)
 		}
 	}
 }
@@ -136,6 +155,7 @@ func TestTasksShowsCompactSummaryAndInsights(t *testing.T) {
 func TestInsightsNotConnectedShowsHowToInstall(t *testing.T) {
 	r := newTasksRig(t)
 	m, _ := r.m.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{State: core.NotConnected, HowToConnect: core.HowToConnectInsights()}}})
+	m = press(m, "v") // the Insights view
 	if v := m.View(); !strings.Contains(v, "own copy of") || strings.Contains(v, "brew install") || !strings.Contains(v, "not connected") {
 		t.Fatalf("%s", v)
 	}
@@ -572,4 +592,12 @@ func TestTooSmallTerminalGivesAHiddenListNoKeys(t *testing.T) {
 	if len(*r.full) != 1 {
 		t.Fatalf("o works again at a usable size, ran %v", *r.full)
 	}
+}
+
+// fallbackAsSnapshot is the summary's tasks as a whole-tracker snapshot (dependencies known and
+// empty), for tests that need a real snapshot with chosen rows.
+func fallbackAsSnapshot(rec []core.Task) core.TaskSnapshot {
+	s := taskview.FromRecent(rec, goldenNow)
+	s.DepsUnknown = false
+	return s
 }

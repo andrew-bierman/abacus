@@ -15,6 +15,13 @@ import (
 
 func colorTheme() Theme { return NewTheme(rendererFor(termenv.TrueColor, true)) }
 
+// tasksModelSnap is a Tasks tab showing the demo tracker's whole snapshot.
+func tasksModelSnap(t *testing.T, th Theme, w, h int) tea.Model {
+	t.Helper()
+	m, _ := tasksModelWith(t, th, demo.TasksReport(), w, h).Update(taskSnapshotMsg{snap: fixtureSnapshot()})
+	return m
+}
+
 func tasksModelWith(t *testing.T, th Theme, rep core.TasksReport, w, h int) tea.Model {
 	t.Helper()
 	p := tasksFake()
@@ -29,7 +36,7 @@ func tasksModelWith(t *testing.T, th Theme, rep core.TasksReport, w, h int) tea.
 
 func TestTasksPanelShowsAStateBarAsWideAsThePanel(t *testing.T) {
 	for _, w := range []int{40, 80, 120} {
-		v := sized(newTasksRig(t).m, w, 40).View()
+		v := press(sized(newTasksRig(t).m, w, 40), "v").View() // the Insights view
 		var bar string
 		for _, l := range strings.Split(v, "\n") {
 			if strings.Contains(l, "▒") && strings.Contains(l, "█") && strings.Contains(l, "▓") {
@@ -40,7 +47,7 @@ func TestTasksPanelShowsAStateBarAsWideAsThePanel(t *testing.T) {
 		if bar == "" {
 			t.Fatalf("w=%d: no state bar in the Tasks panel:\n%s", w, v)
 		}
-		listInner := min(duoLayout(w, 40).listInner(), taskBarMax)
+		listInner := min(innerW(w), taskBarMax)
 		if got := lipgloss.Width(strings.TrimSpace(bar)); got != listInner {
 			t.Errorf("w=%d: the bar is %d cells, the panel's content is %d:\n%s", w, got, listInner, v)
 		}
@@ -67,17 +74,17 @@ func TestTaskStatusAndPriorityAreColoredByMeaning(t *testing.T) {
 			{ID: "T-5", Title: "e", Status: "open", Priority: 3}}}
 	v := tasksModelWith(t, th, rep, 120, 40).View()
 	for name, want := range map[string]string{
-		"blocked is a failure color":      th.Text(KindFail, "blocked"),
+		"blocked is a failure color":      th.Text(KindFail, taskGlyph("blocked")),
 		"P0 is a failure color":           th.Text(KindFail, "P0"),
-		"in progress is the accent color": th.Text(KindAccent, "in_progress"),
-		"deferred is a warning color":     th.Text(KindWarn, "deferred"),
-		"closed is quiet":                 th.Text(KindMuted, "closed"),
+		"in progress is the accent color": th.Text(KindAccent, taskGlyph("in_progress")),
+		"deferred is a warning color":     th.Text(KindWarn, taskGlyph("deferred")),
+		"closed is quiet":                 th.Text(KindMuted, taskGlyph("closed")),
 	} {
 		if !strings.Contains(v, want) {
 			t.Errorf("%s: %q missing:\n%s", name, want, v)
 		}
 	}
-	if strings.Contains(v, th.Text(KindFail, "open")) || strings.Contains(v, th.Text(KindMuted, "open")) {
+	if strings.Contains(v, th.Text(KindFail, taskGlyph("open"))) || strings.Contains(v, th.Text(KindMuted, taskGlyph("open"))) {
 		t.Errorf("an open task is plain text, not dimmed or alarmed:\n%s", v)
 	}
 	if strings.Contains(v, th.Text(KindWarn, "P1")) || strings.Contains(v, th.Text(KindFail, "P1")) {
@@ -190,9 +197,9 @@ func TestPanelSectionHeadingsUseTheAccentSection(t *testing.T) {
 			t.Errorf("Board heading %q is an accent section:\n%s", h, v)
 		}
 	}
-	tv := tasksModelWith(t, th, demo.TasksReport(), 120, 40).View()
-	if !strings.Contains(tv, th.Section("Recent changes")) {
-		t.Errorf("Tasks heading is an accent section:\n%s", tv)
+	tv := tasksModelSnap(t, th, 120, 40).View()
+	if !strings.Contains(tv, th.Section("Comments (2)")) || !strings.Contains(tv, th.Section("Blocks (1)")) {
+		t.Errorf("Tasks detail headings are accent sections:\n%s", tv)
 	}
 }
 
@@ -214,10 +221,10 @@ func TestTheCursorRowIsPlainInTasksQueuesAndBoardTasks(t *testing.T) {
 	if cursor == "" || other == "" {
 		t.Fatal("rows not found")
 	}
-	if strings.Contains(cursor, th.Text(KindFail, "blocked")) || strings.Contains(cursor, th.Text(KindFail, "P0")) {
+	if strings.Contains(cursor, th.Text(KindFail, taskGlyph("blocked"))) || strings.Contains(cursor, th.Text(KindFail, "P0")) {
 		t.Errorf("the Tasks cursor row carries no per-cell color: %q", cursor)
 	}
-	if !strings.Contains(other, th.Text(KindFail, "blocked")) {
+	if !strings.Contains(other, th.Text(KindFail, taskGlyph("blocked"))) {
 		t.Errorf("the other row keeps its color: %q", other)
 	}
 
@@ -284,7 +291,7 @@ func TestRunStateGlyphsDifferPerState(t *testing.T) {
 }
 
 func TestTheTasksBarIsCappedSoItStaysAGlance(t *testing.T) {
-	v := sized(newTasksRig(t).m, 160, 40).View()
+	v := press(sized(newTasksRig(t).m, 160, 40), "v").View() // the Insights view
 	for _, l := range strings.Split(v, "\n") {
 		if strings.Contains(l, "▒") && strings.Contains(l, "█") {
 			bar := strings.Fields(strings.Split(l, "│")[1])[0]

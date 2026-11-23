@@ -9,21 +9,26 @@ import (
 // HasTracker reports whether dir (the working directory when empty) is inside a Beads tracker:
 // a .beads directory holding metadata.json at or above it, which is how bd itself finds one. A
 // bare .beads (bd leaves an events cache in odd places, even in a home directory) is not one.
-func HasTracker(dir string) bool {
+func HasTracker(dir string) bool { return TrackerRoot(dir) != "" }
+
+// TrackerRoot is the directory that holds the tracker dir belongs to (dir itself or the nearest
+// ancestor with .beads/metadata.json, the working directory when dir is empty), or "" when there is
+// none. It is how a screen can name the project a read or a write really uses.
+func TrackerRoot(dir string) string {
 	if dir == "" {
 		var err error
 		if dir, err = os.Getwd(); err != nil {
-			return false
+			return ""
 		}
 	}
 	dir, _ = filepath.Abs(dir)
 	for {
 		if fi, err := os.Stat(filepath.Join(dir, ".beads", "metadata.json")); err == nil && fi.Mode().IsRegular() {
-			return true
+			return dir
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return false
+			return ""
 		}
 		dir = parent
 	}

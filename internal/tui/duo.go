@@ -8,6 +8,9 @@ type duoGeom struct {
 	detail int // outer width of the detail panel (the whole width when stacked)
 	inner  int // rows of content each panel holds; 0 means the body height is not known
 	h      int // the body height the geometry was laid out for (0: not known)
+	// fill makes the panels as tall as the body, however short their content (the Tasks list), instead
+	// of a compact box around it.
+	fill bool
 }
 
 // duoMinRows is the fewest content rows a panel keeps when there is height to spare.
@@ -49,6 +52,9 @@ func (g duoGeom) draw(th Theme, listTitle string, list []string, detailTitle str
 		// Never taller than the body, and no taller than the content plus a little air: a four-row
 		// list in a 50-row terminal is a compact box, not a screen of empty frame.
 		rows = min(g.inner, max(rows, duoMinRows))
+		if g.fill {
+			rows = g.inner
+		}
 	}
 	height := rows + panelChromeH
 	if g.h > 0 {
