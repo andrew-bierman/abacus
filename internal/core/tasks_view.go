@@ -193,3 +193,49 @@ type TaskTreeReport struct {
 	ReadAt       string        `json:"read_at,omitempty"`
 	Warnings     []string      `json:"warnings,omitempty"`
 }
+
+// KanbanCard is one task as a board card: the fields a card shows, no more. Blocked is derived
+// (an unfinished blocking dependency) and is a badge, never a column; the column is the stored status.
+type KanbanCard struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Status    string `json:"status"`
+	Priority  int    `json:"priority"`
+	Type      string `json:"type,omitempty"`
+	Assignee  string `json:"assignee,omitempty"`
+	Age       string `json:"age,omitempty"`
+	BlockedBy int    `json:"blocked_by,omitempty"`
+	Blocks    int    `json:"blocks,omitempty"`
+	Blocked   bool   `json:"blocked,omitempty"`
+	Ready     bool   `json:"ready,omitempty"`
+}
+
+// KanbanColumn is one column: its key (a stored status, a priority "p1" or a type), the cards in it
+// and the counts a column header shows. Count is every card the column holds even when Folded hides
+// them; P0P1 counts the urgent ones and Blocked the cards held by an unfinished dependency.
+type KanbanColumn struct {
+	Key     string       `json:"key"`
+	Title   string       `json:"title"`
+	Count   int          `json:"count"`
+	P0P1    int          `json:"p0p1,omitempty"`
+	Blocked int          `json:"blocked,omitempty"`
+	Folded  bool         `json:"folded,omitempty"`
+	Cards   []KanbanCard `json:"cards"`
+}
+
+// KanbanReport is the board: columns grouped by stored status (default), priority or type, with
+// closed work folded to a count. Shown and Total are the cards the query matched and the whole
+// tracker; ClosedHidden is how many closed cards the fold hides.
+type KanbanReport struct {
+	Header
+	Group        string         `json:"group"`
+	Query        string         `json:"query,omitempty"`
+	Columns      []KanbanColumn `json:"columns"`
+	Shown        int            `json:"shown"`
+	Total        int            `json:"total"`
+	ClosedHidden int            `json:"closed_hidden,omitempty"`
+	Tracker      string         `json:"tracker,omitempty"`
+	ReadAt       string         `json:"read_at,omitempty"`
+	Warnings     []string       `json:"warnings,omitempty"`
+	DepsUnknown  bool           `json:"deps_unknown,omitempty"`
+}

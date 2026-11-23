@@ -145,6 +145,9 @@ func TestBuildTaskArgvRefusalsAndExactArgv(t *testing.T) {
 		{Op: "delete", ID: "tt-1"},
 		{Op: core.TaskUpdate, ID: "--force", Title: "x"},
 		{Op: core.TaskUpdate, ID: "tt-1", Status: "closed"},
+		{Op: core.TaskUpdate, ID: "tt-1", Status: "blocked"},                  // no guard
+		{Op: core.TaskUpdate, ID: "tt-1", Status: "open", IfStatus: "closed"}, // out of closed is reopen
+		{Op: core.TaskReopen, ID: "a b"},
 		{Op: core.TaskClose, ID: "a b"},
 		{Op: core.TaskCreate},
 	}
@@ -157,8 +160,8 @@ func TestBuildTaskArgvRefusalsAndExactArgv(t *testing.T) {
 	if err != nil || strings.Join(got, "|") != "bd|create|--json|--title=T|--description=D|--priority=2|--type=bug" {
 		t.Fatalf("%v %v", got, err)
 	}
-	got, _ = m.BuildTaskArgv(core.TaskChange{Op: core.TaskUpdate, ID: "tt-1", Title: "T", Status: "blocked"})
-	if strings.Join(got, "|") != "bd|update|tt-1|--json|--title=T|--status=blocked" {
+	got, _ = m.BuildTaskArgv(core.TaskChange{Op: core.TaskUpdate, ID: "tt-1", Title: "T", Status: "blocked", IfStatus: "open"})
+	if strings.Join(got, "|") != "bd|update|tt-1|--json|--title=T|--status=blocked|--if-status=open" {
 		t.Fatalf("%v", got)
 	}
 	got, _ = New(Options{Dir: "/trk"}).BuildTaskArgv(core.TaskChange{Op: core.TaskClose, ID: "tt-1", Reason: "done"})

@@ -123,11 +123,17 @@ func writeAllowed(a []string, dir string) bool {
 				return prioRE.MatchString(n + "=" + v)
 			case "--status":
 				return slices.Contains(core.TaskStatuses, v)
+			case "--if-status":
+				// The guard names the status the task has now; closed is never a source of an update
+				// (closed work leaves closed through reopen), so a card cannot be dragged out of it.
+				return core.StatusGuardRE.MatchString(v) && v != "closed"
 			}
 			return false
 		})
-		return ok && (seen["--title"] || seen["--description"] || seen["--priority"] || seen["--status"])
-	case "close":
+		// A status change always carries its guard, and a guard always carries a status change:
+		// never --force, --claim or any other flag (the allowlist names every one that is allowed).
+		return ok && (seen["--title"] || seen["--description"] || seen["--priority"] || seen["--status"]) && seen["--status"] == seen["--if-status"]
+	case "close", "reopen":
 		if len(a) < 2 || !core.TaskIDRE.MatchString(a[1]) {
 			return false
 		}
@@ -170,8 +176,11 @@ func (m *Module) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 		if ch.Status != "" {
 			a = append(a, "--status="+ch.Status)
 		}
-	case core.TaskClose:
-		a = []string{"close", ch.ID, "--json"}
+		if ch.IfStatus != "" {
+			a = append(a, "--if-status="+ch.IfStatus)
+		}
+	case core.TaskClose, core.TaskReopen:
+		a = []string{string(ch.Op), ch.ID, "--json"}
 		if ch.Reason != "" {
 			a = append(a, "--reason="+ch.Reason)
 		}

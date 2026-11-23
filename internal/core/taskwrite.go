@@ -25,6 +25,8 @@ const (
 	TaskCreate TaskOp = "create"
 	TaskUpdate TaskOp = "update"
 	TaskClose  TaskOp = "close"
+	// TaskReopen moves a closed task back to open (bd reopen). It is the only way out of closed.
+	TaskReopen TaskOp = "reopen"
 	// TaskInit creates the managed workspace (bd init). It is the one write that is not about
 	// an existing issue, and it goes through the same plan, confirm, single-use and audit gate.
 	TaskInit TaskOp = "init"
@@ -38,11 +40,16 @@ type TaskChange struct {
 	Title       string
 	Description string
 	Status      string // update only; closing goes through TaskClose
-	Reason      string // close only
-	Type        string // create only
-	Dir         string // init only: the workspace directory (display; the provider owns the real one)
-	Priority    *int
-	Before      Task
+	// IfStatus is the status the task must have right now for a Status change to apply: bd refuses
+	// (exit 13) and writes nothing when another actor changed it first. A Status change requires it.
+	IfStatus string
+	Reason   string // close and reopen only
+	Type     string // create only
+	Dir      string // init only: the workspace directory (display; the provider owns the real one)
+	Priority *int
+	Before   Task
+	// Warning is display-only, one line on the confirm screen (a card moved while it is blocked).
+	Warning string
 }
 
 // TaskStatuses are the statuses an update may set; closed is only reachable through close.
@@ -50,6 +57,10 @@ var TaskStatuses = []string{"open", "in_progress", "blocked", "deferred"}
 
 // TaskTypes are the issue types a create may use.
 var TaskTypes = []string{"bug", "feature", "task", "epic", "chore", "decision", "spike", "story", "milestone"}
+
+// StatusGuardRE is the only shape of status a guard (--if-status) may carry: bd's own status names
+// are lower case words with underscores, and a custom status follows the same rule.
+var StatusGuardRE = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 
 // TaskIDRE is the only shape of issue ID that ever reaches an argv.
 var TaskIDRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
@@ -76,6 +87,9 @@ type InitDirer interface{ InitDir() string }
 var (
 	ErrNotConfirmed   = errors.New("change was not confirmed")
 	ErrAlreadyApplied = errors.New("this change was already applied")
+	// ErrChanged means the task no longer had the status the change was planned against: bd refused
+	// (exit 13) and nothing was written.
+	ErrChanged = errors.New("changed since you opened it: nothing was written; refresh and plan the change again")
 	// ErrOutcomeUnknown means the write may or may not have happened (timeout, cancel, killed).
 	// Never report it as "not applied": the user must refresh before retrying.
 	ErrOutcomeUnknown = errors.New("result unknown")
@@ -143,7 +157,17 @@ func validate(ch TaskChange) error {
 		if ch.Status != "" && !slices.Contains(TaskStatuses, ch.Status) {
 			return fmt.Errorf("status must be one of %s (use close to close)", strings.Join(TaskStatuses, ", "))
 		}
-	case TaskClose:
+		switch {
+		case ch.Status == "" && ch.IfStatus != "":
+			return errors.New("a status guard needs a status change")
+		case ch.Status != "" && !StatusGuardRE.MatchString(ch.IfStatus):
+			return errors.New("a status change needs the status the task has now (so a change by someone else is refused)")
+		case ch.IfStatus == "closed":
+			return errors.New("closed work leaves closed by reopening it, not by a status update")
+		case ch.Status != "" && ch.IfStatus == ch.Status:
+			return fmt.Errorf("the task is already %s", ch.Status)
+		}
+	case TaskClose, TaskReopen:
 	case TaskInit:
 		return checkText("directory", ch.Dir, false)
 	default:
@@ -155,7 +179,7 @@ func validate(ch TaskChange) error {
 	if ch.Priority != nil && (*ch.Priority < 0 || *ch.Priority > 4) {
 		return errors.New("priority must be 0-4")
 	}
-	for label, v := range map[string]string{"title": ch.Title, "reason": ch.Reason} {
+	for label, v := range map[string]string{"title": ch.Title, "reason": ch.Reason, "warning": ch.Warning} {
 		if err := checkText(label, v, false); err != nil {
 			return err
 		}
@@ -206,7 +230,14 @@ func describe(ch TaskChange) []string {
 			out = append(out, field("description", "", ch.Description))
 		}
 		if ch.Status != "" {
-			out = append(out, field("status", ch.Before.Status, ch.Status))
+			old := ch.Before.Status
+			if old == "" {
+				old = ch.IfStatus
+			}
+			out = append(out, field("status", old, ch.Status))
+		}
+		if ch.Warning != "" {
+			out = append(out, "warning: "+ch.Warning)
 		}
 		if ch.Priority != nil {
 			old := ""
@@ -217,9 +248,19 @@ func describe(ch TaskChange) []string {
 		}
 		return out
 	}
-	out := []string{"close task " + ch.ID}
+	verb, to := "close", "closed"
+	if ch.Op == TaskReopen {
+		verb, to = "reopen", "open"
+	}
+	out := []string{verb + " task " + ch.ID}
 	if ch.Before.Title != "" {
 		out = append(out, field("title", "", ch.Before.Title))
+	}
+	if ch.Before.Status != "" {
+		out = append(out, field("status", ch.Before.Status, to))
+	}
+	if ch.Warning != "" {
+		out = append(out, "warning: "+ch.Warning)
 	}
 	if ch.Reason != "" {
 		out = append(out, field("reason", "", ch.Reason))

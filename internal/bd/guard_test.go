@@ -60,7 +60,11 @@ func TestWriteAllowlistIsPerVerbAndExact(t *testing.T) {
 		{"create", "--json", "--title=new thing"},
 		{"create", "--json", "--title=x", "--description=a\nb", "--priority=1", "--type=bug"},
 		{"update", "tt-1", "--json", "--title=x"},
-		{"update", "tt-1", "--json", "--status=in_progress", "--priority=0"},
+		{"update", "tt-1", "--json", "--status=in_progress", "--if-status=open", "--priority=0"},
+		{"update", "tt-1", "--json", "--status=blocked", "--if-status=in_progress"},
+		{"update", "tt-1", "--json", "--status=open", "--if-status=pinned"},
+		{"reopen", "tt-1", "--json"},
+		{"reopen", "tt-1", "--json", "--reason=back"},
 		{"close", "tt-1", "--json"},
 		{"close", "tt-1", "--json", "--reason=done"},
 		{"-C", "/trk", "close", "tt-1", "--json"},
@@ -89,8 +93,23 @@ func TestWriteAllowlistIsPerVerbAndExact(t *testing.T) {
 		{"close", "tt-1", "tt-2", "--json"}, // one id at a time
 		{"close", "--json"},
 		{"delete", "tt-1", "--json"},
-		{"reopen", "tt-1", "--json"},
 		{"sync"},
+		// the card-move verb: the guard is mandatory, exact and never from closed
+		{"update", "tt-1", "--json", "--status=in_progress"},                                     // no guard
+		{"update", "tt-1", "--json", "--title=x", "--if-status=open"},                            // guard without a status
+		{"update", "tt-1", "--json", "--status=open", "--if-status=closed"},                      // closed leaves via reopen
+		{"update", "tt-1", "--json", "--status=open", "--if-status="},                            // empty guard
+		{"update", "tt-1", "--json", "--status=open", "--if-status=a b"},                         // not a status
+		{"update", "tt-1", "--json", "--status=open", "--if-status=--force"},                     // flag-like value
+		{"update", "tt-1", "--json", "--status=blocked", "--if-status=open", "--force"},          // never --force
+		{"update", "tt-1", "--json", "--status=blocked", "--if-status=open", "--claim"},          // never --claim
+		{"update", "tt-1", "--json", "--status=blocked", "--if-status=open", "--if-status=open"}, // duplicate
+		{"update", "tt-1", "--json", "--status=blocked", "--if-status", "open"},                  // value as separate arg
+		{"update", "tt-1", "--json", "--status=blocked", "--if-assignee=x"},                      // another guard is not this verb
+		{"reopen", "tt-1", "--json", "--force"},
+		{"reopen", "tt-1", "tt-2", "--json"},
+		{"reopen", "--json"},
+		{"reopen", "tt-1"},
 		{"-C", "/other", "close", "tt-1", "--json"},
 		{},
 	}

@@ -104,7 +104,14 @@ func TestPlanValidation(t *testing.T) {
 		"update flag-like id":  {Op: core.TaskUpdate, ID: "--force", Title: "t"},
 		"update nothing":       {Op: core.TaskUpdate, ID: "t-1"},
 		"update to closed":     {Op: core.TaskUpdate, ID: "t-1", Status: "closed"},
-		"update bogus status":  {Op: core.TaskUpdate, ID: "t-1", Status: "weird"},
+		"update bogus status":  {Op: core.TaskUpdate, ID: "t-1", Status: "weird", IfStatus: "open"},
+		"status without guard": {Op: core.TaskUpdate, ID: "t-1", Status: "blocked"},
+		"guard without status": {Op: core.TaskUpdate, ID: "t-1", Title: "x", IfStatus: "open"},
+		"guard from closed":    {Op: core.TaskUpdate, ID: "t-1", Status: "open", IfStatus: "closed"},
+		"guard with a flag":    {Op: core.TaskUpdate, ID: "t-1", Status: "open", IfStatus: "--force"},
+		"guard equals target":  {Op: core.TaskUpdate, ID: "t-1", Status: "open", IfStatus: "open"},
+		"reopen no id":         {Op: core.TaskReopen},
+		"reopen odd reason":    {Op: core.TaskReopen, ID: "t-1", Reason: "a\nb"},
 		"close no id":          {Op: core.TaskClose},
 		"close odd id":         {Op: core.TaskClose, ID: "a b"},
 		"unknown op":           {Op: "delete", ID: "t-1"},
@@ -115,11 +122,13 @@ func TestPlanValidation(t *testing.T) {
 		}
 	}
 	ok := map[string]core.TaskChange{
-		"create":      {Op: core.TaskCreate, Title: "t", Description: "line1\nline2", Priority: &p2},
-		"update":      {Op: core.TaskUpdate, ID: "tt-ioo", Status: "in_progress"},
-		"close":       {Op: core.TaskClose, ID: "tt-ioo", Reason: "done"},
-		"close dotid": {Op: core.TaskClose, ID: "tt-ioo.1"},
-		"underscore":  {Op: core.TaskClose, ID: "my_proj-yzs"}, // bd accepts underscores in a prefix (verified in an isolated tracker)
+		"create":             {Op: core.TaskCreate, Title: "t", Description: "line1\nline2", Priority: &p2},
+		"update":             {Op: core.TaskUpdate, ID: "tt-ioo", Status: "in_progress", IfStatus: "open"},
+		"update from custom": {Op: core.TaskUpdate, ID: "tt-ioo", Status: "open", IfStatus: "pinned"},
+		"reopen":             {Op: core.TaskReopen, ID: "tt-ioo", Reason: "back"},
+		"close":              {Op: core.TaskClose, ID: "tt-ioo", Reason: "done"},
+		"close dotid":        {Op: core.TaskClose, ID: "tt-ioo.1"},
+		"underscore":         {Op: core.TaskClose, ID: "my_proj-yzs"}, // bd accepts underscores in a prefix (verified in an isolated tracker)
 	}
 	for name, ch := range ok {
 		if _, err := core.PlanTaskChange(w, ch); err != nil {

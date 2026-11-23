@@ -32,6 +32,9 @@ func (m *taskMod) RunTask(_ context.Context, argv []string) (core.TaskResult, er
 	return core.TaskResult{ID: "t-9", Title: "made", Status: "open"}, m.fail
 }
 func (m *taskMod) TrackerDir() string { return "" }
+func (m *taskMod) ReadTask(_ context.Context, id string) (core.Task, error) {
+	return core.Task{ID: id, Title: "current", Status: "open"}, nil
+}
 
 type memAudit struct {
 	n   int
@@ -539,5 +542,15 @@ func TestBoardRenderHidesUnknownCountsAndShowsTruncation(t *testing.T) {
 	_, js, _, _ := runIn(t, "", []core.Module{m}, "board", "--json")
 	if !strings.Contains(js, `"truncated": "only the first 50`) || strings.Contains(js, `"state": "degraded"`) {
 		t.Fatalf("truncation is not degradation: %s", js)
+	}
+}
+
+// A status change reads the task first and sends its status as the guard, so a change made by
+// someone else in between is refused by the tracker, not overwritten.
+func TestUpdateStatusReadsTheCurrentStatusAsTheGuard(t *testing.T) {
+	m := newTaskMod()
+	code, out, _, _ := runIn(t, "", []core.Module{m}, "tasks", "update", "t-1", "--status", "blocked", "--dry-run")
+	if code != 0 || len(m.ran) != 0 || !strings.Contains(out, `status: "open" -> "blocked"`) {
+		t.Fatalf("code=%d ran=%v out=%s", code, m.ran, out)
 	}
 }

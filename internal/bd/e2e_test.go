@@ -60,7 +60,7 @@ func TestRealBdWritePathAgainstAnIsolatedTemporaryTracker(t *testing.T) {
 	if err != nil || r.Counts.Open != 1 || len(r.Recent) != 1 {
 		t.Fatalf("after create: %+v %v", r, err)
 	}
-	if u := do(core.TaskChange{Op: core.TaskUpdate, ID: created.ID, Title: "renamed", Status: "in_progress"}); u.Title != "renamed" || u.Status != "in_progress" {
+	if u := do(core.TaskChange{Op: core.TaskUpdate, ID: created.ID, Title: "renamed", Status: "in_progress", IfStatus: "open"}); u.Title != "renamed" || u.Status != "in_progress" {
 		t.Fatalf("update %+v", u)
 	}
 	if c := do(core.TaskChange{Op: core.TaskClose, ID: created.ID, Reason: "done"}); c.Status != "closed" {

@@ -330,6 +330,9 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	if exit < 0 { // killed by a signal: it may have written first
 		return core.TaskResult{}, unknownOutcome()
 	}
+	if exit == 13 && argv[1] != "close" { // bd's own exit code for a precondition (--if-status) that no longer held
+		return core.TaskResult{}, core.ErrChanged
+	}
 	issue, bdErr := decodeIssue(out)
 	if exit != 0 {
 		if bdErr != "" {
@@ -347,7 +350,38 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	if want := requestedID(argv[1:], m.TrackerDir()); want != "" && issue.ID != want {
 		return core.TaskResult{}, fmt.Errorf("bd returned an unexpected issue (%s, wanted %s): check the tracker", core.Sanitize(issue.ID), want)
 	}
+	// A status change counts only when the answer carries the status that was asked for, and a re-read
+	// of the task agrees (a read that cannot be made does not undo a write bd itself confirmed).
+	if want := wantedStatus(argv[1:], m.TrackerDir()); want != "" {
+		if issue.Status != want {
+			return core.TaskResult{}, fmt.Errorf("bd answered with status %q, wanted %q: check the tracker", core.Sanitize(issue.Status), want)
+		}
+		if t, err := m.ReadTask(ctx, issue.ID); err == nil && t.Status != want {
+			return core.TaskResult{}, fmt.Errorf("re-read shows status %q after the write, wanted %q: refresh and check the tracker", t.Status, want)
+		}
+	}
 	return core.TaskResult{ID: core.Sanitize(issue.ID), Title: core.Sanitize(issue.Title), Status: core.Sanitize(issue.Status)}, nil
+}
+
+// wantedStatus is the status a write must leave the issue in: "" when the argv sets none.
+func wantedStatus(a []string, dir string) string {
+	a, _ = stripDir(a, dir)
+	if len(a) == 0 {
+		return ""
+	}
+	switch a[0] {
+	case "close":
+		return "closed"
+	case "reopen":
+		return "open"
+	case "update":
+		for _, f := range a {
+			if v, ok := strings.CutPrefix(f, "--status="); ok {
+				return v
+			}
+		}
+	}
+	return ""
 }
 
 func unknownOutcome() error {
@@ -377,7 +411,7 @@ func decodeIssue(out []byte) (issueJSON, string) {
 // requestedID is the issue id an update or close names ("" for create).
 func requestedID(a []string, dir string) string {
 	a, _ = stripDir(a, dir)
-	if len(a) >= 2 && (a[0] == "update" || a[0] == "close") {
+	if len(a) >= 2 && (a[0] == "update" || a[0] == "close" || a[0] == "reopen") {
 		return a[1]
 	}
 	return ""
