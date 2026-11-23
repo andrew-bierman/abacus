@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ed-6pr.1.1",
+    "title": "grandchild",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:52:00Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:52:00Z",
+    "blocked_by_count": 1,
+    "blocked_by": [
+      "ed-6pr.1"
+    ]
+  },
+  {
+    "id": "ed-6pr.1",
+    "title": "child of blocked parent",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:59Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:59Z",
+    "blocked_by_count": 1,
+    "blocked_by": [
+      "ed-6pr"
+    ]
+  },
+  {
+    "id": "ed-6pr",
+    "title": "parent blocked",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "epic",
+    "created_at": "2026-11-23T04:51:58Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:58Z",
+    "blocked_by_count": 1,
+    "blocked_by": [
+      "ed-ubk"
+    ]
+  },
+  {
+    "id": "ed-pmq",
+    "title": "conditional-blocks on base",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:52Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:52Z",
+    "blocked_by_count": 1,
+    "blocked_by": [
+      "ed-ubk"
+    ]
+  },
+  {
+    "id": "ed-1ax",
+    "title": "blocked by blocks",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:51Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:51Z",
+    "blocked_by_count": 1,
+    "blocked_by": [
+      "ed-ubk"
+    ]
+  }
+]

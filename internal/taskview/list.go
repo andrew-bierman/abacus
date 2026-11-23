@@ -1,6 +1,7 @@
 package taskview
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -22,25 +23,29 @@ const (
 // Presets is the cycle order.
 var Presets = []Preset{PresetOpen, PresetReady, PresetBlocked, PresetClosed, PresetAll}
 
-// Next is the following preset, wrapping.
-func (p Preset) Next() Preset {
-	for i, k := range Presets {
-		if k == p {
-			return Presets[(i+1)%len(Presets)]
+// Next is the following preset, wrapping. With dependencies unknown (a list of recent changes)
+// ready and blocked cannot be told, so the cycle skips them.
+func (p Preset) Next(depsUnknown bool) Preset {
+	i := slices.Index(Presets, p)
+	for n := 1; n <= len(Presets); n++ {
+		k := Presets[(i+n)%len(Presets)]
+		if !depsUnknown || (k != PresetReady && k != PresetBlocked) {
+			return k
 		}
 	}
 	return PresetOpen
 }
 
-// Valid reports a known preset.
-func (p Preset) Valid() bool {
-	for _, k := range Presets {
-		if k == p {
-			return true
-		}
+// DefaultPreset is open, or all for a recent-changes list, which has closed tasks in it by design.
+func DefaultPreset(s core.TaskSnapshot) Preset {
+	if s.DepsUnknown {
+		return PresetAll
 	}
-	return false
+	return PresetOpen
 }
+
+// Valid reports a known preset.
+func (p Preset) Valid() bool { return slices.Contains(Presets, p) }
 
 func (p Preset) keeps(r row) bool {
 	switch p {
@@ -82,7 +87,7 @@ func (v *View) List(o ListOptions) core.TaskListReport {
 		Header: core.Header{Domain: core.DomainTasks, Title: "Task list", State: core.Connected, Source: core.SourceLive},
 		Query:  o.Query.String(), Preset: string(o.Preset), Sort: string(o.Sort.Key), Descending: o.Sort.Desc,
 		Rows: make([]core.TaskRow, len(rows)), Matched: len(rows), Total: len(v.rows), Ready: v.Ready(),
-		Tracker: v.snap.Tracker, ReadAt: rfc(v.snap.ReadAt), Warnings: v.snap.Warnings,
+		Tracker: v.snap.Tracker, ReadAt: rfc(v.snap.ReadAt), Warnings: v.snap.Warnings, DepsUnknown: v.snap.DepsUnknown,
 	}
 	for i, r := range rows {
 		rep.Rows[i] = r.TaskRow

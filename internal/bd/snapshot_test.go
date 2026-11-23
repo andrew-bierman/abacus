@@ -98,3 +98,34 @@ func TestTheDefaultRunnerBoundsTheSnapshotRead(t *testing.T) {
 		t.Fatalf("the export runner must cap stdout and have the long deadline: %+v", r)
 	}
 }
+
+// The header names the project the list really reads: the directory that holds the tracker, which
+// may be above the configured or working directory.
+func TestSnapshotNamesTheDirectoryThatHoldsTheTracker(t *testing.T) {
+	fx := exportFixture(t) // before the chdir below: the path is relative
+	proj := filepath.Join(t.TempDir(), "fleet-proj")
+	deep := filepath.Join(proj, "a", "b")
+	if err := os.MkdirAll(deep, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(proj, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(proj, ".beads", "metadata.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := &fakeRun{resp: map[string]string{"-C " + deep + " --readonly version --json": verJSON, "-C " + deep + " --readonly export": fx}}
+	m := mod(f, Options{Dir: deep})
+	m.Detect(context.Background())
+	snap, err := m.Snapshot(context.Background())
+	if err != nil || snap.Tracker != "fleet-proj" {
+		t.Fatalf("tracker %q err %v, want fleet-proj", snap.Tracker, err)
+	}
+	t.Chdir(deep) // no configured directory: bd resolves it from the working directory
+	f2 := &fakeRun{resp: map[string]string{"--readonly version --json": verJSON, "--readonly export": fx}}
+	m2 := mod(f2, Options{})
+	m2.Detect(context.Background())
+	if snap, err := m2.Snapshot(context.Background()); err != nil || snap.Tracker != "fleet-proj" {
+		t.Fatalf("from the working directory: %q %v", snap.Tracker, err)
+	}
+}

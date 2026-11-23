@@ -60,6 +60,9 @@ type TaskSnapshot struct {
 	// Warnings say why the snapshot may be incomplete (a record that lost its dependencies,
 	// an unreadable time); empty for a clean read.
 	Warnings []string
+	// DepsUnknown marks a snapshot built without dependency data (the summary's recent changes):
+	// nothing may be called ready or blocked from it.
+	DepsUnknown bool
 }
 
 // TaskSource reads the tracker snapshot. It is separate from TaskProvider because it reads a
@@ -88,6 +91,9 @@ type TaskRow struct {
 	Blocked    bool     `json:"blocked,omitempty"`
 	Ready      bool     `json:"ready,omitempty"`
 	Parent     string   `json:"parent,omitempty"`
+	// HeldBy is the ancestor whose unfinished blocker holds this task (the hold is inherited down
+	// parent-child links, as bd ready does); Blocked is then true with BlockedBy 0.
+	HeldBy     string   `json:"held_by,omitempty"`
 	ChildDone  int      `json:"child_done,omitempty"`
 	ChildTotal int      `json:"child_total,omitempty"`
 	Comments   int      `json:"comments,omitempty"`
@@ -104,6 +110,9 @@ type TaskListReport struct {
 	Matched    int       `json:"matched"`
 	Total      int       `json:"total"`
 	Ready      int       `json:"ready"` // ready tasks in the whole tracker
+	// DepsUnknown is set when the list is the summary's recent changes: dependencies were not read,
+	// so no task is ready or blocked and Ready is 0.
+	DepsUnknown bool `json:"deps_unknown,omitempty"`
 	Tracker    string    `json:"tracker,omitempty"`
 	ReadAt     string    `json:"read_at,omitempty"`
 	Warnings   []string  `json:"warnings,omitempty"`

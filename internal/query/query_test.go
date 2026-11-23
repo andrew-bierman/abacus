@@ -24,7 +24,7 @@ func strs(s ...string) Value { return Value{Strs: s} }
 func task(id, title, status string, prio int, who string, labels ...string) doc {
 	v := map[string]Value{
 		"id": strs(id), "title": strs(title), "status": strs(status), "label": {Strs: labels},
-		"priority": {Num: prio, HasNum: true}, "type": strs("task"), "blocked": strs("false"), "ready": strs("true"),
+		"priority": {Num: prio, HasNum: true}, "type": strs("task"), "blocked": {Bool: false, HasBool: true}, "ready": {Bool: true, HasBool: true},
 		"updated": {Time: now.Add(-48 * time.Hour), HasTime: true}, "created": {Time: now.Add(-10 * 24 * time.Hour), HasTime: true},
 	}
 	if who != "" {
@@ -138,7 +138,7 @@ func TestMatchTable(t *testing.T) {
 	a := task("ac-41", "Lease heartbeat misses on resume", "in_progress", 0, "ada", "core", "ui")
 	b := task("ac-45", "Kanban cards show blockers", "open", 1, "", "ui")
 	c := task("ac-12", "Tasks workspace epic", "closed", 3, "mei")
-	b.vals["blocked"], b.vals["ready"] = strs("true"), strs("false")
+	b.vals["blocked"], b.vals["ready"] = Value{Bool: true, HasBool: true}, Value{HasBool: true}
 	cases := []struct {
 		q    string
 		a, b bool // matches a, b
@@ -265,13 +265,5 @@ func TestEmptyAndRepeatedAreStable(t *testing.T) {
 	b, _ := Parse(a.String())
 	if !reflect.DeepEqual(a.Words, b.Words) || len(a.Preds) != len(b.Preds) {
 		t.Fatalf("normalizing changes the query: %+v vs %+v", a, b)
-	}
-}
-
-func TestFieldsAreAllParseable(t *testing.T) {
-	for _, f := range Fields() {
-		if _, ok := canon(f); !ok {
-			t.Errorf("%s is listed but does not resolve", f)
-		}
 	}
 }

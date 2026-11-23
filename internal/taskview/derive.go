@@ -27,27 +27,41 @@ type View struct {
 	blks   map[string][]string // what each task blocks (all dependents)
 	kids   map[string][]string
 	parent map[string]string
+	heldBy map[string]string // task -> the nearest ancestor held by an unfinished blocker
+	ready  int
 }
 
-// Build derives blocked, ready, parents and children from the snapshot (KTD4).
+// blocking is whether a dependency type holds the dependent back. Verified against bd 1.3.4 (see
+// testdata/README.md): blocks and conditional-blocks hold; waits-for, related, discovered-from and
+// every other kind do not, and a blocker outside the tracker (external:project:capability) never
+// holds.
+func blocking(t string) bool { return t == "blocks" || t == "conditional-blocks" }
+
+// maxDepth bounds the walk up parent-child links, so a cycle in them cannot hang a read.
+const maxDepth = 64
+
+// Build derives blocked, ready, parents and children from the snapshot (KTD4), as bd ready does:
 //
-//   - a blocker is a dependency of type "blocks" whose target is in the snapshot and not closed;
-//     a target that is not in the snapshot is shown but never blocks
-//   - ready: stored status open, no unfinished blocker, and not deferred into the future
+//   - a blocker is a blocking dependency whose target is in the snapshot and not closed
+//   - a task is also held while an ancestor (through parent-child links) is held by a blocker
+//   - closed work is never held and never ready
+//   - ready: stored status open, not held, and not deferred into the future
 //   - a parent is the target of a "parent-child" dependency; progress counts direct children
+//
+// A snapshot without dependency data (DepsUnknown) claims nothing is held or ready.
 func Build(snap core.TaskSnapshot, now time.Time) *View {
 	v := &View{snap: snap, now: now, byID: map[string]int{}, blkBy: map[string][]string{}, blks: map[string][]string{},
-		kids: map[string][]string{}, parent: map[string]string{}}
+		kids: map[string][]string{}, parent: map[string]string{}, heldBy: map[string]string{}}
 	for i, it := range snap.Issues {
 		v.byID[it.ID] = i
 	}
 	for _, it := range snap.Issues {
 		for _, d := range it.Deps {
-			switch d.Type {
-			case "blocks":
+			switch {
+			case blocking(d.Type):
 				v.blkBy[it.ID] = append(v.blkBy[it.ID], d.DependsOn)
 				v.blks[d.DependsOn] = append(v.blks[d.DependsOn], it.ID)
-			case "parent-child":
+			case d.Type == "parent-child":
 				if _, ok := v.parent[it.ID]; !ok {
 					v.parent[it.ID] = d.DependsOn
 					v.kids[d.DependsOn] = append(v.kids[d.DependsOn], it.ID)
@@ -55,8 +69,31 @@ func Build(snap core.TaskSnapshot, now time.Time) *View {
 			}
 		}
 	}
+	if !snap.DepsUnknown {
+		for _, it := range snap.Issues {
+			if it.Status == "closed" {
+				continue
+			}
+			p := it.ID
+			for depth := 0; depth < maxDepth; depth++ {
+				pp, ok := v.parent[p]
+				if !ok || !v.known(pp) || v.closed(pp) {
+					break
+				}
+				if v.openBlockers(pp) > 0 {
+					v.heldBy[it.ID] = pp
+					break
+				}
+				p = pp
+			}
+		}
+	}
 	for _, it := range snap.Issues {
-		v.rows = append(v.rows, v.rowOf(it))
+		r := v.rowOf(it)
+		if r.Ready {
+			v.ready++
+		}
+		v.rows = append(v.rows, r)
 	}
 	return v
 }
@@ -68,25 +105,37 @@ func (v *View) closed(id string) bool {
 
 func (v *View) known(id string) bool { _, ok := v.byID[id]; return ok }
 
-func (v *View) rowOf(it core.TaskIssue) row {
-	open := 0
-	for _, b := range v.blkBy[it.ID] {
+// openBlockers counts the unfinished blockers of id that are in the snapshot.
+func (v *View) openBlockers(id string) int {
+	n := 0
+	for _, b := range v.blkBy[id] {
 		if v.known(b) && !v.closed(b) {
-			open++
+			n++
 		}
 	}
-	dependents := 0
-	for _, d := range v.blks[it.ID] {
-		if !v.closed(d) {
-			dependents++
+	return n
+}
+
+func (v *View) rowOf(it core.TaskIssue) row {
+	open, dependents, held := 0, 0, ""
+	closed := it.Status == "closed"
+	if !v.snap.DepsUnknown {
+		if !closed {
+			open, held = v.openBlockers(it.ID), v.heldBy[it.ID]
+		}
+		for _, d := range v.blks[it.ID] {
+			if !v.closed(d) {
+				dependents++
+			}
 		}
 	}
+	blocked := open > 0 || held != ""
 	deferred := it.DeferUntil.After(v.now)
 	r := core.TaskRow{
 		ID: it.ID, Title: it.Title, Status: it.Status, Priority: it.Priority, Type: it.Type, Assignee: it.Assignee,
 		Labels: it.Labels, CreatedAt: rfc(it.CreatedAt), UpdatedAt: rfc(it.UpdatedAt), DeferUntil: rfc(it.DeferUntil),
-		Age: Age(it.CreatedAt, v.now), BlockedBy: open, Blocks: dependents, Blocked: open > 0,
-		Ready:  it.Status == "open" && open == 0 && !deferred,
+		Age: Age(it.CreatedAt, v.now), BlockedBy: open, Blocks: dependents, Blocked: blocked, HeldBy: held,
+		Ready:  !v.snap.DepsUnknown && it.Status == "open" && !blocked && !deferred,
 		Parent: v.parent[it.ID], Comments: len(it.Comments),
 	}
 	for _, k := range v.kids[it.ID] {
@@ -130,14 +179,28 @@ func Age(t, now time.Time) string {
 // Total and Ready are the counts of the whole tracker.
 func (v *View) Total() int { return len(v.rows) }
 
-func (v *View) Ready() int {
-	n := 0
+func (v *View) Ready() int { return v.ready }
+
+// Counts are the tracker's totals by stored status plus the derived ready count: what the strip,
+// the list and the Insights summary all show, from the one snapshot. A closed or open status is
+// bd's own; any other status (pinned, hooked) is in Total only.
+func (v *View) Counts() core.TaskCounts {
+	c := core.TaskCounts{Total: len(v.rows), Ready: v.ready}
 	for _, r := range v.rows {
-		if r.Ready {
-			n++
+		switch r.Status {
+		case "open":
+			c.Open++
+		case "in_progress":
+			c.InProgress++
+		case "blocked":
+			c.Blocked++
+		case "deferred":
+			c.Deferred++
+		case "closed":
+			c.Closed++
 		}
 	}
-	return n
+	return c
 }
 
 // Doc makes a row searchable by the shared query grammar.
@@ -200,12 +263,7 @@ func one(s string) query.Value {
 	return query.Value{Strs: []string{s}}
 }
 
-func boolValue(b bool) query.Value {
-	if b {
-		return query.Value{Strs: []string{"true"}}
-	}
-	return query.Value{Strs: []string{"false"}}
-}
+func boolValue(b bool) query.Value { return query.Value{Bool: b, HasBool: true} }
 
 // Text is what free words search: the id, the title and the labels.
 func (r row) Text() []string { return append([]string{r.ID, r.Title}, r.Labels...) }

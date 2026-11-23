@@ -287,8 +287,12 @@ func (m *Module) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
 	case err != nil:
 		return core.TaskSnapshot{}, err
 	}
+	// Name the directory that holds the tracker, as bd finds it from the configured or working
+	// directory, so the header says which project the list and a write really use.
 	name := ""
-	if d := m.TrackerDir(); d != "" {
+	if root := core.TrackerRoot(m.TrackerDir()); root != "" {
+		name = filepath.Base(root)
+	} else if d := m.TrackerDir(); d != "" {
 		name = filepath.Base(d)
 	}
 	return taskview.Parse(bytes.NewReader(out), time.Now(), name)

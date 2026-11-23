@@ -23,3 +23,23 @@ acceptance criteria, one P4 bug, and one closed child):
 
 The author names `ada` and `mei` and every title are invented. `*.golden.json` files are this
 package's own outputs over `export.jsonl` at a fixed time (`go test ./internal/taskview -update`).
+
+## Edge cases of "ready" and "blocked" (second tracker)
+
+`export-edges.jsonl`, `ready-edges.json` and `blocked-edges.json` come from a second throwaway tracker
+(same tool, version and isolation, prefix `ed`) that holds one task per dependency kind, all pointing
+at one open task, plus a blocked parent with a child and a grandchild, an unblocked epic with a child
+and a closed task whose blocker is open (`bd close --force`; plain `bd close` refuses a blocked
+issue). `bd --readonly ready --json` and `bd --readonly blocked --json` were captured with the
+blocker open. What bd 1.3.4 did:
+
+| Case | `bd ready` | `bd blocked` |
+|---|---|---|
+| `blocks` on an open task | held | listed |
+| `conditional-blocks` on an open task | held (freed when the target closes, even with a "failed" reason) | listed |
+| `waits-for` on an open task | **ready** | not listed |
+| `related`, `discovered-from` | **ready** | not listed |
+| `blocks` on `external:proj:cap` | **ready** (an external reference never holds) | not listed |
+| child of a blocked parent, and its child | held (the hold is inherited down `parent-child` links) | listed |
+| child of an unblocked epic | ready | not listed |
+| closed task whose blocker is open | not listed (closed work is never ready) | **not listed** |

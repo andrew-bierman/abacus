@@ -1,6 +1,8 @@
 package query
 
 import (
+	"cmp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -8,6 +10,8 @@ import (
 // Value is a document's value for one field: any of the three views may be set.
 type Value struct {
 	Strs    []string // text values (a task has one status and many labels); empty means "none"
+	Bool    bool
+	HasBool bool
 	Num     int
 	HasNum  bool
 	Time    time.Time
@@ -122,8 +126,7 @@ func predHolds(field string, p Pred, v Value, now time.Time) bool {
 				return true
 			}
 		case kBool:
-			b, _ := parseBool(want)
-			if hasStr(v.Strs, map[bool]string{true: "true", false: "false"}[b]) {
+			if b, _ := parseBool(want); v.HasBool && v.Bool == b {
 				return true
 			}
 		case kPrefix:
@@ -148,38 +151,24 @@ func predHolds(field string, p Pred, v Value, now time.Time) bool {
 }
 
 func hasStr(strs []string, want string) bool {
-	for _, s := range strs {
-		if strings.ToLower(s) == want {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(strs, func(s string) bool { return strings.ToLower(s) == want })
 }
 
-func cmpInt(a, b int, op Op) bool {
+// holds is whether a comparison result c (-1, 0, +1) satisfies op.
+func holds(op Op, c int) bool {
 	switch op {
 	case OpLT:
-		return a < b
+		return c < 0
 	case OpLE:
-		return a <= b
+		return c <= 0
 	case OpGT:
-		return a > b
+		return c > 0
 	case OpGE:
-		return a >= b
+		return c >= 0
 	}
-	return a == b
+	return c == 0
 }
 
-func cmpTime(a, b time.Time, op Op) bool {
-	switch op {
-	case OpLT:
-		return a.Before(b)
-	case OpLE:
-		return !a.After(b)
-	case OpGT:
-		return a.After(b)
-	case OpGE:
-		return !a.Before(b)
-	}
-	return a.Equal(b)
-}
+func cmpInt(a, b int, op Op) bool { return holds(op, cmp.Compare(a, b)) }
+
+func cmpTime(a, b time.Time, op Op) bool { return holds(op, a.Compare(b)) }

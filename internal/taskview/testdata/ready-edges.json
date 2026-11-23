@@ -1,0 +1,157 @@
+[
+  {
+    "id": "ed-idi",
+    "title": "free task",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:50Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:50Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "ed-ubk",
+    "title": "base open blocker",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:50Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:52:31Z",
+    "dependency_count": 0,
+    "dependent_count": 3,
+    "comment_count": 0
+  },
+  {
+    "id": "ed-oyx",
+    "title": "waits-for base",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:53Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:53Z",
+    "dependencies": [
+      {
+        "issue_id": "ed-oyx",
+        "depends_on_id": "ed-ubk",
+        "type": "waits-for",
+        "created_at": "2026-11-23T04:51:54Z",
+        "created_by": "ada",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "ed-dfu",
+    "title": "related to base",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:54Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:54Z",
+    "dependencies": [
+      {
+        "issue_id": "ed-dfu",
+        "depends_on_id": "ed-ubk",
+        "type": "related",
+        "created_at": "2026-11-23T04:51:55Z",
+        "created_by": "ada",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "ed-7fn",
+    "title": "discovered-from base",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:55Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:55Z",
+    "dependencies": [
+      {
+        "issue_id": "ed-7fn",
+        "depends_on_id": "ed-ubk",
+        "type": "discovered-from",
+        "created_at": "2026-11-23T04:51:56Z",
+        "created_by": "ada",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "ed-5op",
+    "title": "external blocker",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:51:57Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:51:57Z",
+    "dependencies": [
+      {
+        "issue_id": "ed-5op",
+        "depends_on_id": "external:proj:cap",
+        "type": "blocks",
+        "created_at": "2026-11-23T04:51:57Z",
+        "created_by": "ada",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 1,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "ed-jxj",
+    "title": "plain epic",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "epic",
+    "created_at": "2026-11-23T04:52:16Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:52:16Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "ed-jxj.1",
+    "title": "child of plain epic",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "created_at": "2026-11-23T04:52:16Z",
+    "created_by": "ada",
+    "updated_at": "2026-11-23T04:52:16Z",
+    "dependencies": [
+      {
+        "issue_id": "ed-jxj.1",
+        "depends_on_id": "ed-jxj",
+        "type": "parent-child",
+        "created_at": "2026-11-23T04:52:16Z",
+        "created_by": "ada",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0,
+    "parent": "ed-jxj"
+  }
+]

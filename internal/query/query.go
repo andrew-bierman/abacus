@@ -120,15 +120,6 @@ var fields = map[string]fieldDef{
 
 var aliases = map[string]string{"assignee": "who", "author": "who", "holder": "who", "machine": "who", "at": "updated"}
 
-// Fields lists the canonical field names, for completion and help.
-func Fields() []string {
-	out := make([]string, 0, len(fields))
-	for f := range fields {
-		out = append(out, f)
-	}
-	return out
-}
-
 func canon(name string) (string, bool) {
 	name = strings.ToLower(name)
 	if a, ok := aliases[name]; ok {
@@ -307,7 +298,7 @@ func validate(field string, def fieldDef, op Op, v string) string {
 			return field + " needs a comparison, like " + field + ">7d or " + field + "<2026-11-01"
 		}
 		if _, ok := parseTimeSpec(v, time.Time{}); !ok {
-			return fmt.Sprintf("%q is not a duration (30m 12h 7d 2w) or a date (2026-11-01)", v)
+			return fmt.Sprintf("%q is not a duration (30m 12h 7d 2w, up to 100 years) or a date (2026-11-01)", v)
 		}
 	case kBool:
 		if op != OpEq {
@@ -352,6 +343,9 @@ func parseBool(v string) (bool, bool) {
 	return false, false
 }
 
+// maxSpan is the longest duration a query may name: 100 years.
+const maxSpan = 100 * 365 * 24 * time.Hour
+
 // parseTimeSpec turns a duration ("7d" is now minus 7 days), a date or an RFC 3339 time into an
 // instant. With a zero now only the shape is checked.
 func parseTimeSpec(v string, now time.Time) (time.Time, bool) {
@@ -364,6 +358,9 @@ func parseTimeSpec(v string, now time.Time) (time.Time, bool) {
 					return time.Time{}, false
 				}
 				num = num*10 + int(c-'0')
+			}
+			if time.Duration(num) > maxSpan/unit { // beyond 100 years time.Duration would wrap
+				return time.Time{}, false
 			}
 			return now.Add(-time.Duration(num) * unit), true
 		}
