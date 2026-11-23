@@ -94,7 +94,7 @@ func TestTasksKeysDoNotCollide(t *testing.T) {
 		"list":      func(s *tasksSection) {},
 		"typing":    func(s *tasksSection) { send(s, "/") },
 		"drilled":   func(s *tasksSection) { send(s, "enter") },
-		"insights":  func(s *tasksSection) { send(s, "v") },
+		"insights":  func(s *tasksSection) { send(s, "V") },
 		"confirm":   func(s *tasksSection) { s.mode = modeConfirm },
 		"form":      func(s *tasksSection) { s.mode = modeForm },
 		"filtered":  func(s *tasksSection) { send(s, "/", "a", "enter") },
@@ -358,14 +358,22 @@ func TestEscPeelsTheDetailBeforeTheQuery(t *testing.T) {
 func TestViewKeyCyclesViewsAndWritesStillWorkFromAnyView(t *testing.T) {
 	s := listAt(100, 32)
 	send(s, "v")
-	if s.list.cur != viewInsights || !strings.Contains(s.View(), "List [Insights]") {
+	if s.list.cur != viewGraph || !strings.Contains(s.View(), "List [Graph] Insights") {
+		t.Fatal("v opens the next view, Graph")
+	}
+	send(s, "v")
+	if s.list.cur != viewInsights || !strings.Contains(s.View(), "Graph [Insights]") {
 		t.Fatal("v opens Insights")
 	}
-	send(s, "V")
+	send(s, "v")
 	if s.list.cur != viewList {
-		t.Fatal("V goes back")
+		t.Fatal("v wraps to the list")
 	}
 	send(s, "V")
+	if s.list.cur != viewInsights {
+		t.Fatal("V goes back from the list to the last view")
+	}
+	send(s, "V", "V", "V")
 	if s.list.cur != viewInsights {
 		t.Fatal("V wraps")
 	}
@@ -451,7 +459,7 @@ func TestHostileTextReachesNeitherTheListNorTheDetail(t *testing.T) {
 			s.Update(tea.WindowSizeMsg{Width: w, Height: h})
 			s.Update(tasksMsg{report: core.TasksReport{Counts: core.TaskCounts{Total: 2}}})
 			s.Update(taskSnapshotMsg{snap: hostileSnapshot()})
-			for name, keys := range map[string][]string{"list": nil, "detail": {"enter"}, "second": {"j", "enter"}, "insights": {"v"}, "typing": {"/", "\x1b", "x"}} {
+			for name, keys := range map[string][]string{"list": nil, "detail": {"enter"}, "second": {"j", "enter"}, "insights": {"V"}, "typing": {"/", "\x1b", "x"}} {
 				c := listAtCopy(s)
 				send(c, keys...)
 				for i, l := range strings.Split(c.View(), "\n") {

@@ -245,7 +245,7 @@ func TestHostileTextNeverReachesTheTasksPanels(t *testing.T) {
 		m, _ = m.Update(insightsMsg{report: ins})
 		hostileOK(t, fmt.Sprintf("tasks %d", w), m.View(), w)
 		hostileOK(t, fmt.Sprintf("tasks detail %d", w), press(m, "enter").View(), w)
-		hostileOK(t, fmt.Sprintf("tasks insights %d", w), press(m, "v").View(), w)
+		hostileOK(t, fmt.Sprintf("tasks insights %d", w), press(m, "V").View(), w)
 	}
 }
 
@@ -281,7 +281,7 @@ func TestTasksViewsFitTheBodyAtSmallHeights(t *testing.T) {
 	for _, w := range []int{60, 80, 120} {
 		for _, h := range []int{12, 14, 20, 30} {
 			m := sized(newTasksRig(t).m, w, h)
-			for name, v := range map[string]string{"list": m.View(), "detail": press(m, "enter").View(), "insights": press(m, "v").View()} {
+			for name, v := range map[string]string{"list": m.View(), "detail": press(m, "enter").View(), "insights": press(m, "V").View()} {
 				out := strings.Split(strings.TrimRight(v, "\n"), "\n")
 				if len(out) > h {
 					t.Fatalf("%dx%d %s: %d rows", w, h, name, len(out))

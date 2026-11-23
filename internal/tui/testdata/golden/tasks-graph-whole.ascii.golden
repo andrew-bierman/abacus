@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                            37 tasks · 5 ready
+whole graph · 36 linked · 1 without links · 7 groups
+╭─ ▸ Graph ──────────────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│   ○ gr-l2q Waits on deleted                                  ? │ │ longest chain (6):            │
+│   ○ gr-syt Cycle beta                                   ⊘1→1 ~ │ │ gr-q7z → gr-hsy → gr-3k9 →    │
+│   ○ gr-tse Cycle gamma                                  ⊘1→1 ~ │ │ gr-hoz → gr-fdz → gr-l5l      │
+│   ○ gr-vgy Cycle alpha                                  ⊘1→1 ~ │ │                               │
+│ ── layer 1 · 16 tasks                                          │ │ cycle gr-syt → gr-tse →       │
+│   ○ gr-1wu Fan item 7                                       ⊘1 │ │ gr-vgy → gr-syt               │
+│   ○ gr-33j Fan item 11                                      ⊘1 │ │ depends on itself gr-1fm      │
+│   ○ gr-347 Fan item 12                                      ⊘1 │ │                               │
+│   ○ gr-845 Fan item 1                                       ⊘1 │ │ ○ open ◐ active ● blocked     │
+│   ○ gr-8ax Fan item 5                                       ⊘1 │ │ ✓ closed ◇ deferred           │
+│   ○ gr-ak2 Fan item 9                                       ⊘1 │ │ * longest chain · ~ cycle     │
+│   ○ gr-d23 Fan item 10                                      ⊘1 │ │ ^ bottleneck · ! self-dep     │
+│   ○ gr-ea5 Fan item 8                                       ⊘1 │ │ ? blocker not in tracker      │
+│   ○ gr-k2w Fan item 3                                       ⊘1 │ │                               │
+│   ○ gr-pzq Fan item 4                                       ⊘1 │ │                               │
+│   ○ gr-r7d Fan item 2                                       ⊘1 │ │                               │
+│   ○ gr-s4s Fan item 6                                       ⊘1 │ │                               │
+│   ✓ gr-blj Chain step 2                                     →1 │ │                               │
+│   ○ gr-bac Sanitize text                                    →1 │ │                               │
+│   ◐ gr-nqy Parse export                                     →1 │ │                               │
+│   ○ gr-jz5 Island two                                       ⊘1 │ │                               │
+│ ── layer 2 · 2 tasks                                           │ │                               │
+│   ◐ gr-q7z Chain step 3                                   →1 * │ │                               │
+│ ▸ ○ gr-ko8 Graph layout                                 ⊘2→2 ^ │ │                               │
+│   ↕ +20 more                                                   │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g nearby · enter open · ↑/↓ move · h/l layer · v view · esc back…
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                        37 tasks · 5 ready
+whole graph · 36 linked · 1 without links · 7 groups
+╭─ ▸ Graph ────────────────────────────────────────────────────────────────────╮
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                                      │
+│ depends on itself gr-1fm                                                     │
+│ longest chain (6): gr-q7z → … → gr-l5l                                       │
+│   ○ gr-d23 Fan item 10                                                    ⊘1 │
+│   ○ gr-ea5 Fan item 8                                                     ⊘1 │
+│   ○ gr-k2w Fan item 3                                                     ⊘1 │
+│   ○ gr-pzq Fan item 4                                                     ⊘1 │
+│   ○ gr-r7d Fan item 2                                                     ⊘1 │
+│   ○ gr-s4s Fan item 6                                                     ⊘1 │
+│   ✓ gr-blj Chain step 2                                                   →1 │
+│   ○ gr-bac Sanitize text                                                  →1 │
+│   ◐ gr-nqy Parse export                                                   →1 │
+│   ○ gr-jz5 Island two                                                     ⊘1 │
+│ ── layer 2 · 2 tasks                                                         │
+│   ◐ gr-q7z Chain step 3                                                 →1 * │
+│ ▸ ○ gr-ko8 Graph layout                                               ⊘2→2 ^ │
+│   ↕ +31 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g nearby · enter open · ↑/↓ move · h/l layer…
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                    37 tasks · 5 ready
+whole graph · 36 linked · 1 without links · 7 groups
+╭─ ▸ Graph ────────────────────────────────────────────────╮
+│ cycle gr-syt → gr-tse → gr-vgy → gr-syt                  │
+│ depends on itself gr-1fm                                 │
+│ longest chain (6): gr-q7z → … → gr-l5l                   │
+│   ○ gr-d23 Fan item 10                                ⊘1 │
+│   ○ gr-ea5 Fan item 8                                 ⊘1 │
+│   ○ gr-k2w Fan item 3                                 ⊘1 │
+│   ○ gr-pzq Fan item 4                                 ⊘1 │
+│   ○ gr-r7d Fan item 2                                 ⊘1 │
+│   ○ gr-s4s Fan item 6                                 ⊘1 │
+│   ✓ gr-blj Chain step 2                               →1 │
+│   ○ gr-bac Sanitize text                              →1 │
+│   ◐ gr-nqy Parse export                               →1 │
+│   ○ gr-jz5 Island two                                 ⊘1 │
+│ ── layer 2 · 2 tasks                                     │
+│   ◐ gr-q7z Chain step 3                             →1 * │
+│ ▸ ○ gr-ko8 Graph layout                           ⊘2→2 ^ │
+│   ↕ +31 more                                             │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g nearby · enter open …

@@ -238,7 +238,7 @@ func scenarios() []scenario {
 		{name: "tasks-filter-typing", build: std, keys: append([]string{"2", "/"}, typed("pri")...), tab: "Tasks", extra: framedSizes},
 		{name: "tasks-query-error", build: std, keys: append([]string{"2", "/"}, typed("lease foo:x")...), tab: "Tasks", extra: framedSizes},
 		{name: "tasks-no-match", build: std, keys: append(append([]string{"2", "/"}, typed("zzzzzz")...), "enter"), tab: "Tasks", extra: framedSizes},
-		{name: "tasks-insights", build: std, keys: []string{"2", "v"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-insights", build: std, keys: []string{"2", "V"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-empty", tab: "Tasks", extra: framedSizes, keys: []string{"2"}, build: func(t *testing.T, th Theme) tea.Model {
 			m := load(t, th, nil)
 			m, _ = m.Update(tasksMsg{report: core.TasksReport{Header: core.Header{Source: core.SourceLive}}})
@@ -438,6 +438,9 @@ func TestEveryRenderRespectsWidthHeightAndKeepsItsChrome(t *testing.T) {
 func expectedGoldens() map[string]bool {
 	want := map[string]bool{"queues.truecolor-dark.golden": true, "queues.truecolor-light.golden": true}
 	for _, sc := range scenarios() {
+		want[sc.name+".ascii.golden"] = true
+	}
+	for _, sc := range graphScenarios() {
 		want[sc.name+".ascii.golden"] = true
 	}
 	return want

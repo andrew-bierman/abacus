@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                             5 tasks · 2 ready
+focus bs-f · depth 2 · blocking links
+╭─ ▸ Graph · bs-f ───────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│   ┌─────────────────────────┐  ┌─────────────────────────┐     │ │ longest chain (3):            │
+│   │ ○ bs-a Blocker A      * │  │ ○ bs-b Blocker B        │     │ │ bs-a → bs-c → bs-f            │
+│   └─────────────────────────┘  └─────────────────────────┘     │ │                               │
+│                                                                │ │ cycles: none                  │
+│   ┌─────────────────────────┐  ┌─────────────────────────┐     │ │                               │
+│   │ ○ bs-c Dependent C   *^ │  │ ○ bs-d Dependent D    ^ │     │ │ blockers open: 2              │
+│   └────────────┬────────────┘  └────────────┬────────────┘     │ │ freed when closed: 0          │
+│                └──────────────┬─────────────┘                  │ │ +3 links not drawn            │
+│                               │                                │ │                               │
+│                  ╔════════════╧════════════╗                   │ │ ○ open ◐ active ● blocked     │
+│                  ║ ○ bs-f Bus focus      * ║                   │ │ ✓ closed ◇ deferred           │
+│                  ╚═════════════════════════╝                   │ │ * longest chain · ~ cycle     │
+│                                                                │ │ ^ bottleneck · ! self-dep     │
+│                                                                │ │ ? blocker not in tracker      │
+│                                                                │ │ ═ focus · ┃ selected          │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                         5 tasks · 2 ready
+focus bs-f · depth 2 · blocking links
+╭─ ▸ Graph · bs-f ─────────────────────────────────────────────────────────────╮
+│ blocked by                                                                   │
+│   ○ bs-c Dependent C                                                 ⊘2→1 *^ │
+│     ○ bs-a Blocker A                                                    →1 * │
+│     ○ bs-b Blocker B                                                      →2 │
+│   ○ bs-d Dependent D                                                  ⊘1→1 ^ │
+│     bs-b (listed above)                                                      │
+│                                                                              │
+│ ▸ ○ bs-f Bus focus                                                      ⊘2 * │
+│                                                                              │
+│ blocks                                                                       │
+│   nothing                                                                    │
+│                                                                              │
+│ longest chain (3):                                                           │
+│ bs-a → bs-c → bs-f                                                           │
+│ cycles: none                                                                 │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                     5 tasks · 2 ready
+focus bs-f · depth 2 · blocking links
+╭─ ▸ Graph · bs-f ─────────────────────────────────────────╮
+│ blocked by                                               │
+│   ○ bs-c Dependent C                             ⊘2→1 *^ │
+│     ○ bs-a Blocker A                                →1 * │
+│     ○ bs-b Blocker B                                  →2 │
+│   ○ bs-d Dependent D                              ⊘1→1 ^ │
+│     bs-b (listed above)                                  │
+│                                                          │
+│ ▸ ○ bs-f Bus focus                                  ⊘2 * │
+│                                                          │
+│ blocks                                                   │
+│   nothing                                                │
+│                                                          │
+│ longest chain (3):                                       │
+│ bs-a → bs-c → bs-f                                       │
+│ cycles: none                                             │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open …

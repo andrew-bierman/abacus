@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights       14 tasks · 3 ready
+[List] Graph  Insights
 [open] /zzzz… 0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │ no tasks match: esc clears the       │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Insights       14 tasks · 3 ready
+[List] Graph  Insights
 [open] /zzzz… 0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │ no tasks match: esc clears the       │
@@ -44,7 +44,7 @@
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                               14 tasks · 3 ready
+[List] Graph  Insights                                        14 tasks · 3 ready
 [open] /zzzzzz                                        0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │ no tasks match: esc clears the query, f changes the quick filter             │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                               14 tasks · 3 ready
+[List] Graph  Insights                                        14 tasks · 3 ready
 [open] /zzzzzz                                        0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │ no tasks match: esc clears the query, f changes the quick filter             │
@@ -88,7 +88,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                                                       14 tasks · 3 ready
+[List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] /zzzzzz                                                                                0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
 │ no tasks match: esc clears the query, f changes the quick filter     │ │ no task selected                            │
@@ -98,11 +98,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back · f quick filter · ↑/↓ move · n new · e edit…
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back · f quick filter · g graph · ↑/↓ move · n ne…
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                       14 tasks · 3 ready
+[List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] /zzzzzz                                                                                0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
 │ no tasks match: esc clears the query, f changes the quick filter     │ │ no task selected                            │
@@ -129,11 +129,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back · f quick filter · ↑/↓ move · n new · e edit…
+? help · q quit · tab/→ next tab · / filter · s/S sort · v view · esc back · f quick filter · g graph · ↑/↓ move · n ne…
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Insights                           14 tasks · 3 ready
+[List] Graph  Insights                    14 tasks · 3 ready
 [open] /zzzzzz                    0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
 │ no tasks match: esc clears the query, f changes the      │
@@ -158,7 +158,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                   14 tasks · 3 ready
+[List] Graph  Insights                                                            14 tasks · 3 ready
 [open] /zzzzzz                                                            0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ Task ──────────────────────────────╮
 │ no tasks match: esc clears the query, f changes the      │ │ no task selected                    │

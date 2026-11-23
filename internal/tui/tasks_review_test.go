@@ -39,7 +39,7 @@ func writableAt(w, h int) *tasksSection {
 
 func TestInsightsViewNeverActsOnTheHiddenTask(t *testing.T) {
 	s := writableAt(100, 32)
-	send(s, "v")
+	send(s, "V")
 	for _, k := range []string{"e", "x", "w"} {
 		send(s, k)
 		if s.mode != modeList || !strings.Contains(s.notice, "List view") {
@@ -60,7 +60,7 @@ func TestInsightsViewNeverActsOnTheHiddenTask(t *testing.T) {
 		t.Fatalf("e on the List edits the shown task: mode %v", s.mode)
 	}
 	s2 := writableAt(100, 32)
-	send(s2, "v", "x")
+	send(s2, "V", "x")
 	if s2.mode != modeList {
 		t.Fatalf("x from Insights must not start a close: %v", s2.mode)
 	}
@@ -184,7 +184,7 @@ func TestARefreshKeepsTheChosenQuickFilter(t *testing.T) {
 func TestInsightsSummaryAgreesWithTheList(t *testing.T) {
 	s := listAt(100, 32)
 	s.Update(tasksMsg{report: core.TasksReport{Counts: core.TaskCounts{Total: 99, Open: 50, Ready: 77}}}) // a disagreeing summary read
-	send(s, "v")
+	send(s, "V")
 	v := s.View()
 	if !strings.Contains(v, "14 tasks:") || !strings.Contains(v, "ready 3") || strings.Contains(v, "99") || strings.Contains(v, "ready 77") {
 		t.Fatalf("with a snapshot the counts are the snapshot's:\n%s", v)

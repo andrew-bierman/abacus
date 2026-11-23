@@ -165,6 +165,9 @@ func runDomain(cmd string, rest []string, d Deps) int {
 	if cmd == "tasks" && len(rest) > 0 && (rest[0] == "list" || rest[0] == "show") {
 		return runTaskView(rest[0], rest[1:], d)
 	}
+	if cmd == "tasks" && len(rest) > 0 && rest[0] == "graph" {
+		return runTaskGraph(rest[1:], d)
+	}
 	if cmd == "tasks" && len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
 		return runTaskWrite(rest[0], rest[1:], d)
 	}

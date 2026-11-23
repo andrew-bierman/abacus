@@ -1,0 +1,83 @@
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                                             4 tasks · 1 ready
+focus sc-f · depth 2 · blocking links
+╭─ ▸ Graph · sc-f ───────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
+│                  ┌─────────────────────────┐                   │ │ longest chain (4):            │
+│                  │ ○ sc-c Root cause     * │                   │ │ sc-c → sc-b → sc-a → sc-f     │
+│                  └────────────┬────────────┘                   │ │                               │
+│                               └─────────────┐                  │ │ cycles: none                  │
+│                                             │                  │ │                               │
+│   ┌─────────────────────────┐  ┌────────────┴────────────┐     │ │ blockers open: 2              │
+│   │ ○ sc-a Side step      * │  │ ○ sc-b Middle step   *^ │     │ │ freed when closed: 0          │
+│   └────────────┬────────────┘  └────────────┬────────────┘     │ │ +1 links not drawn            │
+│                └──────────────┬─────────────┘                  │ │                               │
+│                               │                                │ │ ○ open ◐ active ● blocked     │
+│                  ╔════════════╧════════════╗                   │ │ ✓ closed ◇ deferred           │
+│                  ║ ○ sc-f Shortcut focus * ║                   │ │ * longest chain · ~ cycle     │
+│                  ╚═════════════════════════╝                   │ │ ^ bottleneck · ! self-dep     │
+│                                                                │ │ ? blocker not in tracker      │
+│                                                                │ │ ═ focus · ┃ selected          │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+│                                                                │ │                               │
+╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling …
+=== 80x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List [Graph] Insights                                         4 tasks · 1 ready
+focus sc-f · depth 2 · blocking links
+╭─ ▸ Graph · sc-f ─────────────────────────────────────────────────────────────╮
+│ blocked by                                                                   │
+│   ○ sc-a Side step                                                    ⊘1→1 * │
+│     sc-b (listed above)                                                      │
+│   ○ sc-b Middle step                                                 ⊘1→2 *^ │
+│     ○ sc-c Root cause                                                   →1 * │
+│                                                                              │
+│ ▸ ○ sc-f Shortcut focus                                                 ⊘2 * │
+│                                                                              │
+│ blocks                                                                       │
+│   nothing                                                                    │
+│                                                                              │
+│ longest chain (4):                                                           │
+│ sc-c → sc-b → sc-a → sc-f                                                    │
+│ cycles: none                                                                 │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open · [ ] depth · ↑/↓ move …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List [Graph] Insights                     4 tasks · 1 ready
+focus sc-f · depth 2 · blocking links
+╭─ ▸ Graph · sc-f ─────────────────────────────────────────╮
+│ blocked by                                               │
+│   ○ sc-a Side step                                ⊘1→1 * │
+│     sc-b (listed above)                                  │
+│   ○ sc-b Middle step                             ⊘1→2 *^ │
+│     ○ sc-c Root cause                               →1 * │
+│                                                          │
+│ ▸ ○ sc-f Shortcut focus                             ⊘2 * │
+│                                                          │
+│ blocks                                                   │
+│   nothing                                                │
+│                                                          │
+│ longest chain (4):                                       │
+│ sc-c → sc-b → sc-a → sc-f                                │
+│ cycles: none                                             │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · g whole · enter open …

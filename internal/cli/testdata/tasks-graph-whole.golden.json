@@ -1,0 +1,640 @@
+{
+  "chain": [
+    "gr-q7z",
+    "gr-hsy",
+    "gr-3k9",
+    "gr-hoz",
+    "gr-fdz",
+    "gr-l5l"
+  ],
+  "components": 7,
+  "cycles": [
+    [
+      "gr-syt",
+      "gr-tse",
+      "gr-vgy"
+    ]
+  ],
+  "domain": "tasks",
+  "edges": [
+    {
+      "from": "gr-3k9",
+      "to": "gr-hoz",
+      "drawn": true
+    },
+    {
+      "from": "gr-67z",
+      "to": "gr-au4",
+      "drawn": true
+    },
+    {
+      "from": "gr-67z",
+      "to": "gr-gdm",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-1wu",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-33j",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-347",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-845",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-8ax",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-ak2",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-d23",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-ea5",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-k2w",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-pzq",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-r7d",
+      "drawn": true
+    },
+    {
+      "from": "gr-6yh",
+      "to": "gr-s4s",
+      "drawn": true
+    },
+    {
+      "from": "gr-960",
+      "to": "gr-blj",
+      "drawn": true
+    },
+    {
+      "from": "gr-9ik",
+      "to": "gr-bac",
+      "drawn": true
+    },
+    {
+      "from": "gr-9ik",
+      "to": "gr-nqy",
+      "drawn": true
+    },
+    {
+      "from": "gr-bac",
+      "to": "gr-ko8",
+      "drawn": true
+    },
+    {
+      "from": "gr-blj",
+      "to": "gr-q7z",
+      "drawn": true
+    },
+    {
+      "from": "gr-fdz",
+      "to": "gr-l5l",
+      "drawn": true
+    },
+    {
+      "from": "gr-god",
+      "to": "gr-jz5",
+      "drawn": true
+    },
+    {
+      "from": "gr-hoz",
+      "to": "gr-fdz",
+      "drawn": true
+    },
+    {
+      "from": "gr-hsy",
+      "to": "gr-3k9",
+      "drawn": true
+    },
+    {
+      "from": "gr-ko8",
+      "to": "gr-1jo",
+      "drawn": true
+    },
+    {
+      "from": "gr-ko8",
+      "to": "gr-67z",
+      "drawn": true
+    },
+    {
+      "from": "gr-nqy",
+      "to": "gr-ko8",
+      "drawn": true
+    },
+    {
+      "from": "gr-q7z",
+      "to": "gr-hsy",
+      "drawn": true
+    },
+    {
+      "from": "gr-syt",
+      "to": "gr-tse",
+      "drawn": false
+    },
+    {
+      "from": "gr-tse",
+      "to": "gr-vgy",
+      "drawn": false
+    },
+    {
+      "from": "gr-vgy",
+      "to": "gr-syt",
+      "drawn": false
+    }
+  ],
+  "isolated": 1,
+  "layers": [
+    {
+      "layer": 0,
+      "nodes": [
+        "gr-1fm",
+        "gr-6yh",
+        "gr-960",
+        "gr-9ik",
+        "gr-god",
+        "gr-l2q",
+        "gr-syt",
+        "gr-tse",
+        "gr-vgy"
+      ]
+    },
+    {
+      "layer": 1,
+      "nodes": [
+        "gr-1wu",
+        "gr-33j",
+        "gr-347",
+        "gr-845",
+        "gr-8ax",
+        "gr-ak2",
+        "gr-d23",
+        "gr-ea5",
+        "gr-k2w",
+        "gr-pzq",
+        "gr-r7d",
+        "gr-s4s",
+        "gr-blj",
+        "gr-bac",
+        "gr-nqy",
+        "gr-jz5"
+      ]
+    },
+    {
+      "layer": 2,
+      "nodes": [
+        "gr-q7z",
+        "gr-ko8"
+      ]
+    },
+    {
+      "layer": 3,
+      "nodes": [
+        "gr-hsy",
+        "gr-1jo",
+        "gr-67z"
+      ]
+    },
+    {
+      "layer": 4,
+      "nodes": [
+        "gr-3k9",
+        "gr-au4",
+        "gr-gdm"
+      ]
+    },
+    {
+      "layer": 5,
+      "nodes": [
+        "gr-hoz"
+      ]
+    },
+    {
+      "layer": 6,
+      "nodes": [
+        "gr-fdz"
+      ]
+    },
+    {
+      "layer": 7,
+      "nodes": [
+        "gr-l5l"
+      ]
+    }
+  ],
+  "mode": "whole",
+  "nodes": [
+    {
+      "id": "gr-1fm",
+      "title": "Self blocked",
+      "status": "open",
+      "priority": 2,
+      "layer": 0,
+      "order": 0,
+      "blocked": true,
+      "self_dependency": true
+    },
+    {
+      "id": "gr-6yh",
+      "title": "Release hub",
+      "status": "open",
+      "priority": 0,
+      "layer": 0,
+      "order": 1,
+      "blocks": 12,
+      "ready": true
+    },
+    {
+      "id": "gr-960",
+      "title": "Chain step 1",
+      "status": "closed",
+      "priority": 2,
+      "layer": 0,
+      "order": 2
+    },
+    {
+      "id": "gr-9ik",
+      "title": "Snapshot reader",
+      "status": "closed",
+      "priority": 1,
+      "layer": 0,
+      "order": 3,
+      "blocks": 2
+    },
+    {
+      "id": "gr-god",
+      "title": "Island one",
+      "status": "open",
+      "priority": 2,
+      "layer": 0,
+      "order": 4,
+      "blocks": 1,
+      "ready": true
+    },
+    {
+      "id": "gr-l2q",
+      "title": "Waits on deleted",
+      "status": "open",
+      "priority": 2,
+      "layer": 0,
+      "order": 5,
+      "ready": true,
+      "missing": [
+        "gr-gone"
+      ]
+    },
+    {
+      "id": "gr-syt",
+      "title": "Cycle beta",
+      "status": "open",
+      "priority": 2,
+      "layer": 0,
+      "order": 6,
+      "blocked_by": 1,
+      "blocks": 1,
+      "blocked": true,
+      "in_cycle": true
+    },
+    {
+      "id": "gr-tse",
+      "title": "Cycle gamma",
+      "status": "open",
+      "priority": 2,
+      "layer": 0,
+      "order": 7,
+      "blocked_by": 1,
+      "blocks": 1,
+      "blocked": true,
+      "in_cycle": true
+    },
+    {
+      "id": "gr-vgy",
+      "title": "Cycle alpha",
+      "status": "open",
+      "priority": 2,
+      "layer": 0,
+      "order": 8,
+      "blocked_by": 1,
+      "blocks": 1,
+      "blocked": true,
+      "in_cycle": true
+    },
+    {
+      "id": "gr-1wu",
+      "title": "Fan item 7",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 0,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-33j",
+      "title": "Fan item 11",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 1,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-347",
+      "title": "Fan item 12",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 2,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-845",
+      "title": "Fan item 1",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 3,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-8ax",
+      "title": "Fan item 5",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 4,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-ak2",
+      "title": "Fan item 9",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 5,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-d23",
+      "title": "Fan item 10",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 6,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-ea5",
+      "title": "Fan item 8",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 7,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-k2w",
+      "title": "Fan item 3",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 8,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-pzq",
+      "title": "Fan item 4",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 9,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-r7d",
+      "title": "Fan item 2",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 10,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-s4s",
+      "title": "Fan item 6",
+      "status": "open",
+      "priority": 3,
+      "layer": 1,
+      "order": 11,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-blj",
+      "title": "Chain step 2",
+      "status": "closed",
+      "priority": 2,
+      "layer": 1,
+      "order": 12,
+      "blocks": 1
+    },
+    {
+      "id": "gr-bac",
+      "title": "Sanitize text",
+      "status": "open",
+      "priority": 2,
+      "layer": 1,
+      "order": 13,
+      "blocks": 1,
+      "ready": true
+    },
+    {
+      "id": "gr-nqy",
+      "title": "Parse export",
+      "status": "in_progress",
+      "priority": 1,
+      "layer": 1,
+      "order": 14,
+      "blocks": 1
+    },
+    {
+      "id": "gr-jz5",
+      "title": "Island two",
+      "status": "open",
+      "priority": 2,
+      "layer": 1,
+      "order": 15,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-q7z",
+      "title": "Chain step 3",
+      "status": "in_progress",
+      "priority": 2,
+      "layer": 2,
+      "order": 0,
+      "blocks": 1,
+      "on_chain": true
+    },
+    {
+      "id": "gr-ko8",
+      "title": "Graph layout",
+      "status": "open",
+      "priority": 1,
+      "layer": 2,
+      "order": 1,
+      "blocked_by": 2,
+      "blocks": 2,
+      "blocked": true
+    },
+    {
+      "id": "gr-hsy",
+      "title": "Chain step 4",
+      "status": "open",
+      "priority": 2,
+      "layer": 3,
+      "order": 0,
+      "blocked_by": 1,
+      "blocks": 1,
+      "blocked": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-1jo",
+      "title": "Graph docs",
+      "status": "open",
+      "priority": 3,
+      "layer": 3,
+      "order": 1,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-67z",
+      "title": "Graph view",
+      "status": "open",
+      "priority": 1,
+      "layer": 3,
+      "order": 2,
+      "blocked_by": 1,
+      "blocks": 2,
+      "blocked": true
+    },
+    {
+      "id": "gr-3k9",
+      "title": "Chain step 5",
+      "status": "open",
+      "priority": 2,
+      "layer": 4,
+      "order": 0,
+      "blocked_by": 1,
+      "blocks": 1,
+      "blocked": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-au4",
+      "title": "日本語のとても長いタイトルがここにあります — wide runes and a very very long title to truncate properly",
+      "status": "open",
+      "priority": 2,
+      "layer": 4,
+      "order": 1,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-gdm",
+      "title": "Hostile [31mred[0m evil",
+      "status": "open",
+      "priority": 2,
+      "layer": 4,
+      "order": 2,
+      "blocked_by": 1,
+      "blocked": true
+    },
+    {
+      "id": "gr-hoz",
+      "title": "Chain step 6",
+      "status": "open",
+      "priority": 2,
+      "layer": 5,
+      "order": 0,
+      "blocked_by": 1,
+      "blocks": 1,
+      "blocked": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-fdz",
+      "title": "Chain step 7",
+      "status": "open",
+      "priority": 2,
+      "layer": 6,
+      "order": 0,
+      "blocked_by": 1,
+      "blocks": 1,
+      "blocked": true,
+      "on_chain": true
+    },
+    {
+      "id": "gr-l5l",
+      "title": "Chain step 8",
+      "status": "open",
+      "priority": 2,
+      "layer": 7,
+      "order": 0,
+      "blocked_by": 1,
+      "blocked": true,
+      "on_chain": true
+    }
+  ],
+  "schema_version": 1,
+  "self_dependencies": [
+    "gr-1fm"
+  ],
+  "source": "live",
+  "state": "connected",
+  "title": "Graph",
+  "total": 37
+}
