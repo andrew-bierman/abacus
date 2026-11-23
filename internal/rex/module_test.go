@@ -1194,7 +1194,7 @@ func TestSessionListsAreCachedForAShortTTLAndMarkedStale(t *testing.T) {
 	if !again.Stale || len(f.called()) != 1 || len(again.Placements) != 1 {
 		t.Fatalf("within the TTL the cached list is reused and marked stale: %+v %v", again, f.called())
 	}
-	now = now.Add(2 * time.Millisecond) // 3.001 s
+	now = now.Add(1 * time.Millisecond) // exactly the TTL: expired
 	fresh, _ := m.Workspace(context.Background(), it)
 	if fresh.Stale || len(f.called()) != 2 {
 		t.Fatalf("after the TTL it is read again: %+v %v", fresh, f.called())
