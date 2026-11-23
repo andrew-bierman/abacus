@@ -136,7 +136,7 @@ func typeText(m tea.Model, s string) tea.Model {
 func TestTasksListsEveryTaskAndKeepsTheSummaryAndInsightsInTheirOwnView(t *testing.T) {
 	m := newTasksRig(t).m
 	v := m.View()
-	for _, want := range []string{"[List] Graph", "14 tasks · 3 ready", "12 of 14", "ac-12", "ac-01", "ac-33", "sort: priority ↑"} {
+	for _, want := range []string{"[List] Kanban", "14 tasks · 3 ready", "12 of 14", "ac-12", "ac-01", "ac-33", "sort: priority ↑"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("list view: missing %q:\n%s", want, v)
 		}

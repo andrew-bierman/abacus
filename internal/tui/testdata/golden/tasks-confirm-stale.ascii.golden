@@ -7,7 +7,7 @@
 │                                      │
 │   close task ac-12                   │
 │   title: "wire the lease heartbeat"  │
-│ ↕ +3 more: enlarge the terminal to   │
+│ ↕ +4 more: enlarge the terminal to   │
 │ review                               │
 ╰──────────────────────────────────────╯
 n/esc cancel · q quit · ? help …
@@ -21,11 +21,11 @@ n/esc cancel · q quit · ? help …
 │                                      │
 │   close task ac-12                   │
 │   title: "wire the lease heartbeat"  │
+│   status: "blocked" -> "closed"      │
 │                                      │
 │ exact command:                       │
 │   bd close ac-12                     │
 ╰──────────────────────────────────────╯
-
 
 
 
@@ -50,11 +50,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │   close task ac-12                                                           │
 │   title: "wire the lease heartbeat"                                          │
+│   status: "blocked" -> "closed"                                              │
 │                                                                              │
-│ exact command:                                                               │
-│   bd close ac-12                                                             │
+│ ↕ +2 more: enlarge the terminal to review                                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+n/esc cancel · q quit · ? help · tab/→ next tab
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -64,11 +64,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │   close task ac-12                                                           │
 │   title: "wire the lease heartbeat"                                          │
+│   status: "blocked" -> "closed"                                              │
 │                                                                              │
 │ exact command:                                                               │
 │   bd close ac-12                                                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
@@ -93,11 +93,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                                                                      │
 │   close task ac-12                                                                                                   │
 │   title: "wire the lease heartbeat"                                                                                  │
+│   status: "blocked" -> "closed"                                                                                      │
 │                                                                                                                      │
 │ exact command:                                                                                                       │
 │   bd close ac-12                                                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
@@ -107,11 +107,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                                                                      │
 │   close task ac-12                                                                                                   │
 │   title: "wire the lease heartbeat"                                                                                  │
+│   status: "blocked" -> "closed"                                                                                      │
 │                                                                                                                      │
 │ exact command:                                                                                                       │
 │   bd close ac-12                                                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
@@ -139,11 +139,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │   close task ac-12                                       │
 │   title: "wire the lease heartbeat"                      │
+│   status: "blocked" -> "closed"                          │
 │                                                          │
 │ exact command:                                           │
 │   bd close ac-12                                         │
 ╰──────────────────────────────────────────────────────────╯
-
 
 
 
@@ -163,11 +163,11 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                                                  │
 │   close task ac-12                                                                               │
 │   title: "wire the lease heartbeat"                                                              │
+│   status: "blocked" -> "closed"                                                                  │
 │                                                                                                  │
 │ exact command:                                                                                   │
 │   bd close ac-12                                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 

@@ -322,7 +322,7 @@ using data from fixture providers:
 ```
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                        14 tasks · 3 ready
+[List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id    title                                  done st P  dep  type  age who │

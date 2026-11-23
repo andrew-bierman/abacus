@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights
+[List] Kanban  Graph  Insights
 [open] / to… 12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id      title                st P  │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Graph  Insights
+[List] Kanban  Graph  Insights
 [open] / to… 12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id      title                st P  │
@@ -44,7 +44,7 @@
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights                                        14 tasks · 9 ready
+[List] Kanban  Graph  Insights                                14 tasks · 9 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id         title                              done st P  dep type  age who │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                        14 tasks · 9 ready
+[List] Kanban  Graph  Insights                                14 tasks · 9 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
 │   id         title                              done st P  dep type  age who │
@@ -88,7 +88,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Graph  Insights                                                                                14 tasks · 9 ready
+[List] Kanban  Graph  Insights                                                                        14 tasks · 9 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ tr-09k.1 ──────────────────────────────────╮
 │   id         title                      done st P  dep type  age who │ │ tr-09k.1  feature                           │
@@ -102,7 +102,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                                                                14 tasks · 9 ready
+[List] Kanban  Graph  Insights                                                                        14 tasks · 9 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ tr-09k.1 ──────────────────────────────────╮
 │   id         title                      done st P  dep type  age who │ │ tr-09k.1  feature                           │
@@ -133,7 +133,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Graph  Insights                    14 tasks · 9 ready
+[List] Kanban  Graph  Insights            14 tasks · 9 ready
 [open] / to filter               12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
 │   id         title                  done st P  dep type  │
@@ -158,7 +158,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                                            14 tasks · 9 ready
+[List] Kanban  Graph  Insights                                                    14 tasks · 9 ready
 [open] / to filter                                                       12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ tr-09k.1 ──────────────────────────╮
 │   id         title                  done st P  dep type  │ │ tr-09k.1  feature                   │
@@ -191,7 +191,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 140x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Graph  Insights                                                                                                    14 tasks · 9 ready
+[List] Kanban  Graph  Insights                                                                                            14 tasks · 9 ready
 [open] / to filter                                                                                               12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────────╮ ╭─ tr-09k.1 ──────────────────────────────────────────╮
 │   id         title                done st P  dep type  age who labels            │ │ tr-09k.1  feature                                   │

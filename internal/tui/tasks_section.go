@@ -95,6 +95,7 @@ type tasksSection struct {
 	wantIns     bool // insights are read after the next tasks read: an empty tracker skips the analysis
 
 	ws *wsLayer // the optional workspace layer; nil without one
+	kb kanban   // the Kanban view's cursor and options (tasks_kanban.go)
 
 	th Theme
 	geom
@@ -301,6 +302,14 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		ch := s.pending
 		s.changedNote = ""
+		// A change planned against a status (a card move, a status edit) is refused outright when the task
+		// has moved since: the board shows the current state again and the move is planned anew.
+		if m.err == nil && ch.Expect != "" && m.task.Status != ch.Expect {
+			s.mode = modeList
+			s.notice = fmt.Sprintf("%s changed since you opened it (now %s): nothing was written", san(m.id), san(m.task.Status))
+			s.list.slowUntil = time.Time{}
+			return s, s.fetchTasks()
+		}
 		if m.err != nil {
 			s.changedNote = "could not re-read the issue (" + core.Sanitize(m.err.Error()) + "): its current values are unverified"
 		} else {
@@ -327,7 +336,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.err != nil {
 			s.notice = core.DescribeWriteError(m.err)
 		} else {
-			s.notice = fmt.Sprintf("%sd %s %s", m.op, san(m.res.ID), san(m.res.Title))
+			s.notice = fmt.Sprintf("%s %s %s", opVerb(m.op), san(m.res.ID), san(m.res.Title))
 		}
 		s.list.slowUntil = time.Time{} // the tracker changed: look again now
 		return s, s.fetchTasks()
@@ -508,6 +517,9 @@ func (s *tasksSection) submitForm() tea.Cmd {
 	}
 	if update {
 		ch.ID, ch.Status = s.target.ID, v(3)
+		if ch.Status != "" { // a status edit is guarded like a card move: it names the status it was made against
+			ch.IfStatus, ch.Expect = s.target.Status, s.target.Status
+		}
 	}
 	return s.beginConfirm(ch)
 }

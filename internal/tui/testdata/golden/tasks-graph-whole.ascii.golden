@@ -1,7 +1,7 @@
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                                            37 tasks · 5 ready
+ List  Kanban [Graph] Insights                                                    37 tasks · 5 ready
 whole graph · 36 linked · 1 without links · 7 groups
 ╭─ ▸ Graph ──────────────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
 │   ○ gr-l2q Waits on deleted                                  ? │ │ longest chain (6):            │
@@ -34,7 +34,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                        37 tasks · 5 ready
+ List  Kanban [Graph] Insights                                37 tasks · 5 ready
 whole graph · 36 linked · 1 without links · 7 groups
 ╭─ ▸ Graph ────────────────────────────────────────────────────────────────────╮
 │ cycle gr-syt → gr-tse → gr-vgy → gr-syt                                      │
@@ -59,7 +59,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
- List [Graph] Insights                    37 tasks · 5 ready
+ List  Kanban [Graph] Insights            37 tasks · 5 ready
 whole graph · 36 linked · 1 without links · 7 groups
 ╭─ ▸ Graph ────────────────────────────────────────────────╮
 │ cycle gr-syt → gr-tse → gr-vgy → gr-syt                  │

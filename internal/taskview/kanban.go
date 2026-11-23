@@ -43,7 +43,7 @@ func statusTitle(s string) string {
 	if t, ok := statusTitles[s]; ok {
 		return t
 	}
-	return s
+	return core.Sanitize(s) // a custom status is the tracker's text
 }
 
 func card(r row) core.KanbanCard {
@@ -81,6 +81,7 @@ func (v *View) Board(o BoardOptions) core.KanbanReport {
 		title = func(k string) string { return strings.ToUpper(k) }
 	case GroupType:
 		key = func(r row) string { return orNone(r.Type) }
+		title = core.Sanitize
 	default:
 		title = statusTitle
 	}

@@ -24,11 +24,11 @@ func TestPlanMoveEveryPair(t *testing.T) {
 					t.Errorf("%s -> %s: already there, want a refusal", from, to)
 				}
 			case to == "closed":
-				if err != nil || ch.Op != core.TaskClose || ch.ID != "kb-1" || ch.Before.Status != from || ch.Status != "" {
+				if err != nil || ch.Op != core.TaskClose || ch.ID != "kb-1" || ch.Before.Status != from || ch.Status != "" || ch.Expect != from {
 					t.Errorf("%s -> closed: %+v %v", from, ch, err)
 				}
 			case from == "closed" && to == "open":
-				if err != nil || ch.Op != core.TaskReopen || ch.IfStatus != "" || ch.Before.Status != "closed" {
+				if err != nil || ch.Op != core.TaskReopen || ch.IfStatus != "" || ch.Before.Status != "closed" || ch.Expect != "closed" {
 					t.Errorf("closed -> open: %+v %v", ch, err)
 				}
 			case from == "closed":
@@ -40,7 +40,7 @@ func TestPlanMoveEveryPair(t *testing.T) {
 					t.Errorf("%s -> pinned: only the four writable statuses are targets", from)
 				}
 			default:
-				if err != nil || ch.Op != core.TaskUpdate || ch.Status != to || ch.IfStatus != from || ch.Before.Status != from {
+				if err != nil || ch.Op != core.TaskUpdate || ch.Status != to || ch.IfStatus != from || ch.Before.Status != from || ch.Expect != from {
 					t.Errorf("%s -> %s: %+v %v", from, to, ch, err)
 				}
 			}

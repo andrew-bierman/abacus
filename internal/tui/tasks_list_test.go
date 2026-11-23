@@ -100,14 +100,17 @@ func TestTasksKeysDoNotCollide(t *testing.T) {
 		}
 	}
 	modes := map[string]func(s *tasksSection){
-		"list":      func(s *tasksSection) {},
-		"typing":    func(s *tasksSection) { send(s, "/") },
-		"drilled":   func(s *tasksSection) { send(s, "enter") },
-		"insights":  func(s *tasksSection) { send(s, "V") },
-		"confirm":   func(s *tasksSection) { s.mode = modeConfirm },
-		"form":      func(s *tasksSection) { s.mode = modeForm },
-		"filtered":  func(s *tasksSection) { send(s, "/", "a", "enter") },
-		"emptylist": func(s *tasksSection) { send(s, "/", "z", "z", "z", "z", "z", "z", "enter") },
+		"list":          func(s *tasksSection) {},
+		"typing":        func(s *tasksSection) { send(s, "/") },
+		"drilled":       func(s *tasksSection) { send(s, "enter") },
+		"insights":      func(s *tasksSection) { send(s, "V") },
+		"kanban":        func(s *tasksSection) { send(s, "v") },
+		"kanban-detail": func(s *tasksSection) { send(s, "v", "enter") },
+		"kanban-typing": func(s *tasksSection) { send(s, "v", "/") },
+		"confirm":       func(s *tasksSection) { s.mode = modeConfirm },
+		"form":          func(s *tasksSection) { s.mode = modeForm },
+		"filtered":      func(s *tasksSection) { send(s, "/", "a", "enter") },
+		"emptylist":     func(s *tasksSection) { send(s, "/", "z", "z", "z", "z", "z", "z", "enter") },
 	}
 	for name, setup := range modes {
 		for _, w := range []int{60, 120} {
@@ -367,8 +370,12 @@ func TestEscPeelsTheDetailBeforeTheQuery(t *testing.T) {
 func TestViewKeyCyclesViewsAndWritesStillWorkFromAnyView(t *testing.T) {
 	s := listAt(100, 32)
 	send(s, "v")
-	if s.list.cur != viewGraph || !strings.Contains(s.View(), "List [Graph] Insights") {
-		t.Fatal("v opens the next view, Graph")
+	if s.list.cur != viewKanban || !strings.Contains(s.View(), "List [Kanban] Graph") {
+		t.Fatal("v opens the next view, Kanban")
+	}
+	send(s, "v")
+	if s.list.cur != viewGraph || !strings.Contains(s.View(), "Kanban [Graph] Insights") {
+		t.Fatal("v opens the Graph")
 	}
 	send(s, "v")
 	if s.list.cur != viewInsights || !strings.Contains(s.View(), "Graph [Insights]") {
@@ -382,7 +389,7 @@ func TestViewKeyCyclesViewsAndWritesStillWorkFromAnyView(t *testing.T) {
 	if s.list.cur != viewInsights {
 		t.Fatal("V goes back from the list to the last view")
 	}
-	send(s, "V", "V", "V")
+	send(s, "V", "V", "V", "V")
 	if s.list.cur != viewInsights {
 		t.Fatal("V wraps")
 	}

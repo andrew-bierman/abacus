@@ -48,6 +48,11 @@ type TaskChange struct {
 	Dir      string // init only: the workspace directory (display; the provider owns the real one)
 	Priority *int
 	Before   Task
+	// Expect is the status the task had when the change was planned. It never reaches an argv: a front
+	// end re-reads the task at confirm time and refuses the change when the status is no longer this
+	// (close and reopen have no bd-side guard, so this check is their only protection against a move
+	// made by someone else in between).
+	Expect string
 	// Warning is display-only, one line on the confirm screen (a card moved while it is blocked).
 	Warning string
 }

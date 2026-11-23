@@ -1,7 +1,7 @@
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                                             7 tasks · 2 ready
+ List  Kanban [Graph] Insights                                                     7 tasks · 2 ready
 focus tr-jbt.1.2.1 · depth 2 · blocking links
 ╭─ ▸ Graph · tr-jbt.1.2.1 ───────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
 │                  ┌─────────────────────────┐                   │ │ longest chain (4):            │
@@ -34,7 +34,7 @@ focus tr-jbt.1.2.1 · depth 2 · blocking links
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                         7 tasks · 2 ready
+ List  Kanban [Graph] Insights                                 7 tasks · 2 ready
 focus tr-jbt.1.2.1 · depth 2 · blocking links
 ╭─ ▸ Graph · tr-jbt.1.2.1 ─────────────────────────────────────────────────────╮
 │ blocked by                                                                   │
@@ -59,7 +59,7 @@ focus tr-jbt.1.2.1 · depth 2 · blocking links
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
- List [Graph] Insights                     7 tasks · 2 ready
+ List  Kanban [Graph] Insights             7 tasks · 2 ready
 focus tr-jbt.1.2.1 · depth 2 · blocking links
 ╭─ ▸ Graph · tr-jbt.1.2.1 ─────────────────────────────────╮
 │ blocked by                                               │

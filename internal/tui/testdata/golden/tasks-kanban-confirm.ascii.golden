@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm this change ──────────────╮
+│   update task ac-01                  │
+│   status: "open" -> "in_progress"    │
+│                                      │
+│ exact command:                       │
+│   bd update ac-01 --                 │
+│   status=in_progress --if-           │
+│   status=open                        │
+╰──────────────────────────────────────╯
+
+y apply · n/esc cancel · q quit · ? hel…
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────╮
+│   update task ac-01                  │
+│   status: "open" -> "in_progress"    │
+│                                      │
+│ exact command:                       │
+│   bd update ac-01 --                 │
+│   status=in_progress --if-           │
+│   status=open                        │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? hel…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   update task ac-01                                                          │
+│   status: "open" -> "in_progress"                                            │
+│                                                                              │
+│ exact command:                                                               │
+│   bd update ac-01 --status=in_progress --if-status=open                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   update task ac-01                                                          │
+│   status: "open" -> "in_progress"                                            │
+│                                                                              │
+│ exact command:                                                               │
+│   bd update ac-01 --status=in_progress --if-status=open                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   update task ac-01                                                                                                  │
+│   status: "open" -> "in_progress"                                                                                    │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd update ac-01 --status=in_progress --if-status=open                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   update task ac-01                                                                                                  │
+│   status: "open" -> "in_progress"                                                                                    │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd update ac-01 --status=in_progress --if-status=open                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────╮
+│   update task ac-01                                      │
+│   status: "open" -> "in_progress"                        │
+│                                                          │
+│ exact command:                                           │
+│   bd update ac-01 --status=in_progress --if-status=open  │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────╮
+│   update task ac-01                                                                              │
+│   status: "open" -> "in_progress"                                                                │
+│                                                                                                  │
+│ exact command:                                                                                   │
+│   bd update ac-01 --status=in_progress --if-status=open                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab

@@ -21,7 +21,7 @@ import (
 // refused with a sentence the user can act on.
 func PlanMove(r core.TaskRow, to string) (core.TaskChange, error) {
 	from := r.Status
-	ch := core.TaskChange{ID: r.ID, Before: core.Task{ID: r.ID, Title: r.Title, Status: from, Priority: r.Priority, Type: r.Type, Assignee: r.Assignee, UpdatedAt: r.UpdatedAt}}
+	ch := core.TaskChange{ID: r.ID, Expect: from, Before: core.Task{ID: r.ID, Title: r.Title, Status: from, Priority: r.Priority, Type: r.Type, Assignee: r.Assignee, UpdatedAt: r.UpdatedAt}}
 	switch {
 	case from == to:
 		return core.TaskChange{}, fmt.Errorf("%s is already %s", r.ID, to)

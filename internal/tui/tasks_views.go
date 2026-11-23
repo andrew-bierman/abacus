@@ -13,6 +13,7 @@ type taskViewID int
 
 const (
 	viewList taskViewID = iota
+	viewKanban
 	viewGraph
 	viewInsights
 )
@@ -23,14 +24,18 @@ var taskViews = []struct {
 	name string
 }{
 	{viewList, "List"},
+	{viewKanban, "Kanban"},
 	{viewGraph, "Graph"},
 	{viewInsights, "Insights"},
 }
 
 // body draws the active view.
 func (s *tasksSection) body() string {
-	if s.list.cur == viewInsights {
+	switch s.list.cur {
+	case viewInsights:
 		return s.insightsView()
+	case viewKanban:
+		return s.kanbanView()
 	}
 	if s.list.cur == viewGraph {
 		return s.graphView()

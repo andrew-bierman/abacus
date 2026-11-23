@@ -1,7 +1,7 @@
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                                            37 tasks · 5 ready
+ List  Kanban [Graph] Insights                                                    37 tasks · 5 ready
 focus gr-6yh · depth 2 · blocking links
 ╭─ ▸ Graph · gr-6yh ─────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
 │                  ╔═════════════════════════╗                   │ │ longest chain (2):            │
@@ -34,7 +34,7 @@ focus gr-6yh · depth 2 · blocking links
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
- List [Graph] Insights                                        37 tasks · 5 ready
+ List  Kanban [Graph] Insights                                37 tasks · 5 ready
 focus gr-6yh · depth 2 · blocking links
 ╭─ ▸ Graph · gr-6yh ───────────────────────────────────────────────────────────╮
 │ blocked by                                                                   │
@@ -59,7 +59,7 @@ focus gr-6yh · depth 2 · blocking links
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
- List [Graph] Insights                    37 tasks · 5 ready
+ List  Kanban [Graph] Insights            37 tasks · 5 ready
 focus gr-6yh · depth 2 · blocking links
 ╭─ ▸ Graph · gr-6yh ───────────────────────────────────────╮
 │ blocked by                                               │

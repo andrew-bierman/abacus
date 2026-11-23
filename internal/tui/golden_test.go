@@ -131,6 +131,9 @@ func (p taskProv) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 	if ch.Status != "" {
 		a = append(a, "--status="+ch.Status)
 	}
+	if ch.IfStatus != "" {
+		a = append(a, "--if-status="+ch.IfStatus)
+	}
 	return a, nil
 }
 func (p taskProv) RunTask(_ context.Context, argv []string) (core.TaskResult, error) {
@@ -239,6 +242,36 @@ func scenarios() []scenario {
 		{name: "tasks-query-error", build: std, keys: append([]string{"2", "/"}, typed("lease foo:x")...), tab: "Tasks", extra: framedSizes},
 		{name: "tasks-no-match", build: std, keys: append(append([]string{"2", "/"}, typed("zzzzzz")...), "enter"), tab: "Tasks", extra: framedSizes},
 		{name: "tasks-insights", build: std, keys: []string{"2", "V"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban", build: std, keys: []string{"2", "v"}, tab: "Tasks", extra: append(append([][2]int(nil), framedSizes...), [2]int{140, 32})},
+		{name: "tasks-kanban-column", build: std, keys: []string{"2", "v", "l", "j"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban-detail", build: std, keys: []string{"2", "v", "enter"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban-closed", build: std, keys: []string{"2", "v", "Z"}, tab: "Tasks", extra: append(append([][2]int(nil), framedSizes...), [2]int{140, 32})},
+		{name: "tasks-kanban-priority", build: std, keys: []string{"2", "v", "s"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban-filter", build: std, keys: append(append([]string{"2", "v", "/"}, typed("label:ui")...), "enter"), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban-query-error", build: std, keys: append([]string{"2", "v", "/"}, typed("lease foo:x")...), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban-no-match", build: std, keys: append(append([]string{"2", "v", "/"}, typed("zzzzzz")...), "enter"), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban-empty", tab: "Tasks", extra: framedSizes, keys: []string{"2", "v"}, build: func(t *testing.T, th Theme) tea.Model {
+			m := load(t, th, nil)
+			m, _ = m.Update(tasksMsg{report: core.TasksReport{Header: core.Header{Source: core.SourceLive}}})
+			m, _ = m.Update(taskSnapshotMsg{snap: core.TaskSnapshot{ReadAt: goldenNow, Tracker: "fleet"}})
+			return m
+		}},
+		{name: "tasks-kanban-verify", build: std, keys: []string{"2", "v", "L"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-kanban-confirm", tab: "Tasks", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
+			m := press(press(press(load(t, th, nil), "2"), "v"), "L")
+			m, _ = m.Update(taskVerifiedMsg{id: "ac-01", task: core.Task{ID: "ac-01", Title: "Fleet workspace", Status: "open", Priority: 1, Type: "epic", Assignee: "mei"}})
+			return m
+		}},
+		{name: "tasks-kanban-confirm-held", tab: "Tasks", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
+			m := press(press(press(press(press(load(t, th, nil), "2"), "v"), "j"), "j"), "L")
+			m, _ = m.Update(taskVerifiedMsg{id: "ac-09", task: core.Task{ID: "ac-09", Title: "queue attention digest", Status: "open", Priority: 2, Type: "feature"}})
+			return m
+		}},
+		{name: "tasks-kanban-moved-away", tab: "Tasks", extra: framedSizes, build: func(t *testing.T, th Theme) tea.Model {
+			m := press(press(press(load(t, th, nil), "2"), "v"), "L")
+			m, _ = m.Update(taskVerifiedMsg{id: "ac-01", task: core.Task{ID: "ac-01", Title: "Fleet workspace", Status: "blocked", Priority: 1}})
+			return m
+		}},
 		{name: "tasks-empty", tab: "Tasks", extra: framedSizes, keys: []string{"2"}, build: func(t *testing.T, th Theme) tea.Model {
 			m := load(t, th, nil)
 			m, _ = m.Update(tasksMsg{report: core.TasksReport{Header: core.Header{Source: core.SourceLive}}})
