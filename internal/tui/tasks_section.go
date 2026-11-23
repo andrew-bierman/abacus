@@ -14,8 +14,6 @@ import (
 	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
-const tasksPollEvery = 30 * time.Second
-
 // slowRetry is how long the list waits to read the whole tracker again after a read timed out.
 const slowRetry = 5 * time.Minute
 
@@ -100,6 +98,14 @@ type tasksSection struct {
 	ws *wsLayer // the optional workspace layer; nil without one
 	kb kanban   // the Kanban view's cursor and options (tasks_kanban.go)
 
+	// U10: live refresh, history, saved filters and the tracker switcher (tasks_live.go and friends).
+	live  liveState
+	hist  histState
+	fil   filterUI
+	rec   recallState
+	sw    switchUI
+	extra []tea.Cmd // commands queued by code that cannot return one
+
 	th Theme
 	geom
 }
@@ -141,14 +147,23 @@ func newTasksSection(p core.Providers, cfg *config) *tasksSection {
 		s.applier = core.NewApplier(p.Writer, cfg.audit)
 	}
 	s.list.tree.store = cfg.treeState
+	s.live = newLiveState(p.Fingerprint)
+	s.hist.src = p.History
+	s.fil.store, s.rec.hist = cfg.filters, cfg.history
+	s.sw.sw = cfg.switcher
+	if s.sw.sw == nil && p.Switcher != nil {
+		s.sw.sw = core.NewSwitcher(core.ConfigStore{Path: configPath()}, cfg.recents, p.Switcher, trackerDirOf(p.Writer), cfg.audit)
+	}
 	s.tick = func() tea.Cmd { return tea.Tick(tasksPollEvery, func(time.Time) tea.Msg { return tasksTickMsg{} }) }
 	return s
 }
 
 func (s *tasksSection) SetTheme(t Theme) { s.th = t }
-func (s *tasksSection) Capturing() bool  { return s.mode != modeList || s.list.typing }
+func (s *tasksSection) Capturing() bool {
+	return s.mode != modeList || s.list.typing || s.overlayOpen()
+}
 
-func (s *tasksSection) Bindings() []key.Binding {
+func (s *tasksSection) baseBindings() []key.Binding {
 	switch s.mode {
 	case modeForm:
 		return []key.Binding{key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "next/review")), keyBack}
@@ -201,8 +216,12 @@ func (s *tasksSection) fetchSnapshot() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), snapshotTimeout)
 		defer cancel()
+		fp := ""
+		if s.live.fps != nil { // read before the export: a write that lands during it still moves the next one
+			fp, _ = s.live.fps.Fingerprint(ctx)
+		}
 		snap, err := s.src.Snapshot(ctx)
-		return taskSnapshotMsg{snap: snap, err: err}
+		return taskSnapshotMsg{snap: snap, err: err, fp: fp}
 	}
 }
 
@@ -246,8 +265,12 @@ func (s *tasksSection) refresh() tea.Cmd {
 	return s.fetchTasks()
 }
 
-func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
+	case histMsg:
+		s.histReceive(m)
+	case trackerSwitchedMsg:
+		return s, s.switched(m)
 	case tasksMsg:
 		s.report, s.err, s.loaded, s.tasksBusy = m.report, m.err, true, false
 		s.useFallback()
@@ -268,6 +291,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return s, wsRead
 	case taskSnapshotMsg:
 		s.snapBusy = false
+		s.liveSnapshot(m)
 		dirty := s.snapDirty
 		s.snapDirty = false
 		s.list.snapErr = m.err
@@ -338,7 +362,7 @@ func (s *tasksSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		s.toConfirm(ch)
 	case tasksTickMsg:
-		return s, tea.Batch(s.fetchTasks(), s.tick())
+		return s, tea.Batch(s.livePoll(), s.tick())
 	case taskAppliedMsg:
 		s.mode = modeList
 		if m.err != nil {
@@ -418,6 +442,9 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	s.notice = ""
 	if s.ws.swallow() {
 		return s, nil
+	}
+	if cmd, ok := s.liveKey(k); ok {
+		return s, cmd
 	}
 	if cmd, ok := s.listKey(k); ok {
 		return s, cmd
@@ -705,6 +732,9 @@ func (s *tasksSection) View() string {
 	if s.mode == modeList && s.loaded && s.err == nil {
 		if box, ok := s.ws.noteBox(s.th, s.width(), s.h); ok {
 			return joinLines(box)
+		}
+		if v, ok := s.overlayView(); ok {
+			return v
 		}
 		if s.list.view == nil { // the snapshot is on its way
 			return joinLines([]string{s.th.Text(KindMuted, "loading…")})

@@ -27,6 +27,7 @@ var (
 type taskSnapshotMsg struct {
 	snap core.TaskSnapshot
 	err  error
+	fp   string // the tracker's change fingerprint just before the read ("" when it has none)
 }
 
 // tasksList is the state of the Tasks list view: the snapshot and what is derived from it, the
@@ -477,8 +478,11 @@ func (s *tasksSection) listView() string {
 	if l.fallback {
 		title += " · recent only"
 	}
-	if !l.readAt.IsZero() && !taskview.Fresh(l.readAt, nowFn(), tasksPollEvery) {
-		title += " · " + th.Text(KindWarn, "stale "+taskview.Age(l.readAt, nowFn()))
+	if seen := s.seenAt(); !seen.IsZero() && !taskview.Fresh(seen, nowFn(), s.pollEvery()) {
+		title += " · " + th.Text(KindWarn, "stale "+taskview.Age(seen, nowFn()))
+	}
+	if m := s.changedMarker(); m != "" {
+		title += " · " + th.Text(KindAccent, m)
 	}
 	iw := g.listInner()
 	var list []string
@@ -509,6 +513,12 @@ func (s *tasksSection) listView() string {
 		}
 		var off int
 		dl := s.detailLines(d, max(g.detail-panelChromeW, 1))
+		if hl := s.historyLines(d.Row.ID, max(g.detail-panelChromeW, 1)); len(hl) > 0 {
+			if s.hist.reveal { // H just opened it: put the History heading at the top of the pane
+				l.dOff, s.hist.reveal = len(dl)+1, false
+			}
+			dl = append(dl, hl...)
+		}
 		if it, ok := s.selectedItem(); s.ws.has() { // where the task lives, from the optional workspace layer
 			if det := s.ws.detail(th, it, ok, 8); len(det) > 1 {
 				dl = append(append(dl, "", th.Section("Workspace")), det[1:]...)

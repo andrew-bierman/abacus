@@ -94,7 +94,7 @@ func (s *Switcher) Plan(dir string) (SwitchPlan, error) {
 		return SwitchPlan{}, errors.New("that tracker is already the one in use")
 	}
 	lines := []string{
-		"Tasks will read the tracker in " + Sanitize(dir) + ".",
+		"Tasks will read this tracker from now on.",
 		"This sets tracker_dir in " + Sanitize(s.Config.Path) + " and applies now.",
 		"No tracker is changed and no tool command runs.",
 		"At the next start, ABACUS_BD_DIR or a tracker at or above the working directory still wins.",

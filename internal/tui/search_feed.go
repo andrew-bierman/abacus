@@ -72,13 +72,13 @@ func (s *tasksSection) searchStamp() string {
 func (s *tasksSection) searchFeed() core.SearchFeed {
 	switch {
 	case s.list.view != nil:
-		f := core.SearchFeed{Domain: core.DomainTasks, ReadAt: s.list.readAt, PollEvery: tasksPollEvery, Docs: s.list.view.SearchDocs()}
+		f := core.SearchFeed{Domain: core.DomainTasks, ReadAt: s.seenAt(), PollEvery: s.pollEvery(), Docs: s.list.view.SearchDocs()}
 		if s.list.fallback { // the whole tracker could not be read: only the summary's recent changes
 			f.State, f.Reason = core.SearchDegraded, core.SearchReasonRecentTasks
 		}
 		return f
 	case s.loaded && s.err != nil:
-		return failedFeed(core.DomainTasks, s.err, tasksPollEvery)
+		return failedFeed(core.DomainTasks, s.err, s.pollEvery())
 	}
 	return core.SearchFeed{Domain: core.DomainTasks, State: core.SearchLoading}
 }
