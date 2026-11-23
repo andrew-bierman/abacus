@@ -3,15 +3,17 @@ title: Graph Core - Assessment of bv and b9s as Go packages
 type: assessment
 date: 2026-11-22
 execution: none
-status: prototype built
+status: shipped, library is the only engine
 ---
 
 # Graph Core - Assessment of bv and b9s as Go packages
 
-**Status: prototype built.** The owner cleared the Go directive bump (`go 1.26.11`), accepted the
-license rider and chose to use bv as a package. The opt-in library engine is `internal/graph`
-(selected with `ABACUS_GRAPH_ENGINE=library`; the bv subprocess stays the default; see "Graph
-engine" in `docs/tool-contract.md`). Final measured numbers, release flags, `CGO_ENABLED=0`:
+**Status: shipped. The library is the only engine.** The owner cleared the Go directive bump
+(`go 1.26.11`), reviewed and accepted the license rider and decided the library engine does not need
+to be a flag. `internal/graph` computes the Tasks insights in-process; the bv subprocess provider,
+the `ABACUS_GRAPH_ENGINE` switch and the bundled `bv` binary are gone (see "Graph engine" in
+`docs/tool-contract.md`). The numbers below were measured on the earlier opt-in prototype, release
+flags, `CGO_ENABLED=0`:
 
 | Measure | Probe (this assessment) | Prototype as built |
 |---|---|---|

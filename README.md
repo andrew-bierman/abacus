@@ -29,7 +29,7 @@ cd abacus_VERSION_darwin_arm64
 | macOS, arm64 and amd64 | Release archive (the primary development platform) |
 | Windows | Not supported yet. It compiles, but its safety checks are placeholders; see `docs/plans/2026-11-22-1900-plan-windows-support.md` |
 
-Nothing else needs to be installed. The archive carries the tools abacus talks to (`bd`, `bv`,
+Nothing else needs to be installed. The archive carries the tools abacus talks to (`bd`,
 Lambe and beads-lease) in `bundled/`, and abacus finds them there. Keep the folder together: if
 you copy `abacus` somewhere else, copy `bundled/` with it (or symlink `abacus`; the link is
 followed to the real folder).
@@ -76,8 +76,8 @@ Settings live in `$XDG_CONFIG_HOME/abacus/config.json` (written atomically, mode
 `lambe_config`. The tracker used by Tasks is chosen in this order: `ABACUS_BD_DIR`, a tracker at
 or above the working directory, `tracker_dir` from the config, an existing managed workspace.
 
-An empty tracker is not an error: Insights reads "no tasks yet" and bv is not run. If bv fails on
-a tracker that has tasks, the tab says so in one plain line and the reason is in Doctor.
+An empty tracker is not an error: Insights reads "no tasks yet" and nothing is analyzed. If the
+analysis fails on a tracker that has tasks, the tab says so in one plain line and the reason is in Doctor.
 
 ## Bundled tools
 
@@ -87,19 +87,27 @@ the sha256 of its license. The script downloads each asset with `gh`, checks the
 the pin (any mismatch fails the build), extracts only the one executable into `bundled/`, copies
 each tool's license verbatim into `third_party/<tool>/LICENSE` and writes
 `THIRD_PARTY_NOTICES.md`. It publishes nothing. The tools run as separate programs, unmodified;
-separately, the `abacus` binary statically links parts of bv's Go packages (bv v0.27.0
-`pkg/analysis` and dependencies) for the optional in-process graph engine, under bv's license
-(`third_party/bv/LICENSE`). The notices say so and end with every Go module linked into the
-binary and its license text, generated offline from `go list -deps` (`scripts/lib/golicenses.sh`).
+bv is not one of them: the `abacus` binary statically links parts of bv's Go packages (bv v0.27.0
+`pkg/analysis` and dependencies) for the graph insights, always, under bv's license. Because no bv
+program ships, that license is copied verbatim from the pinned Go module into
+`third_party/bv/LICENSE` (the `linked_licenses` entry in `bundled-tools.json`; its sha256 is
+pinned and the build fails closed on a mismatch). The notices list bv as a linked library and end
+with every Go module linked into the binary and its license text, generated offline from
+`go list -deps` (`scripts/lib/golicenses.sh`). The owner has reviewed bv's license and accepts it.
 
 | Tool | Version | License |
 | --- | --- | --- |
 | bd, [Beads](https://github.com/steveyegge/beads) | 1.3.4 | MIT |
-| bv, [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) | 0.27.0 | MIT with an OpenAI/Anthropic rider, shipped unmodified |
 | [Lambe](https://github.com/andrew-bierman/lambe) | 0.10.1 | GPL-3.0 |
 | [beads-lease](https://github.com/andrew-bierman/beads-lease), installed as `beads-lease` | 0.1.0 | MIT |
 
-The tools stay separate programs run as subprocesses; abacus imports none of their code.
+Linked into the binary, not bundled:
+
+| Library | Version | License |
+| --- | --- | --- |
+| bv, [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (`pkg/analysis` and dependencies) | 0.27.0 | MIT with an OpenAI/Anthropic rider; the license is shipped unmodified |
+
+The bundled tools stay separate programs run as subprocesses; abacus imports none of their code.
 Read `THIRD_PARTY_NOTICES.md` and `third_party/bv/LICENSE` before redistributing the archive.
 
 **Where abacus looks for a tool**, first match wins: an explicit `ABACUS_*_BIN`; then the
@@ -108,9 +116,9 @@ next to it; then your `PATH`. A bundled copy is run only if it resolves (through
 executable file that is not group- or world-writable, is owned by you or root, and sits (with its
 link, if any) in a directory nobody else can write to. Doctor shows, for every tool,
 whether it is `bundled`, from `PATH` or an override, or `unavailable` (abacus's own copy is damaged
-or was moved), with its version, and leads with "Bundled tools: 4 of 4 verified". Doctor is
-`Ready` only when bd, lambe and beads-lease are usable (bv adds graph insights and is optional: it counts in the line but never blocks `Ready`); the Vercel Board CLI is reported separately as
-`optional`. Child tools see the sidecar directories first on `PATH`, so bv finds the bundled bd.
+or was moved), with its version, and leads with "Bundled tools: 3 of 3 verified". Doctor is
+`Ready` only when bd, lambe and beads-lease are usable; the Vercel Board CLI is reported separately as
+`optional`. Child tools see the sidecar directories first on `PATH`, so a tool that runs another finds the bundled one.
 
 A missing bundled tool is never your job. In a release, abacus says its own copy is damaged or was
 moved (with the reason when a copy was refused: world-writable, not executable, ...) and to
@@ -154,7 +162,7 @@ scripts are tested offline (`internal/release`) with fake archives and a fake `g
 `internal/core` holds all the real logic: the domain reports (Board, Tasks, Leases, Queues),
 provider interfaces and the registry that maps detected providers to domains, the write gate,
 detection, doctor and status aggregation, the typed report JSON (`schema_version`), sanitizing and the exit-code rules.
-Adapters (`internal/lambe`, `internal/beadslease`, `internal/bd`, `internal/bv`, `internal/rex`) compose the
+Adapters (`internal/lambe`, `internal/beadslease`, `internal/bd`, `internal/rex`) compose the
 tools only through their `--json` CLIs and versioned local APIs. `internal/cli` and `internal/tui` are thin front-ends that only parse
 input and render core's typed reports; a Linux or Swift GUI would be another front-end over
 the same core or the same `--json` output. A test enforces that core, adapters and the CLI
@@ -171,8 +179,10 @@ or error messages that help you fix one.
 - **beads-lease**: Leases (read only).
 - **Lambe**: Queues (read only, plus the one confirmed `lambe init` of the first-run setup; demo
   and a tracker-only fallback exist).
-- **bv**: graph insights for Tasks only (the Board is a message board, not a graph), run as a subprocess in `--robot-*` JSON mode only.
-  It is bundled; if abacus's own copy is unusable, Tasks says so and how to restore it.
+- **Graph engine** (`internal/graph`): graph insights for Tasks only (the Board is a message board,
+  not a graph), computed in this process with bv's analysis package over the tracker's
+  `.beads/issues.jsonl`. It is not a tool and has no switch: there is no bv program to bundle,
+  find or run.
 - **b9s**: works with b9s for the full tree and graph view: press `o` on Tasks to open it in the
   tracker directory (probes for it first). It is optional: without it `o` says what b9s adds and where to get it.
 - **Board** (optional, not bundled): composes the Vercel Board CLI (`@vercel/board`, bins `board` and `vb`, same CLI),
@@ -206,8 +216,9 @@ or error messages that help you fix one.
 
 - [Beads](https://github.com/gastownhall/beads) (`bd`) is the tracker everything sits on.
 - [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (`bv`) by Jeffrey Emanuel
-  supplies the graph analysis; abacus only runs the `bv` binary and imports none of its code. See
-  its [license](https://github.com/Dicklesworthstone/beads_viewer/blob/main/LICENSE).
+  supplies the graph analysis: abacus links bv's analysis packages (MIT with an OpenAI/Anthropic
+  rider; the owner has reviewed and accepts the license, which ships unmodified in the archive as
+  `third_party/bv/LICENSE`). See its [license](https://github.com/Dicklesworthstone/beads_viewer/blob/main/LICENSE).
 - [Vercel Board](https://github.com/vercel/board) (`@vercel/board`, Apache-2.0, by Vercel) is the
   message board the Board domain reads and posts to; abacus only runs its `board`/`vb` CLI as a
   subprocess and imports, vendors and copies none of its code. Fixtures in
@@ -221,10 +232,10 @@ or error messages that help you fix one.
 - Develop and test against an isolated `HOME`, `XDG_*` dirs and `bd` database. Never touch a
   production Lambe daemon, its state, its binary or real Beads data.
 - Nothing here launches an app or takes window focus. Tests use fakes for Lambe, HTTP and Rex; the only real
-  tools tests run are `bd` and `bv`, against temp projects with an isolated `HOME`, and they skip when absent.
+  tool tests run is `bd`, against temp projects with an isolated `HOME`, and they skip when absent.
   Sidecar tests use fake binaries in temp dirs.
 - Use a private `GOCACHE` for builds.
-- Building needs Go 1.26.11 or newer (`go.mod` names it, because the optional in-process graph
+- Building needs Go 1.26.11 or newer (`go.mod` names it, because the in-process graph
   engine links bv's analysis package). Go's default `GOTOOLCHAIN=auto` downloads that
   toolchain for you the first time you build (it needs network access); offline, or with
   `GOTOOLCHAIN=local`, install it first: `mise use go@1.26.11`. CI and
@@ -278,7 +289,7 @@ write whose result cannot be known (a timeout or cancel) says "result unknown ..
 retrying", never "not applied", and the audit log records phase `unknown`.
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
-`ABACUS_BV_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
+`ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
 `ABACUS_BEADSLEASE_BIN`, `ABACUS_REX_BIN`, `ABACUS_BOARD_BIN`, `ABACUS_BOARD_URL` (also `abacus config set board_url`; the shell's `BOARD_URL` is used last). A board URL must be https, or http only for a local board, with no query or fragment. The Board JSON no longer has `columns` or `insights` (never populated with Board data): see the CHANGELOG.
 Leases need an actor name: `BEADS_ACTOR` in the environment, or
 `abacus config set actor NAME` (the environment wins).
