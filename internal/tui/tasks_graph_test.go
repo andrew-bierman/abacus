@@ -815,3 +815,19 @@ func TestGraphColorsMuteClosedWorkAndAccentTheChain(t *testing.T) {
 		}
 	}
 }
+
+// A global-search jump onto a task while the Graph view is current lands on the List view with the
+// task selected, as a jump does from any other Tasks view.
+func TestSearchJumpFromTheGraphViewShowsTheTaskInTheList(t *testing.T) {
+	m := jump(t, "ac-16", "2", "v")
+	ts := secAt(m, tabTasks).(*tasksSection)
+	if ts.list.cur != viewList || ts.selected != "ac-16" || ts.rows()[ts.cursor].ID != "ac-16" {
+		t.Errorf("view %v selected %q", ts.list.cur, ts.selected)
+	}
+	// and the jump into the Graph's own view first: it really was current before the jump
+	m = sized(load(t, asciiTheme(), nil), 100, 32)
+	m = press(press(m, "2"), "v")
+	if secAt(m, tabTasks).(*tasksSection).list.cur != viewGraph {
+		t.Fatal("v did not open the Graph view")
+	}
+}
