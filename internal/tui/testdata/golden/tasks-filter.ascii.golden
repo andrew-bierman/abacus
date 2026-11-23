@@ -4,10 +4,10 @@
 [open] /labe… 3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
-│ ▸ ac-15 lease holder colu… ○  P1 →1  │
-│   ac-30 saved filters      ○  P3     │
-│   ac-33 help overlay per … ◐  P3     │
-│                                      │
+│ ▸ ac-01 ▾ Fleet workspace… ○  P1     │
+│   ac-15 └── lease holder … ○  P1 →1  │
+│   ac-30   saved filters    ○  P3     │
+│   ac-33   help overlay pe… ◐  P3     │
 │                                      │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
@@ -18,9 +18,10 @@
 [open] /labe… 3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
-│ ▸ ac-15 lease holder colu… ○  P1 →1  │
-│   ac-30 saved filters      ○  P3     │
-│   ac-33 help overlay per … ◐  P3     │
+│ ▸ ac-01 ▾ Fleet workspace… ○  P1     │
+│   ac-15 └── lease holder … ○  P1 →1  │
+│   ac-30   saved filters    ○  P3     │
+│   ac-33   help overlay pe… ◐  P3     │
 │                                      │
 │                                      │
 │                                      │
@@ -36,8 +37,7 @@
 │                                      │
 │                                      │
 │                                      │
-│                                      │
-│                                      │
+│ ▾ open ▹ folded · folds paused · di… │
 │ ⊘N held by N · →N holds N · ⊘↑ held… │
 │ ○ open ◐ active ● blocked ✓ closed … │
 ╰──────────────────────────────────────╯
@@ -47,24 +47,25 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                        14 tasks · 3 ready
 [open] /label:ui !status:blocked                      3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
-│   id    title                                         st P  dep type age who │
-│ ▸ ac-15 lease holder column                           ○  P1 →1  feat 6d  mei │
-│   ac-30 saved filters                                 ○  P3     feat 2d  -   │
-│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
-│                                                                              │
+│   id    title                                    done st P  dep type age who │
+│ ▸ ac-01 ▾ Fleet workspace 1/5                    ▰▱▱▱ ○  P1     epic 30d mei │
+│   ac-15 └── lease holder column                       ○  P1 →1  feat 6d  mei │
+│   ac-30   saved filters                               ○  P3     feat 2d  -   │
+│   ac-33   help overlay per view                       ◐  P3     task 1d  mei │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 [List] Graph  Insights                                        14 tasks · 3 ready
 [open] /label:ui !status:blocked                      3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
-│   id    title                                         st P  dep type age who │
-│ ▸ ac-15 lease holder column                           ○  P1 →1  feat 6d  mei │
-│   ac-30 saved filters                                 ○  P3     feat 2d  -   │
-│   ac-33 help overlay per view                         ◐  P3     task 1d  mei │
+│   id    title                                    done st P  dep type age who │
+│ ▸ ac-01 ▾ Fleet workspace 1/5                    ▰▱▱▱ ○  P1     epic 30d mei │
+│   ac-15 └── lease holder column                       ○  P1 →1  feat 6d  mei │
+│   ac-30   saved filters                               ○  P3     feat 2d  -   │
+│   ac-33   help overlay per view                       ◐  P3     task 1d  mei │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -80,66 +81,66 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                                                              │
-│                                                                              │
+│ ▾ open ▹ folded · folds paused · dim: context                                │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] /label:ui !status:blocked                                                              3 of 14 · sort: priority ↑
-╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-15 ─────────────────────────────────────╮
-│   id    title                                 st P  dep type age who │ │ ac-15  feature                              │
-│ ▸ ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ lease holder column                         │
-│   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ○ open  P1  mei                             │
-│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ready                                       │
-│                                                                      │ │ created 6d ago · updated 2d ago             │
-│                                                                      │ │   ↕ +10 more                                │
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
+│   id    title                            done st P  dep type age who │ │ ac-01  epic                                 │
+│ ▸ ac-01 ▾ Fleet workspace 1/5            ▰▱▱▱ ○  P1     epic 30d mei │ │ Fleet workspace                             │
+│   ac-15 └── lease holder column               ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
+│   ac-30   saved filters                       ○  P3     feat 2d  -   │ │ ready                                       │
+│   ac-33   help overlay per view               ◐  P3     task 1d  mei │ │ created 30d ago · updated 10d ago           │
+│                                                                      │ │   ↕ +25 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · esc back · f quick filter · g graph …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · esc back · T tree/flat …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Graph  Insights                                                                                14 tasks · 3 ready
 [open] /label:ui !status:blocked                                                              3 of 14 · sort: priority ↑
-╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-15 ─────────────────────────────────────╮
-│   id    title                                 st P  dep type age who │ │ ac-15  feature                              │
-│ ▸ ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ lease holder column                         │
-│   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ○ open  P1  mei                             │
-│   ac-33 help overlay per view                 ◐  P3     task 1d  mei │ │ ready                                       │
-│                                                                      │ │ created 6d ago · updated 2d ago             │
-│                                                                      │ │ labels  leases, ui                          │
-│                                                                      │ │ parent  ○ ac-01 Fleet workspace             │
+╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
+│   id    title                            done st P  dep type age who │ │ ac-01  epic                                 │
+│ ▸ ac-01 ▾ Fleet workspace 1/5            ▰▱▱▱ ○  P1     epic 30d mei │ │ Fleet workspace                             │
+│   ac-15 └── lease holder column               ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
+│   ac-30   saved filters                       ○  P3     feat 2d  -   │ │ ready                                       │
+│   ac-33   help overlay per view               ◐  P3     task 1d  mei │ │ created 30d ago · updated 10d ago           │
+│                                                                      │ │ labels  workspace                           │
 │                                                                      │ │                                             │
 │                                                                      │ │ Blocked by (0)                              │
 │                                                                      │ │   none                                      │
 │                                                                      │ │                                             │
-│                                                                      │ │ Blocks (1)                                  │
+│                                                                      │ │ Blocks (0)                                  │
+│                                                                      │ │   none                                      │
+│                                                                      │ │                                             │
+│                                                                      │ │ Children                                    │
+│                                                                      │ │   ██░░░░░░░░ 1/5                            │
+│                                                                      │ │   ✓ ac-03 retire the old poller             │
+│                                                                      │ │   ○ ac-09 queue attention digest            │
+│                                                                      │ │   ◐ ac-12 wire the lease heartbeat          │
+│                                                                      │ │   ○ ac-15 lease holder column               │
 │                                                                      │ │   ○ ac-16 stale lease warning               │
-│                                                                      │ │                                             │
-│                                                                      │ │ no description                              │
-│                                                                      │ │                                             │
-│                                                                      │ │                                             │
-│                                                                      │ │                                             │
-│                                                                      │ │                                             │
-│                                                                      │ │                                             │
-│                                                                      │ │                                             │
-│ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
-│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │                                             │
+│ ▾ open ▹ folded · folds paused · dim: context                        │ │                                             │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │ Goal                                        │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +8 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · esc back · f quick filter · g graph …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · esc back · T tree/flat …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
 [List] Graph  Insights                    14 tasks · 3 ready
 [open] /label:ui !status:blocked  3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
-│   id    title                     st P  dep type age who │
-│ ▸ ac-15 lease holder column       ○  P1 →1  feat 6d  mei │
-│   ac-30 saved filters             ○  P3     feat 2d  -   │
-│   ac-33 help overlay per view     ◐  P3     task 1d  mei │
+│   id    title                done st P  dep type age who │
+│ ▸ ac-01 ▾ Fleet workspace 1… ▰▱▱▱ ○  P1     epic 30d mei │
+│   ac-15 └── lease holder co…      ○  P1 →1  feat 6d  mei │
+│   ac-30   saved filters           ○  P3     feat 2d  -   │
+│   ac-33   help overlay per …      ◐  P3     task 1d  mei │
 │                                                          │
 │                                                          │
 │                                                          │
@@ -149,42 +150,41 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │
 │                                                          │
 │                                                          │
-│                                                          │
-│                                                          │
+│ ▾ open ▹ folded · folds paused · dim: context            │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort …
+? help · q quit · tab/→ next tab · / filter · h/l fold …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Graph  Insights                                                            14 tasks · 3 ready
 [open] /label:ui !status:blocked                                          3 of 14 · sort: priority ↑
-╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-15 ─────────────────────────────╮
-│   id    title                     st P  dep type age who │ │ ac-15  feature                      │
-│ ▸ ac-15 lease holder column       ○  P1 →1  feat 6d  mei │ │ lease holder column                 │
-│   ac-30 saved filters             ○  P3     feat 2d  -   │ │ ○ open  P1  mei                     │
-│   ac-33 help overlay per view     ◐  P3     task 1d  mei │ │ ready                               │
-│                                                          │ │ created 6d ago · updated 2d ago     │
-│                                                          │ │ labels  leases, ui                  │
-│                                                          │ │ parent  ○ ac-01 Fleet workspace     │
+╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────╮
+│   id    title                done st P  dep type age who │ │ ac-01  epic                         │
+│ ▸ ac-01 ▾ Fleet workspace 1… ▰▱▱▱ ○  P1     epic 30d mei │ │ Fleet workspace                     │
+│   ac-15 └── lease holder co…      ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                     │
+│   ac-30   saved filters           ○  P3     feat 2d  -   │ │ ready                               │
+│   ac-33   help overlay per …      ◐  P3     task 1d  mei │ │ created 30d ago · updated 10d ago   │
+│                                                          │ │ labels  workspace                   │
 │                                                          │ │                                     │
 │                                                          │ │ Blocked by (0)                      │
 │                                                          │ │   none                              │
 │                                                          │ │                                     │
-│                                                          │ │ Blocks (1)                          │
+│                                                          │ │ Blocks (0)                          │
+│                                                          │ │   none                              │
+│                                                          │ │                                     │
+│                                                          │ │ Children                            │
+│                                                          │ │   ██░░░░░░░░ 1/5                    │
+│                                                          │ │   ✓ ac-03 retire the old poller     │
+│                                                          │ │   ○ ac-09 queue attention digest    │
+│                                                          │ │   ◐ ac-12 wire the lease heartbeat  │
+│                                                          │ │   ○ ac-15 lease holder column       │
 │                                                          │ │   ○ ac-16 stale lease warning       │
 │                                                          │ │                                     │
-│                                                          │ │ no description                      │
-│                                                          │ │                                     │
-│                                                          │ │                                     │
-│                                                          │ │                                     │
-│                                                          │ │                                     │
-│                                                          │ │                                     │
-│                                                          │ │                                     │
-│                                                          │ │                                     │
-│                                                          │ │                                     │
-│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │                                     │
-│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │                                     │
+│                                                          │ │ Goal                                │
+│ ▾ open ▹ folded · folds paused · dim: context            │ │                                     │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │ One place to see and steer the      │
+│ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +8 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · esc back …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details …

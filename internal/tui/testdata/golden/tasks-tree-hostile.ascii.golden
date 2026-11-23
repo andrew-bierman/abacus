@@ -1,6 +1,6 @@
 === 40x12 ===
  Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights      15 tasks · 15 ready
+[List] Graph  Insights
 [open] / to… 15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────╮
 │   h00 ▾ ]0;ownedepic evil 0/1  ○  P1 │
@@ -14,7 +14,7 @@
 === 40x30 ===
  Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────
-[List] Insights      15 tasks · 15 ready
+[List] Graph  Insights
 [open] / to… 15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────╮
 │   id  title                    st P  │
@@ -44,7 +44,7 @@
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                              15 tasks · 15 ready
+[List] Graph  Insights                                       15 tasks · 15 ready
 [open] / to filter                                   15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────────────────────────╮
 │   h00 ▾ ]0;ownedepic evil 0/1                    ▱▱▱▱ ○  P1     task 22d -   │
@@ -58,7 +58,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                              15 tasks · 15 ready
+[List] Graph  Insights                                       15 tasks · 15 ready
 [open] / to filter                                   15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────────────────────────╮
 │   id  title                                      done st P  dep type age who │
@@ -88,7 +88,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
-[List] Insights                                                                                      15 tasks · 15 ready
+[List] Graph  Insights                                                                               15 tasks · 15 ready
 [open] / to filter                                                                           15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────────────────╮ ╭─ h04 ───────────────────────────────────────╮
 │   h00 ▾ ]0;ownedepic evil 0/1            ▱▱▱▱ ○  P1     task 22d -   │ │ h04  task                                   │
@@ -102,7 +102,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                      15 tasks · 15 ready
+[List] Graph  Insights                                                                               15 tasks · 15 ready
 [open] / to filter                                                                           15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────────────────╮ ╭─ h04 ───────────────────────────────────────╮
 │   id  title                              done st P  dep type age who │ │ h04  task                                   │
@@ -133,7 +133,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
-[List] Insights                          15 tasks · 15 ready
+[List] Graph  Insights                   15 tasks · 15 ready
 [open] / to filter               15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────╮
 │   id  title                          done st P  dep type │
@@ -158,7 +158,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                  15 tasks · 15 ready
+[List] Graph  Insights                                                           15 tasks · 15 ready
 [open] / to filter                                                       15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────╮ ╭─ h04 ───────────────────────────────╮
 │   id  title                          done st P  dep type │ │ h04  task                           │
@@ -191,7 +191,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 === 140x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[List] Insights                                                                                                          15 tasks · 15 ready
+[List] Graph  Insights                                                                                                   15 tasks · 15 ready
 [open] / to filter                                                                                               15 of 15 · sort: priority ↑
 ╭─ ▸ Tasks · hostile ──────────────────────────────────────────────────────────────╮ ╭─ h04 ───────────────────────────────────────────────╮
 │   id  title                                   done st P  dep type age who labels │ │ h04  task                                           │

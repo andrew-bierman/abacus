@@ -4,9 +4,9 @@
 [ready] / to… 3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
-│ ▸ ac-01 Fleet workspace 1… ○  P1     │
-│   ac-15 lease holder colu… ○  P1 →1  │
-│   ac-30 saved filters      ○  P3     │
+│ ▸ ac-01 ▾ Fleet workspace… ○  P1     │
+│   ac-15 └── lease holder … ○  P1 →1  │
+│   ac-30   saved filters    ○  P3     │
 │                                      │
 │                                      │
 ╰──────────────────────────────────────╯
@@ -18,9 +18,9 @@
 [ready] / to… 3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
 │   id    title              st P  dep │
-│ ▸ ac-01 Fleet workspace 1… ○  P1     │
-│   ac-15 lease holder colu… ○  P1 →1  │
-│   ac-30 saved filters      ○  P3     │
+│ ▸ ac-01 ▾ Fleet workspace… ○  P1     │
+│   ac-15 └── lease holder … ○  P1 →1  │
+│   ac-30   saved filters    ○  P3     │
 │                                      │
 │                                      │
 │                                      │
@@ -37,7 +37,7 @@
 │                                      │
 │                                      │
 │                                      │
-│                                      │
+│ ▾ open ▹ folded                      │
 │ ⊘N held by N · →N holds N · ⊘↑ held… │
 │ ○ open ◐ active ● blocked ✓ closed … │
 ╰──────────────────────────────────────╯
@@ -47,24 +47,24 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                        14 tasks · 3 ready
 [ready] / to filter                                   3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
-│   id    title                                         st P  dep type age who │
-│ ▸ ac-01 Fleet workspace 1/5                           ○  P1     epic 30d mei │
-│   ac-15 lease holder column                           ○  P1 →1  feat 6d  mei │
-│   ac-30 saved filters                                 ○  P3     feat 2d  -   │
+│   id    title                                    done st P  dep type age who │
+│ ▸ ac-01 ▾ Fleet workspace 1/5                    ▰▱▱▱ ○  P1     epic 30d mei │
+│   ac-15 └── lease holder column                       ○  P1 →1  feat 6d  mei │
+│   ac-30   saved filters                               ○  P3     feat 2d  -   │
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 [List] Graph  Insights                                        14 tasks · 3 ready
 [ready] / to filter                                   3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
-│   id    title                                         st P  dep type age who │
-│ ▸ ac-01 Fleet workspace 1/5                           ○  P1     epic 30d mei │
-│   ac-15 lease holder column                           ○  P1 →1  feat 6d  mei │
-│   ac-30 saved filters                                 ○  P3     feat 2d  -   │
+│   id    title                                    done st P  dep type age who │
+│ ▸ ac-01 ▾ Fleet workspace 1/5                    ▰▱▱▱ ○  P1     epic 30d mei │
+│   ac-15 └── lease holder column                       ○  P1 →1  feat 6d  mei │
+│   ac-30   saved filters                               ○  P3     feat 2d  -   │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -81,34 +81,34 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                                                              │
+│ ▾ open ▹ folded                                                              │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details…
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 [List] Graph  Insights                                                                                14 tasks · 3 ready
 [ready] / to filter                                                                           3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
-│   id    title                                 st P  dep type age who │ │ ac-01  epic                                 │
-│ ▸ ac-01 Fleet workspace 1/5                   ○  P1     epic 30d mei │ │ Fleet workspace                             │
-│   ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
-│   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ready                                       │
+│   id    title                            done st P  dep type age who │ │ ac-01  epic                                 │
+│ ▸ ac-01 ▾ Fleet workspace 1/5            ▰▱▱▱ ○  P1     epic 30d mei │ │ Fleet workspace                             │
+│   ac-15 └── lease holder column               ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
+│   ac-30   saved filters                       ○  P3     feat 2d  -   │ │ ready                                       │
 │                                                                      │ │ created 30d ago · updated 10d ago           │
 │                                                                      │ │   ↕ +25 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
 === 120x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Graph  Insights                                                                                14 tasks · 3 ready
 [ready] / to filter                                                                           3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────────────╮
-│   id    title                                 st P  dep type age who │ │ ac-01  epic                                 │
-│ ▸ ac-01 Fleet workspace 1/5                   ○  P1     epic 30d mei │ │ Fleet workspace                             │
-│   ac-15 lease holder column                   ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
-│   ac-30 saved filters                         ○  P3     feat 2d  -   │ │ ready                                       │
+│   id    title                            done st P  dep type age who │ │ ac-01  epic                                 │
+│ ▸ ac-01 ▾ Fleet workspace 1/5            ▰▱▱▱ ○  P1     epic 30d mei │ │ Fleet workspace                             │
+│   ac-15 └── lease holder column               ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                             │
+│   ac-30   saved filters                       ○  P3     feat 2d  -   │ │ ready                                       │
 │                                                                      │ │ created 30d ago · updated 10d ago           │
 │                                                                      │ │ labels  workspace                           │
 │                                                                      │ │                                             │
@@ -125,21 +125,21 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                                      │ │   ◐ ac-12 wire the lease heartbeat          │
 │                                                                      │ │   ○ ac-15 lease holder column               │
 │                                                                      │ │   ○ ac-16 stale lease warning               │
-│                                                                      │ │                                             │
+│ ▾ open ▹ folded                                                      │ │                                             │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │ Goal                                        │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +8 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter · g graph · ↑/↓ move …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details · T tree/flat · +/- all …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
 [List] Graph  Insights                    14 tasks · 3 ready
 [ready] / to filter               3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮
-│   id    title                     st P  dep type age who │
-│ ▸ ac-01 Fleet workspace 1/5       ○  P1     epic 30d mei │
-│   ac-15 lease holder column       ○  P1 →1  feat 6d  mei │
-│   ac-30 saved filters             ○  P3     feat 2d  -   │
+│   id    title                done st P  dep type age who │
+│ ▸ ac-01 ▾ Fleet workspace 1… ▰▱▱▱ ○  P1     epic 30d mei │
+│   ac-15 └── lease holder co…      ○  P1 →1  feat 6d  mei │
+│   ac-30   saved filters           ○  P3     feat 2d  -   │
 │                                                          │
 │                                                          │
 │                                                          │
@@ -154,17 +154,17 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort …
+? help · q quit · tab/→ next tab · / filter · h/l fold …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Graph  Insights                                                            14 tasks · 3 ready
 [ready] / to filter                                                       3 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ ac-01 ─────────────────────────────╮
-│   id    title                     st P  dep type age who │ │ ac-01  epic                         │
-│ ▸ ac-01 Fleet workspace 1/5       ○  P1     epic 30d mei │ │ Fleet workspace                     │
-│   ac-15 lease holder column       ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                     │
-│   ac-30 saved filters             ○  P3     feat 2d  -   │ │ ready                               │
+│   id    title                done st P  dep type age who │ │ ac-01  epic                         │
+│ ▸ ac-01 ▾ Fleet workspace 1… ▰▱▱▱ ○  P1     epic 30d mei │ │ Fleet workspace                     │
+│   ac-15 └── lease holder co…      ○  P1 →1  feat 6d  mei │ │ ○ open  P1  mei                     │
+│   ac-30   saved filters           ○  P3     feat 2d  -   │ │ ready                               │
 │                                                          │ │ created 30d ago · updated 10d ago   │
 │                                                          │ │ labels  workspace                   │
 │                                                          │ │                                     │
@@ -183,8 +183,8 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │                                                          │ │   ○ ac-16 stale lease warning       │
 │                                                          │ │                                     │
 │                                                          │ │ Goal                                │
-│                                                          │ │                                     │
+│ ▾ open ▹ folded                                          │ │                                     │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │ One place to see and steer the      │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +8 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · / filter · s/S sort · v view · enter details · f quick filter …
+? help · q quit · tab/→ next tab · / filter · h/l fold · s/S sort · v view · enter details …

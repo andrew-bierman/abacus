@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -744,5 +745,79 @@ func TestOneEpicWithFiveThousandChildren(t *testing.T) {
 		if lipgloss.Width(l) > 100 {
 			t.Fatalf("wide line %q", l)
 		}
+	}
+}
+
+// The merged key map: h and l belong to the view that is showing, the tree's fold keys on the List
+// and sibling or layer stepping on the Graph, and no view binds a key twice or one a global key owns.
+func TestMergedKeyMapKeepsHAndLPerView(t *testing.T) {
+	global := map[string]bool{}
+	for _, b := range []key.Binding{keyQuit, keyNext, keyPrev, keyJump, keyHelp} {
+		for _, k := range b.Keys() {
+			global[k] = true
+		}
+	}
+	views := map[string]struct {
+		setup func(*tasksSection)
+		hl    string // what h/l are called in the footer and help
+	}{
+		"tree":          {func(*tasksSection) {}, "fold"},
+		"tree folded":   {func(s *tasksSection) { send(s, "-") }, "fold"},
+		"flat":          {func(s *tasksSection) { send(s, "T") }, ""},
+		"insights":      {func(s *tasksSection) { send(s, "V") }, ""},
+		"graph":         {func(s *tasksSection) { send(s, "g") }, "sibling"},
+		"graph whole":   {func(s *tasksSection) { send(s, "g", "g") }, "layer"},
+		"tree filtered": {func(s *tasksSection) { send(s, "/", "l", "e", "enter") }, "fold"},
+	}
+	for name, v := range views {
+		for _, w := range []int{60, 120} {
+			s := treeSection(t, realTreeSnapshot(t), nil)
+			s.Update(tea.WindowSizeMsg{Width: w, Height: 30})
+			v.setup(s)
+			seen := map[string]bool{}
+			help := ""
+			for _, b := range s.Bindings() {
+				if !b.Enabled() {
+					continue
+				}
+				for _, k := range b.Keys() {
+					if seen[k] {
+						t.Errorf("%s %d: key %q is bound twice", name, w, k)
+					}
+					seen[k] = true
+					if global[k] && k != "esc" {
+						t.Errorf("%s %d: key %q clashes with a global key", name, w, k)
+					}
+					if k == "h" {
+						help = b.Help().Desc
+					}
+				}
+			}
+			if help != v.hl {
+				t.Errorf("%s %d: h is %q, want %q", name, w, help, v.hl)
+			}
+		}
+	}
+}
+
+func TestFoldKeysDoNothingInTheGraphAndGraphKeysDoNothingInTheTree(t *testing.T) {
+	s := treeSection(t, realTreeSnapshot(t), nil)
+	s.selectID("tr-jbt")
+	send(s, "g")
+	if s.list.cur != viewGraph {
+		t.Fatalf("g opens the graph: view %v", s.list.cur)
+	}
+	before := len(s.list.tree.folded)
+	send(s, "h", "l", "+", "-", "T")
+	if len(s.list.tree.folded) != before || s.list.tree.mode != "" {
+		t.Errorf("the fold keys must not reach the tree from the Graph view: %v mode %q", s.list.tree.folded, s.list.tree.mode)
+	}
+	send(s, "v", "v", "v") // around the strip back to the List
+	for s.list.cur != viewList {
+		send(s, "v")
+	}
+	send(s, "h") // a fold on the List, not a graph step
+	if s.list.cur != viewList || !s.list.tree.folded["tr-jbt"] {
+		t.Errorf("h folds on the List view: view %v folded %v", s.list.cur, s.list.tree.folded)
 	}
 }
