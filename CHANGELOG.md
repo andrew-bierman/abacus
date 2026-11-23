@@ -13,6 +13,23 @@ may change behavior, and patch versions are fixes and small additions.
   rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
   dependency change.
 - `docs/plans/2026-11-22-board-bundling-assessment.md`: how to ship the Board domain without asking for Node (compiled binary measured, native client judged, trust model, recommendation).
+- An optional workspace layer. `internal/core` gains a `WorkspaceProvider` capability (not a fifth
+  domain; navigation stays four tabs plus Doctor): typed placements saying where a run, lease,
+  task or queue row lives as a terminal session, and an open plan (an ordered list of argv rungs
+  plus a command to copy) that core never runs. Unknown kinds pass through, text from the
+  workspace is sanitized and bounded, and no provider is an empty, non-error result. `status
+  --json` gains a `workspace` section only when there is something to report (additive;
+  `schema_version` stays 1, and the output is byte-identical without a provider).
+- `internal/rex`, the first workspace provider, composes only the `rex` CLI: `ls --json` and
+  `version --json` (always `--autostart=false`) behind an argv allowlist and a scrubbed
+  environment, gated on API revision 10 to 13. Placement comes from session labels, a label two
+  sessions claim is reported as ambiguous and never picked, and only the one `-S` machine a run
+  carries is contacted. No server is not an error; an unsupported revision or a failed probe is a
+  Doctor warning, never a failure, and an absent Rex does not appear in Doctor or the tool list.
+  `ABACUS_REX_BIN` overrides the lookup. The open plan is the existing `rex -S <machine>`
+  handoff, then the command to copy; richer jumps are deferred until verified against a real Rex.
+- `tui --demo` has fixture placements (including an ambiguous one) from the demo Leases provider.
+  The TUI does not show the workspace yet.
 - `abacus tui --demo` shows every tab with invented data: Board, Tasks (with graph insights and the
   confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
   only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,

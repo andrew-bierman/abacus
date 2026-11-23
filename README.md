@@ -131,7 +131,7 @@ scripts are tested offline (`internal/release`) with fake archives and a fake `g
 `internal/core` holds all the real logic: the domain reports (Board, Tasks, Leases, Queues),
 provider interfaces and the registry that maps detected providers to domains, the write gate,
 detection, doctor and status aggregation, the typed report JSON (`schema_version`), sanitizing and the exit-code rules.
-Adapters (`internal/lambe`, `internal/beadslease`, `internal/bd`, `internal/bv`) compose the
+Adapters (`internal/lambe`, `internal/beadslease`, `internal/bd`, `internal/bv`, `internal/rex`) compose the
 tools only through their `--json` CLIs and versioned local APIs. `internal/cli` and `internal/tui` are thin front-ends that only parse
 input and render core's typed reports; a Linux or Swift GUI would be another front-end over
 the same core or the same `--json` output. A test enforces that core, adapters and the CLI
@@ -166,6 +166,16 @@ or error messages that help you fix one.
   Board tab `o` opens the CLI's local web inspector (`board inspect`) on an explicit keypress;
   Ctrl-C returns. board-beads is only the beads-backed backend a board can use; abacus needs
   nothing new from it (board-beads#15 is decided: compose the Vercel CLI).
+- **Rex** (optional): a terminal workspace. When a Rex server is reachable abacus can say which
+  terminal session a run, lease or task lives in; the interface calls this the "workspace" and
+  it is not a fifth tab. abacus composes only the `rex` CLI: `ls --json` and `version --json`,
+  always with `--autostart=false`, behind an argv allowlist and a scrubbed environment
+  (`HOME`, `PATH`, the XDG dirs and `REX_*`), and never starts a server or types into a
+  session. Detection is `REX_SESSION`/`REX_SERVER` in the environment, else a short probe; no
+  server is "not connected", not an error, and an absent Rex is invisible in Doctor.
+  `ABACUS_REX_BIN` overrides the lookup. Opening a placement runs only on an explicit keypress
+  and is the existing `rex -S <machine>` handoff, else the command to copy. See
+  `docs/tool-contract.md`.
 
 ## Credits & ecosystem
 
@@ -227,7 +237,7 @@ retrying", never "not applied", and the audit log records phase `unknown`.
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
 `ABACUS_BV_BIN`, `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
-`ABACUS_BEADSLEASE_BIN`, `ABACUS_BOARD_BIN`, `ABACUS_BOARD_URL` (also `abacus config set board_url`; the shell's `BOARD_URL` is used last). A board URL must be https, or http only for a local board, with no query or fragment. The Board JSON no longer has `columns` or `insights` (never populated with Board data): see the CHANGELOG.
+`ABACUS_BEADSLEASE_BIN`, `ABACUS_REX_BIN`, `ABACUS_BOARD_BIN`, `ABACUS_BOARD_URL` (also `abacus config set board_url`; the shell's `BOARD_URL` is used last). A board URL must be https, or http only for a local board, with no query or fragment. The Board JSON no longer has `columns` or `insights` (never populated with Board data): see the CHANGELOG.
 Leases need an actor name: `BEADS_ACTOR` in the environment, or
 `abacus config set actor NAME` (the environment wins).
 

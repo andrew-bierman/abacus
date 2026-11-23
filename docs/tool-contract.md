@@ -142,6 +142,62 @@ output (`internal/board/testdata`). Provides the Board domain (read) and Board p
 
 board-beads is only the beads-backed backend a board can use; it stays a library (board-beads#15).
 
+## Rex (`rex`), optional workspace
+
+Provides the workspace capability (`core.WorkspaceProvider`): where a run, lease, task or queue
+row lives as a terminal session. It is optional and pre-1.0 (the Rex CLI is closed source), and
+nothing else depends on it. The UI says "workspace"; "Rex" appears only in Doctor, how-to-connect
+and error text.
+
+**Verified** against the Rex server API reference (`help.json`, API revision 13) as a local file,
+never against a running Rex (no `rex` was run to write this):
+- `session.list` returns `{"sessions":[{"session_id","label"}]}` (fixture `ls-help-example.json` is
+  its response example, verbatim). `server.version` has `api_revision` and `api_min_revision`; a
+  missing `api_revision` means 0.
+- Rex advertises API revisions 10 to 13 and the API has only added methods so far.
+
+**From second-hand sources** (Lambe's working code and research notes, not re-verified here):
+- `rex --autostart=false ls --json` exits 0 when a server answers and 4 when none is reachable;
+  other exit codes (1, 2, 3 ambiguous, 130) are not used.
+- `REX_SESSION` and `REX_SERVER` are set in every Rex terminal; Lambe treats either as "inside
+  Rex" and otherwise probes with a 500 ms deadline. abacus does the same.
+- `rex version --json` prints `api_revision`; `rex -S <machine>` targets a remote server.
+- Session labels follow Lambe's conventions (a window is `Lambe · <ISSUE>`, a session is the
+  agent's name). The machine a run carries equals the Rex host label (not enforced anywhere).
+
+**What abacus runs**, element by element, nothing else (the argv allowlist test lists refused forms):
+`rex --autostart=false ls --json`, `rex --autostart=false version --json` and
+`rex -S HOST --autostart=false ls --json`, where HOST matches `[A-Za-z0-9][A-Za-z0-9._@:-]*`
+(at most 253 characters, never a leading dash). `--autostart=false` is always there, so a read can
+never start a server. Never `new`, `send`, `capture`, `api call`, `window`, `server`, `config`, `do`
+or `hosts`. Environment passed on: `HOME`, `PATH`, `XDG_*` and `REX_*` only. Output is capped at
+1 MiB; each call has a 2 s deadline (the probe 500 ms) and a read is cancelled with the caller.
+
+**Detection and states.** No `rex` binary (`ABACUS_REX_BIN`, bundled, then PATH): absent, and quiet
+(not in `version`, Doctor or the tool list). Binary but no server: ready, with a `skip` check ("no
+Rex server running (optional)"); a read then says "not connected" with how to start one. A probe that
+cannot run, exits other than 0 or 4, or prints unreadable output, a failing `version --json`, or an
+`api_revision` outside 10 to 13: incompatible, which Doctor shows as a `warn`. Never `fail`, so
+Rex never changes the exit code or says "needs attention".
+
+**Placement.** Only `ls --json` is read, so only session labels are visible: window (tab) labels
+need `session.view` and are deferred, so `tab` is empty. A label matches an item id exactly (the id,
+or `Lambe · <id>`) or by containing it as a whole word (`LAM-1` does not match `LAM-12`); ids of
+one character never match. One claimant is a placement; two or more is an ambiguity with every
+candidate and nothing is picked. Labels come from other programs: control, bidi and zero-width
+characters are removed and labels are cut to 64 characters, in the adapter and again in core. A
+run's own machine is the only `-S` host read (this machine, compared by short hostname, is read
+without `-S`); at most 8 hosts per read.
+
+**Open plan.** Rung 1 `rex-handoff`: `rex -S <machine>`, the same argv Queues' `o` runs today;
+then the same command to copy. A placement with no usable machine has no rung and a note. Core and
+the adapter only build the plan; a front-end runs it on an explicit keypress.
+
+**Deferred** until someone runs them against a real Rex and records argv and JSON: `rex window
+focus`, `rex window new`, `session.select` (also needs a client with Remote control on; `rex-tui`
+support is unknown), window labels via `session.view`, `rex hosts`, program status, spawning. A
+rung is data (a name and an argv), so each is a new value, not a new type.
+
 ## Clients
 
 GUI clients, such as a later SwiftUI app, are front-ends over the umbrella's core and use the
