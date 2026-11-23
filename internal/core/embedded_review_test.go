@@ -484,19 +484,21 @@ func TestRealSizeBlobStreamsAndExtracts(t *testing.T) {
 	if os.Getenv("ABACUS_REAL_SIZE") == "" {
 		t.Skip("set ABACUS_REAL_SIZE=1 to run the 100 MB extraction test")
 	}
-	block := make([]byte, 1<<20)
 	x := uint64(88172645463325252)
-	for i := range block {
-		x ^= x << 13
-		x ^= x >> 7
-		x ^= x << 17
-		block[i] = byte(x) & 0x3f // compressible, not trivially
+	next := func(n int) []byte {
+		b := make([]byte, n)
+		for i := range b {
+			x ^= x << 13
+			x ^= x >> 7
+			x ^= x << 17
+			b[i] = byte(x) & 0x3f // 6 bits a byte: compressible, but not trivially
+		}
+		return b
 	}
 	var body bytes.Buffer
-	body.WriteString("#!/bin/sh\necho big\n# ")
+	body.WriteString("#!/bin/sh\necho big\nexit 0\n# ")
 	for body.Len() < 100<<20 {
-		body.Write(block)
-		block[0]++
+		body.Write(next(1 << 20))
 	}
 	set := embedtest.New("n", nil, embedtest.Tool{Name: "bd", Version: "1", Body: body.String()})
 	t.Cleanup(core.SetEmbeddedForTest(set.FS))
