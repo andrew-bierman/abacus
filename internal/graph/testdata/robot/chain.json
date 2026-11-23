@@ -1,0 +1,90 @@
+{
+ "triage": {
+  "triage": {
+   "quick_ref": {
+    "top_picks": [
+     {
+      "id": "ch-1",
+      "title": "Chain head",
+      "score": 0.4,
+      "reasons": [
+       "Unblocks 1 item(s)"
+      ],
+      "unblocks": 1
+     }
+    ]
+   },
+   "blockers_to_clear": [
+    {
+     "id": "ch-1",
+     "title": "Chain head",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "ch-2"
+     ],
+     "actionable": true
+    },
+    {
+     "id": "ch-2",
+     "title": "Chain middle",
+     "unblocks_count": 1,
+     "unblocks_ids": [
+      "ch-3"
+     ],
+     "actionable": false,
+     "blocked_by": [
+      "ch-1"
+     ]
+    }
+   ]
+  }
+ },
+ "plan": {
+  "plan": {
+   "tracks": [
+    {
+     "track_id": "track-A",
+     "items": [
+      {
+       "id": "ch-1"
+      }
+     ]
+    }
+   ],
+   "total_actionable": 1,
+   "total_blocked": 2
+  }
+ },
+ "insights": {
+  "Bottlenecks": [
+   {
+    "ID": "ch-2",
+    "Value": 1
+   }
+  ],
+  "Keystones": [
+   {
+    "ID": "ch-1",
+    "Value": 3
+   },
+   {
+    "ID": "ch-2",
+    "Value": 2
+   },
+   {
+    "ID": "ch-3",
+    "Value": 1
+   }
+  ],
+  "Cycles": [],
+  "status": {
+   "Critical": {
+    "state": "computed"
+   }
+  }
+ },
+ "graph": {
+  "nodes": 3,
+  "edges": 2
+ }
+}

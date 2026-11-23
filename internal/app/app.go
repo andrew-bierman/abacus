@@ -15,6 +15,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/demo"
+	"github.com/andrew-bierman/abacus/internal/graph"
 	"github.com/andrew-bierman/abacus/internal/lambe"
 )
 
@@ -102,10 +103,22 @@ func Build(o cli.Options, e Env) *core.Registry {
 			Bin: e.Getenv("ABACUS_BD_BIN"), Ref: ref, InitDir: choice.Offer, ConfigMissing: choice.Missing,
 			OnInit: saveTracker(e.Config),
 		}),
-		bv.New(bv.Options{Bin: e.Getenv("ABACUS_BV_BIN"), Ref: ref}),
+		insights(e, ref),
 		board.New(boardOptions(e, cfg)),
 		core.NewConfigCheck(e.Config),
+		graph.NewEngineCheck(e.Getenv(graph.EngineEnv)),
 	)
+}
+
+// insights is the Tasks graph-insights provider. By default it is the bv subprocess; with
+// ABACUS_GRAPH_ENGINE=library it is the in-process engine over the same tracker the bd adapter
+// reads. Any other value keeps the subprocess (Doctor reports an unknown one); --demo never
+// gets here.
+func insights(e Env, ref *core.TrackerRef) core.Module {
+	if engine, _ := graph.ParseEngine(e.Getenv(graph.EngineEnv)); engine == graph.Library {
+		return graph.NewModule(graph.Options{Source: graph.FileSource{Ref: ref}, Analyzer: graph.NewBVAnalyzer()})
+	}
+	return bv.New(bv.Options{Bin: e.Getenv("ABACUS_BV_BIN"), Ref: ref})
 }
 
 func boardOptions(e Env, cfg core.Config) board.Options {
