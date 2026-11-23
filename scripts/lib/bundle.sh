@@ -63,3 +63,67 @@ extract_member() {
   [ -n "$listed" ] || die "no member '$want' in $(basename "$archive")"
   tar -xzOf "$archive" "$listed" >"$dest" || die "cannot read $want from $(basename "$archive")"
 }
+
+# fetch TOOL PLATFORM -> prints the path of the verified asset in $cache (download with gh when it
+# is not cached; fails closed when the manifest has no pin or the sha256 differs from the pin).
+# The caller sets `cache` (download directory).
+fetch() {
+  local tool="$1" p="$2" asset want got
+  asset="$(tool_field "$tool" ".assets[\"$p\"].asset")"; want="$(tool_field "$tool" ".assets[\"$p\"].sha256")"
+  [ -n "$asset" ] && [ "$asset" != null ] && [ -n "$want" ] && [ "$want" != null ] \
+    || die "$tool has no pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
+  mkdir -p "$cache/$tool"
+  if [ ! -f "$cache/$tool/$asset" ]; then
+    need gh
+    gh release download "$(tag_for "$tool" "$(tool_field "$tool" .version)")" -R "$(tool_field "$tool" .repo)" \
+      -p "$asset" -D "$cache/$tool" || die "cannot download $asset"
+  fi
+  got="$(sha "$cache/$tool/$asset")"
+  [ "$got" = "$want" ] || die "$asset: sha256 $got does not match the pin $want (delete $cache/$tool/$asset to refetch)"
+  echo "$cache/$tool/$asset"
+}
+
+# install_tool BINDIR LICDIR TOOL PLATFORM ASSET_PATH
+# Puts the one executable in BINDIR/TOOL and its license (verified against the pin) in
+# LICDIR/TOOL/LICENSE.
+install_tool() {
+  local bindir="$1" licdir="$2" tool="$3" p="$4" asset_path="$5" lic
+  mkdir -p "$bindir" "$licdir/$tool"
+  extract_member "$asset_path" "$(tool_field "$tool" ".assets[\"$p\"].member")" "$bindir/$tool"
+  chmod 0755 "$bindir/$tool"
+  lic="$licdir/$tool/LICENSE"
+  if [ "$(tool_field "$tool" .license_source.from)" = archive ]; then
+    extract_member "$asset_path" "$(tool_field "$tool" .license_source.member)" "$lic"
+  else
+    fetch_license "$tool" "$(tool_field "$tool" .version)" "$lic"
+  fi
+  [ "$(sha "$lic")" = "$(tool_field "$tool" .license_sha256)" ] || die "$tool: license changed from its pin; review it, then re-pin"
+  chmod 0644 "$lic"
+}
+
+# The THIRD_PARTY_NOTICES.md text, in three pieces: header, one entry per tool, footer.
+notices_header() {
+  echo "# Third-party notices"
+  echo
+  echo "This archive ships these tools unmodified, as separate programs in \`bundled/\`. abacus runs"
+  echo "them as subprocesses and does not link or import their code. Each tool's own license is in"
+  echo "\`third_party/<tool>/LICENSE\`, copied verbatim from the pinned release."
+  echo
+}
+
+# notices_entry TOOL PLATFORM ASSET_PATH
+notices_entry() {
+  echo "## $1 $(tool_field "$1" .version)"
+  echo
+  echo "- License: $(tool_field "$1" .license)"
+  echo "- Source: https://github.com/$(tool_field "$1" .repo)"
+  echo "- Shipped as: \`bundled/$1\` (asset \`$(basename "$3")\`, sha256 \`$(tool_field "$1" ".assets[\"$2\"].sha256")\`)"
+  echo "- License text: \`third_party/$1/LICENSE\`"
+  echo
+}
+
+notices_footer() {
+  echo "abacus itself is GPL-3.0-or-later (\`LICENSE\`). lambe is GPL-3.0 and shipped as a separate program."
+  echo "The bv license adds a rider about use with OpenAI and Anthropic products; read"
+  echo "\`third_party/bv/LICENSE\` before redistributing."
+}
