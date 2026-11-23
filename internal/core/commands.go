@@ -363,10 +363,15 @@ func completeWord(word string) []string {
 	if c, ok := lookup(word); ok {
 		add(word, c)
 	}
+	for _, c := range commands { // names first, then aliases, each in table order
+		if c.Name != word {
+			add(c.Name, c)
+		}
+	}
 	for _, c := range commands {
-		for _, w := range append([]string{c.Name}, c.Aliases...) {
-			if w != word {
-				add(w, c)
+		for _, a := range c.Aliases {
+			if a != word {
+				add(a, c)
 			}
 		}
 	}
