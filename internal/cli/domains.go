@@ -163,7 +163,7 @@ func renderDomains(w io.Writer, d core.DomainsReport) {
 
 // runDomain handles `board|tasks|leases|queues [--json]` and `tasks create|update|close`.
 func runDomain(cmd string, rest []string, d Deps) int {
-	if cmd == "tasks" && len(rest) > 0 && (rest[0] == "list" || rest[0] == "show") {
+	if cmd == "tasks" && len(rest) > 0 && (rest[0] == "list" || rest[0] == "show" || rest[0] == "board") {
 		return runTaskView(rest[0], rest[1:], d)
 	}
 	if cmd == "tasks" && len(rest) > 0 && rest[0] == "graph" {

@@ -181,3 +181,44 @@ func TestTasksListSortNaturalDirections(t *testing.T) {
 		}
 	}
 }
+
+func TestTasksBoardTextJSONAndUsage(t *testing.T) {
+	code, out, errOut := runTasks(t, snap(), "tasks", "board")
+	if code != 0 || errOut != "" {
+		t.Fatalf("code %d err %q", code, errOut)
+	}
+	for _, want := range []string{"Board  8 of 9 tasks  (by status", "1 closed folded", "\nOpen  ", "\nIn progress  ", "\nBlocked  ", "\nDeferred  ", "\nClosed  1  (1 urgent)\n", "Lease heartbeat bug"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "Snapshot reader") {
+		t.Error("closed cards are folded to a count")
+	}
+	_, out, _ = runTasks(t, snap(), "tasks", "board", "--closed", "--group", "priority", "-q", "label:ui")
+	if !strings.Contains(out, "by priority, query: label:ui") || !strings.Contains(out, "Snapshot reader") {
+		t.Errorf("closed shown, grouped by priority, narrowed:\n%s", out)
+	}
+	_, js, _ := runTasks(t, snap(), "tasks", "board", "--json")
+	checkGoldenFile(t, "tasks-board.golden.json", js)
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(js), &m); err != nil || string(m["schema_version"]) != "1" || m["columns"] == nil {
+		t.Errorf("contract: %v %s", err, js)
+	}
+	for _, c := range []struct {
+		args []string
+		sub  string
+	}{
+		{[]string{"--group", "color"}, "unknown grouping"},
+		{[]string{"-q", "nosuch:x"}, "bad query"},
+		{[]string{"extra"}, "unexpected argument"},
+	} {
+		code, o, e := runTasks(t, snap(), append([]string{"tasks", "board"}, c.args...)...)
+		if code != core.ExitUsage || o != "" || !strings.Contains(e, c.sub) {
+			t.Errorf("%v: %d %q %q", c.args, code, o, e)
+		}
+	}
+	if code, _, e := runTasks(t, nil, "tasks", "board"); code != core.ExitFail || !strings.Contains(e, "not connected") {
+		t.Errorf("not connected: %d %q", code, e)
+	}
+}
