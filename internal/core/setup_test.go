@@ -26,10 +26,14 @@ type fakeBd struct {
 	initDir    string
 	trackerDir string
 	ran        [][]string
+	guide      *core.Guide // overrides the default workspace guide
 }
 
 func (f *fakeBd) Domain() core.DomainID { return core.DomainTasks }
 func (f *fakeBd) Guide(context.Context) *core.Guide {
+	if f.guide != nil {
+		return f.guide
+	}
 	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)"}
 }
 func (f *fakeBd) TrackerDir() string { return f.trackerDir }

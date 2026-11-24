@@ -120,6 +120,10 @@ func (m *Module) Guide(context.Context) *core.Guide {
 	if m.o.InitDir == "" || m.TrackerDir() != "" || core.HasTracker("") {
 		return nil
 	}
+	if h, _ := core.InspectWorkspace(m.o.InitDir); h == core.WorkspaceHalfBuilt {
+		return &core.Guide{Domain: core.DomainTasks, Step: core.StepRepair, Message: "Your fleet workspace was only partly created", Action: "repair it (nothing is deleted)",
+			Detail: "The unfinished files in " + m.o.InitDir + " will be moved aside, not deleted, and the workspace created again."}
+	}
 	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)",
 		Detail: "It will be created in " + m.o.InitDir + " and abacus will use it from then on."}
 }
@@ -537,7 +541,7 @@ func (m *Module) runInit(ctx context.Context, argv []string) (core.TaskResult, e
 		return core.TaskResult{}, err
 	}
 	if _, err := os.Stat(filepath.Join(dir, ".beads")); err == nil && !core.HasOwnTracker(dir) {
-		return core.TaskResult{}, fmt.Errorf("half-created workspace at %s (a .beads folder without metadata.json): delete that folder and try again", dir)
+		return core.TaskResult{}, fmt.Errorf("half-created workspace at %s (a .beads folder without metadata.json): run `%s setup --repair` to set it aside when nothing else of yours is in that folder", dir, brand.Name)
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return core.TaskResult{}, fmt.Errorf("could not create %s: %s", dir, core.Sanitize(err.Error()))

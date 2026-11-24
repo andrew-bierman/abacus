@@ -14,6 +14,7 @@ const (
 	StepWorkspace StepID = "workspace" // create the managed tracker (bd init)
 	StepQueues    StepID = "queues"    // write an abacus-owned Lambe config (lambe init)
 	StepActor     StepID = "actor"     // choose the name leases are held under
+	StepRepair    StepID = "repair"    // set a half-created workspace aside and create it again
 )
 
 // NeedsSetup is a domain whose tool is present but not set up yet. It is not a failure:
@@ -34,6 +35,9 @@ type Guide struct {
 
 // CLILine is the same sentence for the command line, where the step is `abacus setup`.
 func (g Guide) CLILine() string {
+	if g.Step == StepRepair {
+		return g.Message + " — run `" + brand.Name + " setup --repair` to " + g.Action
+	}
 	return g.Message + " — run `" + brand.Name + " setup` to " + g.Action
 }
 

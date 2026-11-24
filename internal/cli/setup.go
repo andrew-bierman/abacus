@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
@@ -35,10 +36,11 @@ func runSetup(rest []string, d Deps) int {
 	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
-	var yes, dry, asJSON bool
+	var yes, dry, asJSON, repair bool
 	fs.BoolVar(&yes, "yes", false, "apply every step that is needed without asking")
 	fs.BoolVar(&dry, "dry-run", false, "report only; change nothing")
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	fs.BoolVar(&repair, "repair", false, "repair a half-created workspace: show the plan, set the unfinished files aside (nothing is deleted) and create it again")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the queues daemon")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -51,6 +53,9 @@ func runSetup(rest []string, d Deps) int {
 	defer cancel()
 	entries := d.Build(o).Detect(ctx)
 	s := setupFor(d, entries)
+	if repair {
+		return runRepair(ctx, s, d, yes, dry, asJSON)
+	}
 	steps := s.Steps(ctx)
 	var results []setupResult
 	failed := false
@@ -140,7 +145,7 @@ func orEmpty(r io.Reader) io.Reader {
 func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPrompt, canAsk bool) {
 	needed := 0
 	for _, st := range steps {
-		if st.State == "needed" || st.State == "blocked" {
+		if st.State == "needed" || st.State == "blocked" || st.State == "repair" {
 			needed++
 		}
 	}
@@ -166,6 +171,72 @@ func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPr
 		}
 	}
 	if needed > 0 && !canAsk {
-		fmt.Fprintln(w, "Run `abacus setup --yes` to apply the steps above, or press the key shown in the TUI.")
+		fmt.Fprintln(w, "Run `"+brand.Name+" setup --yes` to apply the steps above, or press the key shown in the TUI.")
 	}
+}
+
+// runRepair is `abacus setup --repair`: plan the repair, show exactly what it will do, and
+// apply it only after --yes or a y at the prompt, through the same audited gate. --dry-run only
+// shows the plan. A folder that holds anything else of the user's is refused.
+func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool) int {
+	res := setupResult{Step: core.StepRepair}
+	finish := func(code int) int {
+		if asJSON {
+			jsonOut(d.Out, struct {
+				Results []setupResult `json:"results"`
+			}{[]setupResult{res}})
+		}
+		return code
+	}
+	p, err := s.Plan(core.StepRepair)
+	if err != nil {
+		res.Error = err.Error()
+		if !asJSON {
+			fmt.Fprintf(d.Err, "repair: %s\n", res.Error)
+		}
+		return finish(core.ExitFail)
+	}
+	if !asJSON {
+		for _, l := range p.Lines {
+			fmt.Fprintf(d.Out, "%s\n", l)
+		}
+	}
+	if dry {
+		res.Message = "dry run: nothing was changed"
+		if !asJSON {
+			fmt.Fprintln(d.Out, res.Message)
+		}
+		return finish(core.ExitOK)
+	}
+	if !yes {
+		if asJSON || d.In == nil || !interactive(d.In) {
+			res.Error = "not confirmed: run `" + brand.Name + " setup --repair --yes` to apply the plan above"
+			if !asJSON {
+				fmt.Fprintln(d.Err, res.Error)
+			}
+			return finish(core.ExitFail)
+		}
+		fmt.Fprint(d.Out, "Apply this repair? [y/N] ")
+		line, _ := bufio.NewReader(d.In).ReadString('\n')
+		if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
+			res.Error = "not confirmed: nothing was changed"
+			if !asJSON {
+				fmt.Fprintln(d.Out, res.Error)
+			}
+			return finish(core.ExitFail)
+		}
+	}
+	msg, err := s.Apply(ctx, p.Confirm())
+	if err != nil {
+		res.Error = core.DescribeWriteError(err)
+		if !asJSON {
+			fmt.Fprintf(d.Err, "repair: %s\n", res.Error)
+		}
+		return finish(core.ExitFail)
+	}
+	res.Applied, res.Message = true, msg
+	if !asJSON {
+		fmt.Fprintf(d.Out, "done: %s\n", msg)
+	}
+	return finish(core.ExitOK)
 }

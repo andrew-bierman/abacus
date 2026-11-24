@@ -30,6 +30,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice saying b9s is optional and where to get it if it is not there). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
 | `w` | Leases, Tasks: go to the selected row's workspace session (see "Workspace" below). Offered only when the row has a placement or an ambiguity |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
+| `r` | a guided Tasks tab whose workspace was only partly created: open the repair plan |
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues and Tasks, narrow layout only: open the detail; `esc` closes it, a second `esc` clears the filter. Tasks, wide layout: `enter` focuses the detail to scroll it, `esc` leaves |
 | `/` | Queues: filter runs by issue, state, phase, machine or workflow. Tasks: the query (below); `enter` keeps it, `esc` clears it |

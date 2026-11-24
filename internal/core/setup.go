@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
 )
@@ -29,6 +30,8 @@ type SetupOptions struct {
 	Audit       Audit  // nil means the default file audit
 	// Suggest proposes the actor name; nil derives one from the user and machine names.
 	Suggest func() string
+	// Now is the clock for names a repair makes; nil means time.Now.
+	Now func() time.Time
 }
 
 // DefaultSetupOptions resolves the standard XDG locations. A missing home directory leaves
@@ -89,6 +92,7 @@ type SetupPlan struct {
 	actor     string
 	dir       string // queues: the tracker directory lambe init runs in
 	adopt     bool   // queues: only record an existing config
+	aside     string // repair: where the unfinished .beads is moved
 	confirmed bool
 }
 
@@ -131,11 +135,16 @@ func (s *Setup) Plan(step StepID) (SetupPlan, error) {
 		if HasOwnTracker(d.InitDir()) {
 			return SetupPlan{}, errors.New("the workspace already has a tracker: nothing to create")
 		}
+		if h, _ := InspectWorkspace(d.InitDir()); h == WorkspaceHalfBuilt {
+			return SetupPlan{}, errors.New("the workspace was only partly created: run `" + brand.Name + " setup --repair`")
+		}
 		wp, err := PlanTaskChange(s.writer, TaskChange{Op: TaskInit, Dir: d.InitDir()})
 		if err != nil {
 			return SetupPlan{}, err
 		}
 		return SetupPlan{id: setupSeq.Add(1), Step: step, Domain: DomainTasks, Lines: wp.Lines, Argv: wp.Argv, wp: wp}, nil
+	case StepRepair:
+		return s.planRepair()
 	case StepQueues:
 		return s.planQueues()
 	case StepActor:
@@ -222,8 +231,14 @@ func (s *Setup) Apply(ctx context.Context, p SetupPlan) (string, error) {
 	if !p.confirmed {
 		return "", ErrNotConfirmed
 	}
-	if p.Step != StepWorkspace && p.Step != StepQueues && p.Step != StepActor {
+	if p.Step != StepWorkspace && p.Step != StepQueues && p.Step != StepActor && p.Step != StepRepair {
 		return "", fmt.Errorf("unknown setup step %q", p.Step)
+	}
+	if p.Step == StepRepair {
+		if s.applier == nil {
+			return "", errors.New("there is no workspace to repair")
+		}
+		return s.applyRepair(ctx, p)
 	}
 	if err := s.recheck(ctx, p); err != nil {
 		return "", err
@@ -313,7 +328,7 @@ type StepInfo struct {
 // StepOrder is the order steps are offered in: the workspace first, since Queues needs it.
 var StepOrder = []StepID{StepWorkspace, StepQueues, StepActor}
 
-var stepDomain = map[StepID]DomainID{StepWorkspace: DomainTasks, StepQueues: DomainQueues, StepActor: DomainLeases}
+var stepDomain = map[StepID]DomainID{StepRepair: DomainTasks, StepWorkspace: DomainTasks, StepQueues: DomainQueues, StepActor: DomainLeases}
 
 // Steps reports every step: done (nothing to do), needed (a plan is available), blocked (needed
 // but cannot be planned yet, with the reason) or unavailable (the tool is not here).
@@ -327,6 +342,13 @@ func (s *Setup) Steps(ctx context.Context) []StepInfo {
 		case s.guiders[d] == nil:
 			info.State, info.Message = "unavailable", d.Title()+": abacus's own tool for this is unavailable (see `abacus doctor`)"
 		case g == nil:
+		case g.Step == StepRepair: // never part of `setup --yes`: only `setup --repair` applies it
+			info.Step, info.State, info.Message = StepRepair, "repair", g.CLILine()
+			if p, err := s.Plan(StepRepair); err != nil {
+				info.State, info.Message = "blocked", g.Message+": "+err.Error()
+			} else {
+				info.Lines, info.Command = p.Lines, DisplayArgv(p.Argv)
+			}
 		default:
 			info.Message = g.CLILine()
 			if p, err := s.Plan(id); err != nil {

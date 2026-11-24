@@ -58,8 +58,11 @@ type guidedSection struct {
 
 // stepKey is the key that starts a setup step; keys are a front-end choice, not data.
 func stepKey(step core.StepID) string {
-	if step == core.StepWorkspace {
+	switch step {
+	case core.StepWorkspace:
 		return "i"
+	case core.StepRepair:
+		return "r"
 	}
 	return "s"
 }
