@@ -407,6 +407,17 @@
           "last_activity": "2026-11-24T08:58:25Z",
           "tokens": 4321,
           "context_pct": 18,
+          "context_tokens": 36000,
+          "context_window": 200000,
+          "turn_tokens": [
+            900,
+            1500,
+            1921
+          ],
+          "git": {
+            "added": 0,
+            "modified": 0
+          },
           "term": {
             "kind": "tmux pane",
             "ref": "work:2.1",
@@ -447,6 +458,32 @@
           "last_activity": "2026-11-24T08:59:56Z",
           "tokens": 152300,
           "context_pct": 72,
+          "context_tokens": 144000,
+          "context_window": 200000,
+          "turn_tokens": [
+            4200,
+            6100,
+            5300,
+            9800,
+            7400,
+            12100,
+            8800,
+            15200,
+            11000,
+            6900,
+            13400,
+            18700,
+            9500,
+            21000,
+            14200,
+            8100,
+            16800,
+            12500
+          ],
+          "git": {
+            "added": 2,
+            "modified": 5
+          },
           "term": {
             "kind": "tmux pane",
             "ref": "work:1.0",
@@ -543,12 +580,17 @@
           "five_hour_pct": 35,
           "five_hour_resets_at": "2026-11-24T10:30:00Z",
           "seven_day_pct": 12,
-          "seven_day_resets_at": "2026-11-27T09:00:00Z"
+          "seven_day_resets_at": "2026-11-27T09:00:00Z",
+          "updated_at": "2026-11-24T08:59:00Z"
         },
         {
           "harness": "codex",
           "five_hour_pct": 88,
-          "five_hour_resets_at": "2026-11-24T09:25:00Z"
+          "five_hour_resets_at": "2026-11-24T09:25:00Z",
+          "seven_day_pct": 41,
+          "updated_at": "2026-11-24T08:20:00Z",
+          "long_window_minutes": 43200,
+          "stale": true
         }
       ],
       "orphan_ports": [

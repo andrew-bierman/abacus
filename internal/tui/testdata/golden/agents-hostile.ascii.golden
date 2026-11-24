@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Agents]  5/6
+sort: attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────╮
+│ Codex (waiting)                      │
+│ state guessed from transcript, not … │
+│                                      │
+│ task       x[2J]0;pwnedtxty 日本語   │
+│            [redacted] --token        │
+│            [redacted]                │
+│   ↕ +14 more                         │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  5/6
+────────────────────────────────────────
+x[2J]0;pwnedtxty 日本語 [redacted] --to…
+sort: attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────╮
+│ Codex (waiting)                      │
+│ state guessed from transcript, not … │
+│                                      │
+│ task       x[2J]0;pwnedtxty 日本語   │
+│            [redacted] --token        │
+│            [redacted]                │
+│            x[2J]0;pwnedtxty 日本語   │
+│            [redacted] --token        │
+│            [redacted]                │
+│ where      x[2J]0;pwnedtxty 日本語 … │
+│ directory  /work/x[2J]0;pwnedtxty …  │
+│ agent      x[2J]0;pwnedtxty 日本語 … │
+│ last seen  0s ago                    │
+│ changes    1048576 added  3 modified │
+│ context    ▰▰▰▰▰▰▱▱▱▱▱▱ 50%  109951… │
+│ turns      ▁█▁▁  last 7  peak 11258… │
+│ seen by    transcript                │
+│                                      │
+│ Subagents                            │
+│  └─ x[2J]0;pwnedtxty 日本語 [redact… │
+╰──────────────────────────────────────╯
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+sort: attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────────────────────────────────────────────╮
+│ Codex (waiting)                                                              │
+│ state guessed from transcript, not reported by the agent                     │
+│                                                                              │
+│ task       x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]             │
+│            x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]             │
+│ where      x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]@x[2J]0;pwn… │
+│   ↕ +10 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]  5h ▰▰▰▰▱▱▱▱ 50%  stale
+sort: attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────────────────────────────────────────────╮
+│ Codex (waiting)                                                              │
+│ state guessed from transcript, not reported by the agent                     │
+│                                                                              │
+│ task       x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]             │
+│            x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]             │
+│ where      x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]@x[2J]0;pwn… │
+│ directory  /work/x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]       │
+│ agent      x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]  pid 4242   │
+│ last seen  0s ago                                                            │
+│ changes    1048576 added  3 modified                                         │
+│ context    ▰▰▰▰▰▰▱▱▱▱▱▱ 50%  1099511.6M of 2199023.3M                        │
+│ turns      ▁█▁▁  last 7  peak 1125899906.8M                                  │
+│ seen by    transcript                                                        │
+│                                                                              │
+│ Subagents                                                                    │
+│  └─ x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]  x[2J]0;pwnedtxty… │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+sort: attention  ~ guessed from files
+╭─ ▸ Agents 1 ─────────────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ ◐ waiting~  Codex  x[2J]0;pwnedtxty …   x[2J]0;pwne…  0s  ▰▰▱▱ 50% │ │ Codex (waiting)                             │
+│                                                                      │ │ state guessed from transcript, not reporte… │
+│                                                                      │ │                                             │
+│                                                                      │ │ task       x[2J]0;pwnedtxty 日本語          │
+│                                                                      │ │            [redacted] --token [redacted]    │
+│                                                                      │ │            x[2J]0;pwnedtxty 日本語          │
+│                                                                      │ │   ↕ +12 more                                │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]  5h ▰▰▰▰▱▱▱▱ 50%  stale
+sort: attention  ~ guessed from files
+╭─ ▸ Agents 1 ─────────────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ ◐ waiting~  Codex  x[2J]0;pwnedtxty …   x[2J]0;pwne…  0s  ▰▰▱▱ 50% │ │ Codex (waiting)                             │
+│                                                                      │ │ state guessed from transcript, not reporte… │
+│                                                                      │ │                                             │
+│                                                                      │ │ task       x[2J]0;pwnedtxty 日本語          │
+│                                                                      │ │            [redacted] --token [redacted]    │
+│                                                                      │ │            x[2J]0;pwnedtxty 日本語          │
+│                                                                      │ │            [redacted] --token [redacted]    │
+│                                                                      │ │ where      x[2J]0;pwnedtxty 日本語 [redact… │
+│                                                                      │ │ directory  /work/x[2J]0;pwnedtxty 日本語 [… │
+│                                                                      │ │ agent      x[2J]0;pwnedtxty 日本語 [redact… │
+│                                                                      │ │ last seen  0s ago                           │
+│                                                                      │ │ changes    1048576 added  3 modified        │
+│                                                                      │ │ context    ▰▰▰▰▰▰▱▱▱▱▱▱ 50%  1099511.6M of… │
+│                                                                      │ │ turns      ▁█▁▁  last 7  peak 1125899906.8M │
+│                                                                      │ │ seen by    transcript                       │
+│                                                                      │ │                                             │
+│                                                                      │ │ Subagents                                   │
+│                                                                      │ │  └─ x[2J]0;pwnedtxty 日本語 [redacted] --t… │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────
+sort: attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────────────────────────╮
+│ Codex (waiting)                                          │
+│ state guessed from transcript, not reported by the agent │
+│                                                          │
+│ task       x[2J]0;pwnedtxty 日本語 [redacted] --token    │
+│            [redacted] x[2J]0;pwnedtxty 日本語 [redacted… │
+│            --token [redacted]                            │
+│ where      x[2J]0;pwnedtxty 日本語 [redacted] --token [… │
+│ directory  /work/x[2J]0;pwnedtxty 日本語 [redacted] --t… │
+│ agent      x[2J]0;pwnedtxty 日本語 [redacted] --token [… │
+│ last seen  0s ago                                        │
+│ changes    1048576 added  3 modified                     │
+│ context    ▰▰▰▰▰▰▱▱▱▱▱▱ 50%  1099511.6M of 2199023.3M    │
+│ turns      ▁█▁▁  last 7  peak 1125899906.8M              │
+│ seen by    transcript                                    │
+│                                                          │
+│ Subagents                                                │
+│  └─ x[2J]0;pwnedtxty 日本語 [redacted] --token [redacte… │
+╰──────────────────────────────────────────────────────────╯
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+x[2J]0;pwnedtxty 日本語 [redacted] --token [redacted]  5h ▰▰▰▰▱▱▱▱ 50%  stale
+sort: attention  ~ guessed from files
+╭─ ▸ Agents 1 ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
+│ ▸ ◐ waiting~  Codex  x[2J]0;pwnedtxty…  x[2J]0;pwne…  0s │ │ Codex (waiting)                     │
+│                                                          │ │ state guessed from transcript, not… │
+│                                                          │ │                                     │
+│                                                          │ │ task       x[2J]0;pwnedtxty 日本語  │
+│                                                          │ │            [redacted] --token       │
+│                                                          │ │            [redacted]               │
+│                                                          │ │            x[2J]0;pwnedtxty 日本語  │
+│                                                          │ │            [redacted] --token       │
+│                                                          │ │            [redacted]               │
+│                                                          │ │ where      x[2J]0;pwnedtxty 日本語… │
+│                                                          │ │ directory  /work/x[2J]0;pwnedtxty … │
+│                                                          │ │ agent      x[2J]0;pwnedtxty 日本語… │
+│                                                          │ │ last seen  0s ago                   │
+│                                                          │ │ changes    1048576 added  3 modifi… │
+│                                                          │ │ context    ▰▰▰▰▰▰▱▱▱▱▱▱ 50%  10995… │
+│                                                          │ │ turns      ▁█▁▁  last 7  peak 1125… │
+│                                                          │ │ seen by    transcript               │
+│                                                          │ │                                     │
+│                                                          │ │ Subagents                           │
+│                                                          │ │  └─ x[2J]0;pwnedtxty 日本語 [redac… │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort …

@@ -14,8 +14,8 @@
 === 40x30 ===
  [Agents]  5/6
 ────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41…
 1 port still open after their agent end…
 /orchard  sort: attention  ~ guessed fr…
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────╮
@@ -58,8 +58,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 === 80x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 /orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────────────╮
@@ -96,14 +96,14 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 │                                                                      │ │            orchard report                   │
 │                                                                      │ │ where      orchard@feat/pear-counter        │
 │                                                                      │ │ directory  /work/orchard                    │
-│                                                                      │ │   ↕ +18 more                                │
+│                                                                      │ │   ↕ +20 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
 === 120x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 /orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
@@ -115,7 +115,9 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                                      │ │ directory  /work/orchard                    │
 │                                                                      │ │ agent      claude-demo-1  pid 41022         │
 │                                                                      │ │ last seen  4s ago  152300 tokens            │
-│                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                 │
+│                                                                      │ │ changes    2 added  5 modified              │
+│                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k of 200k   │
+│                                                                      │ │ turns      ▃▆▄▃▅▇▄█▅▃▆▅  last 12k  peak 21k │
 │                                                                      │ │ seen by    monitor                          │
 │                                                                      │ │ terminal lookup skipped: another agent sha… │
 │                                                                      │ │ tmux pane  work:1.0                         │
@@ -125,9 +127,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                                      │ │  ├─ Survey the orchard  done  12400 tok     │
 │                                                                      │ │  └─ Check the harvest tests  working  8200… │
 │                                                                      │ │                                             │
-│                                                                      │ │ Ports                                       │
-│                                                                      │ │   5173  node dev-server.js                  │
-│                                                                      │ │   ↕ +4 more                                 │
+│                                                                      │ │   ↕ +6 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
 === 60x24 ===
@@ -158,8 +158,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 === 100x32 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 /orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
@@ -171,7 +171,9 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                          │ │ directory  /work/orchard            │
 │                                                          │ │ agent      claude-demo-1  pid 41022 │
 │                                                          │ │ last seen  4s ago  152300 tokens    │
-│                                                          │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%         │
+│                                                          │ │ changes    2 added  5 modified      │
+│                                                          │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k … │
+│                                                          │ │ turns      ▆▄█▆  last 12k  peak 21k │
 │                                                          │ │ seen by    monitor                  │
 │                                                          │ │ terminal lookup skipped: another a… │
 │                                                          │ │ tmux pane  work:1.0                 │
@@ -183,8 +185,6 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                          │ │                                     │
 │                                                          │ │ Ports                               │
 │                                                          │ │   5173  node dev-server.js          │
-│                                                          │ │                                     │
-│                                                          │ │ Child processes                     │
-│                                                          │ │   ↕ +2 more                         │
+│                                                          │ │   ↕ +4 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state …

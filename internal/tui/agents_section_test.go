@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -129,5 +131,56 @@ func TestAgentItemIsNamedByWorktreeOrRepoAndNeverGuessed(t *testing.T) {
 		if ok != (c.want != "") || it.ID != c.want || (ok && it.Kind != core.WorkspaceAgent) {
 			t.Errorf("%+v: %+v %v, want %q", c.a, it, ok, c.want)
 		}
+	}
+}
+
+// The tab defends itself too: a report that skipped core's cleaning still reaches the screen safe.
+func TestAgentsHostileTextNeverReachesTheScreenEvenUncleaned(t *testing.T) {
+	r := core.AgentsReport{Header: core.Header{Domain: core.DomainAgents, Title: "Agents", State: core.Connected, Source: core.SourceLive},
+		Agents: hostileAgentsRaw(), RateLimits: []core.RateLimit{{Harness: hostileText, FiveHourPct: ptrF(50), Stale: true}}}
+	for _, w := range []int{40, 60, 120} {
+		m := sized(New(nil, WithTheme(asciiTheme()), WithFullView(noFullView)), w, 30)
+		m, _ = m.Update(agentsMsg{report: r})
+		m = press(m, "5")
+		hostileOK(t, "list", m.View(), w)
+		hostileOK(t, "detail", press(m, "enter").View(), w)
+	}
+}
+
+func TestAgentsDetailShowsContextTurnsChangesAndStaleLimits(t *testing.T) {
+	v := agentsModel(t, fixtureAgents())
+	strip := v.View()
+	if !strings.Contains(strip, "7d") || !strings.Contains(strip, "↻") || !strings.Contains(strip, "30d") || !strings.Contains(strip, "stale") {
+		t.Fatalf("a fresh limit has a countdown, a long window its own name, an old one is marked:\n%s", strip)
+	}
+	for _, ln := range strings.Split(strip, "\n") {
+		if strings.Contains(ln, "Codex") && strings.Contains(ln, "↻") {
+			t.Fatalf("a stale limit drops its countdown: %q", ln)
+		}
+	}
+	m := press(press(v, "j"), "j") // the running agent
+	d := press(m, "enter").View()
+	if !strings.Contains(d, "144k of 200k") || !strings.Contains(d, "turns") || !strings.Contains(d, "peak 21k") || !strings.Contains(d, "2 added  5 modified") {
+		t.Fatalf("detail:\n%s", d)
+	}
+}
+
+func TestSparkAndTokenText(t *testing.T) {
+	if got := spark([]int64{0, 5, 10}, 8); got != "▁▄█" {
+		t.Fatalf("%q", got)
+	}
+	if got := spark([]int64{1, 2, 3, 4}, 2); got != "▅█" && got != "▆█" {
+		t.Fatalf("only the newest points fit: %q", got)
+	}
+	if spark(nil, 5) != "" || spark([]int64{1}, 0) != "" || spark([]int64{0, 0}, 4) != "▁▁" {
+		t.Fatal("empty and flat series")
+	}
+	for n, want := range map[int64]string{950: "950", 1200: "1.2k", 84_000: "84k", 1_500_000: "1.5M"} {
+		if tokenText(n) != want {
+			t.Errorf("%d: %s", n, tokenText(n))
+		}
+	}
+	if shortDuration(90*time.Second) != "1m" || shortDuration(3*time.Hour) != "3h" || shortDuration(72*time.Hour) != "3d" || shortDuration(time.Second) != "1m" {
+		t.Fatal("durations")
 	}
 }

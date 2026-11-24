@@ -352,6 +352,11 @@ func scenarios() []scenario {
 			m, _ = m.Update(agentsMsg{report: r})
 			return m
 		}},
+		{name: "agents-hostile", notGrid: true, tab: "Agents", extra: framedSizes, keys: []string{"5", "enter"}, build: func(t *testing.T, th Theme) tea.Model {
+			m := load(t, th, nil)
+			m, _ = m.Update(agentsMsg{report: hostileAgents()})
+			return m
+		}},
 		{name: "agents-absent", tab: "Agents", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
 			var m tea.Model = New(nil, WithTheme(th), WithFullView(noFullView))
 			m, _ = m.Update(agentsMsg{report: core.ReadAgents(context.Background(), nil)})
@@ -610,3 +615,31 @@ func fixtureAgents() core.AgentsReport {
 	f := agentsFeed{named{&modtest.Fake{IDStr: "agents", Det: core.Detection{State: core.Ready}}, "agents"}}
 	return core.ReadAgents(context.Background(), []core.Entry{{Module: f, Detection: f.Det}})
 }
+
+// hostileAgents is a report whose every outside string tries to do something to the terminal, read
+// through core's door (ReadAgents) like a real one; hostileAgentsRaw skips the door.
+func hostileAgents() core.AgentsReport {
+	f := hostileFeed{named{&modtest.Fake{IDStr: "agents", Det: core.Detection{State: core.Ready}}, "agents"}}
+	return core.ReadAgents(context.Background(), []core.Entry{{Module: f, Detection: f.Det}})
+}
+
+type hostileFeed struct{ named }
+
+const hostileText = "x\x1b[2J\x1b]0;pwned\x07\u202etxt\u200b\u200d\ufeff\x00y 日本語 sk-abcdefghijklmnop12345 --token hunter2"
+
+func hostileAgentsRaw() []core.Agent {
+	i64 := func(v int64) *int64 { return &v }
+	return []core.Agent{{
+		ID: hostileText, Harness: core.HarnessCodex, PID: 4242, Repo: hostileText, Branch: hostileText, Cwd: "/work/" + hostileText, Model: hostileText,
+		State: core.AgentWaiting, Source: core.EvidenceTranscript, Task: hostileText + "\n" + hostileText, LastActivity: "2026-11-24T08:59:00Z",
+		ContextTokens: i64(1 << 40), ContextWindow: i64(1 << 41), TurnTokens: []int64{1, 1 << 50, 0, 7},
+		Git:  &core.AgentGit{Added: 1 << 20, Modified: 3},
+		Subs: []core.Subagent{{Name: hostileText, State: hostileText}},
+	}}
+}
+
+func (hostileFeed) Agents(context.Context) ([]core.Agent, core.AgentsExtra, error) {
+	return hostileAgentsRaw(), core.AgentsExtra{RateLimits: []core.RateLimit{{Harness: hostileText, FiveHourPct: ptrF(50), FiveHourResets: hostileText, UpdatedAt: hostileText, Stale: true}}}, nil
+}
+
+func ptrF(v float64) *float64 { return &v }

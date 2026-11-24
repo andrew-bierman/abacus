@@ -84,15 +84,21 @@ func renderAgents(w io.Writer, r core.AgentsReport, now time.Time) {
 		if a.ContextPct != nil {
 			ctxPct = fmt.Sprintf("  ctx %.0f%%", *a.ContextPct)
 		}
+		if g := a.Git; g != nil && g.Added+g.Modified > 0 {
+			ctxPct += fmt.Sprintf("  %d new, %d changed", g.Added, g.Modified)
+		}
 		fmt.Fprintf(w, "  %-8s%s %-11s %-30s %-5s %s%s  (%s)\n", a.State, mark, a.Title(), where, orDashStr(a.Age(now)), a.Task, ctxPct, a.Source)
 	}
 	for _, l := range r.RateLimits {
 		s := "  limits " + core.Sanitize(core.HarnessTitle(l.Harness))
 		if l.FiveHourPct != nil {
-			s += fmt.Sprintf("  5h %.0f%%", *l.FiveHourPct)
+			s += fmt.Sprintf("  %s %.0f%%", core.WindowLabel(l.ShortWindowMinutes, "5h"), *l.FiveHourPct)
 		}
 		if l.SevenDayPct != nil {
-			s += fmt.Sprintf("  7d %.0f%%", *l.SevenDayPct)
+			s += fmt.Sprintf("  %s %.0f%%", core.WindowLabel(l.LongWindowMinutes, "7d"), *l.SevenDayPct)
+		}
+		if l.Stale {
+			s += "  (stale)"
 		}
 		fmt.Fprintln(w, s)
 	}
