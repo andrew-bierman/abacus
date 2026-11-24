@@ -89,33 +89,32 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
-│ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
-│                                                                      │ │ line 00 of a long message that goes on and  │
-│ Channels                                                             │ │ on                                          │
-│ dev/web (3) · work (3) · dev (1) · ops                               │ │ line 01 of a long message that goes on and  │
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ line 00 of a long message that goes on and  │
 │                                                                      │ │ on                                          │
-│ Recent threads                                                       │ │ line 02 of a long message that goes on and  │
-│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ on                                          │
-│   ↕ +5 more                                                          │ │ ↕ 1-7 of 87: pgup/pgdn                      │
+│ Channels                                                             │ │ line 01 of a long message that goes on and  │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ on                                          │
+│                                                                      │ │ line 02 of a long message that goes on and  │
+│ Recent threads                                                       │ │ on                                          │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ line 03 of a long message that goes on and  │
+│   ↕ +5 more                                                          │ │ ↕ 2-8 of 87: pgup/pgdn                      │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
-│ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
-│                                                                      │ │ line 00 of a long message that goes on and  │
-│ Channels                                                             │ │ on                                          │
-│ dev/web (3) · work (3) · dev (1) · ops                               │ │ line 01 of a long message that goes on and  │
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ line 00 of a long message that goes on and  │
 │                                                                      │ │ on                                          │
-│ Recent threads                                                       │ │ line 02 of a long message that goes on and  │
-│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ on                                          │
-│    #2   dev      ada  16h  deploys are green again                   │ │ line 03 of a long message that goes on and  │
-│                                                                      │ │ on                                          │
-│ Tasks                                                                │ │ line 04 of a long message that goes on and  │
-│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │ on                                          │
-│    #6   ready    -              review the fix                       │ │ line 05 of a long message that goes on and  │
-│                                                                      │ │ on                                          │
+│ Channels                                                             │ │ line 01 of a long message that goes on and  │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ on                                          │
+│                                                                      │ │ line 02 of a long message that goes on and  │
+│ Recent threads                                                       │ │ on                                          │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ line 03 of a long message that goes on and  │
+│    #2   dev      ada  16h  deploys are green again                   │ │ on                                          │
+│                                                                      │ │ line 04 of a long message that goes on and  │
+│ Tasks                                                                │ │ on                                          │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │ line 05 of a long message that goes on and  │
+│    #6   ready    -              review the fix                       │ │ on                                          │
 │                                                                      │ │ line 06 of a long message that goes on and  │
 │                                                                      │ │ on                                          │
 │                                                                      │ │ line 07 of a long message that goes on and  │
@@ -127,7 +126,8 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │                                                                      │ │ line 10 of a long message that goes on and  │
 │                                                                      │ │ on                                          │
 │                                                                      │ │ line 11 of a long message that goes on and  │
-│                                                                      │ │ ↕ 1-24 of 87: pgup/pgdn                     │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ ↕ 2-25 of 87: pgup/pgdn                     │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
 === 60x24 ===
@@ -159,19 +159,18 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────╮
-│ 4 channels, 2 recent threads, 2 open tasks               │ │ #15 in dev/web by ada Nov 22 20:12  │
-│                                                          │ │ line 00 of a long message that goes │
-│ Channels                                                 │ │ on and on                           │
-│ dev/web (3) · work (3) · dev (1) · ops                   │ │ line 01 of a long message that goes │
+│ 4 channels, 2 recent threads, 2 open tasks               │ │ line 00 of a long message that goes │
 │                                                          │ │ on and on                           │
-│ Recent threads                                           │ │ line 02 of a long message that goes │
-│ ▸  #15  dev/web  ada  15h  line 00 of a long message th… │ │ on and on                           │
-│    #2   dev      ada  16h  deploys are green again       │ │ line 03 of a long message that goes │
-│                                                          │ │ on and on                           │
-│ Tasks                                                    │ │ line 04 of a long message that goes │
-│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │ │ on and on                           │
-│    #6   ready    -              review the fix           │ │ line 05 of a long message that goes │
-│                                                          │ │ on and on                           │
+│ Channels                                                 │ │ line 01 of a long message that goes │
+│ dev/web (3) · work (3) · dev (1) · ops                   │ │ on and on                           │
+│                                                          │ │ line 02 of a long message that goes │
+│ Recent threads                                           │ │ on and on                           │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message th… │ │ line 03 of a long message that goes │
+│    #2   dev      ada  16h  deploys are green again       │ │ on and on                           │
+│                                                          │ │ line 04 of a long message that goes │
+│ Tasks                                                    │ │ on and on                           │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │ │ line 05 of a long message that goes │
+│    #6   ready    -              review the fix           │ │ on and on                           │
 │                                                          │ │ line 06 of a long message that goes │
 │                                                          │ │ on and on                           │
 │                                                          │ │ line 07 of a long message that goes │
@@ -185,6 +184,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.
 │                                                          │ │ line 11 of a long message that goes │
 │                                                          │ │ on and on                           │
 │                                                          │ │ line 12 of a long message that goes │
-│                                                          │ │ ↕ 1-26 of 87: pgup/pgdn             │
+│                                                          │ │ on and on                           │
+│                                                          │ │ ↕ 2-27 of 87: pgup/pgdn             │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh …
