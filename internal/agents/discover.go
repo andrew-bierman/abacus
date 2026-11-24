@@ -3,7 +3,6 @@ package agents
 import (
 	"context"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -11,27 +10,9 @@ import (
 // cannot make a single read unbounded.
 const maxChildren = 64
 
-// harnessBinaries maps the executable an agent runs as to its harness. A process whose
-// basename is not here is not a session, which keeps every other node/python/go process out
-// without parsing arguments.
-var harnessBinaries = map[string]Harness{
-	"claude":       HarnessClaude,
-	"claude-code":  HarnessClaude,
-	"codex":        HarnessCodex,
-	"opencode":     HarnessOpenCode,
-	"opencode-cli": HarnessOpenCode,
-	"pi":           HarnessPi,
-}
-
 // HarnessFor names the harness a process is, if it is one.
-//
-// A trailing ".exe" is stripped because the same agent ships that name on several platforms
-// and package layouts: on this machine opencode runs as "opencode.exe" out of its node
-// package, and Claude is shipped as "claude.exe" in some installs. The suffix carries no
-// meaning about which product it is.
 func HarnessFor(p Proc) (Harness, bool) {
-	name := strings.TrimSuffix(p.Name, ".exe")
-	h, ok := harnessBinaries[name]
+	h, ok := harnessByBinary[binaryKey(p.Name)]
 	return h, ok
 }
 

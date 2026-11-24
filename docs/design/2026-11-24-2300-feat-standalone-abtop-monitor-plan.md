@@ -69,7 +69,7 @@ Work continues on `feat/agents-sessions`, landing with pull request #57.
 
 The loop works the first unchecked item. Tick one per pass.
 
-- [ ] `harness.go`: `HarnessSpec` registry; discovery consults it instead of a hardcoded map
+- [x] `harness.go`: `HarnessSpec` registry; discovery consults it instead of a hardcoded map
 - [ ] `jsonl_spec.go`: generic JSONL adapter (dotted-path mapping, additive vs cumulative usage)
 - [ ] port the three existing JSONL readers onto the generic adapter, deleting the duplication
 - [ ] `grok` adapter (verified against the store on this machine)
@@ -101,3 +101,14 @@ abtop; logic packages import no UI; never force-push, never merge, never commit 
 
 A pass that claims support for an agent must say how it was verified: a real store, or a
 fixture with the source format documented.
+
+## Pass log
+
+One line per completed item: what it did and how it was verified.
+
+- harness registry — added `internal/agents/harness.go` with `HarnessSpec` (name, binaries, roots,
+  kind), the declaration table and a binary index derived from it, and made `HarnessFor` read the
+  index instead of `harnessBinaries`; `go build ./...`, `go vet ./...` and `go test ./...` pass,
+  explicit contract tests pin a dropped alias, a normalized `.exe` duplicate and a wrong store
+  root (each mutation fails as intended); review residual: `Roots`/`Kind` are declared and tested
+  but consumed by the adapter items.
