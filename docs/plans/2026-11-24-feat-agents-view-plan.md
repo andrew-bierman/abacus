@@ -326,6 +326,7 @@ Each unit is one commit-sized reviewable step in this order. Test files are name
   not touch `internal/rex` or `core/workspace*.go`. Mitigation: rebase after it merges and regenerate goldens with
   `-update` rather than resolve by hand; if it lands first this plan moves to `docs/design/`; keep README and
   tool-contract edits small and local.
+- `README.md` also conflicts with `origin/docs/readme-polish` (+384/-287). Say so in the PR description and merge the README hunk last; the golden regenerate after #44 is UNTESTED and not yet done.
 - `abacus-24` may be working in the primary checkout; scope unknown, not contacted. All work is in the
   `agents-view` worktree.
 - The workspace layer (#23, #27) is already on main; `feat/workspace-rex-core` and `feat/tui-workspace` are older

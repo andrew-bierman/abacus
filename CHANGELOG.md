@@ -37,6 +37,7 @@ The honest caveats:
 - UNTESTED: that `program_status` and `process` never wake an idle terminal (Rex documents that only
   for two other methods). Assumed they might, so they are bounded (4 s sweep budget, 8 at a time, one
   sweep at a time, a per-host breaker, 5 to 60 s polling only while the tab is visible).
+- UNTESTED / overlap: `README.md` conflicts with `docs/readme-polish` (and `origin/main` has moved docs in 0ef1603); merge the README hunk last. If draft PR #44 lands first, this branch needs a rebase, the plan moves to `docs/design/`, and the TUI goldens (about 35) must be regenerated with `-update`. Not yet done.
 - UNTESTED: `-S HOST` for these calls (no remote host was contacted), the cost of an unreachable host,
   remote clock skew, the revision window 10 to 13 for these methods, and real claude and codex process
   names. Tested live on rex 0.1.0-preview.22, API revision 19, on throwaway sessions only.
