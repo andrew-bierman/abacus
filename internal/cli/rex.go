@@ -48,8 +48,7 @@ func runRex(args []string, d Deps) int {
 	defer cancel()
 	w := core.ResolveProviders(d.Build(Options{}).Detect(ctx)).Placer
 	if w == nil {
-		fmt.Fprintf(d.Err, "rex layout: not connected to a terminal workspace. Rex is optional; when a Rex server is running, or abacus runs inside a Rex terminal, this opens the cockpit tabs in it.\n")
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "rex layout: not connected to a terminal workspace. Rex is optional; when a Rex server is running, or abacus runs inside a Rex terminal, this opens the cockpit tabs in it.\n")
 	}
 	plan, err := core.PlanPlacement(ctx, w, core.PlacementRequest{Action: core.PlaceLayout, Exe: exe, Cwd: cwd, NewSession: name})
 	if err != nil {

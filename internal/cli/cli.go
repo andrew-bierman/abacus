@@ -72,8 +72,23 @@ exit codes: 0 ok, 1 something failed or is not ready, 2 usage error
 
 func usage(d Deps) { fmt.Fprint(d.Err, usageText()) }
 
-// Run dispatches a command and returns the process exit code.
+// Run dispatches a command and returns the process exit code. A command that fails with --json
+// also prints one JSON error document (see errors.go).
 func Run(args []string, d Deps) int {
+	if d.Err == nil {
+		d.Err = io.Discard
+	}
+	if d.Out == nil {
+		d.Out = io.Discard
+	}
+	s, o := &sink{w: d.Err}, &counter{w: d.Out}
+	d.Err, d.Out = s, o
+	code := run(args, d)
+	finishError(args, code, s, o)
+	return code
+}
+
+func run(args []string, d Deps) int {
 	if len(args) == 0 {
 		usage(d)
 		return core.ExitUsage

@@ -289,8 +289,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	entries := d.Build(o).Detect(ctx)
 	w := core.ResolveProviders(entries).Writer
 	if w == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	if ch.Status != "" && !slices.Contains(core.TaskStatuses, ch.Status) {
 		fmt.Fprintf(d.Err, "tasks %s: status must be one of %s (use close to close)\n", verb, strings.Join(core.TaskStatuses, ", "))
@@ -299,13 +298,11 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if ch.Status != "" { // a status change names the status the task has now, read here, so a change by someone else is refused
 		r := core.ResolveProviders(entries).Reader
 		if r == nil {
-			fmt.Fprintf(d.Err, "tasks %s: cannot read the task's current status, so --status is not available\n", verb)
-			return core.ExitFail
+			return failf(d, core.CodeUnsupported, "tasks %s: cannot read the task's current status, so --status is not available\n", verb)
 		}
 		cur, err := r.ReadTask(ctx, ch.ID)
 		if err != nil {
-			fmt.Fprintf(d.Err, "tasks %s: could not read %s first: %s\n", verb, core.Sanitize(ch.ID), core.Sanitize(err.Error()))
-			return core.ExitFail
+			return failf(d, core.CodeFor(err), "tasks %s: could not read %s first: %s\n", verb, core.Sanitize(ch.ID), core.Sanitize(err.Error()))
 		}
 		ch.IfStatus, ch.Before = cur.Status, cur
 		// naming the status it already has is not a change: drop it (and its guard) when other fields
@@ -367,8 +364,7 @@ func runWrite(d Deps, f writeFlow) int {
 		fmt.Fprint(d.Err, f.prompt)
 		if !confirmed(d.In) {
 			fmt.Fprintln(d.Err)
-			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
-			return core.ExitFail
+			return failf(d, core.CodeRefused, "not applied: the change was not confirmed\n")
 		}
 	}
 	au := d.Audit
@@ -377,8 +373,7 @@ func runWrite(d Deps, f writeFlow) int {
 	}
 	res, done, err := f.apply(au)
 	if err != nil {
-		fmt.Fprintf(d.Err, "%s: %s\n", f.label, core.DescribeWriteError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "%s: %s\n", f.label, core.DescribeWriteError(err))
 	}
 	if f.asJSON {
 		jsonOut(d.Out, struct {
@@ -453,8 +448,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	defer cancel()
 	w := core.ResolveProviders(d.Build(o).Detect(ctx)).BoardWriter
 	if w == nil {
-		fmt.Fprintf(d.Err, "board: not connected. %s\n", core.HowToConnectFor(core.DomainBoard))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "board: not connected. %s\n", core.HowToConnectFor(core.DomainBoard))
 	}
 	plan, err := core.PlanBoardChange(w, ch)
 	if err != nil {

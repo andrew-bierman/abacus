@@ -105,19 +105,16 @@ func runTaskBulk(rest []string, d Deps) int {
 	pr := core.ResolveProviders(d.Build(o).Detect(ctx))
 	w, r := pr.Writer, pr.Reader
 	if w == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	if r == nil {
-		fmt.Fprintln(d.Err, "tasks bulk: cannot read the tasks' current state, so they cannot be changed safely")
-		return core.ExitFail
+		return failf(d, core.CodeUnsupported, "tasks bulk: cannot read the tasks' current state, so they cannot be changed safely\n")
 	}
 	targets := make([]core.Task, 0, len(list))
 	for _, id := range list {
 		t, err := r.ReadTask(ctx, id)
 		if err != nil {
-			fmt.Fprintf(d.Err, "tasks bulk: could not read %s first: %s\n", core.Sanitize(id), core.Sanitize(err.Error()))
-			return core.ExitFail
+			return failf(d, core.CodeFor(err), "tasks bulk: could not read %s first: %s\n", core.Sanitize(id), core.Sanitize(err.Error()))
 		}
 		if t.ID != id { // the tracker resolved a prefix or alias: only whole ids go in a batch
 			fmt.Fprintf(d.Err, "tasks bulk: %s is not a whole task id (it resolves to %s): use the full id\n", core.Sanitize(id), core.Sanitize(t.ID))
@@ -160,8 +157,7 @@ func runTaskBulk(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "Apply %s? [y/N] ", core.Plural(len(plan.Items), "change"))
 		if !confirmed(d.In) {
 			fmt.Fprintln(d.Err)
-			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
-			return core.ExitFail
+			return failf(d, core.CodeRefused, "not applied: the change was not confirmed\n")
 		}
 	}
 	au := d.Audit
@@ -172,8 +168,7 @@ func runTaskBulk(rest []string, d Deps) int {
 	defer acancel()
 	rep, err := core.NewApplier(w, au).ApplyBulk(actx, plan.Confirm(), r)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks bulk: %s\n", core.DescribeWriteError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "tasks bulk: %s\n", core.DescribeWriteError(err))
 	}
 	if asJSON {
 		jsonOut(d.Out, rep)

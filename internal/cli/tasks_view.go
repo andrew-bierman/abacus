@@ -100,13 +100,11 @@ func runTaskView(verb string, rest []string, d Deps) int {
 	defer cancel()
 	src := core.ResolveProviders(d.Build(o).Detect(ctx)).Source
 	if src == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	snap, err := src.Snapshot(ctx)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s: %s\n", verb, describeReadError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "tasks %s: %s\n", verb, describeReadError(err))
 	}
 	now := time.Now()
 	if d.Now != nil {
@@ -142,8 +140,7 @@ func runTaskView(verb string, rest []string, d Deps) int {
 	}
 	rep, ok := v.Detail(id)
 	if !ok {
-		fmt.Fprintf(d.Err, "tasks show: no task %q\n", core.Sanitize(id))
-		return core.ExitFail
+		return failf(d, core.CodeNotFound, "tasks show: no task %q\n", core.Sanitize(id))
 	}
 	if asJSON {
 		jsonOut(d.Out, rep)

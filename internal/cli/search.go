@@ -110,8 +110,7 @@ func runSearch(rest []string, d Deps) int {
 		}
 	}
 	if searched == 0 {
-		fmt.Fprintf(d.Err, "search: no domain could be searched (%s)\n", strings.Join(unsearched(rep), "; "))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "search: no domain could be searched (%s)\n", strings.Join(unsearched(rep), "; "))
 	}
 	if asJSON {
 		jsonOut(d.Out, rep)

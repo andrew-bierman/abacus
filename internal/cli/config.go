@@ -88,8 +88,7 @@ func runConfig(rest []string, d Deps) int {
 				au = core.DefaultAudit()
 			}
 			if err := au.Record(core.AuditEntry{Time: time.Now().UTC(), Domain: "config", Verb: "set agent_command", Phase: "attempt", Argv: scratch.AgentCommand}); err != nil {
-				fmt.Fprintf(d.Err, "config: not set: %v\n", err)
-				return core.ExitFail
+				return failf(d, core.CodeAuditFailed, "config: not set: %v\n", err)
 			}
 		}
 		note, err := st.UpdateNote(func(c *core.Config) error { return c.Set(args[0], args[1]) })

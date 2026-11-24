@@ -55,6 +55,46 @@ control characters removed before any front-end sees it.
 The umbrella's own `--json` output carries `schema_version` (currently 1). Native clients should
 check it and treat a higher number as a breaking change.
 
+## Errors: stable codes
+
+A command that fails prints its plain text on stderr, as always, and exits 0/1/2 with the meanings
+above (2 is a usage error, 1 is everything else). Run with `--json`, it also prints exactly one
+document on stdout, so a client never matches prose:
+
+```json
+{"schema_version": 1, "error": {"code": "not_connected", "message": "tasks: not connected. ...", "retryable": true, "unknown_outcome": true}}
+```
+
+`retryable` and `unknown_outcome` are omitted when false. `retryable` is true only for `timeout` and
+`changed` (run it again, after re-planning for `changed`); `unknown_outcome` is true only for
+`unknown_outcome`: the write may have happened, so show "result unknown", offer a refresh and never a
+retry. `message` is the human sentence (control characters removed); do not parse it.
+
+The set is closed and typed in core (`core.ErrorCode`); a client treats a code it does not know as
+`failed`, since a new code is an additive change:
+
+| Code | Exit | Meaning |
+|---|---|---|
+| `usage` | 2 | the command line is wrong (unknown command or flag, bad value, `--json` without `--yes` or `--dry-run`); nothing ran |
+| `not_connected` | 1 | the domain has no working provider, or the provider says why it is not connected |
+| `needs_setup` | 1 | the provider is there but first-run setup is not done |
+| `not_found` | 1 | the task or other thing named does not exist (task views; a write's pre-read failure is `failed`) |
+| `refused` | 1 | abacus declined on purpose and nothing was written (not confirmed, cannot verify, the task is not in the state the verb needs) |
+| `changed` | 1 | what was planned no longer matches (the task moved, or `--expect-digest` differs from the plan made now); nothing was written, plan again |
+| `already_applied` | 1 | this plan was already applied (single use) |
+| `unknown_outcome` | 1 | the write may or may not have happened (timeout, cancel, killed) |
+| `applied_mismatch` | 1 | the write landed but the result is not the one asked for |
+| `audit_failed` | 1 | the audit log could not be written, so the write was blocked (fail closed) |
+| `timeout` | 1 | a read ran out of time or was cancelled |
+| `unsupported` | 1 | the provider does not offer what the command needs (for example it cannot read the task first) |
+| `failed` | 1 | anything else that failed |
+
+A failing command that already prints its own document keeps it and gets no error document: a
+`doctor` with a failing check (its report), a `tasks bulk` where some tasks did not apply (its batch
+report, one outcome per task), and `setup` (its steps and results). Read those, not an `error`.
+Exit codes are unchanged, and a read that finds a domain not connected still exits 0 with the state in
+the report. A command run without `--json` prints no document.
+
 ## Reference: how the umbrella uses Lambe
 
 | Surface | Command or route | Used for |

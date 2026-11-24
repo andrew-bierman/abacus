@@ -42,7 +42,7 @@ func TestConfigVerbsRoundTripAndExitCodes(t *testing.T) {
 		t.Fatalf("show --json: %d %q", code, out)
 	}
 	for _, c := range [][]string{{}, {"--json"}, {"frob"}, {"get"}, {"get", "nope"}, {"set", "nope", "x"}, {"set", "actor"}, {"path", "extra"}} {
-		if code, out, e := configRun(t, path, c...); code != 2 || out != "" || e == "" {
+		if code, out, e := configRun(t, path, c...); code != 2 || (out != "") != (len(c) > 0 && c[0] == "--json") || e == "" {
 			t.Errorf("%v: code=%d out=%q err=%q", c, code, out, e)
 		}
 	}

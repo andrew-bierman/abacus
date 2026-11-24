@@ -39,13 +39,11 @@ func runTaskGraph(rest []string, d Deps) int {
 	prov := core.ResolveProviders(d.Build(o).Detect(ctx))
 	src := prov.Source
 	if src == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	snap, err := src.Snapshot(ctx)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks graph: %s\n", describeReadError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "tasks graph: %s\n", describeReadError(err))
 	}
 	now := time.Now()
 	if d.Now != nil {
@@ -60,8 +58,7 @@ func runTaskGraph(rest []string, d Deps) int {
 	}
 	gv := taskview.NewGraphIndex(taskview.Build(snap, now)).View(taskview.GraphOptions{Focus: id, Depth: depth, Whole: whole, Insights: ins})
 	if id != "" && gv.Focus == "" {
-		fmt.Fprintf(d.Err, "tasks graph: no task %q\n", core.Sanitize(id))
-		return core.ExitFail
+		return failf(d, core.CodeNotFound, "tasks graph: no task %q\n", core.Sanitize(id))
 	}
 	if asJSON {
 		jsonOut(d.Out, gv)

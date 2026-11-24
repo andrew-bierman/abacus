@@ -124,20 +124,17 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	pr := core.ResolveProviders(entries)
 	w, r := pr.Writer, pr.Reader
 	if w == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	if r == nil {
-		fmt.Fprintf(d.Err, "tasks %s: cannot read the task's current state, so it cannot be changed safely\n", verb)
-		return core.ExitFail
+		return failf(d, core.CodeUnsupported, "tasks %s: cannot read the task's current state, so it cannot be changed safely\n", verb)
 	}
 	if !core.TaskIDRE.MatchString(ch.ID) {
 		return bad("invalid issue id %q", ch.ID)
 	}
 	cur, err := r.ReadTask(ctx, ch.ID)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s: could not read %s first: %s\n", verb, core.Sanitize(ch.ID), core.Sanitize(err.Error()))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "tasks %s: could not read %s first: %s\n", verb, core.Sanitize(ch.ID), core.Sanitize(err.Error()))
 	}
 	ch.Before, ch.Expect = cur, cur.Status
 	if ch.Op == core.TaskAssign {
@@ -146,13 +143,11 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	if verb == "dep" {
 		src := pr.Source
 		if src == nil {
-			fmt.Fprintln(d.Err, "tasks dep: cannot read the whole tracker, so the dependency cannot be checked")
-			return core.ExitFail
+			return failf(d, core.CodeUnsupported, "tasks dep: cannot read the whole tracker, so the dependency cannot be checked\n")
 		}
 		snap, err := src.Snapshot(ctx)
 		if err != nil {
-			fmt.Fprintf(d.Err, "tasks dep: could not read the tracker: %s\n", core.Sanitize(err.Error()))
-			return core.ExitFail
+			return failf(d, core.CodeFor(err), "tasks dep: could not read the tracker: %s\n", core.Sanitize(err.Error()))
 		}
 		now := time.Now()
 		if d.Now != nil {
