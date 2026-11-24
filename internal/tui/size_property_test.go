@@ -23,29 +23,37 @@ func TestEveryTabRendersWithinEverySize(t *testing.T) {
 		if sc.notGrid {
 			continue
 		}
-		for _, w := range gridWidths {
-			for _, h := range gridHeights {
-				for _, e := range invariantErrs(sc, render(t, sc, th, w, h), w, h) {
-					t.Errorf("%s %dx%d: %s", sc.name, w, h, e)
+		// One subtest per scenario, run side by side: the grid is the slowest test in the package, and
+		// every render builds its own model, so nothing is shared between them.
+		t.Run(sc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, w := range gridWidths {
+				for _, h := range gridHeights {
+					for _, e := range invariantErrs(sc, render(t, sc, th, w, h), w, h) {
+						t.Errorf("%s %dx%d: %s", sc.name, w, h, e)
+					}
 				}
 			}
-		}
+		})
 	}
 }
 
 func TestEveryTabRendersWithinEverySizeWithColor(t *testing.T) {
 	th := NewTheme(rendererFor(termenv.TrueColor, true))
 	for _, sc := range scenarios() {
-		for _, w := range []int{1, 39, 40, 60, 100, 140, 300} {
-			for _, h := range []int{1, 3, 11, 12, 24, 100} {
-				out := render(t, sc, th, w, h)
-				for i, l := range strings.Split(out, "\n") {
-					if lipgloss.Width(l) > w {
-						t.Fatalf("%s %dx%d line %d is %d wide: %q", sc.name, w, h, i, lipgloss.Width(l), l)
+		t.Run(sc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, w := range []int{1, 39, 40, 60, 100, 140, 300} {
+				for _, h := range []int{1, 3, 11, 12, 24, 100} {
+					out := render(t, sc, th, w, h)
+					for i, l := range strings.Split(out, "\n") {
+						if lipgloss.Width(l) > w {
+							t.Fatalf("%s %dx%d line %d is %d wide: %q", sc.name, w, h, i, lipgloss.Width(l), l)
+						}
 					}
 				}
 			}
-		}
+		})
 	}
 }
 

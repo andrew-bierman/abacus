@@ -96,6 +96,26 @@ Re-pinning the monitor means re-reading its `snapshot.rs` and updating the fixtu
 - Tests use fixtures and temporary directories only: every outside source (process list, files,
   terminals, the monitor) is injected, so no test reads the real `~/.claude`, `~/.codex` or process list.
 
+## Terminal kinds: tmux now, cmux and rex later (design note)
+
+`term` is `{kind, ref, command}`. `kind` is one of `tmux pane`, `cmux surface`, `rex session`; `ref` is
+the address in that tool's own terms; `command` is a line a person can copy to get there. Only
+`tmux pane` is detected today, from `tmux list-panes -a` matched to the agent's process or an ancestor.
+
+- **cmux surface**: cmux gives every terminal surface an id and a workspace, and exports them into the
+  surface's shell environment. The step is to read those variables from the agent's process (or its
+  ancestors) and emit `kind: cmux surface`, `ref: <workspace>/<surface>` and a focus command from
+  cmux's own CLI. It is read only, like the tmux match, and needs a verified list of the variable
+  names and CLI verbs before it is written; none is guessed here.
+- **rex session**: Rex already places runs, leases and tasks in terminal sessions through the
+  workspace layer (the `w` key). Agents are matched by process and directory, not by an id Rex
+  knows, so the wiring is a lookup of the agent's directory and pid ancestry against Rex's session
+  list, emitting `kind: rex session`. The jump itself should then be the same placement handoff the
+  other tabs use (confirmed, never typing into a session), with the copyable command as the fallback.
+  This waits for the Rex placement rework (PR #50) to land so it is built once, on the final seam.
+- Whatever the kind, abacus never runs `command` itself from the Agents tab, and a ref that does not
+  match the kind's expected shape is dropped rather than put in a command line.
+
 ## Later: a hook receiver (design only, not built)
 
 A harness's own hooks give the strongest evidence (`source: hook`): Claude Code and Codex can run a
