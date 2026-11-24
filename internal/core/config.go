@@ -207,16 +207,25 @@ func (s ConfigStore) UpdateNote(fn func(*Config) error) (note string, err error)
 // ConfigCheck is a module that only exists to put the config file's health in Doctor.
 type ConfigCheck struct{ store ConfigStore }
 
+// NewConfigCheck returns the module that reports on abacus's own settings file.
 func NewConfigCheck(s ConfigStore) *ConfigCheck { return &ConfigCheck{store: s} }
 
-func (*ConfigCheck) ID() string                       { return "config" }
-func (*ConfigCheck) Name() string                     { return brand.Name + " config" }
+// ID implements Module.
+func (*ConfigCheck) ID() string { return "config" }
+
+// Name implements Module.
+func (*ConfigCheck) Name() string { return brand.Name + " config" }
+
+// Detect implements Module; the settings file needs nothing installed, so it is always ready.
 func (*ConfigCheck) Detect(context.Context) Detection { return Detection{State: Ready} }
-func (*ConfigCheck) Status(context.Context) Status    { return Status{} }
+
+// Status implements Module; the settings file has no live status.
+func (*ConfigCheck) Status(context.Context) Status { return Status{} }
 
 // Quiet marks a module the overview and `version` leave out of the tool list.
 func (*ConfigCheck) Quiet() bool { return true }
 
+// Doctor reports whether the settings file can be read.
 func (m *ConfigCheck) Doctor(context.Context) []Check {
 	if _, err := m.store.Load(); err != nil {
 		fix := "fix or delete " + m.store.Path

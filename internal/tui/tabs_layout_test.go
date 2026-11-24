@@ -24,9 +24,9 @@ func leasesAt(w, h int, ls ...core.Lease) tea.Model {
 }
 
 var sampleLeases = []core.Lease{
-	{Resource: "ac-zoj", State: core.LeaseHeld, Holder: "glm-scheduler-01", ExpiresAt: "12m"},
-	{Resource: "ac-00h", State: core.LeaseHeld, Holder: "codex-macbookpro", ExpiresAt: "3m"},
-	{Resource: "ac-1k2", State: core.LeaseStale, Holder: "claude-mac"},
+	{Resource: "dm-zoj", State: core.LeaseHeld, Holder: "bot-scheduler-01", ExpiresAt: "12m"},
+	{Resource: "dm-00h", State: core.LeaseHeld, Holder: "agent-notebook-1", ExpiresAt: "3m"},
+	{Resource: "dm-1k2", State: core.LeaseStale, Holder: "claude-mac"},
 	{Resource: "ac-9x1", State: core.LeaseFree},
 }
 
@@ -40,7 +40,7 @@ func TestLeasesDetailPanelAppearsExactlyAtOneHundredColumns(t *testing.T) {
 	if !strings.Contains(v, "─ Lease ─") {
 		t.Fatalf("100 columns shows the selected lease beside the list:\n%s", v)
 	}
-	rowWith(t, v, "holder", "glm-scheduler-01")
+	rowWith(t, v, "holder", "bot-scheduler-01")
 }
 
 func TestLeasesColumnsDropByPriorityAndNeverClipTheIdOrState(t *testing.T) {
@@ -90,14 +90,14 @@ func TestLeasesCursorDrillAndBack(t *testing.T) {
 	}
 	m = press(press(m, "j"), "j")
 	m = press(m, "enter")
-	if v := m.View(); !strings.Contains(v, "ac-1k2") || !strings.Contains(v, "claude-mac") || strings.Contains(v, "Leases ·") {
+	if v := m.View(); !strings.Contains(v, "dm-1k2") || !strings.Contains(v, "claude-mac") || strings.Contains(v, "Leases ·") {
 		t.Fatalf("enter drills into the lease under the cursor:\n%s", v)
 	}
 	if v := press(m, "esc").View(); !strings.Contains(v, "Leases ·") {
 		t.Fatalf("esc returns to the list:\n%s", v)
 	}
 	up := press(press(press(m, "esc"), "k"), "k")
-	rowWith(t, up.View(), "▸", "(held)", "ac-zoj") // the cursor moves up and clamps at the first row
+	rowWith(t, up.View(), "▸", "(held)", "dm-zoj") // the cursor moves up and clamps at the first row
 	// Enter on a wide screen never leaves the section drilled in: shrinking afterwards shows the
 	// list, not a detail the user never asked for.
 	w := press(leasesAt(120, 30, sampleLeases...), "enter")
@@ -115,7 +115,7 @@ func TestLeasesCursorStaysOnARowAfterARefreshShrinksTheList(t *testing.T) {
 	if v := m.View(); strings.Contains(v, "select a row") {
 		t.Fatalf("the cursor must clamp to the last remaining row:\n%s", v)
 	}
-	rowWith(t, m.View(), "▸", "(held)", "ac-zoj")
+	rowWith(t, m.View(), "▸", "(held)", "dm-zoj")
 }
 
 func TestLongLeaseListScrollsWithTheCursorAndKeepsItsMoreMarker(t *testing.T) {
@@ -275,19 +275,19 @@ func TestQueuesWorkflowAndLastEventAreWideOnlyColumns(t *testing.T) {
 // above the cursor must not move it onto a different lease.
 func TestLeasesSelectionFollowsTheLeaseAcrossARefresh(t *testing.T) {
 	m := leasesAt(120, 30, sampleLeases...)
-	m = press(m, "j") // ac-00h
+	m = press(m, "j") // dm-00h
 	reordered := []core.Lease{sampleLeases[3], sampleLeases[2], sampleLeases[1], sampleLeases[0]}
 	m, _ = m.Update(leasesMsg{read: leasesReport(reordered...)})
-	rowWith(t, m.View(), "▸", "ac-00h")
-	rowWith(t, m.View(), "holder", "codex-macbookpro")
-	m, _ = m.Update(leasesMsg{read: leasesReport(sampleLeases[0], sampleLeases[3])}) // ac-00h is gone
+	rowWith(t, m.View(), "▸", "dm-00h")
+	rowWith(t, m.View(), "holder", "agent-notebook-1")
+	m, _ = m.Update(leasesMsg{read: leasesReport(sampleLeases[0], sampleLeases[3])}) // dm-00h is gone
 	if v := m.View(); strings.Contains(v, "select a row") {
 		t.Fatalf("a vanished lease falls back to a row, not to nothing:\n%s", v)
 	}
 	// A refresh that drops the selection does not move it: when the lease comes back it is
 	// selected again.
 	m, _ = m.Update(leasesMsg{read: leasesReport(sampleLeases...)})
-	rowWith(t, m.View(), "▸", "ac-00h")
+	rowWith(t, m.View(), "▸", "dm-00h")
 }
 
 func TestResizingWideNeverLeavesADrilledDetailBehind(t *testing.T) {

@@ -3,7 +3,7 @@
 Providers are how abacus fills its fleet domains (Board, Tasks, Leases, Queues); users see domains, not
 providers. `bd` (Tasks, with reads and allowlisted writes) is composed the same way as the tools
 below: through its documented `--json` surface, behind an argv allowlist. Graph insights are not a
-provider tool: they are computed in-process (see "Graph engine"). See `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
+provider tool: they are computed in-process (see "Graph engine"). See `docs/design/2026-11-21-1700-feat-fleet-domains-plan.md`.
 
 What a Beads-family tool exposes so an umbrella tool can compose it without tool-specific
 logic. Lambe is the reference implementation; its owned wire spec is

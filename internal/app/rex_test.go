@@ -164,9 +164,9 @@ func TestDemoRegistryProvidesDemoPlacementsWithoutRex(t *testing.T) {
 	if p == nil {
 		t.Fatal("the demo provides a workspace")
 	}
-	items := []core.WorkspaceItem{{Kind: core.WorkspaceRun, ID: "T-1", Host: "operators-mac"}, {Kind: core.WorkspaceLease, ID: "ac-1k2"}, {Kind: core.WorkspaceRun, ID: "T-2"}}
+	items := []core.WorkspaceItem{{Kind: core.WorkspaceRun, ID: "T-1", Host: "operators-mac"}, {Kind: core.WorkspaceLease, ID: "dm-1k2"}, {Kind: core.WorkspaceRun, ID: "T-2"}}
 	rep := core.ReadWorkspaceFrom(context.Background(), p, items)
-	if len(rep.Placements) != 1 || len(rep.Ambiguous) != 1 || rep.Ambiguous[0].Item.ID != "ac-1k2" {
+	if len(rep.Placements) != 1 || len(rep.Ambiguous) != 1 || rep.Ambiguous[0].Item.ID != "dm-1k2" {
 		t.Fatalf("%+v", rep)
 	}
 	if plan := p.Open(rep.Placements[0]); len(plan.Rungs) != 0 || plan.Copy != "rex -S operators-mac" {

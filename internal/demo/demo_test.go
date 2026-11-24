@@ -90,7 +90,7 @@ func TestDemoProvidersDetectWithTheDemoSource(t *testing.T) {
 }
 
 func TestDemoWorkspacePlacesSomeItemsAmbiguouslyAndRunsNothing(t *testing.T) {
-	items := []core.WorkspaceItem{{Kind: core.WorkspaceRun, ID: "T-1", Host: "operators-mac"}, {Kind: core.WorkspaceRun, ID: "T-2"}, {Kind: core.WorkspaceLease, ID: "ac-1k2"}, {Kind: core.WorkspaceLease, ID: "ac-00h"}}
+	items := []core.WorkspaceItem{{Kind: core.WorkspaceRun, ID: "T-1", Host: "operators-mac"}, {Kind: core.WorkspaceRun, ID: "T-2"}, {Kind: core.WorkspaceLease, ID: "dm-1k2"}, {Kind: core.WorkspaceLease, ID: "dm-00h"}}
 	rep, err := NewWorkspace().Workspace(context.Background(), items)
 	if err != nil || rep.State != core.Connected || len(rep.Placements) != 2 || len(rep.Ambiguous) != 1 {
 		t.Fatalf("%+v %v", rep, err)
@@ -109,7 +109,7 @@ func TestDemoWorkspacePlacesSomeItemsAmbiguouslyAndRunsNothing(t *testing.T) {
 
 // The demo's placements are exactly what the real matcher says about the demo sessions.
 func TestDemoWorkspaceExactAndLabelMatchesAndTheThirdTask(t *testing.T) {
-	want := map[string]core.PlacementMatch{"T-1": core.MatchExact, "ac-zoj": core.MatchExact, "ac-00h": core.MatchExact, "T-3": core.MatchLabel}
+	want := map[string]core.PlacementMatch{"T-1": core.MatchExact, "dm-zoj": core.MatchExact, "dm-00h": core.MatchExact, "T-3": core.MatchLabel}
 	var items []core.WorkspaceItem
 	for id := range want {
 		items = append(items, core.WorkspaceItem{Kind: core.WorkspaceTask, ID: id})
@@ -127,7 +127,7 @@ func TestDemoWorkspaceExactAndLabelMatchesAndTheThirdTask(t *testing.T) {
 	if p, _ := rep.For(core.WorkspaceItem{Kind: core.WorkspaceTask, ID: "T-3"}); p.Session != "demo:s3" || p.Label != "review T-3 notes" {
 		t.Errorf("T-3: %+v", p)
 	}
-	amb := core.WorkspaceItem{Kind: core.WorkspaceLease, ID: "ac-1k2"}
+	amb := core.WorkspaceItem{Kind: core.WorkspaceLease, ID: "dm-1k2"}
 	rep, _ = NewWorkspace().Workspace(context.Background(), []core.WorkspaceItem{amb})
 	_, cands := rep.For(amb)
 	if len(cands) != 2 || cands[0].Match != core.MatchExact || cands[1].Match != core.MatchLabel || cands[0].Session != "demo:s6" || cands[1].Session != "demo:s7" {

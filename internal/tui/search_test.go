@@ -287,9 +287,9 @@ func TestJumpToBoardThreadReplyAndTask(t *testing.T) {
 }
 
 func TestJumpToALease(t *testing.T) {
-	m := jump(t, "ac-1k2", "2")
+	m := jump(t, "dm-1k2", "2")
 	ls := secAt(m, tabLeases).(*leasesSection)
-	if activeTab(m) != "Leases" || ls.selected != "ac-1k2" || ls.ids()[ls.cursor] != "ac-1k2" {
+	if activeTab(m) != "Leases" || ls.selected != "dm-1k2" || ls.ids()[ls.cursor] != "dm-1k2" {
 		t.Errorf("tab %s selected %q", activeTab(m), ls.selected)
 	}
 }
@@ -369,14 +369,14 @@ func TestSearchStatesNeverGiveAnInstallInstruction(t *testing.T) {
 func TestSearchMarksAStaleDomain(t *testing.T) {
 	m := sized(load(t, asciiTheme(), nil), 100, 32)
 	secAt(m, tabLeases).(*leasesSection).readAt = goldenNow.Add(-5 * time.Minute)
-	for _, k := range ctrlK("ac-1k2") {
+	for _, k := range ctrlK("dm-1k2") {
 		m = press(m, k)
 	}
 	if out := m.View(); !strings.Contains(out, "Leases (1) · read 5m ago, may be out of date") {
 		t.Errorf("stale group:\n%s", out)
 	}
 	m = sized(load(t, asciiTheme(), nil), 100, 32)
-	for _, k := range ctrlK("ac-1k2") {
+	for _, k := range ctrlK("dm-1k2") {
 		m = press(m, k)
 	}
 	if out := m.View(); strings.Contains(out, "out of date") {

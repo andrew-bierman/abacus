@@ -66,6 +66,7 @@ type SplitRunner interface {
 	RunSplit(ctx context.Context, name string, args ...string) (stdout, stderr []byte, exit int, err error)
 }
 
+// Run runs name with args and returns its combined output and exit code. Built-in tools are re-verified first.
 func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
 	out, _, exit, err := r.RunSplit(ctx, name, args...)
 	return out, exit, err
@@ -83,6 +84,7 @@ func (c *capBuf) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// RunSplit is Run with standard output and standard error kept apart.
 func (r ExecRunner) RunSplit(ctx context.Context, name string, args ...string) ([]byte, []byte, int, error) {
 	if err := CheckBuiltIn(name); err != nil { // a built-in copy replaced since it was checked is not run
 		return nil, nil, -1, err

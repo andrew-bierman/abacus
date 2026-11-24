@@ -1,4 +1,15 @@
-.PHONY: build build-dev release check-tools test check
+.PHONY: help build build-dev release check-tools test check cover
+
+# help: list the targets (each target's comment above it is the description).
+help:
+	@echo "abacus make targets:"
+	@echo "  build        one self-contained binary with every tool inside (needs gh, npm, bun)"
+	@echo "  build-dev    quick go build with no tools built in (for working on abacus)"
+	@echo "  test         go test ./... (use an isolated HOME and XDG_*; see CONTRIBUTING.md)"
+	@echo "  check        what CI runs: gofmt, vet, shellcheck, tests, tagged-build check"
+	@echo "  cover        per-package test coverage summary"
+	@echo "  check-tools  verify the fetched tools still match their pins"
+	@echo "  release      the platform archives in dist/ (make release VERSION=x.y.z)"
 
 # The platform this machine builds for, as os-arch (the names the scripts and the blob folders use).
 PLATFORM := $(shell go env GOOS)-$(shell go env GOARCH)
@@ -35,3 +46,10 @@ check:
 	shellcheck -x -P SCRIPTDIR scripts/*.sh scripts/lib/*.sh
 	go test ./...
 	scripts/check-embedtools.sh
+
+# cover: statement coverage per package, in an isolated HOME and XDG_*; the profile is cover.out
+# (git-ignored).
+cover:
+	@t=$$(mktemp -d); trap 'rm -rf "$$t"' EXIT; \
+	  HOME=$$t/home XDG_CONFIG_HOME=$$t/config XDG_STATE_HOME=$$t/state XDG_DATA_HOME=$$t/data \
+	  go test -count=1 -coverprofile=cover.out ./... | grep -v 'no test files'

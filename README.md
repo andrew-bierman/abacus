@@ -27,7 +27,7 @@ binary, so a lone copy of the file still carries them).
 | Linux, amd64 | Release archive; run end to end on Arch Linux (doctor, setup, the TUI in tmux) with an empty `PATH`, the tools coming from the binary itself |
 | Linux, arm64 | Release archive; cross-compiles, not yet run on real hardware |
 | macOS, arm64 and amd64 | Release archive (the primary development platform) |
-| Windows | Not supported yet. It compiles, but its safety checks are not implemented yet; see `docs/plans/2026-11-22-1900-plan-windows-support.md` |
+| Windows | Not supported yet. It compiles, but its safety checks are not implemented yet; see `docs/design/2026-11-22-1900-plan-windows-support.md` |
 
 The size is the price of that: the file is about 80 to 90 MB, because the tools are inside it
 (see Built in). On first run abacus unpacks them once into a private folder; later starts
@@ -204,7 +204,7 @@ needs an explicit yes: `y` on the TUI confirm screen, or the `[y/N]` prompt (`--
 attempt is appended to an audit log (`$XDG_STATE_HOME/abacus/audit.jsonl`), and if the log cannot be
 written nothing runs. Writes are limited by an allowlist (create, update, close; no delete; for the Board only post and reply). A board post carries an idempotency key derived from (board, op, destination, text, 10-minute window) so a retry posts at most once (and an identical post within ten minutes counts as that retry), is re-read by id afterwards, and anything unclear (timeout, cancel, network error, unreadable answer) is "result unknown", never "not applied". The confirm shows the board URL and where it came from, what a reply answers, and whether a post creates a new channel. The TUI Board tab is read only: composing from it is not built yet.
 The first-run setup steps (workspace, actor name, Queues config) go through the same confirm,
-single-use and audit gate. Leases and Queues writes are blocked upstream: see `docs/plans/2026-11-21-1700-feat-fleet-domains-plan.md`.
+single-use and audit gate. Leases and Queues writes are blocked upstream: see `docs/design/2026-11-21-1700-feat-fleet-domains-plan.md`.
 
 ### TUI
 
@@ -245,21 +245,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
-
-## Credits
-
-- [Beads](https://github.com/steveyegge/beads) is the tracker everything sits on.
-- [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) by Jeffrey Emanuel supplies the
-  graph analysis. Its license ships unmodified in the archive as `third_party/bv/LICENSE`.
-- [Vercel Board](https://github.com/vercel/board) (Apache-2.0) is the message board the Board
-  domain reads and posts to; abacus only runs its CLI as a subprocess.
-- [b9s](https://github.com/vanderheijden86/b9s) (MIT) is the full tree and graph view abacus can hand off to.
-- [k9s](https://k9scli.io) inspired the keyboard-first feel.
-
-## Development
-
-See [docs/development.md](docs/development.md) to build from source and run the checks.
-
-## License
-
-GPL-3.0-or-later. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
+```

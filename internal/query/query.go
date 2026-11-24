@@ -76,6 +76,7 @@ type Error struct {
 	Msg string
 }
 
+// Error describes the problem and where in the query it is.
 func (e *Error) Error() string { return fmt.Sprintf("%s (column %d)", e.Msg, e.Col) }
 
 type kind int

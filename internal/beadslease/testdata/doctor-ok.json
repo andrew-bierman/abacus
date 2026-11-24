@@ -1,5 +1,5 @@
 [
-  {"name": "actor", "status": "ok", "detail": "identity set: glm-fixture"},
+  {"name": "actor", "status": "ok", "detail": "identity set: agent-fixture"},
   {"name": "config", "status": "ok", "detail": "no config file at /fixture/config.json; using defaults"},
   {"name": "coord", "status": "ok", "detail": "coord wrapper: /fixture/bin/coord"},
   {"name": "hub", "status": "ok", "detail": "coord list --json answered (3 issues)"}

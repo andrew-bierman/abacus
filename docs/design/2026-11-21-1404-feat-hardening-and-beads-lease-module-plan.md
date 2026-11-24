@@ -9,7 +9,7 @@ execution: code
 
 # Abacus Hardening, Typed Core Surface and beads-lease Module - Plan
 
-**Target repo:** `abacus` (`~/Code/abacus`, private `andrew-bierman/abacus`). This plan stacks on the shipped skeleton (draft PR #1) and does not modify Lambe or beads-lease code. `beads-lease` is `andrew-bierman/beads-lease`, read from a local clone at `~/Code/beads-lease`.
+**Target repo:** `abacus` (`~/Code/abacus`, private `andrew-bierman/abacus`). This plan stacks on the shipped skeleton (draft PR #1) and does not modify Lambe or beads-lease code. `beads-lease` is `andrew-bierman/beads-lease`, read from a local clone at `<beads-lease checkout>`.
 
 ## Goal Capsule
 
@@ -108,7 +108,7 @@ The skeleton works but can mislead: an installed-but-crashing Lambe vanishes fro
 ### Assumptions
 
 - Inferred, not user-confirmed: the 10s exec deadline; keeping a descriptor with empty `identity` acceptable (Lambe's spec makes identity optional) while documenting it by test; the `Broken` name; that `schema_version` starts at 1.
-- Verified in `~/Code/beads-lease`: `version` prints plain text; `--json list` emits an envelope with `schemaVersion`, `ok`, `leases[]` rows (`resource`, `holder`, `state` of `held|stale|free`, `status`, `expiresAt`, `task`; `unregistered` appears only for a single-resource `status`); exit codes 0/1/2/64/130; no `doctor`; `list` and `status` require the actor env var (`BEADS_ACTOR`) and exit 2 with a usage message without it; `list` calls only `coord list --json` with no write, lock or sync in beads-lease code (the coord wrapper's own behavior for `list` was not inspected); the hub wrapper defaults to the production path `~/Code/agent-coordination/bin/coord`, so no test may run the real binary.
+- Verified in `<beads-lease checkout>`: `version` prints plain text; `--json list` emits an envelope with `schemaVersion`, `ok`, `leases[]` rows (`resource`, `holder`, `state` of `held|stale|free`, `status`, `expiresAt`, `task`; `unregistered` appears only for a single-resource `status`); exit codes 0/1/2/64/130; no `doctor`; `list` and `status` require the actor env var (`BEADS_ACTOR`) and exit 2 with a usage message without it; `list` calls only `coord list --json` with no write, lock or sync in beads-lease code (the coord wrapper's own behavior for `list` was not inspected); the hub wrapper defaults to the production path `<hub>/bin/coord`, so no test may run the real binary.
 
 ### High-Level Technical Design
 
@@ -218,7 +218,7 @@ internal/core/exec_test.go
 - **Dependencies:** none.
 - **Files:** none in this repo; the issue URLs are recorded in `docs/tool-contract.md` in U7.
 - **Approach:**
-  - Re-verify the gaps against `~/Code/beads-lease` help output (no hub access), then open two issues on `andrew-bierman/beads-lease`: `version --json` with `api_version`, and a `doctor [--json]` command with the contract's check shape and exit rule.
+  - Re-verify the gaps against `<beads-lease checkout>` help output (no hub access), then open two issues on `andrew-bierman/beads-lease`: `version --json` with `api_version`, and a `doctor [--json]` command with the contract's check shape and exit rule.
   - Open one issue on `andrew-bierman/board-beads` asking for a thin CLI that meets the tool contract (`version --json`, `doctor`), and noting the Vercel Board `vb` CLI as an alternative surface to evaluate.
 - **Test expectation:** none -- external issue filing, no behavior in this repo.
 - **Verification:** all three issue URLs resolve.
@@ -271,7 +271,7 @@ internal/core/exec_test.go
 | Build | `go build ./...` | all units |
 | Vet and format | `go vet ./...` and `gofmt -l .` empty | all units |
 | Tests | `go test -count=1 ./...` with `HOME`, `XDG_STATE_HOME`, `XDG_CONFIG_HOME` set to a temp dir, a private `GOCACHE`, `GOMODCACHE=$HOME/go/pkg/mod` from the real home | U1 to U6 |
-| Isolation | grep of tests shows no path under `~/.local/state/lambe`, `~/.local/bin`, `~/Code/agent-coordination`; PATH for tests contains no real `beads-lease` or `lambe` | U2, U3, U6 |
+| Isolation | grep of tests shows no path under `~/.local/state/lambe`, `~/.local/bin`, `<hub>`; PATH for tests contains no real `beads-lease` or `lambe` | U2, U3, U6 |
 | Read-only | the beads-lease recording-fake test | U6 |
 | Architecture | `TestLogicPackagesImportNoUI` extended to cover `internal/beadslease` | U6 |
 

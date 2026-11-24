@@ -39,7 +39,7 @@ Go; core holds all logic type-safely and CLI/TUI/native clients render core's ty
 
 ## Inventory: read and write surfaces today
 
-Verified on 2026-11-21 with `bd 1.3.4`, `~/Code/beads-lease` (README and `internal/cmd`), `~/Code/lambe` (`docs/api/state-api.md`, `lambe --help`) and `~/Code/board-beads` (README, `src/`).
+Verified on 2026-11-21 with `bd 1.3.4`, `<beads-lease checkout>` (README and `internal/cmd`), `~/Code/lambe` (`docs/api/state-api.md`, `lambe --help`) and `~/Code/board-beads` (README, `src/`).
 
 ### Tasks (Beads issues via `bd`)
 
@@ -57,7 +57,7 @@ Verified with an isolated temp tracker (`bd init` in a temp dir, isolated `HOME`
 | | Surface |
 | --- | --- |
 | Read | `beads-lease --json list` (envelope `schemaVersion` 1), `version --json`, `doctor --json`. Needs `BEADS_ACTOR`. |
-| Write | `acquire`, `release`, `heartbeat`, `run`, all with `--json` envelopes; they write to the shared production hub (`coordPath`, default `~/Code/agent-coordination/bin/coord`). |
+| Write | `acquire`, `release`, `heartbeat`, `run`, all with `--json` envelopes; they write to the shared production hub (`coordPath`, default `<hub>/bin/coord`). |
 | Dry run | none. |
 
 ### Queues (Lambe / Symphony)
@@ -106,7 +106,7 @@ abacus does not rebuild an issue browser, kanban or dependency graph. Those exis
 4. **Idempotency.** `update` and `close` are idempotent by nature (same final state). `create` is not: a plan can be applied once (a second apply of the same plan is refused), so a retry or a double Enter cannot create two issues.
 5. **Verified success.** A write counts as applied only when `bd` exits 0 and returns the issue that was asked for (an update or close must return the same id); an empty, unparseable or error body, or a different id, is an error ("check the tracker"). A timeout, cancel or kill is a typed unknown outcome (`ErrOutcomeUnknown`), audited as phase `unknown` and shown as "result unknown", never "not applied". Before the confirm screen opens for an existing issue, abacus re-reads it (`bd --readonly show ID --json`) and shows a "changed since you opened it" notice when it differs.
 6. **Audit line.** Before a mutation runs, one JSON line (time, domain, verb, argv, tracker dir) is appended to `$XDG_STATE_HOME/abacus/audit.jsonl` (default `~/.local/state/abacus/audit.jsonl`), and a second line records ok or the error. If the audit file cannot be opened, or no absolute path can be resolved, the mutation does not run (fail closed). Writes are not gated on a domain being `connected`: the Tasks write path needs only a ready `bd` and an allowlisted argv (accepted).
-7. **Never the shared hub in tests.** Write tests use fakes. The optional end-to-end test runs against an isolated temp `bd` tracker (temp project dir, temp `HOME`, `XDG_*`) and skips when `bd` is not installed. No test touches `~/Code/agent-coordination`, `~/.local/state/lambe` or `~/.local/bin/lambe`.
+7. **Never the shared hub in tests.** Write tests use fakes. The optional end-to-end test runs against an isolated temp `bd` tracker (temp project dir, temp `HOME`, `XDG_*`) and skips when `bd` is not installed. No test touches `<hub>`, `~/.local/state/lambe` or `~/.local/bin/lambe`.
 
 ## Planning Contract
 

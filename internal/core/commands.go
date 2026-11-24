@@ -185,6 +185,7 @@ type CommandError struct {
 	Suggest string
 }
 
+// Error is the message shown at the prompt, with the closest command when there is one.
 func (e *CommandError) Error() string {
 	if e.Suggest != "" {
 		return e.Msg + ". Did you mean :" + e.Suggest + "?"

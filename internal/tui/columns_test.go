@@ -74,7 +74,7 @@ func TestFitColumnsSlackGoesToTheUnboundedColumnAfterBoundedOnesFill(t *testing.
 }
 
 func TestFormatRowAlignsCellsAndNeverExceedsWidth(t *testing.T) {
-	cells := []string{"ac-zoj", "held", "a very long title that must be cut", "12m"}
+	cells := []string{"dm-zoj", "held", "a very long title that must be cut", "12m"}
 	for w := 1; w <= 120; w++ {
 		ws := (table{testCols, 2}).fit(w)
 		row := (table{testCols, 2}).row(ws, cells)

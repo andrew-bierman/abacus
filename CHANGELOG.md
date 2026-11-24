@@ -6,13 +6,28 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Added
+
+- Open-source readiness: `SECURITY.md` (private GitHub advisories), `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue and pull request templates, `CODEOWNERS`,
+  Dependabot config, `.editorconfig`, `docs/README.md` (index), `make help` and `make cover`.
+  Doc comments on the main exported identifiers in `internal/core`, `internal/lambe`, `internal/board`.
+
+### Changed
+
+- The internal planning notes moved from `docs/plans/` to `docs/design/` (history kept).
+- Demo and fixture data no longer carries real-looking host, user and task names (invented ones
+  instead); no behavior change.
+- The release workflow installs the bun version `bundled-tools.json` pins before packaging (it was
+  missing on the runner; the workflow has not run end to end yet).
+
 ## [0.4.0] - 2026-11-23
 
 First release since 0.2.0. The 0.3.0 section below was never tagged; its changes ship here.
 
 ### Added
 
-- Command prompt and k9s-style layer (U6 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`):
+- Command prompt and k9s-style layer (U6 of `docs/design/2026-11-23-feat-tasks-workspace-plan.md`):
   `:` opens a prompt in the footer row with aliases (`:tasks :board :leases :queues :doctor`,
   `:list :tree :kanban :graph :insights`, `:search TEXT`, `:filter QUERY`, `:ctx`, `:help`, `:q`),
   tab completion (commands, then query fields and values), history, and a closest-command
@@ -21,7 +36,7 @@ First release since 0.2.0. The 0.3.0 section below was never tagged; its changes
   (read-only panels). From 100 columns the tab bar shows the tracker, task counts and board target
   on its right; the cursor row fill is brighter; `?` lists the prompt commands and scrolls. The
   command table, parse, completion and closest match are pure code in `internal/core/commands.go`.
-- Tasks goes live (U10 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): the 30-second poll
+- Tasks goes live (U10 of `docs/design/2026-11-23-feat-tasks-workspace-plan.md`): the 30-second poll
   is replaced by a cheap check about every 5 seconds (the embedded store's manifest file, which moves
   on every write and never on a read) and the tracker is read in full only when it moved; one check
   or read at a time, none while the tab is hidden, a longer wait after a slow read. A change by
@@ -34,7 +49,7 @@ First release since 0.2.0. The 0.3.0 section below was never tagged; its changes
   tracker is written. New: `internal/taskview` fingerprint, diff, poll scheduler and history parser,
   `core.SavedFilters`, `core.RecentTrackers`, `core.Switcher`, with fixtures captured from real `bd`
   1.3.4 output.
-- Dependency graph view in Tasks (U5 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): `g` on
+- Dependency graph view in Tasks (U5 of `docs/design/2026-11-23-feat-tasks-workspace-plan.md`): `g` on
   a task (or `v`) shows what blocks it and what it blocks, as boxes with connectors from 100 columns
   and an indented outline below; `g` again shows the whole graph in topological layers with the
   longest chain of unfinished work, cycles, self-dependencies and missing blockers marked. `[` `]`
@@ -67,7 +82,7 @@ First release since 0.2.0. The 0.3.0 section below was never tagged; its changes
 - `make build` (embedded), `make build-dev`, `make release VERSION=x`, `make check-tools`;
   `scripts/embed-tools.sh` replaces `scripts/dev-bundle.sh`.
 
-- Tasks is a real work browser (U1 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`): every
+- Tasks is a real work browser (U1 of `docs/design/2026-11-23-feat-tasks-workspace-plan.md`): every
   task listed (no 8-row cap) with a full-row cursor, status mark, priority, blocked-by and blocks
   marks, type, age, assignee and (from 140 columns) labels; a detail pane with the description,
   comments, what blocks the task and what it blocks, and children with a progress bar; eight stable
@@ -219,7 +234,7 @@ The headline changes, in plain words:
   `unavailable` or `optional` instead of `missing`; the raw `where: "missing"` in JSON is unchanged.
 
 
-- `docs/plans/2026-11-22-board-bundling-assessment.md`: how to ship the Board domain without asking for Node (compiled binary measured, native client judged, trust model, recommendation).
+- `docs/design/2026-11-22-board-bundling-assessment.md`: how to ship the Board domain without asking for Node (compiled binary measured, native client judged, trust model, recommendation).
 - An optional workspace layer. `internal/core` gains a `WorkspaceProvider` capability (not a fifth
   domain; navigation stays four tabs plus Doctor): typed placements saying where a run, lease,
   task or queue row lives as a terminal session, and an open plan (an ordered list of argv rungs
@@ -248,7 +263,7 @@ The headline changes, in plain words:
   confirm flow), Leases and Queues, plus Doctor. The fixtures live in `internal/demo` (core types
   only) and are the same ones the TUI goldens use. A demo session reads nothing from your machine,
   a demo "write" is applied to nothing, and nothing is recorded in the real audit log.
-- README: supported platforms, verified on Linux amd64 from the release archive (doctor, setup, TUI with only bundled tools). A plan for Windows support is in `docs/plans/`.
+- README: supported platforms, verified on Linux amd64 from the release archive (doctor, setup, TUI with only bundled tools). A plan for Windows support is in `docs/design/`.
 - The Board domain: channels, recent threads and messages (author, time, text) and open tasks
   with their state and claimant, read from the Vercel Board CLI (`@vercel/board`, `board` or
   `vb`) as a subprocess behind an argv allowlist and a scrubbed environment. Not found, not set

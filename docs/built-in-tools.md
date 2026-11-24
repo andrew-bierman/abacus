@@ -120,7 +120,7 @@ make check-tools              # verify the fetched tools still match their pins
 
 `scripts/package-release.sh VERSION [--platforms ...] [--out DIR]` builds darwin and linux on
 amd64 and arm64, each with its own pinned tools. It publishes, tags and uploads nothing. Windows
-is out of scope for now (see `docs/plans/2026-11-22-1900-plan-windows-support.md`).
+is out of scope for now (see `docs/design/2026-11-22-1900-plan-windows-support.md`).
 
 **The manifest, field by field.** The list is at the top of `scripts/lib/bundle.sh`, which the
 scripts share. Hand-edited: `schema`, `note`, and per tool `name` (the file name when extracted;

@@ -159,7 +159,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet 
 │                                                          │ │   tick                              │
 │                                                          │ │ • show the miss in Doctor           │
 │ ▾ open ▹ folded                                          │ │                                     │
-│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │   renew --lease ac-zoj --now        │
+│ ⊘N held by N · →N holds N · ⊘↑ held by parent            │ │   renew --lease dm-zoj --now        │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred            │ │   ↕ +14 more                        │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort · v view …
@@ -190,7 +190,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 │                                                                                  │ │ • renew on resume, not on the next tick             │
 │                                                                                  │ │ • show the miss in Doctor                           │
 │                                                                                  │ │                                                     │
-│                                                                                  │ │   renew --lease ac-zoj --now                        │
+│                                                                                  │ │   renew --lease dm-zoj --now                        │
 │ ▾ open ▹ folded                                                                  │ │                                                     │
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                                    │ │ Uses renew with the --now flag.                     │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                    │ │   ↕ +11 more                                        │
