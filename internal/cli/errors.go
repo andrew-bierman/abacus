@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -91,4 +92,37 @@ func finishError(args []string, code int, s *sink, o *counter) {
 		msg = "the command failed"
 	}
 	jsonOut(o, core.NewErrorDoc(ec, msg))
+}
+
+// --expect-digest: the plan digest (core.PlanDigest) of the plan the user reviewed. A write that
+// re-plans to a different digest is refused with code "changed" and writes nothing.
+
+func expectFlag(fs *flag.FlagSet) *string {
+	return fs.String("expect-digest", "", "apply only if the plan made now has this digest (plan_digest of --dry-run --json)")
+}
+
+// parseExpect validates the flag's value: "" means none, a malformed digest is a usage error.
+func parseExpect(d Deps, label, raw string) (digest string, ok bool) {
+	if raw == "" {
+		return "", true
+	}
+	if digest, ok = core.ParseDigest(raw); !ok {
+		fmt.Fprintf(d.Err, "%s: --expect-digest takes the 64 hex digits of a plan_digest\n", label)
+	}
+	return digest, ok
+}
+
+// planChanged is the refusal when the plan made now is not the plan that was reviewed.
+func planChanged(d Deps, label, expect, digest string) int {
+	return failf(d, core.CodeChanged, "%s: the plan changed since you reviewed it (reviewed %s, now %s): nothing was written; review it again\n", label, expect[:12], digest[:12])
+}
+
+// planFailed reports a plan that could not be built. With --expect-digest the caller had a valid plan
+// before, so a plan that no longer builds means the thing it was planned against changed.
+func planFailed(d Deps, label, expect string, err error) int {
+	if expect != "" {
+		return failf(d, core.CodeChanged, "%s: %v (the plan you reviewed no longer applies): nothing was written\n", label, err)
+	}
+	fmt.Fprintf(d.Err, "%s: %v\n", label, err)
+	return core.ExitUsage
 }

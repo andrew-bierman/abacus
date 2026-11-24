@@ -36,6 +36,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	var o Options
 	var yes, dry, asJSON, unassign bool
 	var blocks, blockedBy, text string
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
@@ -61,6 +62,10 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	}
 	if asJSON && !yes && !dry {
 		fmt.Fprintf(d.Err, "tasks %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
+	expect, okDigest := parseExpect(d, "tasks "+verb, *expectRaw)
+	if !okDigest {
 		return core.ExitUsage
 	}
 	ch := core.TaskChange{}
@@ -164,16 +169,14 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 		}
 		ch, err = taskview.Build(snap, now).PlanDep(add, held, blocker)
 		if err != nil {
-			fmt.Fprintf(d.Err, "tasks dep: %v\n", err)
-			return core.ExitUsage
+			return planFailed(d, "tasks dep", expect, err)
 		}
 	}
 	plan, err := core.PlanTaskChange(w, ch)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s: %v\n", verb, err)
-		return core.ExitUsage
+		return planFailed(d, "tasks "+verb, expect, err)
 	}
-	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Apply this change? [y/N] ",
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			// the task is read again after the confirm: a change by someone else in between is refused, and
 			// nothing is written or audited (an aborted plan never reaches the gate)

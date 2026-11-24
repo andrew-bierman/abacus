@@ -249,6 +249,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	var o Options
 	var yes, dry, asJSON bool
 	var title, desc, status, reason, typ, prio string
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
@@ -273,6 +274,10 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	}
 	if asJSON && !yes && !dry {
 		fmt.Fprintf(d.Err, "tasks %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
+	expect, okDigest := parseExpect(d, "tasks "+verb, *expectRaw)
+	if !okDigest {
 		return core.ExitUsage
 	}
 	ch.Title, ch.Description, ch.Status, ch.Reason, ch.Type = title, desc, status, reason, typ
@@ -325,16 +330,19 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 			return failf(d, core.CodeFor(err), "tasks reopen: could not read %s first: %s\n", core.Sanitize(ch.ID), core.Sanitize(err.Error()))
 		}
 		if cur.Status != "closed" {
-			return failf(d, core.CodeRefused, "tasks reopen: %s is not closed (it is %s), so there is nothing to reopen\n", core.Sanitize(ch.ID), core.Sanitize(cur.Status))
+			code := core.CodeRefused
+			if expect != "" {
+				code = core.CodeChanged // it was closed when the plan was reviewed
+			}
+			return failf(d, code, "tasks reopen: %s is not closed (it is %s), so there is nothing to reopen\n", core.Sanitize(ch.ID), core.Sanitize(cur.Status))
 		}
 		ch.Before, ch.Expect = cur, cur.Status
 	}
 	plan, err := core.PlanTaskChange(w, ch)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s: %v\n", verb, err)
-		return core.ExitUsage
+		return planFailed(d, "tasks "+verb, expect, err)
 	}
-	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Apply this change? [y/N] ",
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			if op == core.TaskReopen { // someone else may have reopened it, or changed it, since the plan
 				cur, err := reader.ReadTask(ctx, ch.ID)
@@ -360,19 +368,25 @@ type writeFlow struct {
 	more       [][]string // later commands of a plan with several steps
 	yes, dry   bool
 	asJSON     bool
+	digest     string // the plan digest (core.PlanDigest) of this plan
+	expect     string // --expect-digest: refuse unless the plan made now has this digest
 	prompt     string
 	apply      func(au core.Audit) (result any, done string, err error)
 }
 
 func runWrite(d Deps, f writeFlow) int {
+	if f.expect != "" && f.expect != f.digest {
+		return planChanged(d, f.label, f.expect, f.digest)
+	}
 	if f.dry && f.asJSON {
 		jsonOut(d.Out, struct {
-			DryRun  bool       `json:"dry_run"`
-			Lines   []string   `json:"change"`
-			Context []string   `json:"context,omitempty"`
-			Argv    []string   `json:"argv"`
-			Steps   [][]string `json:"steps,omitempty"`
-		}{true, f.lines, f.ctx, f.argv, f.more})
+			DryRun     bool       `json:"dry_run"`
+			Lines      []string   `json:"change"`
+			Context    []string   `json:"context,omitempty"`
+			Argv       []string   `json:"argv"`
+			Steps      [][]string `json:"steps,omitempty"`
+			PlanDigest string     `json:"plan_digest"`
+		}{true, f.lines, f.ctx, f.argv, f.more, f.digest})
 		return core.ExitOK
 	}
 	if !f.asJSON {
@@ -404,9 +418,10 @@ func runWrite(d Deps, f writeFlow) int {
 	}
 	if f.asJSON {
 		jsonOut(d.Out, struct {
-			Applied bool `json:"applied"`
-			Result  any  `json:"result"`
-		}{true, res})
+			Applied    bool   `json:"applied"`
+			Result     any    `json:"result"`
+			PlanDigest string `json:"plan_digest"`
+		}{true, res, f.digest})
 	} else {
 		fmt.Fprintln(d.Out, done)
 	}
@@ -450,6 +465,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	fs.SetOutput(d.Err)
 	var o Options
 	var yes, dry, asJSON bool
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
@@ -463,6 +479,10 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	}
 	if asJSON && !yes && !dry {
 		fmt.Fprintf(d.Err, "board %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
+	expect, okDigest := parseExpect(d, "board "+verb, *expectRaw)
+	if !okDigest {
 		return core.ExitUsage
 	}
 	ch := core.BoardChange{Op: op, Text: text}
@@ -479,12 +499,11 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	}
 	plan, err := core.PlanBoardChange(w, ch)
 	if err != nil {
-		fmt.Fprintf(d.Err, "board %s: %v\n", verb, err)
-		return core.ExitUsage
+		return planFailed(d, "board "+verb, expect, err)
 	}
 	dctx, dcancel := context.WithTimeout(ctx, 2*core.DefaultExecTimeout)
 	defer dcancel()
-	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Post this to the board? [y/N] ",
+	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Post this to the board? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
 			return res, "done: posted #" + res.ID, err

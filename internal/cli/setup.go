@@ -37,6 +37,7 @@ func runSetup(rest []string, d Deps) int {
 	fs.SetOutput(d.Err)
 	var o Options
 	var yes, dry, asJSON, repair bool
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "apply every step that is needed without asking")
 	fs.BoolVar(&dry, "dry-run", false, "report only; change nothing")
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
@@ -49,14 +50,22 @@ func runSetup(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "setup: unexpected argument %q\n", fs.Arg(0))
 		return core.ExitUsage
 	}
+	expect, okDigest := parseExpect(d, "setup", *expectRaw)
+	if !okDigest {
+		return core.ExitUsage
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
 	defer cancel()
 	entries := d.Build(o).Detect(ctx)
 	s := setupFor(d, entries)
 	if repair {
-		return runRepair(ctx, s, d, yes, dry, asJSON)
+		return runRepair(ctx, s, d, yes, dry, asJSON, expect)
 	}
 	steps := s.Steps(ctx)
+	digest := core.SetupDigest(steps)
+	if expect != "" && expect != digest {
+		return planChanged(d, "setup", expect, digest)
+	}
 	var results []setupResult
 	failed := false
 	// Applying needs an explicit yes: --yes, or a y at the prompt (which needs input and text mode).
@@ -106,9 +115,10 @@ func runSetup(rest []string, d Deps) int {
 	}
 	if asJSON {
 		jsonOut(d.Out, struct {
-			Steps   []core.StepInfo `json:"steps"`
-			Applied []setupResult   `json:"results,omitempty"`
-		}{steps, results})
+			Steps      []core.StepInfo `json:"steps"`
+			Applied    []setupResult   `json:"results,omitempty"`
+			PlanDigest string          `json:"plan_digest"`
+		}{steps, results, digest})
 	} else {
 		renderSetup(d.Out, steps, results, yes || dry, canAsk)
 	}
@@ -178,13 +188,15 @@ func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPr
 // runRepair is `abacus setup --repair`: plan the repair, show exactly what it will do, and
 // apply it only after --yes or a y at the prompt, through the same audited gate. --dry-run only
 // shows the plan. A folder that holds anything else of the user's is refused.
-func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool) int {
+func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool, expect string) int {
 	res := setupResult{Step: core.StepRepair}
+	digest := ""
 	finish := func(code int) int {
 		if asJSON {
 			jsonOut(d.Out, struct {
-				Results []setupResult `json:"results"`
-			}{[]setupResult{res}})
+				Results    []setupResult `json:"results"`
+				PlanDigest string        `json:"plan_digest,omitempty"`
+			}{[]setupResult{res}, digest})
 		}
 		return code
 	}
@@ -195,6 +207,10 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 			fmt.Fprintf(d.Err, "repair: %s\n", res.Error)
 		}
 		return finish(core.ExitFail)
+	}
+	digest = p.Digest()
+	if expect != "" && expect != digest {
+		return planChanged(d, "repair", expect, digest) // before anything is printed: under --json this is the error document
 	}
 	if !asJSON {
 		for _, l := range p.Lines {

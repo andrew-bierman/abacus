@@ -14,7 +14,7 @@ var topCommands = []string{"board", "tasks", "leases", "queues", "agents", "tui"
 // taskVerbs are the `tasks` subcommands, in the order the help lists them.
 var taskVerbs = []string{"list", "show", "board", "graph", "history", "create", "update", "close", "reopen", "label", "assign", "priority", "dep", "comment", "bulk"}
 
-const writeFlags = "[--yes] [--dry-run] [--json]"
+const writeFlags = "[--yes] [--dry-run] [--expect-digest DIGEST] [--json]"
 
 // subHelp is the usage of each subcommand that has its own words; --help prints it (stdout, exit 0).
 var subHelp = map[string]string{

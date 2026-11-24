@@ -264,6 +264,8 @@ type BulkReport struct {
 	Unknown       int              `json:"unknown"`
 	NotRun        int              `json:"not_run"`
 	Items         []BulkItemResult `json:"items"`
+	// PlanDigest is the digest of the plan this batch applied (additive; set by the front end that planned it).
+	PlanDigest string `json:"plan_digest,omitempty"`
 }
 
 // Summary is the one line after a batch: "3 of 5 applied", then what else happened.

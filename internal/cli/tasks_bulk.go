@@ -35,6 +35,7 @@ func runTaskBulk(rest []string, d Deps) int {
 	var o Options
 	var yes, dry, asJSON, clear bool
 	var ids, op, value string
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the plan and every command; run nothing")
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
@@ -54,6 +55,10 @@ func runTaskBulk(rest []string, d Deps) int {
 	}
 	if asJSON && !yes && !dry {
 		return bad("--json needs --yes or --dry-run (it cannot prompt)")
+	}
+	expect, okDigest := parseExpect(d, "tasks bulk", *expectRaw)
+	if !okDigest {
+		return core.ExitUsage
 	}
 	taskOp, ok := bulkOps[op]
 	if !ok {
@@ -124,8 +129,11 @@ func runTaskBulk(rest []string, d Deps) int {
 	}
 	plan, err := core.PlanBulk(w, spec, targets)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks bulk: %v\n", err)
-		return core.ExitUsage
+		return planFailed(d, "tasks bulk", expect, err)
+	}
+	digest := plan.Digest()
+	if expect != "" && expect != digest {
+		return planChanged(d, "tasks bulk", expect, digest)
 	}
 	if dry && asJSON {
 		items := make([]bulkItemJSON, len(plan.Items))
@@ -138,7 +146,8 @@ func runTaskBulk(rest []string, d Deps) int {
 			Op            string          `json:"op"`
 			Items         []bulkItemJSON  `json:"items"`
 			Skipped       []core.BulkSkip `json:"skipped,omitempty"`
-		}{1, true, op, items, plan.Skipped})
+			PlanDigest    string          `json:"plan_digest"`
+		}{1, true, op, items, plan.Skipped, digest})
 		return core.ExitOK
 	}
 	if !asJSON {
@@ -170,6 +179,7 @@ func runTaskBulk(rest []string, d Deps) int {
 	if err != nil {
 		return failf(d, core.CodeFor(err), "tasks bulk: %s\n", core.DescribeWriteError(err))
 	}
+	rep.PlanDigest = digest
 	if asJSON {
 		jsonOut(d.Out, rep)
 	} else {
