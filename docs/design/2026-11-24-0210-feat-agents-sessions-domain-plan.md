@@ -1,6 +1,6 @@
 # Agents domain: a sessions tab for local AI coding agents
 
-Status: phase 2 underway (`internal/agents` has the opencode, claude and codex readers; pi, git and
+Status: phase 2 underway (`internal/agents` has the opencode, claude, codex and pi readers; git and
 quota readers, the core wiring and the tab are open).
 
 ## Goal
@@ -65,7 +65,7 @@ Written here, because nothing covers it:
 | Live state behind a seam: Procs, CWD, Listeners | `proc.go` | `Machine` interface | done |
 | gopsutil implementation of that seam | `gopsutil.go` | `gopsutil/v4` | done |
 | Discovery, session build, child tree, port attribution, orphan detection | `discover.go` | `Machine` seam, cross-tick state in `Collector` | done |
-| Transcript reads: tokens, context, model, title, true state | phases 2 | per-harness readers | open |
+| Transcript reads: tokens, context, model, title, true state | phases 2 | per-harness readers | done |
 | Git branch and dirty counts per session cwd | `git.go` | `Runner` seam | open |
 | Quota gauges | `quota.go` | harness state files | open |
 | Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | open |
@@ -101,10 +101,14 @@ Readers differ in how they find a store, not in what they return:
 | --- | --- | --- |
 | opencode | `OpenCodeStore.Sessions(ctx, since, limit)` | one SQLite row per session |
 | claude | `ClaudeStore.Transcript(path)`, `ClaudeStore.PathFor(cwd, since)` | one JSONL per session |
+| codex | `CodexStore.Rollout(path)` | one JSONL rollout per session |
+| pi | `PiStore.Transcript(path)`, `PiStore.PathFor(cwd, since)` | one JSONL per session |
 
-opencode lists sessions because its database is the list. Claude has no list: a session exists
-because a transcript exists for a live process's cwd, so the caller passes the path it already
-resolved. Sweeping every project directory each tick is what the cost model forbids.
+opencode lists sessions because its database is the list. Claude and pi have no list: a session
+exists because a transcript exists for a live process's cwd, so the caller passes the path it
+already resolved. Codex has no list either; its rollout is found from the live process's open
+files, which is the core join's job. Sweeping every project directory each tick is what the cost
+model forbids.
 
 ### `claude.go`
 
@@ -222,6 +226,77 @@ Tests in `codex_test.go`, synthetic rollouts only, built line by line with inven
 - a truncated or replaced file resets totals instead of carrying them forward;
 - an over-cap line is skipped without stalling the next read.
 
+### `pi.go`
+
+`PiStore` reads pi's sessions under
+`~/.pi/agent/sessions/--<encoded-cwd>--/<timestamp>_<sessionId>.jsonl`, where pi drops the leading
+path separator from `<encoded-cwd>` and replaces `/`, `\` and `:` with `-`. `Transcript(path)` takes
+the path the caller resolved; `PathFor(cwd, since)` returns the newest transcript in the encoded
+directory at or after `since` and falls back to a flat configured `sessionDir`, matching each
+file's header cwd. `PiSessionsPath(home)` names the default root so an override is a `Root` field
+rather than a guess. Pi injects `PI_SESSION_FILE` into the shell commands
+it spawns, not into its own process, which carries only the `AI_AGENT` and `PI_CODING_AGENT`
+markers, so the core wiring resolves the transcript by cwd with `PathFor`; this reader takes the
+path and does not guess which pid owns it.
+
+Per line, by `type`:
+
+| Line | Fact |
+| --- | --- |
+| `session` | `id`, `cwd`; `parentSession` names the parent by file path, not by id |
+| `message` role `user` | opens a turn; the first real prompt is the title fallback |
+| `message` role `assistant` | `provider`/`model`; `usage`; `stopReason`; `toolCall` blocks |
+| `message` role `toolResult` | closes the `toolCallId`; an optional `usage` is nested model work |
+| `usage` | tokens from cache warming and similar work; totals only, never context |
+| `compaction`, `branch_summary` | an optional `usage` adds to totals; the summary is not a response |
+| `session_info` | `name`, preferred over the prompt fallback |
+| `model_change` | `provider`/`modelId`, a fallback until a response names its model |
+
+Facts are derived the way the documented format and this machine's sessions define them:
+
+1. **Usage is per response, so it adds.** Pi writes one assistant record per response, content
+   blocks included, so there is no block duplication to dedupe. `input` excludes cached content
+   (measured: 162 input + 14,464 cache read + 32 output = 14,658 totalTokens), so the prompt the
+   model saw is `input + cacheRead + cacheWrite`. `reasoning` is already inside `output` and is not
+   added again. `cost` is ignored, per the currency non-goal.
+2. **Context is the last response's fill**: the same three prompt counters. The session file does
+   not record the window, so `Context.Limit` stays zero and the tab draws no bar instead of a
+   made-up percentage. Pi's model catalog is a separate store; joining it belongs to the tab, not
+   this reader.
+3. **State follows the open turn.** A user message opens it (`thinking`). An assistant response
+   with `stopReason: toolUse` leaves its `toolCall` ids pending (`executing`); `deferred` keeps the
+   turn open while the provider result is retrieved. Each `toolResult` clears its id and reopens
+   the turn, because the model is being asked to answer it (`thinking`; still `executing` while
+   another parallel call is pending). Any other terminal stop reason (`stop`, `length`, `error`,
+   `aborted`) closes it (`waiting`). Streaming `pending` responses are not persisted.
+   `discover.go`'s CPU delta still wins in the join.
+4. **Titles**: `session_info.name` wins; otherwise the first real user prompt. User content is a
+   string or text blocks; non-user roles and extension messages are never prompts. A forked
+   session that copies history is read linearly: totals are what the file records.
+
+Incremental by offset with the same `jsonlCursor`/`jsonlFiles` lifecycle, shared read budget, 10 MB
+line cap and reset rules as `ClaudeStore`, with state keyed by path. `Updated` is the file's mtime.
+
+Tests in `pi_test.go`, synthetic sessions only, built line by line with invented names and ids:
+
+- a header and one response give the id, cwd, model, tokens, context and one history point;
+- repeated responses add totals, and `reasoning` is not added twice;
+- a prompt then a tool-call response reads `thinking` then `executing`, a `toolResult` reads
+  `thinking`, and a final response reads `waiting`;
+- a steering prompt while a call is pending stays `executing`, and a completed response settles
+  the old call;
+- two parallel tool calls stay `executing` until both results land;
+- a `deferred` response keeps the turn open, and an `aborted` or `error` response closes it;
+- `session_info` overrides the first-prompt fallback, and a session with neither leaves the title
+  empty;
+- `usage` and tool-result usage reach the totals but not the context or history;
+- a line appended between reads adds only that line; a partial trailing line is counted exactly
+  once;
+- a truncated or replaced file resets totals instead of carrying them forward;
+- an over-cap line is skipped without stalling the next read;
+- `PathFor` picks the newest transcript in the encoded directory, finds a flat `sessionDir` by
+  header cwd, and honors `since` in both.
+
 ## Cost model
 
 Chosen to stay cheap on a machine with large histories (this one has 233M of Codex JSONL and a
@@ -242,7 +317,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `opencode.go`: opencode v2 SQLite reader (tokens, model, title, parent, state)
 - [x] `claude.go`: Claude Code JSONL reader, incremental by offset
 - [x] `codex.go`: Codex JSONL rollout reader, incremental by offset
-- [ ] `pi.go`: Pi JSONL reader, incremental by offset
+- [x] `pi.go`: Pi JSONL reader, incremental by offset
 - [ ] `git.go`: branch and dirty counts per session cwd
 - [ ] `quota.go`: Claude and Codex quota gauges
 - [ ] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
@@ -312,9 +387,28 @@ Found while building the readers; none blocks the tab, and each names the item t
   `response_item` message with role `user`, which this reader ignores (abtop does too). Whether
   the tab shows those threads, and how it filters their injected `<environment_context>` and
   `AGENTS.md` records, belongs to the core wiring's process-to-rollout join.
-- **In-place growth is not detected.** A rollout rewritten to the same path with a larger size
+- **pi attribution is per-directory.** Pi has no session list, so `PathFor` returns the newest
+  transcript for the cwd: two live pi sessions in one directory read the same transcript. A
+  `sessionDir` override must be passed as `Root` (that layout is flat and `PathFor` matches each
+  file's header cwd), because `PI_SESSION_FILE` only reaches pi's shell-tool children. The core
+  wiring owns both limits.
+- **pi's PathFor re-lists one directory per tick.** The default root needs one `ReadDir` of the
+  cwd's own directory; a custom flat `sessionDir` reads header cwds newest-first, as pi itself
+  does. Neither walks the sessions root, but a cwd with thousands of transcripts would be worth
+  a cache; measure before the tab polls every tick. The core wiring owns the call frequency.
+- **pi's own context number is branch-aware.** Pi's footer ignores aborted and error responses,
+  scopes usage to the active branch, and reports nothing after a compaction until a fresh
+  response. This reader reports the last assistant record in file order, which is the plan's one
+  context rule for every harness. Aligning would need branch-aware state; the tab can compare
+  once a window limit is joined.
+- **In-place growth is not detected.** A transcript rewritten to the same path with a larger size
   keeps its accumulator and seeks past the new prefix; only an inode change or a shorter file
-  resets. Both readers share this pre-existing rule.
+  resets. All three JSONL readers (claude, codex and pi) share this pre-existing rule.
+- **pi's context window lives outside the transcript.** Pi records the fill per response but the
+  window only in `~/.pi/agent/models-store.json`: each provider entry holds a `models` list whose
+  entries carry `id` and `contextWindow`. The tab item can match the assistant message's provider
+  and model against that list when it wants a pi percentage; until then the reader reports the
+  fill with a zero limit, which draws nothing rather than a guess.
 
 ## Pass log
 
@@ -329,3 +423,8 @@ One line per completed item: what it did and how it was verified.
   read of a real rollout (537,649 input / 18,028 output / 14,713,344 cached, context 245,001,
   104 history points), and mutation checks pin offset resume, fork identity, in-place truncation,
   the empty-call and nil-payload guards, and both tool-call vocabularies.
+- pi JSONL reader — `go build ./...`, `go test ./...`; matches an independent read of a real
+  21-response session (37,214 input / 780 output / 312,448 cached, context 17,638, 21 history
+  points), and synthetic tests pin offset resume, inode replacement, flat `sessionDir` lookup,
+  the turn states (including parallel calls and `deferred`), name clearing, and the split between
+  response and auxiliary usage.
