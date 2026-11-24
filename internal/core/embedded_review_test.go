@@ -129,7 +129,7 @@ func TestPruneWaitsUntilTheCurrentVersionIsComplete(t *testing.T) {
 	defer core.SetPruneForTest(time.Hour, 0)()
 	os.MkdirAll(root, 0o700)
 	d := oldDir(t, root, "0123456789abcdef", 100*time.Hour, 100*time.Hour)
-	core.ResolveEmbedded("bd") // one of four
+	core.ResolveEmbedded("bd") // one of five
 	if !exists(d) {
 		t.Fatal("the previous version stays until the new one is complete")
 	}
@@ -138,7 +138,7 @@ func TestPruneWaitsUntilTheCurrentVersionIsComplete(t *testing.T) {
 	link := t.TempDir()
 	os.WriteFile(filepath.Join(link, "precious"), nil, 0o600)
 	os.Symlink(link, filepath.Join(root, "fedcba9876543210"))
-	for _, tool := range []string{"lambe", "beads-lease", "board"} {
+	for _, tool := range []string{"lambe", "beads-lease", "board", "abtop"} {
 		core.ResolveEmbedded(tool)
 	}
 	if exists(d) || !exists(notHash) || !exists(filepath.Join(link, "precious")) {
