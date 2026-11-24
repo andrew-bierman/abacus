@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: serve error.data (the error object plus the plan it concerns; schema_version is not sent there)",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "retryable": {
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "unknown_outcome": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "schema_version"
+  ],
+  "title": "serve-error",
+  "type": "object",
+  "x-abacus-schema": 1
+}

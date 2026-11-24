@@ -107,6 +107,31 @@
       "file": "bulk-result.json"
     },
     {
+      "name": "workspace",
+      "commands": "status (domains.workspace), serve workspace",
+      "file": "workspace.json"
+    },
+    {
+      "name": "serve-initialize",
+      "commands": "serve initialize",
+      "file": "serve-initialize.json"
+    },
+    {
+      "name": "serve-plan",
+      "commands": "serve plan.* methods",
+      "file": "serve-plan.json"
+    },
+    {
+      "name": "serve-applied",
+      "commands": "serve apply",
+      "file": "serve-applied.json"
+    },
+    {
+      "name": "serve-error",
+      "commands": "serve error.data (the error object plus the plan it concerns; schema_version is not sent there)",
+      "file": "serve-error.json"
+    },
+    {
       "name": "error",
       "commands": "any command that fails, with --json",
       "file": "error.json"

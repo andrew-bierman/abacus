@@ -58,6 +58,7 @@ func SchemaSpecs() []SchemaSpec {
 		{"serve-initialize", "serve initialize", typeOf[ServeInitialize]()},
 		{"serve-plan", "serve plan.* methods", typeOf[ServePlan]()},
 		{"serve-applied", "serve apply", typeOf[ServeApplied]()},
+		{"serve-error", "serve error.data (the error object plus the plan it concerns; schema_version is not sent there)", typeOf[ServeErrorData]()},
 		{"error", "any command that fails, with --json", typeOf[ErrorDoc]()},
 		{"schema-index", "schema --json", typeOf[SchemaIndex]()},
 	}

@@ -477,3 +477,5 @@ func readyClient(t *testing.T) (*client, *fixture) {
 	c.init()
 	return c, f
 }
+
+func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }

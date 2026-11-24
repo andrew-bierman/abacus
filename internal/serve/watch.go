@@ -103,6 +103,7 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 				poll.Base, poll.Max = e.cfg.SlowBase, 2*e.cfg.SlowBase
 			case err != nil:
 				ok = false
+			case fp == "": // nothing readable this time: not a change, not a failure
 			case last == "": // the first look is the baseline, not a change
 				last = fp
 			case taskview.Changed(last, fp):

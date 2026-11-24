@@ -572,3 +572,56 @@ func TestParentContextEndsTheServer(t *testing.T) {
 
 var _ = os.Getenv
 var _ = fmt.Sprint
+
+// The limits are exact: a request of exactly the limit is served, one byte more is not.
+func TestRequestSizeAndDepthLimitsAreExact(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Limits.MaxRequestBytes = 4096
+	c := startClient(t, f.cfg)
+	c.init()
+	pad := func(n int) string { // a valid request of exactly n bytes (before the newline)
+		base := `{"jsonrpc":"2.0","id":"p","method":"version"}`
+		return base + strings.Repeat(" ", n-len(base))
+	}
+	id := c.expect(`"p"`)
+	c.raw(pad(4096))
+	if m := c.await(id); m.Error != nil {
+		t.Fatalf("a request of exactly the limit was refused: %+v", m.Error)
+	}
+	c.raw(pad(4097))
+	if m := c.anonResponse(); m.Error == nil || m.Error.Code != -32600 || !strings.Contains(m.Error.Message, "larger than 4096") {
+		t.Fatalf("one byte over: %+v", m.Error)
+	}
+	// depth: the whole request counts, params included
+	nest := func(total int) string { // total levels with the request object itself as level 1
+		return `{"jsonrpc":"2.0","id":"d","method":"version","params":` + strings.Repeat(`{"a":`, total-2) + `{}` + strings.Repeat("}", total-2) + `}`
+	}
+	id = c.expect(`"d"`)
+	c.raw(nest(32))
+	if m := c.await(id); m.Error == nil || m.Error.Code != -32602 { // deep enough to be read, and then refused as params
+		t.Fatalf("depth 32 must reach the method: %+v", m.Error)
+	}
+	c.raw(nest(33))
+	if m := c.anonResponse(); m.Error == nil || m.Error.Code != -32600 {
+		t.Fatalf("depth 33: %+v", m.Error)
+	}
+}
+
+func TestShutdownCancelsReadsAtOnceAndOnlyWritesGetTheGrace(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.WriteGrace = 30 * time.Second
+	c := startClient(t, f.cfg)
+	c.init()
+	started := slowTasks(f)
+	rd := c.send("tasks.list", nil)
+	<-started
+	begin := time.Now()
+	sd := c.send("shutdown", nil)
+	c.await(rd).wantErr(t, core.CodeTimeout)
+	if m := c.await(sd); m.Error != nil {
+		t.Fatal(m.Error)
+	}
+	if time.Since(begin) > 5*time.Second {
+		t.Errorf("a read in flight held shutdown for %v: only writes get the grace", time.Since(begin))
+	}
+}

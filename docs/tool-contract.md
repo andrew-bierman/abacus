@@ -592,6 +592,15 @@ bulk, board-post, board-reply), `applied-*` for a task write, a batch and a boar
 -update-golden` rewrites them and refuses anything that is not a `schema_version` 1 object. `batch_id` is
 a random per-run value, normalized in its golden.
 
+## Serve mode
+
+`abacus serve --stdio` is the long-lived form of this contract for a native client: JSON-RPC 2.0, one
+message per line on stdin and stdout, no network port. Its read methods return the documents above (same
+bytes as the command's `--json`, on one line), its errors carry the closed codes of "Errors: stable codes" in
+`error.data`, and its writes are the plan and apply of "Plan digests" with a server-held single-use plan id.
+The protocol, limits and the notification rules are in `docs/serve-protocol.md`; the extra messages have
+schemas in `docs/schema/v1` (`serve-initialize`, `serve-plan`, `serve-applied`, `serve-error`).
+
 ## Clients
 
 GUI clients, such as a later SwiftUI app, are front-ends over the umbrella's core and use the
