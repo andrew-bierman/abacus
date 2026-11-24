@@ -236,6 +236,15 @@
       "license_path": "LICENSE",
       "license_sha256": "ad1e64b82c04fb2ee6bfe521bff01266971ffaa70500024d4ac767c6033aafb9",
       "linked_what": "its process package, for the Agents domain's process list"
+    },
+    {
+      "name": "sqlite",
+      "module": "modernc.org/sqlite",
+      "version": "v1.63.0",
+      "license": "BSD-3-Clause (shipped verbatim; the modules it needs ship theirs in the notices)",
+      "license_path": "LICENSE",
+      "license_sha256": "c6fe05491a60ae13bcd223088d2705e36dede24e5587226231d2459ada5c4822",
+      "linked_what": "the pure-Go SQLite driver, for the Agents domain's read-only reading of OpenCode's session database"
     }
   ]
 }
