@@ -150,8 +150,8 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 	}
 	if l.cur != viewList {
 		// e, x and the workspace jump act on the list's current task, which this view does not show.
-		if key.Matches(k, keyEdit, keyClose, keyWorkspace) {
-			s.notice = "switch to the List view (v) to edit, close or open a task"
+		if key.Matches(k, keyEdit, keyClose, keyWorkspace, keyTag, keyUntag, keyAssign, keyPrio, keyBlock, keyUnblock, keyComment) {
+			s.notice = "switch to the List view (v) to change or open a task"
 			return nil, true
 		}
 		return nil, false

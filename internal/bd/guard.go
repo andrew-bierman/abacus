@@ -129,6 +129,10 @@ func writeAllowed(a []string, dir string) bool {
 				return prioRE.MatchString(n + "=" + v)
 			case "--status":
 				return slices.Contains(core.TaskStatuses, v)
+			case "--add-label", "--remove-label":
+				return core.LabelRE.MatchString(v)
+			case "--assignee", "--if-assignee":
+				return core.AssigneeOK(v)
 			case "--if-status":
 				// The guard names the status the task has now; closed is never a source of an update
 				// (closed work leaves closed through reopen), so a card cannot be dragged out of it.
@@ -136,9 +140,28 @@ func writeAllowed(a []string, dir string) bool {
 			}
 			return false
 		})
+		if !ok {
+			return false
+		}
+		fields := seen["--title"] || seen["--description"] || seen["--priority"] || seen["--status"] || seen["--if-status"]
+		switch {
+		case seen["--add-label"] || seen["--remove-label"]:
+			// one label, added or removed, and nothing else in the same call
+			return seen["--add-label"] != seen["--remove-label"] && !seen["--assignee"] && !seen["--if-assignee"] && !fields
+		case seen["--assignee"] || seen["--if-assignee"]:
+			// an assignment always carries the guard (who holds it now) and stands alone: never --force or --claim
+			return seen["--assignee"] && seen["--if-assignee"] && !fields
+		}
 		// A status change always carries its guard, and a guard always carries a status change:
 		// never --force, --claim or any other flag (the allowlist names every one that is allowed).
-		return ok && (seen["--title"] || seen["--description"] || seen["--priority"] || seen["--status"]) && seen["--status"] == seen["--if-status"]
+		return (seen["--title"] || seen["--description"] || seen["--priority"] || seen["--status"]) && seen["--status"] == seen["--if-status"]
+	case "dep":
+		// dep add|remove BLOCKED BLOCKER --json: the one blocking edge, both ends named, never the --blocks shorthand,
+		// a type or an external reference
+		return len(a) == 5 && (a[1] == "add" || a[1] == "remove") && core.TaskIDRE.MatchString(a[2]) && core.TaskIDRE.MatchString(a[3]) && a[2] != a[3] && a[4] == "--json"
+	case "comment":
+		// the text follows `--`, so it can never be read as a flag; it is one argument
+		return len(a) == 5 && core.TaskIDRE.MatchString(a[1]) && a[2] == "--json" && a[3] == "--" && core.CommentTextOK(a[4])
 	case "close", "reopen":
 		if len(a) < 2 || !core.TaskIDRE.MatchString(a[1]) {
 			return false
@@ -190,6 +213,30 @@ func (m *Module) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 		if ch.Reason != "" {
 			a = append(a, "--reason="+ch.Reason)
 		}
+	case core.TaskLabelAdd, core.TaskLabelRemove:
+		flag := "--add-label="
+		if ch.Op == core.TaskLabelRemove {
+			flag = "--remove-label="
+		}
+		a = []string{"update", ch.ID, "--json", flag + ch.Label}
+	case core.TaskPriority:
+		if ch.Priority == nil {
+			return nil, errors.New("a priority is required")
+		}
+		a = []string{"update", ch.ID, "--json", fmt.Sprintf("--priority=%d", *ch.Priority)}
+	case core.TaskAssign:
+		if ch.Assignee == nil {
+			return nil, errors.New("an assignee is required")
+		}
+		a = []string{"update", ch.ID, "--json", "--assignee=" + *ch.Assignee, "--if-assignee=" + ch.IfAssignee}
+	case core.TaskDepAdd, core.TaskDepRemove:
+		verb := "add"
+		if ch.Op == core.TaskDepRemove {
+			verb = "remove"
+		}
+		a = []string{"dep", verb, ch.ID, ch.Blocker, "--json"}
+	case core.TaskAddComment:
+		a = []string{"comment", ch.ID, "--json", "--", ch.Text}
 	case core.TaskInit:
 		if m.o.InitDir == "" || ch.Dir != m.o.InitDir {
 			return nil, errors.New("refused: bd init is only allowed in the managed workspace")

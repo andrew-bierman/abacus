@@ -87,6 +87,10 @@ type Task struct {
 	Type      string `json:"type,omitempty"`
 	Assignee  string `json:"assignee,omitempty"`
 	UpdatedAt string `json:"updated_at,omitempty"`
+	// Labels and DependsOn (the tasks that block this one) are filled by a single-task re-read only
+	// (TaskReader), never by the summary.
+	Labels    []string `json:"labels,omitempty"`
+	DependsOn []string `json:"depends_on,omitempty"`
 }
 
 // TasksReport is the typed view of the Tasks domain: tasks, counts and where they came from.

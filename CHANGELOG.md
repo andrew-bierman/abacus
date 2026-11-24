@@ -32,6 +32,25 @@ may change behavior, and patch versions are fixes and small additions.
   tab no longer lowercases or matches state strings. Typed `LeasesReport` rendering and the
   `RunState` enum with its tone were already in place.
 
+- Gated edits in the Tasks workspace beyond create, update and close (U8 of
+  `docs/design/2026-11-23-feat-tasks-workspace-plan.md`): add or remove a label, set the priority,
+  assign or unassign, add or remove a blocker, and add a comment. CLI:
+  `abacus tasks label add|remove ID LABEL`, `tasks assign ID NAME|--clear`, `tasks priority ID N`,
+  `tasks dep add|remove ID --blocked-by OTHER|--blocks OTHER`, `tasks comment ID TEXT|--text TEXT`, each
+  with `--yes`, `--dry-run` and `--json` like the other writes. TUI (List view, selected task): `t` add
+  label, `u` remove label, `a` assign, `p` priority, `b` add blocker, `B` remove blocker, `c` comment,
+  each a one-field form and then the existing confirm screen (`?` lists them). Every edit is a typed
+  plan in core with an exact argv allowlist (one label per call; an assignment always carries
+  `--if-assignee`; a comment follows `--`; no `--force`, `--claim`, `--set-labels`, link types or
+  `--no-cycle-check`), is checked against a re-read of the task when the confirm screen opens and again
+  right before the write, and goes through the single-use, fail-closed audited gate. Dependency edits
+  are refused before anything is planned when they name the task itself, a task that is not in the
+  tracker, an edge that already exists, a link that is not a blocking one (bd's own `dep remove` would
+  remove a parent link), or would close a cycle (the chain is named, parent links included). A comment
+  that times out is reported as an unknown result, never as not applied. The prompt (`:`) still never
+  writes. `core.Task` gained additive `labels` and `depends_on` (filled by a single-task re-read);
+  `schema_version` stays 1.
+
 ## [0.4.0] - 2026-11-23
 
 First release since 0.2.0. The 0.3.0 section below was never tagged; its changes ship here.

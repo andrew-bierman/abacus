@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm this change ──────────────╮
+│   make task ac-12 wait for ac-30     │
+│   title: "wire the lease heartbeat"  │
+│   blocker: "ac-30 saved filters"     │
+│                                      │
+│ exact command:                       │
+│   bd dep-add ac-12 ac-30             │
+╰──────────────────────────────────────╯
+
+
+y apply · n/esc cancel · q quit · ? hel…
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────╮
+│   make task ac-12 wait for ac-30     │
+│   title: "wire the lease heartbeat"  │
+│   blocker: "ac-30 saved filters"     │
+│                                      │
+│ exact command:                       │
+│   bd dep-add ac-12 ac-30             │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? hel…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   make task ac-12 wait for ac-30                                             │
+│   title: "wire the lease heartbeat"                                          │
+│   blocker: "ac-30 saved filters"                                             │
+│                                                                              │
+│ exact command:                                                               │
+│   bd dep-add ac-12 ac-30                                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   make task ac-12 wait for ac-30                                             │
+│   title: "wire the lease heartbeat"                                          │
+│   blocker: "ac-30 saved filters"                                             │
+│                                                                              │
+│ exact command:                                                               │
+│   bd dep-add ac-12 ac-30                                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   make task ac-12 wait for ac-30                                                                                     │
+│   title: "wire the lease heartbeat"                                                                                  │
+│   blocker: "ac-30 saved filters"                                                                                     │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd dep-add ac-12 ac-30                                                                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   make task ac-12 wait for ac-30                                                                                     │
+│   title: "wire the lease heartbeat"                                                                                  │
+│   blocker: "ac-30 saved filters"                                                                                     │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd dep-add ac-12 ac-30                                                                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────╮
+│   make task ac-12 wait for ac-30                         │
+│   title: "wire the lease heartbeat"                      │
+│   blocker: "ac-30 saved filters"                         │
+│                                                          │
+│ exact command:                                           │
+│   bd dep-add ac-12 ac-30                                 │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────╮
+│   make task ac-12 wait for ac-30                                                                 │
+│   title: "wire the lease heartbeat"                                                              │
+│   blocker: "ac-30 saved filters"                                                                 │
+│                                                                                                  │
+│ exact command:                                                                                   │
+│   bd dep-add ac-12 ac-30                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab

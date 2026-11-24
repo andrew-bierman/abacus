@@ -139,6 +139,18 @@ func (p taskProv) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 	if ch.IfStatus != "" {
 		a = append(a, "--if-status="+ch.IfStatus)
 	}
+	if ch.Label != "" {
+		a = append(a, "--label="+ch.Label)
+	}
+	if ch.Assignee != nil {
+		a = append(a, "--assignee="+*ch.Assignee, "--if-assignee="+ch.IfAssignee)
+	}
+	if ch.Blocker != "" {
+		a = append(a, ch.Blocker)
+	}
+	if ch.Text != "" {
+		a = append(a, "--", ch.Text)
+	}
 	return a, nil
 }
 func (p taskProv) RunTask(_ context.Context, argv []string) (core.TaskResult, error) {
@@ -339,7 +351,7 @@ func scenarios() []scenario {
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board", overlay: true},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
-	}, append(append(append(searchScenarios(), treeScenarios()...), promptScenarios()...), liveScenarios()...)...)
+	}, append(append(append(append(searchScenarios(), treeScenarios()...), promptScenarios()...), liveScenarios()...), editScenarios()...)...)
 }
 
 func render(t *testing.T, sc scenario, th Theme, w, h int) string {

@@ -43,6 +43,7 @@ type taskAppliedMsg struct {
 	res core.TaskResult
 	err error
 	op  core.TaskOp
+	ch  core.TaskChange
 }
 
 type taskMode int
@@ -191,7 +192,8 @@ func (s *tasksSection) baseBindings() []key.Binding {
 		return append(s.listBindings(), keyNew, keyFull, keyReload)
 	}
 	it, ok := s.selectedItem()
-	return append(s.listBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload)
+	// the edit keys come last: a narrow footer is cut from the right, and `?` lists them all
+	return append(s.listBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload, keyTag, keyUntag, keyAssign, keyPrio, keyBlock, keyUnblock, keyComment)
 }
 
 func (s *tasksSection) fetchTasks() tea.Cmd {
@@ -343,7 +345,7 @@ func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.changedNote = ""
 		// A change planned against a status (a card move, a status edit) is refused outright when the task
 		// has moved since: the board shows the current state again and the move is planned anew.
-		if m.err != nil && ch.Expect != "" { // a change planned against a status is never confirmed unchecked
+		if m.err != nil && (ch.Expect != "" || core.NeedsFresh(ch.Op)) { // a change planned against a status is never confirmed unchecked
 			s.mode = modeList
 			s.notice = "could not verify the current status; nothing was written"
 			return s, nil
@@ -353,6 +355,13 @@ func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.notice = fmt.Sprintf("%s changed since you opened it (now %s): nothing was written", san(m.id), san(m.task.Status))
 			s.list.slowUntil = time.Time{}
 			return s, s.fetchTasks()
+		}
+		if m.err == nil { // an edit that no longer fits (the field moved, the label is there) is refused, not planned anew
+			if err := core.CheckFresh(ch, m.task); err != nil {
+				s.mode, s.notice = modeList, core.DescribeWriteError(err)
+				s.list.slowUntil = time.Time{}
+				return s, s.fetchTasks()
+			}
 		}
 		if m.err != nil {
 			s.changedNote = "could not re-read the issue (" + core.Sanitize(m.err.Error()) + "): its current values are unverified"
@@ -380,7 +389,7 @@ func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.err != nil {
 			s.notice = core.DescribeWriteError(m.err)
 		} else {
-			s.notice = fmt.Sprintf("%s %s %s", opVerb(m.op), san(m.res.ID), san(m.res.Title))
+			s.notice = appliedNotice(m)
 		}
 		s.list.slowUntil = time.Time{} // the tracker changed: look again now
 		if m.err == nil {
@@ -500,6 +509,8 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			s.fields = []formField{{label: "Title", value: t.Title}, {label: "Description (blank: keep)"}, {label: "Priority 0-4", value: fmt.Sprint(t.Priority)}, {label: "Status (blank: keep)"}}
 			s.fi, s.formErr, s.mode = 0, "", modeForm
 		}
+	case key.Matches(k, keyTag, keyUntag, keyAssign, keyPrio, keyBlock, keyUnblock, keyComment):
+		s.openEdit(k)
 	case key.Matches(k, keyClose):
 		t, ok := s.current()
 		switch {
@@ -544,6 +555,9 @@ func (s *tasksSection) formKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 // submitForm turns the form into a change and moves toward the confirm screen. Nothing is
 // written here: a plan only describes the change. Only fields the user edited are sent.
 func (s *tasksSection) submitForm() tea.Cmd {
+	if core.NeedsFresh(s.op) {
+		return s.submitEdit()
+	}
 	v := func(i int) string { return strings.TrimSpace(s.fields[i].value) }
 	ch := core.TaskChange{Op: s.op, Before: s.target}
 	update := s.op == core.TaskUpdate
@@ -585,7 +599,7 @@ func (s *tasksSection) beginConfirm(ch core.TaskChange) tea.Cmd {
 		}
 		return nil
 	}
-	if ch.Expect != "" && s.reader == nil {
+	if (ch.Expect != "" || core.NeedsFresh(ch.Op)) && s.reader == nil {
 		s.notice, s.mode = "could not verify the current status; nothing was written", modeList
 		return nil
 	}
@@ -611,6 +625,7 @@ func (s *tasksSection) toConfirm(ch core.TaskChange) {
 
 func (s *tasksSection) apply(p core.WritePlan) tea.Cmd {
 	op := s.op
+	recheck := taskview.RecheckDep(s.src, nowFn)
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
 		defer cancel()
@@ -628,8 +643,11 @@ func (s *tasksSection) apply(p core.WritePlan) tea.Cmd {
 				return taskAppliedMsg{err: core.ErrChanged, op: op}
 			}
 		}
+		if err := core.FreshDep(ctx, s.reader, p.Change, recheck); err != nil { // the edits without a tracker-side guard: read once more right before the write
+			return taskAppliedMsg{err: err, op: op, ch: p.Change}
+		}
 		res, err := s.applier.Apply(ctx, p)
-		return taskAppliedMsg{res: res, err: err, op: op}
+		return taskAppliedMsg{res: res, err: err, op: op, ch: p.Change}
 	}
 }
 
@@ -639,7 +657,7 @@ func (s *tasksSection) modalView() []string {
 	th, w, inner := s.th, s.width(), innerW(s.width())
 	switch s.mode {
 	case modeForm:
-		title := map[core.TaskOp]string{core.TaskCreate: "New task", core.TaskUpdate: "Edit task " + s.target.ID}[s.op]
+		title := editTitle(s.op, s.target.ID)
 		body := fieldRows(th, s.fields, s.fi, inner)
 		if s.formErr != "" {
 			body = append(body, "")

@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Add a blocker to ac-12 ───────────╮
+│ ▸ Waits for (task id)  ac-09▏        │
+│                                      │
+│ that would make a cycle: ac-09 waits │
+│ for ac-12 waits for ac-09            │
+╰──────────────────────────────────────╯
+
+
+
+
+enter next/review · esc back · q quit …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Add a blocker to ac-12 ───────────╮
+│ ▸ Waits for (task id)  ac-09▏        │
+│                                      │
+│ that would make a cycle: ac-09 waits │
+│ for ac-12 waits for ac-09            │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+enter next/review · esc back · q quit …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Add a blocker to ac-12 ───────────────────────────────────────────────────╮
+│ ▸ Waits for (task id)  ac-09▏                                                │
+│                                                                              │
+│ that would make a cycle: ac-09 waits for ac-12 waits for ac-09               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+enter next/review · esc back · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Add a blocker to ac-12 ───────────────────────────────────────────────────╮
+│ ▸ Waits for (task id)  ac-09▏                                                │
+│                                                                              │
+│ that would make a cycle: ac-09 waits for ac-12 waits for ac-09               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+enter next/review · esc back · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Add a blocker to ac-12 ───────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Waits for (task id)  ac-09▏                                                                                        │
+│                                                                                                                      │
+│ that would make a cycle: ac-09 waits for ac-12 waits for ac-09                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+enter next/review · esc back · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Add a blocker to ac-12 ───────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Waits for (task id)  ac-09▏                                                                                        │
+│                                                                                                                      │
+│ that would make a cycle: ac-09 waits for ac-12 waits for ac-09                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+enter next/review · esc back · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Add a blocker to ac-12 ───────────────────────────────╮
+│ ▸ Waits for (task id)  ac-09▏                            │
+│                                                          │
+│ that would make a cycle: ac-09 waits for ac-12 waits for │
+│ ac-09                                                    │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+enter next/review · esc back · q quit · ? help …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Add a blocker to ac-12 ───────────────────────────────────────────────────────────────────────╮
+│ ▸ Waits for (task id)  ac-09▏                                                                    │
+│                                                                                                  │
+│ that would make a cycle: ac-09 waits for ac-12 waits for ac-09                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+enter next/review · esc back · q quit · ? help · tab/→ next tab
