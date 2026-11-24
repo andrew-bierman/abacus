@@ -614,3 +614,57 @@ func goModVersion(t *testing.T, module string) string {
 	t.Fatalf("go.mod does not require %s", module)
 	return ""
 }
+
+// linkedModules are the modules compiled into the binary for a shipped platform, as the notices
+// script derives them (go list -deps, cgo off).
+func linkedModules(t *testing.T, goos, goarch string) map[string][2]string {
+	t.Helper()
+	cmd := exec.Command("go", "list", "-deps", "-f", `{{with .Module}}{{if not .Main}}{{.Path}}{{"\t"}}{{.Version}}{{"\t"}}{{.Dir}}{{end}}{{end}}`, "./cmd/abacus")
+	cmd.Dir = filepath.Join("..", "..")
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS="+goos, "GOARCH="+goarch)
+	out, err := cmd.Output()
+	must(t, err)
+	mods := map[string][2]string{}
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if f := strings.Split(l, "\t"); len(f) == 3 {
+			mods[f[0]] = [2]string{f[1], f[2]}
+		}
+	}
+	return mods
+}
+
+// Every module linked into a shipped binary has an entry in the notices, and its license is one
+// abacus can redistribute (permissive, so compatible with the GPL-3.0 tools carried beside it). A new
+// dependency with a license this list does not know fails here until someone reads it.
+func TestEveryLinkedModuleHasANoticeAndAPermissiveLicense(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go is not installed")
+	}
+	permissive := []string{"Apache License", "Permission is hereby granted", "Redistribution and use in source and binary forms", "MIT License", "BSD 3-Clause", "BSD 2-Clause", "ISC License", "distributed under BSD license"}
+	notices, err := os.ReadFile(filepath.Join(newRig(t, nil).unpack(), "THIRD_PARTY_NOTICES.md"))
+	must(t, err)
+	for _, p := range [][2]string{{"linux", "amd64"}, {"linux", "arm64"}, {"darwin", "amd64"}, {"darwin", "arm64"}} {
+		for path, vd := range linkedModules(t, p[0], p[1]) {
+			files, _ := filepath.Glob(filepath.Join(vd[1], "LICEN[SC]E*"))
+			if len(files) == 0 {
+				t.Errorf("%s/%s: %s has no license file", p[0], p[1], path)
+				continue
+			}
+			var text string
+			for _, f := range files {
+				b, _ := os.ReadFile(f)
+				text += string(b)
+			}
+			ok := false
+			for _, s := range permissive {
+				ok = ok || strings.Contains(text, s)
+			}
+			if !ok {
+				t.Errorf("%s/%s: %s has a license this test does not recognize as permissive", p[0], p[1], path)
+			}
+			if p[0] == "linux" && p[1] == "amd64" && !strings.Contains(string(notices), "### "+path+" "+vd[0]) {
+				t.Errorf("the notices have no entry for %s %s", path, vd[0])
+			}
+		}
+	}
+}
