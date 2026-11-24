@@ -265,12 +265,25 @@ const (
 
 var secretRE = regexp.MustCompile(`(?i)\b(sk-[a-z0-9_-]{12,}|gh[pousr]_[a-z0-9]{16,}|xox[abp]-[a-z0-9-]{10,}|bearer\s+[a-z0-9._-]{16,}|AKIA[0-9A-Z]{16})`)
 
+// The patterns below mask the shapes a credential most often takes in a command line or a prompt: a
+// flag that names one, a KEY=VALUE whose name does, and a password inside a URL. They are a safety net,
+// not a guarantee: a secret in plain prose, or behind a flag with an ordinary name, is not recognized
+// (docs/agents.md says so).
+var (
+	secretFlagRE = regexp.MustCompile(`(?i)(--?(?:api[-_]?key|access[-_]?key|auth[-_]?token|access[-_]?token|token|password|passwd|pass|secret|client[-_]?secret|credentials?|bearer)(?:=|\s+))\S+`)
+	secretEnvRE  = regexp.MustCompile(`(?i)\b([a-z0-9_]*(?:key|token|secret|password|passwd|credential)[a-z0-9_]*=)\S+`)
+	secretURLRE  = regexp.MustCompile(`(://[^/\s:@]+:)[^@\s]+@`)
+)
+
 // CleanAgentText makes text from a transcript, a process list or a monitor safe to show: control
 // characters removed, one line, obvious credentials masked, at most max runes.
 func CleanAgentText(s string, max int) string {
 	s = Sanitize(s)
 	s = strings.Join(strings.Fields(strings.ReplaceAll(s, "\n", " ")), " ")
 	s = secretRE.ReplaceAllString(s, "[redacted]")
+	s = secretFlagRE.ReplaceAllString(s, "${1}[redacted]")
+	s = secretEnvRE.ReplaceAllString(s, "${1}[redacted]")
+	s = secretURLRE.ReplaceAllString(s, "${1}[redacted]@")
 	if max > 0 && utf8.RuneCountInString(s) > max {
 		r := []rune(s)
 		s = string(r[:max-1]) + "…"
@@ -290,12 +303,15 @@ func (a Agent) Clean() Agent {
 		t.Kind, t.Ref, t.Command = c(t.Kind), c(t.Ref), c(t.Command)
 		a.Term = &t
 	}
+	a.Children = append([]AgentChild(nil), a.Children...) // never edit the feed's own slices
 	for i := range a.Children {
 		a.Children[i].Command = c(a.Children[i].Command)
 	}
+	a.Ports = append([]AgentPort(nil), a.Ports...)
 	for i := range a.Ports {
 		a.Ports[i].Command = c(a.Ports[i].Command)
 	}
+	a.Subs = append([]Subagent(nil), a.Subs...)
 	for i := range a.Subs {
 		a.Subs[i].Name, a.Subs[i].State = c(a.Subs[i].Name), c(a.Subs[i].State)
 	}
@@ -306,6 +322,33 @@ func (a Agent) Clean() Agent {
 		}
 	}
 	return a
+}
+
+// CleanExtra is Clean for what a feed reports beyond agents: every string is sanitized and masked,
+// a share outside 0..100 is unknown. It is applied at the same door as Agent.Clean.
+func CleanExtra(x AgentsExtra) AgentsExtra {
+	pct := func(p *float64) *float64 {
+		if p == nil || *p < 0 || *p > 100 || *p != *p {
+			return nil
+		}
+		return p
+	}
+	var out AgentsExtra
+	for _, l := range x.RateLimits {
+		l.Harness = CleanAgentText(l.Harness, maxAgentFields)
+		l.FiveHourResets, l.SevenDayResets, l.UpdatedAt = CleanAgentText(l.FiveHourResets, maxAgentFields), CleanAgentText(l.SevenDayResets, maxAgentFields), CleanAgentText(l.UpdatedAt, maxAgentFields)
+		l.FiveHourPct, l.SevenDayPct = pct(l.FiveHourPct), pct(l.SevenDayPct)
+		out.RateLimits = append(out.RateLimits, l)
+	}
+	for _, p := range x.OrphanPorts {
+		p.Command = CleanAgentText(p.Command, maxAgentFields)
+		out.OrphanPorts = append(out.OrphanPorts, p)
+	}
+	out.TokenRate = x.TokenRate
+	if t := x.TokenRate; t != nil && (*t < 0 || *t != *t) {
+		out.TokenRate = nil
+	}
+	return out
 }
 
 // AgentID is the stable id of an agent: its harness plus the pid, else the session.
@@ -346,20 +389,47 @@ func MergeAgents(lists ...[]Agent) []Agent {
 		}
 		return i
 	}
+	// Same harness and pid is the same agent. A shared session id joins records too, unless the two
+	// groups hold different pids: a resumed session id can sit in two live processes, and they stay two
+	// agents.
+	pidOf := map[int]int{} // group root -> its pid (0: none yet)
 	seen := map[string]int{}
-	join := func(key string, i int) {
-		if j, ok := seen[key]; ok {
-			parent[find(i)] = find(j)
-			return
-		}
-		seen[key] = i
-	}
 	for i, a := range all {
 		if a.PID > 0 {
-			join(fmt.Sprintf("%s|pid|%d", a.Harness, a.PID), i)
+			key := fmt.Sprintf("%s|pid|%d", a.Harness, a.PID)
+			if j, ok := seen[key]; ok {
+				parent[find(i)] = find(j)
+			} else {
+				seen[key] = i
+			}
 		}
-		if a.SessionID != "" {
-			join(a.Harness+"|sess|"+a.SessionID, i)
+	}
+	for i, a := range all {
+		if r := find(i); a.PID > 0 {
+			pidOf[r] = a.PID
+		}
+	}
+	sess := map[string]int{}
+	for i, a := range all {
+		if a.SessionID == "" {
+			continue
+		}
+		key := a.Harness + "|sess|" + a.SessionID
+		j, ok := sess[key]
+		if !ok {
+			sess[key] = i
+			continue
+		}
+		ri, rj := find(i), find(j)
+		if ri == rj {
+			continue
+		}
+		if pi, pj := pidOf[ri], pidOf[rj]; pi != 0 && pj != 0 && pi != pj {
+			continue
+		}
+		parent[ri] = rj
+		if pidOf[rj] == 0 {
+			pidOf[rj] = pidOf[ri]
 		}
 	}
 	groups := map[int][]Agent{}
@@ -582,10 +652,11 @@ func ReadAgents(ctx context.Context, entries []Entry) AgentsReport {
 			r.Notes = append(r.Notes, CleanAgentText(a.err.Error(), 200))
 		}
 		lists = append(lists, a.list)
-		r.RateLimits = append(r.RateLimits, a.extra.RateLimits...)
-		r.OrphanPorts = append(r.OrphanPorts, a.extra.OrphanPorts...)
+		x := CleanExtra(a.extra)
+		r.RateLimits = append(r.RateLimits, x.RateLimits...)
+		r.OrphanPorts = append(r.OrphanPorts, x.OrphanPorts...)
 		if r.TokenRate == nil {
-			r.TokenRate = a.extra.TokenRate
+			r.TokenRate = x.TokenRate
 		}
 	}
 	r.Agents = MergeAgents(lists...)

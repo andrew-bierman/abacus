@@ -17,6 +17,8 @@ import (
 
 // Options are the cross-command flags that shape module construction.
 type Options struct {
+	// AllUsers lists agents run by other users too (agents --all); the default is the current user only.
+	AllUsers    bool
 	LambeConfig string
 	Demo        bool
 }
@@ -40,7 +42,7 @@ type Deps struct {
 }
 
 func usage(d Deps) {
-	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show|board browse; tasks create|update|close|label|assign|priority|dep|comment change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  agents    every running coding agent; --harness, --state, --repo, --json\n  tui       interactive cockpit\n  search    find tasks, board threads, leases and runs; --domain, --limit, --json\n\nfirst run:\n  rex       layout: open the cockpit tabs in a terminal workspace (optional); --new NAME, --yes, --dry-run, --json\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json; --repair fixes a half-created workspace\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n  licenses  print the third-party notices and license texts carried in this file\n\nflags: --json, --lambe-config FILE, --demo and --tab NAME (tui); tasks writes: --yes, --dry-run\n", brand.Name)
+	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show|board browse; tasks create|update|close|label|assign|priority|dep|comment change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  agents    every running coding agent; --harness, --state, --repo, --all, --json\n  tui       interactive cockpit\n  search    find tasks, board threads, leases and runs; --domain, --limit, --json\n\nfirst run:\n  rex       layout: open the cockpit tabs in a terminal workspace (optional); --new NAME, --yes, --dry-run, --json\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json; --repair fixes a half-created workspace\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n  licenses  print the third-party notices and license texts carried in this file\n\nflags: --json, --lambe-config FILE, --demo and --tab NAME (tui); tasks writes: --yes, --dry-run\n", brand.Name)
 }
 
 // Run dispatches a command and returns the process exit code.

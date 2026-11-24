@@ -3,7 +3,6 @@ package agents
 import (
 	"context"
 	"io/fs"
-	"os"
 	"runtime"
 
 	"github.com/shirou/gopsutil/v4/process"
@@ -14,7 +13,7 @@ func defaultFS() fs.FS {
 	if runtime.GOOS == "windows" {
 		return nil
 	}
-	return os.DirFS("/")
+	return rootFS{root: "/"}
 }
 
 // scanProcesses reads the process list in this process (no helper, no daemon). Only processes
@@ -42,6 +41,9 @@ func scanProcesses(ctx context.Context) ([]Proc, error) {
 		}
 		pr.Args, _ = p.CmdlineSliceWithContext(ctx)
 		pr.Cwd, _ = p.CwdWithContext(ctx)
+		if u, err := p.UidsWithContext(ctx); err == nil && len(u) > 0 {
+			pr.UID, pr.UIDKnown = int(u[0]), true
+		}
 		if ms, err := p.CreateTimeWithContext(ctx); err == nil {
 			pr.StartUnix = ms / 1000
 		}

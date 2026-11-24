@@ -78,10 +78,27 @@ func agentItem(a core.Agent) (core.WorkspaceItem, bool) {
 	return itemOf(core.WorkspaceAgent, id, "")
 }
 
+// uniqueItem is the agent's workspace item only when no other agent shares its name. A terminal is
+// looked up by name, so two agents in one repository would both land on whichever tab carries it: the
+// lookup is refused rather than pointing one agent's key at the other's terminal.
+func (s *agentsSection) uniqueItem(a core.Agent) (core.WorkspaceItem, bool) {
+	it, ok := agentItem(a)
+	if !ok {
+		return it, false
+	}
+	n := 0
+	for _, o := range s.report.Agents {
+		if oi, ok := agentItem(o); ok && oi == it {
+			n++
+		}
+	}
+	return it, n == 1
+}
+
 func (s *agentsSection) wsItems() []core.WorkspaceItem {
 	var items []core.WorkspaceItem
 	for _, a := range s.report.Agents {
-		if it, ok := agentItem(a); ok {
+		if it, ok := s.uniqueItem(a); ok {
 			items = append(items, it)
 		}
 	}
@@ -94,7 +111,7 @@ func (s *agentsSection) wsSelected() (core.WorkspaceItem, string, bool) {
 	if s.cursor >= len(l) {
 		return core.WorkspaceItem{}, "", false
 	}
-	it, ok := agentItem(l[s.cursor])
+	it, ok := s.uniqueItem(l[s.cursor])
 	return it, it.ID, ok
 }
 
@@ -528,8 +545,10 @@ func (s *agentsSection) detailLines(iw int) []string {
 		srcs = append(srcs, string(e))
 	}
 	out = append(out, field("seen by", strings.Join(srcs, ", ")))
-	if it, ok := agentItem(a); ok {
+	if it, ok := s.uniqueItem(a); ok {
 		out = append(out, s.ws.detail(th, it, ok, 11)...)
+	} else if _, named := agentItem(a); named {
+		out = append(out, th.Text(KindMuted, "terminal lookup skipped: another agent shares this name"))
 	}
 	if a.Term != nil {
 		out = append(out, field(a.Term.Kind, a.Term.Ref))

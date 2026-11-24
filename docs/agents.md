@@ -90,6 +90,29 @@ Re-pinning the monitor means re-reading its `snapshot.rs` and updating the fixtu
 
 ## Privacy and safety
 
+- Every string that comes from outside abacus (session files, the process list, the monitor's JSON,
+  git files) is cleaned in one place before any front end sees it: control and escape sequences, bidi
+  and zero-width characters are removed, text is one line and bounded. That covers agents, ports,
+  child processes, rate-limit labels, the cwd and harness ids, so the CLI, `--json`, the TUI and search
+  all get safe text.
+- Credentials are masked on a best-effort basis: well-known token shapes (`sk-`, `ghp_`, `xox`, AWS
+  keys, `Bearer ...`), a flag that names one (`--api-key`, `--token`, `--password`, `--secret`, ...),
+  `NAME=VALUE` where the name contains KEY, TOKEN, SECRET, PASSWORD or CREDENTIAL, and a password inside
+  a URL. A secret in plain prose, behind a flag with an ordinary name, or as a bare `-p VALUE` is not
+  recognized. Treat `task`, commands and directories as private regardless.
+- Only regular files are read. A FIFO, device or socket named like a session file (or standing in for
+  `.git/HEAD`) is refused before it is opened, and the real file system opens non-blocking, so one cannot
+  hang a read.
+- Only agents run by the current user are listed. `abacus agents --all` includes other users' agent
+  processes (the process list is world-readable on most systems; their session files are not, so those
+  rows show a process only). The TUI shows your own only. The monitor, when present, lists what it can
+  see as the user abacus runs as.
+- Two live processes are never merged into one agent because they share a session id (a resumed session
+  can be open twice); records merge on harness and pid first.
+- Terminal lookup through Rex goes by name (the worktree or repository), so it is offered only when one
+  agent carries that name; a tmux pane, matched by the agent's own process, is the exact route and stays
+  in the detail as the line to copy.
+
 - Everything is read only; there is no write path, no network and no new daemon.
 - `task` is derived from your own prompts and can still carry project context. `--json` prints it.
   Treat the output as private.

@@ -33,6 +33,9 @@ type Options struct {
 	Now   func() time.Time
 	// RecentWindow is how long a finished session is still listed (as stopped).
 	RecentWindow time.Duration
+	// AllUsers includes agents run by other users; by default only the current user's are listed.
+	AllUsers   bool
+	CurrentUID func() int
 }
 
 // Local is the native feed: processes, session files and terminal panes, all read-only.
@@ -67,6 +70,9 @@ func NewLocal(o Options) *Local {
 	}
 	if o.Panes == nil {
 		o.Panes = realPanes
+	}
+	if o.CurrentUID == nil {
+		o.CurrentUID = os.Getuid
 	}
 	if o.Now == nil {
 		o.Now = time.Now
@@ -131,6 +137,15 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 	}
 	sc.procs = len(procs)
 	aps := harnessProcs(procs)
+	if !l.o.AllUsers {
+		me, kept := l.o.CurrentUID(), aps[:0]
+		for _, p := range aps {
+			if !p.UIDKnown || me < 0 || p.UID == me {
+				kept = append(kept, p)
+			}
+		}
+		aps = kept
+	}
 	sc.agents = len(aps)
 	panes, _ := l.o.Panes(ctx) // no multiplexer is normal
 	byPID := map[int]Proc{}

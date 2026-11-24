@@ -18,6 +18,9 @@ type Proc struct {
 	Args      []string // argv, Args[0] first
 	Cwd       string
 	StartUnix int64
+	// UID is the owner when UIDKnown; a process of another user is hidden unless asked for.
+	UID      int
+	UIDKnown bool
 }
 
 // harnessRule recognizes one harness from a process: by executable name, or by a path fragment

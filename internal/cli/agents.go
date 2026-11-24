@@ -26,6 +26,7 @@ func runAgents(rest []string, d Deps) int {
 	fs.StringVar(&state, "state", "", "only this state: "+statesList())
 	fs.StringVar(&f.Repo, "repo", "", "only this repository")
 	fs.BoolVar(&o.Demo, "demo", false, "render from fixtures")
+	fs.BoolVar(&o.AllUsers, "all", false, "include agents run by other users (default: only yours)")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
 	}
@@ -84,7 +85,7 @@ func renderAgents(w io.Writer, r core.AgentsReport, now time.Time) {
 		fmt.Fprintf(w, "  %-8s%s %-11s %-30s %-5s %s%s  (%s)\n", a.State, mark, a.Title(), where, orDashStr(a.Age(now)), a.Task, ctxPct, a.Source)
 	}
 	for _, l := range r.RateLimits {
-		s := "  limits " + core.HarnessTitle(l.Harness)
+		s := "  limits " + core.Sanitize(core.HarnessTitle(l.Harness))
 		if l.FiveHourPct != nil {
 			s += fmt.Sprintf("  5h %.0f%%", *l.FiveHourPct)
 		}
@@ -94,7 +95,7 @@ func renderAgents(w io.Writer, r core.AgentsReport, now time.Time) {
 		fmt.Fprintln(w, s)
 	}
 	for _, p := range r.OrphanPorts {
-		fmt.Fprintf(w, "  orphan port %d  %s\n", p.Port, p.Command)
+		fmt.Fprintf(w, "  orphan port %d  %s\n", p.Port, core.Sanitize(p.Command))
 	}
 }
 

@@ -169,3 +169,112 @@ func TestAgentsAreSearchable(t *testing.T) {
 		t.Error("predicates and words both apply")
 	}
 }
+
+// hostile is text that would move the cursor, retitle the window, hide or reorder what follows.
+const hostile = "a\x1b[31mred\x1b]0;pwned\x07b‮evil⁦x​z\x9b2J"
+
+// walkStrings calls f on every string in v (decoded JSON).
+func walkStrings(v any, f func(string)) {
+	switch x := v.(type) {
+	case string:
+		f(x)
+	case []any:
+		for _, e := range x {
+			walkStrings(e, f)
+		}
+	case map[string]any:
+		for k, e := range x {
+			f(k)
+			walkStrings(e, f)
+		}
+	}
+}
+
+// NoUnsafeText fails when any string of a report holds a control or invisible/reordering character.
+func NoUnsafeText(t *testing.T, report any) {
+	t.Helper()
+	b, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var v any
+	_ = json.Unmarshal(b, &v)
+	walkStrings(v, func(s string) {
+		for _, r := range s {
+			if r < 0x20 || (r >= 0x7f && r <= 0x9f) || r == 0x202e || r == 0x2066 || r == 0x200b {
+				t.Errorf("unsafe %U in %q", r, s)
+				return
+			}
+		}
+	})
+}
+
+func TestEveryStringFromOutsideIsSanitizedAtTheBoundary(t *testing.T) {
+	pct := 50.0
+	f := &feed{name: "f", state: core.Ready,
+		list: []core.Agent{{Harness: hostile, PID: 1, SessionID: hostile, Repo: hostile, Branch: hostile, Worktree: hostile, Cwd: hostile, Model: hostile, Task: hostile,
+			State: core.AgentRunning, Source: core.EvidenceMonitor, LastActivity: hostile,
+			Term:     &core.TermRef{Kind: hostile, Ref: hostile, Command: hostile},
+			Ports:    []core.AgentPort{{Port: 1, Command: hostile}},
+			Children: []core.AgentChild{{PID: 2, Command: hostile}},
+			Subs:     []core.Subagent{{Name: hostile, State: hostile}}}},
+		extra: core.AgentsExtra{
+			RateLimits:  []core.RateLimit{{Harness: hostile, FiveHourPct: &pct, FiveHourResets: hostile, SevenDayResets: hostile, UpdatedAt: hostile}},
+			OrphanPorts: []core.AgentPort{{Port: 3, Command: hostile}}}}
+	r := core.ReadAgents(context.Background(), []core.Entry{{Module: f, Detection: core.Detection{State: core.Ready}}})
+	NoUnsafeText(t, r)
+	if len(r.RateLimits) != 1 || len(r.OrphanPorts) != 1 || len(r.Agents) != 1 {
+		t.Fatalf("%+v", r)
+	}
+	if !strings.Contains(r.OrphanPorts[0].Command, "red") {
+		t.Fatalf("text must be cleaned, not dropped: %q", r.OrphanPorts[0].Command)
+	}
+	// the feed's own slices are not edited in place
+	if f.list[0].Ports[0].Command != hostile {
+		t.Fatal("Clean wrote through to the feed's slices")
+	}
+}
+
+func TestSecretsAreMaskedInEveryTextField(t *testing.T) {
+	for in, leak := range map[string]string{
+		"run --api-key sk_live_9f8e7d6c5b4a":                 "sk_live_9f8e7d6c5b4a",
+		"curl --token=abcDEF123456":                          "abcDEF123456",
+		"mysql --password hunter2xyz":                        "hunter2xyz",
+		"deploy -token s3cr3tvalue":                          "s3cr3tvalue",
+		"MY_API_KEY=abc123def456 node x.js":                  "abc123def456",
+		"DB_PASSWORD=p@ss node":                              "p@ss",
+		"GITHUB_TOKEN=ghx_verylongvaluevalue run":            "ghx_verylongvaluevalue",
+		"git clone https://user:pa55w0rd@host/repo":          "pa55w0rd",
+		"client_secret=zzz999 --client-secret yyy888":        "zzz999",
+		"export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG": "wJalrXUtnFEMI",
+	} {
+		a := core.Agent{Harness: "h", PID: 1, Task: in, Cwd: "/x/" + in, Children: []core.AgentChild{{PID: 2, Command: in}},
+			Ports: []core.AgentPort{{Port: 1, Command: in}}, Source: core.EvidenceProcess}.Clean()
+		b, _ := json.Marshal(a)
+		if strings.Contains(string(b), leak) {
+			t.Errorf("%q leaked %q: %s", in, leak, b)
+		}
+		x := core.CleanExtra(core.AgentsExtra{OrphanPorts: []core.AgentPort{{Port: 1, Command: in}}})
+		if strings.Contains(x.OrphanPorts[0].Command, leak) {
+			t.Errorf("%q leaked in an orphan port", in)
+		}
+	}
+	// ordinary text is left alone
+	if got := core.CleanAgentText("go test -run TestKeyboard ./... and open the token docs", 0); got != "go test -run TestKeyboard ./... and open the token docs" {
+		t.Fatalf("%q", got)
+	}
+}
+
+func TestMergeKeepsTwoLiveProcessesApartEvenWithOneSessionID(t *testing.T) {
+	a := core.Agent{Harness: core.HarnessClaude, PID: 10, SessionID: "same", State: core.AgentRunning, Source: core.EvidenceMonitor}
+	b := core.Agent{Harness: core.HarnessClaude, PID: 11, SessionID: "same", State: core.AgentIdle, Source: core.EvidenceMonitor}
+	tr := core.Agent{Harness: core.HarnessClaude, SessionID: "other", Source: core.EvidenceTranscript, State: core.AgentIdle}
+	if got := core.MergeAgents([]core.Agent{a, b, tr}); len(got) != 3 {
+		t.Fatalf("two pids with one session id are two agents: %+v", got)
+	}
+	// a pid-less record of that session still joins one of them
+	t2 := core.Agent{Harness: core.HarnessClaude, SessionID: "same", Source: core.EvidenceTranscript, State: core.AgentIdle, Task: "x"}
+	if got := core.MergeAgents([]core.Agent{a, b, t2}); len(got) != 2 {
+		t.Fatalf("%+v", got)
+	}
+}

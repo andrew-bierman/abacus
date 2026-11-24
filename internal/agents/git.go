@@ -11,6 +11,9 @@ import (
 // rooted at "/"). Anything unreadable gives empty strings.
 func gitInfo(fsys fs.FS, cwd string) (repo, branch, worktree string) {
 	dir := strings.TrimPrefix(path.Clean(cwd), "/")
+	if dir == "" {
+		dir = "."
+	}
 	for i := 0; i < 40; i++ {
 		gitPath := path.Join(dir, ".git")
 		fi, err := fs.Stat(fsys, gitPath)
@@ -42,10 +45,10 @@ func gitInfo(fsys fs.FS, cwd string) (repo, branch, worktree string) {
 			}
 			return repo, branch, worktree
 		}
-		if dir == "" || dir == "." {
+		if dir == "." {
 			break
 		}
-		dir = strings.TrimPrefix(path.Dir(dir), ".")
+		dir = path.Dir(dir) // "." is the root of fsys; a hidden folder name keeps its dot
 	}
 	return "", "", ""
 }
@@ -67,7 +70,7 @@ func headBranch(fsys fs.FS, gitDir string) string {
 
 // readSmall reads at most 4 KiB of a file; the files git keeps for this are a line long.
 func readSmall(fsys fs.FS, name string) ([]byte, error) {
-	f, err := fsys.Open(name)
+	f, _, err := openRegular(fsys, name)
 	if err != nil {
 		return nil, err
 	}

@@ -28,6 +28,10 @@ may change behavior, and patch versions are fixes and small additions.
   tmux pane ids; an optional built-in live monitor adds context, rate limits, ports and subagents. See
   `docs/agents.md`. New dependency: `gopsutil` (BSD-3-Clause) and its transitive modules, with its
   license shipped verbatim.
+- Agents hardening: every string from outside is sanitized at the core boundary (rate limits and orphan
+  ports included), secrets are masked more widely (flags, `NAME=VALUE`, URL passwords), non-regular
+  files (FIFOs) are never opened, only the current user's agents are listed (`--all` for the rest), and a
+  shared session id no longer merges two live processes.
 - abtop 0.5.5 (MIT) is built in as an optional fifth tool: pinned and sha256-verified per platform like
   the others, its license shipped verbatim, run with one argv (`--json`), a deadline, an output cap and
   a scrubbed environment (`ABACUS_ABTOP_BIN` overrides it). The bundle scripts now read `.tar.xz`

@@ -31,6 +31,9 @@ type Env struct {
 	// domain on. nil means none: a hand-built Env, as tests use, never reads the real process list or
 	// session folders. DefaultEnv opts in with real sources (a zero Options).
 	Agents *agents.Options
+	// Monitor overrides how the built-in live monitor is found and run (tests inject a lookup that finds
+	// nothing, so no test ever runs a real one from PATH). nil: the real lookup.
+	Monitor *agents.MonitorOptions
 }
 
 // DefaultEnv is the real process environment and the standard abacus paths.
@@ -120,18 +123,25 @@ func Build(o cli.Options, e Env) *core.Registry {
 			Hosts: rex.ParseHosts(e.Getenv("ABACUS_REX_HOSTS")), PassEnv: rex.ParsePassEnv(e.Getenv("ABACUS_REX_PASS_ENV"))}),
 		core.NewConfigCheck(e.Config),
 	}
-	return core.NewRegistry(append(mods, agentFeeds(e)...)...)
+	return core.NewRegistry(append(mods, agentFeeds(e, o.AllUsers)...)...)
 }
 
 // agentFeeds are the Agents domain's modules: the native feed (processes and session files) and the
 // built-in live monitor, which adds context use, rate limits, ports and subagents when it is there.
 // ABACUS_ABTOP_BIN overrides the monitor's location.
-func agentFeeds(e Env) []core.Module {
+func agentFeeds(e Env, allUsers bool) []core.Module {
 	if e.Agents == nil {
 		return nil
 	}
-	local := agents.NewLocal(*e.Agents)
-	return []core.Module{local, agents.NewMonitor(agents.MonitorOptions{Bin: e.Getenv("ABACUS_ABTOP_BIN"), Enrich: local.Enrich})}
+	ao := *e.Agents
+	ao.AllUsers = allUsers
+	local := agents.NewLocal(ao)
+	var mo agents.MonitorOptions
+	if e.Monitor != nil {
+		mo = *e.Monitor
+	}
+	mo.Bin, mo.Enrich = e.Getenv("ABACUS_ABTOP_BIN"), local.Enrich
+	return []core.Module{local, agents.NewMonitor(mo)}
 }
 
 // insights is the Tasks graph-insights provider: bv's analysis package run in this process over

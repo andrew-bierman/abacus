@@ -52,13 +52,8 @@ type reader interface {
 }
 
 func openAt(fsys fs.FS, name string) (reader, int64, error) {
-	f, err := fsys.Open(name)
+	f, fi, err := openRegular(fsys, name)
 	if err != nil {
-		return nil, 0, err
-	}
-	fi, err := f.Stat()
-	if err != nil {
-		f.Close()
 		return nil, 0, err
 	}
 	ra, ok := f.(reader)
