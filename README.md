@@ -44,8 +44,8 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 
 | Domain | What you see | What you can change today |
 | --- | --- | --- |
-| Board | channels, recent threads and messages, open tasks (a message board for agents, not a kanban) | post a thread or reply from the command line (`abacus board post\|reply`, with a confirm step) |
-| Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; graph insights (next pick, blockers, critical path, cycles) in a second view | create, update, close (with a confirm step); first run: create the fleet workspace |
+| Board | channels, recent threads and messages, open tasks (a message board for agents, not a kanban) | post a thread or reply, from the Board tab (`n`, `c`) or the command line (`abacus board post\|reply`), each with a confirm step |
+| Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; a tree of epics and children, a kanban view, a dependency graph and graph insights (next pick, blockers, critical path, cycles) | create, update, close, label, assign, set the priority, add or remove a blocker, comment, move a kanban card, and change up to 25 marked tasks at once (each with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
 | Agents | every running coding agent (Claude Code, Codex, ...): state, repo and branch, task, context, rate limits, ports, subagents; where its state came from is always shown | read only (see [docs/agents.md](docs/agents.md)) |
@@ -170,7 +170,10 @@ or error messages that help you fix one.
 ## Usage
 
 ```
-abacus board|tasks|leases|queues [--json]
+abacus board|tasks|leases|queues|agents [--json]
+abacus tasks list|show|board|graph|history ...   browse (--query, --sort, --json); abacus tasks --help lists every verb
+abacus board post CHANNEL TEXT | reply ID TEXT [--yes] [--dry-run]
+abacus agents  [--harness H] [--state S] [--repo R] [--all] [--json]   every running coding agent
 abacus tasks create [--title T] [--description D] [--priority N] [--type X] [--yes] [--dry-run]
 abacus tasks update ID [--title T] [--description D] [--priority N] [--status S] [--yes] [--dry-run]
 abacus tasks close  ID [--reason R] [--yes] [--dry-run]
@@ -181,18 +184,21 @@ abacus tasks dep add|remove ID --blocked-by OTHER | --blocks OTHER [--yes] [--dr
 abacus tasks comment ID TEXT | ID --text TEXT [--yes] [--dry-run]
 abacus tasks bulk --ids ID,ID,... --op close|status|priority|label-add|label-remove|assign [--value V | --clear] [--yes] [--dry-run] [--json]   up to 25 tasks, one confirm
 abacus search QUERY [--domain D] [--limit N] [--json]   search tasks, board, leases and queues
-abacus tui     [--demo]
+abacus tui     [--demo] [--tab NAME]
+abacus rex layout [--new NAME] [--yes] [--dry-run]   open the cockpit tabs in a terminal workspace (optional)
 abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
 abacus setup --repair [--yes] [--dry-run]       fix a half-created workspace (nothing is deleted)
 abacus config  show [--json] | get KEY | set KEY VALUE | path
 abacus status  [--json] [--lambe-config FILE]     domains plus provider state
 abacus doctor  [--json] [--lambe-config FILE]     leads with ready or needs attention
 abacus version [--json]
+abacus completion bash|zsh|fish                   print a shell completion script
+abacus help [COMMAND]                             (or COMMAND --help) usage for one command, exit 0
 ```
 
 Exit codes: `doctor` exits 1 when a check failed or a provider is broken; a write exits 1 when it
 was not applied or its result is unknown; any command exits 2 on a usage error (including a stray
-positional argument). The domain reads (`board`, `tasks`, `leases`, `queues`) and `status` exit 0
+positional argument); asking for help (`--help`, `help`) is not an error and exits 0. The domain reads (`board`, `tasks`, `leases`, `queues`) and `status` exit 0
 whatever the connection state: the outcome is in each domain's `state` (`connected`,
 `not-connected`, `degraded`) and `reason`. `status --json` and `doctor --json` keep
 `schema_version` 1; `status --json` gains an additive `domains` section. Every read command's JSON
@@ -219,7 +225,7 @@ with `-`; no edit, delete, react, attach or task claim/complete). Every change i
 needs an explicit yes: `y` on the TUI confirm screen, or the `[y/N]` prompt (`--yes` skips it,
 `--dry-run` prints the change and the command and runs nothing). A change can be applied once, every
 attempt is appended to an audit log (`$XDG_STATE_HOME/abacus/audit.jsonl`), and if the log cannot be
-written nothing runs. Writes are limited by an allowlist (create, update, close; no delete; for the Board only post and reply). A board post carries an idempotency key: in the TUI it follows the draft (so an unchanged retry after an unknown outcome posts at most once, at any time; an edit is a new post), on the command line it uses a ten-minute clock bucket (best effort), is re-read by id afterwards, and anything unclear (timeout, cancel, network error, unreadable answer) is "result unknown", never "not applied". The confirm shows the board URL and where it came from, what a reply answers, and whether a post creates a new channel. The TUI Board tab is read only: composing from it is not built yet.
+written nothing runs. Writes are limited by an allowlist (tasks: create, update, close, label, assign, priority, dependencies, comments, and batches of up to 25 of those; no delete; for the Board only post and reply). A board post carries an idempotency key: in the TUI it follows the draft (so an unchanged retry after an unknown outcome posts at most once, at any time; an edit is a new post), on the command line it uses a ten-minute clock bucket (best effort), is re-read by id afterwards, and anything unclear (timeout, cancel, network error, unreadable answer) is "result unknown", never "not applied". The confirm shows the board URL and where it came from, what a reply answers, and whether a post creates a new channel.
 The first-run setup steps (workspace, actor name, Queues config) go through the same confirm,
 single-use and audit gate. Leases and Queues writes are blocked upstream: see `docs/design/2026-11-21-1700-feat-fleet-domains-plan.md`.
 

@@ -10,7 +10,7 @@
 │     in_progress): nothing was        │
 │   ↕ +5 more                          │
 ╰──────────────────────────────────────╯
-esc back · ↑/↓ scroll · q quit · ? help…
+esc back · ↑/↓ scroll · q quit …
 === 40x30 ===
  [Tasks]  2/6
 ────────────────────────────────────────
@@ -41,7 +41,7 @@ esc back · ↑/↓ scroll · q quit · ? help…
 
 
 
-esc back · ↑/↓ scroll · q quit · ? help…
+esc back · ↑/↓ scroll · q quit …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ╭─ ▸ Batch result ─────────────────────────────────────────────────────────────╮

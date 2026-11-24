@@ -47,7 +47,6 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `?` | full help overlay (keys, then the prompt commands; `j` `k` scroll it); `?` or `esc` closes it |
 | `F`, `H`, `P` | Tasks list: `F` moves the cursor to the task that changed most recently (see "Live refresh"); `H` shows or hides the history of the selected task in its detail; `P` switches tracker (any Tasks view) |
 | `ctrl+s`, `ctrl+o` | Tasks list: save the query on screen under a name; pick a saved filter to apply, `d` deletes one after a `y` or `n`. While typing a `/` query, `ctrl+p` and `ctrl+n` walk the recent queries (from 80 columns the footer says so) |
-| `?` | full help overlay; `?` or `esc` closes it |
 | `q`, `ctrl+c` | quit (while a form or the filter is open, only `ctrl+c`) |
 
 While a form, the confirm screen or the filter is open, every key (including `q`, digits and `?`)
@@ -61,8 +60,8 @@ shown and then about every 10 seconds while visible, one read at a time.
 
 ```
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%          rate limits, when known
-1 port(s) still open after their agent ended: 4000      orphaned ports, when known
-sort:attention  ~ guessed from files                    active filters and sort
+1 port still open after their agent ended: 4000         orphaned ports, when known
+sort: attention  ~ guessed from files                   active filters and sort
 ╭─ ▸ Agents 6 · 310 tok/s ──────────────╮ ╭─ Agent ─────────────╮
 │ ▸ ◐ waiting   Codex  mill@main  ...   │ │ detail of the agent │
 ```
@@ -361,10 +360,10 @@ functions; a test proves no command can reach a writer). Unknown input shows
 | Command | Does |
 | --- | --- |
 | `:tasks` `:board` `:leases` `:queues` `:doctor` | go to a tab |
-| `:list` `:tree` `:kanban` `:graph` `:insights` | Tasks views (`:tree` and `:list` are the two modes of the List; `:kanban` says "not available yet" until the Kanban view exists) |
+| `:list` `:tree` `:kanban` `:graph` `:insights` | Tasks views (`:tree` and `:list` are the two modes of the List) |
 | `:search TEXT` | open global search with TEXT (no text: an empty search) |
 | `:filter QUERY` | apply the Tasks list filter, same grammar as `/`; no query clears it |
-| `:ctx` | say which tracker and board this is (switching trackers is not available yet) |
+| `:ctx` | say which tracker and board this is; `:ctx NAME` opens the same confirm screen as `P` to switch tracker |
 | `:help`, `:q` | help overlay, quit |
 
 `tab` completes the command, then field names and values inside `:filter` and `:search`; repeated

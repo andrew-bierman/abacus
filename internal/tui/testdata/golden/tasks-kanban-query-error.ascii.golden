@@ -10,7 +10,7 @@ unknown field "foo" (col 7)
 │                                      │
 │                                      │
 ╰──────────────────────────────────────╯
-enter keep · esc clear · q quit · ? hel…
+enter keep · esc clear · q quit …
 === 40x30 ===
  [Tasks]  2/6
 ────────────────────────────────────────
@@ -41,7 +41,7 @@ unknown field "foo" (col 7)
 │                                      │
 │                                      │
 ╰──────────────────────────────────────╯
-enter keep · esc clear · q quit · ? hel…
+enter keep · esc clear · q quit …
 === 80x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
  List [Kanban] Graph  Insights                                14 tasks · 3 ready

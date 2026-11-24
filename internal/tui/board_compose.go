@@ -394,11 +394,12 @@ func (s *boardSection) composeBindings() []key.Binding {
 	case bmCheck:
 		return []key.Binding{keyBack}
 	case bmConfirm:
-		out := []key.Binding{keyScroll}
+		// the decision first: a narrow footer drops hints from the end and must keep "y apply" and "n edit"
+		out := []key.Binding{keyBoardBack, keyScroll}
 		if s.confirmReadable() {
 			out = append([]key.Binding{keyYes}, out...)
 		}
-		return append(out, keyBoardBack)
+		return out
 	case bmOutcome:
 		return []key.Binding{keyReload, keyBack}
 	}

@@ -54,7 +54,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ ▸  #15  dev/web  ada  15h  checkout times out for carts over 40 items, star… │
 │   ↕ +8 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+? help · q quit · tab/→ next tab · : command · n new thread · c reply …
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 
 
 
-? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+? help · q quit · tab/→ next tab · : command · n new thread · c reply …
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
@@ -154,7 +154,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 
 
 
-? help · q quit · tab/→ next tab · : command · n new thread…
+? help · q quit · tab/→ next tab · : command …
 === 100x32 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -55,7 +55,7 @@ focus tr-jbt.1.2.1 · depth 2 · blocking links
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
+? help · q quit · tab/→ next tab · : command · g whole · enter open …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────

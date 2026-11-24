@@ -1,6 +1,6 @@
 === 40x12 ===
  [Agents]  5/6
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────╮
 │ ▸ ◐ waiting   mill@main              │
 │   ✕ error~    attic@chore/deps       │
@@ -16,8 +16,8 @@ sort:attention  ~ guessed from files
 ────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent …
-sort:attention  ~ guessed from files
+1 port still open after their agent end…
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────╮
 │ ▸ ◐ waiting   mill@main              │
 │   ✕ error~    attic@chore/deps       │
@@ -44,7 +44,7 @@ sort:attention  ~ guessed from files
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────────────╮
 │ ▸ ◐ waiting   Codex        mill@main             Package the…   1m  ▰▱▱▱ 18% │
 │   ✕ error~    Claude Code  attic@chore/deps      Bump the lo…   3m  ···· ?   │
@@ -60,8 +60,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────────────╮
 │ ▸ ◐ waiting   Codex        mill@main             Package the…   1m  ▰▱▱▱ 18% │
 │   ✕ error~    Claude Code  attic@chore/deps      Bump the lo…   3m  ···· ?   │
@@ -88,7 +88,7 @@ sort:attention  ~ guessed from files
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ ▸ ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │ Codex (waiting)                             │
 │   ✕ error~    Claude Code  attic@chore…  Bump the lo…   3m  ···· ?   │ │                                             │
@@ -104,8 +104,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ ▸ ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │ Codex (waiting)                             │
 │   ✕ error~    Claude Code  attic@chore…  Bump the lo…   3m  ···· ?   │ │                                             │
@@ -133,7 +133,7 @@ sort:attention  ~ guessed from files
 === 60x24 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────╮
 │ ▸ ◐ waiting   Codex        mill@main   Package the…   1m │
 │   ✕ error~    Claude Code  attic@cho…  Bump the lo…   3m │
@@ -160,8 +160,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
 │ ▸ ◐ waiting   Codex        mill@main   Package the…   1m │ │ Codex (waiting)                     │
 │   ✕ error~    Claude Code  attic@cho…  Bump the lo…   3m │ │                                     │
@@ -193,8 +193,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────────────╮
 │ ▸ ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18%  monitor    │ │ Codex (waiting)                                     │
 │   ✕ error~    Claude Code  attic@chore…  Bump the lo…   3m  ···· ?    ~transcri… │ │                                                     │

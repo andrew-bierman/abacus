@@ -1,6 +1,6 @@
 === 40x12 ===
  [Agents]  5/6
-state:error  sort:attention  ~ guessed …
+state:error  sort: attention  ~ guessed…
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────╮
 │ ▸ ✕ error~  Claude Code  attic@chor… │
 │                                      │
@@ -16,8 +16,8 @@ state:error  sort:attention  ~ guessed …
 ────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent …
-state:error  sort:attention  ~ guessed …
+1 port still open after their agent end…
+state:error  sort: attention  ~ guessed…
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────╮
 │ ▸ ✕ error~  Claude Code  attic@chor… │
 │                                      │
@@ -44,7 +44,7 @@ state:error  sort:attention  ~ guessed …
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
-state:error  sort:attention  ~ guessed from files
+state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────────────╮
 │ ▸ ✕ error~  Claude Code  attic@chor…  Bump the lo…  3m  ···· ?    ~transcri… │
 │                                                                              │
@@ -60,8 +60,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-state:error  sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────────────╮
 │ ▸ ✕ error~  Claude Code  attic@chor…  Bump the lo…  3m  ···· ?    ~transcri… │
 │                                                                              │
@@ -88,7 +88,7 @@ state:error  sort:attention  ~ guessed from files
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
-state:error  sort:attention  ~ guessed from files
+state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ ▸ ✕ error~  Claude Code  attic@chore/de…  Bump the lo…  3m  ···· ?   │ │ Claude Code (error)                         │
 │                                                                      │ │ state guessed from transcript, not reporte… │
@@ -104,8 +104,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-state:error  sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ ▸ ✕ error~  Claude Code  attic@chore/de…  Bump the lo…  3m  ···· ?   │ │ Claude Code (error)                         │
 │                                                                      │ │ state guessed from transcript, not reporte… │
@@ -133,7 +133,7 @@ state:error  sort:attention  ~ guessed from files
 === 60x24 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────
-state:error  sort:attention  ~ guessed from files
+state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────╮
 │ ▸ ✕ error~  Claude Code  attic@chore/…  Bump the lo…  3m │
 │                                                          │
@@ -160,8 +160,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-state:error  sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
 │ ▸ ✕ error~  Claude Code  attic@chore/…  Bump the lo…  3m │ │ Claude Code (error)                 │
 │                                                          │ │ state guessed from transcript, not… │
@@ -187,4 +187,4 @@ state:error  sort:attention  ~ guessed from files
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness…
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state …

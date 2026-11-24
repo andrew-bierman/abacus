@@ -154,7 +154,7 @@ group: status · / to filter                           0 of 0
 │                                                          │
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · H/L move car…
+? help · q quit · tab/→ next tab · : command …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                    fleet · 0 tasks · 0 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ group: status · / to filter                                                    
 │                                                                                                  │
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · H/L move card · h/l column · ↑/↓ move · enter detail…
+? help · q quit · tab/→ next tab · : command · H/L move card · h/l column · ↑/↓ move …

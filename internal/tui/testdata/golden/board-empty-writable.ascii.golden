@@ -154,7 +154,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 
 
 
-? help · q quit · tab/→ next tab · : command · n new thread…
+? help · q quit · tab/→ next tab · : command …
 === 100x32 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────

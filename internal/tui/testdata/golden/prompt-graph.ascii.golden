@@ -54,7 +54,7 @@ focus ac-12 · depth 2 · blocking links
 │                                                                              │
 │   ↕ +6 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
+? help · q quit · tab/→ next tab · : command · g whole · enter open …
 === 80x30 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ focus ac-12 · depth 2 · blocking links
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
+? help · q quit · tab/→ next tab · : command · g whole · enter open …
 === 120x12 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
  List  Kanban [Graph] Insights                                                                        14 tasks · 3 ready

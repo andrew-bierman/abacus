@@ -41,9 +41,36 @@ type Deps struct {
 	Now func() time.Time
 }
 
-func usage(d Deps) {
-	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show|board browse; tasks create|update|close|label|assign|priority|dep|comment change tasks; tasks bulk changes up to 25 at once\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  agents    every running coding agent; --harness, --state, --repo, --all, --json\n  tui       interactive cockpit\n  search    find tasks, board threads, leases and runs; --domain, --limit, --json\n\nfirst run:\n  rex       layout: open the cockpit tabs in a terminal workspace (optional); --new NAME, --yes, --dry-run, --json\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json; --repair fixes a half-created workspace\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n  licenses  print the third-party notices and license texts carried in this file\n\nflags: --json, --lambe-config FILE, --demo and --tab NAME (tui); tasks writes: --yes, --dry-run\n", brand.Name)
+func usageText() string {
+	return fmt.Sprintf(`usage: %[1]s <command> [flags]       (%[1]s help COMMAND, or COMMAND --help, for one command)
+
+fleet:
+  board       channels and recent threads; board post|reply send a message
+  tasks       task summary; list|show|board|graph|history browse; create|update|close|label|assign|priority|dep|comment change one task; bulk changes up to 25
+  leases      held, stale and free leases
+  queues      runs, queue, attention and history
+  agents      every running coding agent; --harness, --state, --repo, --all
+  tui         interactive cockpit; --demo, --tab NAME
+  search      find tasks, board threads, leases and runs; --domain, --limit
+
+first run:
+  setup       report and (with --yes) perform first-run setup; --dry-run, --repair fixes a half-created workspace
+  rex         layout: open the cockpit tabs in a terminal workspace (optional); --new NAME
+  config      show|get|set|path: settings (actor, tracker_dir, lambe_config, board_url, ...)
+
+diagnostics:
+  version     print versions and which providers were detected
+  doctor      health checks across providers
+  status      state summary across providers and fleet domains
+  licenses    print the third-party notices and license texts carried in this file
+  completion  print a shell completion script (bash, zsh or fish)
+
+flags: --json on every command that reads or reports; writes also take --yes and --dry-run
+exit codes: 0 ok, 1 something failed or is not ready, 2 usage error
+`, brand.Name)
 }
+
+func usage(d Deps) { fmt.Fprint(d.Err, usageText()) }
 
 // Run dispatches a command and returns the process exit code.
 func Run(args []string, d Deps) int {
@@ -51,6 +78,20 @@ func Run(args []string, d Deps) int {
 		usage(d)
 		return core.ExitUsage
 	}
+	if wantsHelp(args) {
+		if code, ok := runHelp(args, d); ok {
+			return code
+		}
+		// no text of its own: the command prints its flags, to stdout; asking for help is not an error
+		out := d
+		out.Err = d.Out
+		dispatch(args, out)
+		return core.ExitOK
+	}
+	return dispatch(args, d)
+}
+
+func dispatch(args []string, d Deps) int {
 	cmd, rest := args[0], args[1:]
 	// The first start unpacks the built-in tools (a few seconds): say so on stderr rather than
 	// leaving a blank terminal. Nothing is printed when they are already unpacked.
@@ -72,6 +113,8 @@ func Run(args []string, d Deps) int {
 		return runConfig(rest, d)
 	case "licenses":
 		return runLicenses(rest, d)
+	case "completion":
+		return runCompletion(rest, d)
 	default:
 		fmt.Fprintf(d.Err, "unknown command %q\n", cmd)
 		usage(d)

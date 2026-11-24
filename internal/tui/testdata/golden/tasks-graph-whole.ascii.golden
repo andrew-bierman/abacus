@@ -30,7 +30,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │ ▸ ○ gr-ko8 Graph layout                                 ⊘2→2 ^ │ │                               │
 │   ↕ +20 more                                                   │ │                               │
 ╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · g nearby · enter open · ↑/↓ move · h/l layer · v vie…
+? help · q quit · tab/→ next tab · : command · g nearby · enter open · ↑/↓ move · h/l layer …
 === 80x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ whole graph · 36 linked · 1 without links · 7 groups
 │ ▸ ○ gr-ko8 Graph layout                                               ⊘2→2 ^ │
 │   ↕ +31 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · g nearby · enter open · ↑/↓ move…
+? help · q quit · tab/→ next tab · : command · g nearby · enter open …
 === 60x24 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────

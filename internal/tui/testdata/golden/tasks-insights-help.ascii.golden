@@ -83,7 +83,7 @@ Keys
 
   tab/→         next tab
   shift+tab/←   prev tab
-  1-9           jump to tab
+  1-6           jump to tab
   ↕ +27 more
 ?/esc close · ↑/↓ scroll
 === 120x12 ===
@@ -121,7 +121,7 @@ Keys
 
   tab/→         next tab
   shift+tab/←   prev tab
-  1-9           jump to tab
+  1-6           jump to tab
   ctrl+k        search everything
   :             command
   ?             help
@@ -179,7 +179,7 @@ Keys
 
   tab/→         next tab
   shift+tab/←   prev tab
-  1-9           jump to tab
+  1-6           jump to tab
   ctrl+k        search everything
   :             command
   ?             help

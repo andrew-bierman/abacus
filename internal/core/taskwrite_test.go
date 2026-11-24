@@ -258,3 +258,61 @@ func TestGuardShapeErrorNamesTheCause(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+// The confirm screen says exactly what will change: every field a create or an update sets, old value to
+// new where the old one is known, and any warning, before anything runs.
+func TestPlanLinesNameEveryFieldOfACreateAndAnUpdate(t *testing.T) {
+	w := &fakeWriter{}
+	three, one := 3, 1
+	create := plan(t, w, core.TaskChange{Op: core.TaskCreate, Title: "t", Description: "d", Priority: &three, Type: "bug"})
+	if got, want := strings.Join(create.Lines, "|"), `create a new task|title: "t"|description: "d"|priority: 3|type: bug`; got != want {
+		t.Fatalf("create lines %q, want %q", got, want)
+	}
+	upd := plan(t, w, core.TaskChange{
+		Op: core.TaskUpdate, ID: "t-1", Title: "new", Description: "why", Status: "blocked", IfStatus: "open",
+		Priority: &one, Warning: "it has an open blocker", Before: core.Task{ID: "t-1", Title: "old", Priority: 2},
+	})
+	want := `update task t-1|title: "old" -> "new"|description: "why"|status: "open" -> "blocked"|warning: it has an open blocker|priority: "2" -> "1"`
+	if got := strings.Join(upd.Lines, "|"); got != want {
+		t.Fatalf("update lines %q, want %q", got, want)
+	}
+	// a value that is not changing is shown once, not as "x -> x"
+	same := plan(t, w, core.TaskChange{Op: core.TaskUpdate, ID: "t-1", Title: "same", Before: core.Task{ID: "t-1", Title: "same"}})
+	if got := strings.Join(same.Lines, "|"); got != `update task t-1|title: "same"` {
+		t.Fatalf("lines %q", got)
+	}
+	// with no task read first, the old priority is not invented
+	noBefore := plan(t, w, core.TaskChange{Op: core.TaskUpdate, ID: "t-1", Priority: &one})
+	if got := strings.Join(noBefore.Lines, "|"); got != `update task t-1|priority: "1"` {
+		t.Fatalf("lines %q", got)
+	}
+}
+
+func TestPlanRefusesACreateWithoutATitleOrWithAnUnknownType(t *testing.T) {
+	w := &fakeWriter{}
+	for _, c := range []struct {
+		ch   core.TaskChange
+		want string
+	}{
+		{core.TaskChange{Op: core.TaskCreate, Title: "   "}, "a title is required"},
+		{core.TaskChange{Op: core.TaskCreate, Title: "t", Type: "saga"}, `unknown type "saga"`},
+	} {
+		if _, err := core.PlanTaskChange(w, c.ch); err == nil || err.Error() != c.want {
+			t.Errorf("%+v: err=%v, want %q", c.ch, err, c.want)
+		}
+	}
+	if len(w.ran) != 0 {
+		t.Fatalf("a refused plan ran something: %v", w.ran)
+	}
+}
+
+// A write that landed with a different result is neither an error to retry nor "not applied".
+func TestAppliedMismatchIsRecognizedAndKeepsItsMessage(t *testing.T) {
+	err := fmt.Errorf("task t-1: %w", core.AppliedMismatch("it is now blocked, not in_progress"))
+	if !errors.Is(err, core.ErrAppliedMismatch) || !strings.Contains(err.Error(), "it is now blocked") {
+		t.Fatalf("err=%v", err)
+	}
+	if errors.Is(errors.New("plain"), core.ErrAppliedMismatch) {
+		t.Fatal("a plain error is not a mismatch")
+	}
+}

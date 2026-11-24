@@ -154,7 +154,7 @@ group: priority · closed 2 hidden (Z) · / to filter 14 of 14
 │                                                          │
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · H/L move car…
+? help · q quit · tab/→ next tab · : command …
 === 100x32 ===
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ group: priority · closed 2 hidden (Z) · / to filter                           
 │                       ││                       ││                       ││                       │
 │                       ││                       ││                       ││                       │
 ╰───────────────────────╯╰───────────────────────╯╰───────────────────────╯╰───────────────────────╯
-? help · q quit · tab/→ next tab · : command · H/L move card · h/l column · ↑/↓ move · enter detail…
+? help · q quit · tab/→ next tab · : command · H/L move card · h/l column · ↑/↓ move …

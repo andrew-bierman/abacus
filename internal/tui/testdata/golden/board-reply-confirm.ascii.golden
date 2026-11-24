@@ -10,7 +10,7 @@
 │   803bf93ff9cfd4da (a retry of this  │
 │ ↕ lines 1-7 of 19: j/k or pgup/pgdn… │
 ╰──────────────────────────────────────╯
-pgup/pgdn scroll · n/esc edit · q quit …
+n/esc edit · pgup/pgdn scroll · q quit …
 === 40x30 ===
  [Board]  1/6
 ────────────────────────────────────────
@@ -41,7 +41,7 @@ pgup/pgdn scroll · n/esc edit · q quit …
 
 
 
-y apply · pgup/pgdn scroll · n/esc edit…
+y apply · n/esc edit …
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Confirm this reply ───────────────────────────────────────────────────────╮
@@ -54,7 +54,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │   If the board does not answer, abacus cannot tell whether this landed: it   │
 │ ↕ lines 1-7 of 11: j/k or pgup/pgdn to read all of it                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+n/esc edit · pgup/pgdn scroll · q quit · ? help · tab/→ next tab
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 
 
 
-y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+y apply · n/esc edit · pgup/pgdn scroll · q quit · ? help · tab/→ next tab
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
 ╭─ ▸ Confirm this reply ───────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -98,7 +98,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │   If the board does not answer, abacus cannot tell whether this landed: it will say "result unknown", never "not     │
 │ ↕ lines 1-7 of 11: j/k or pgup/pgdn to read all of it                                                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+n/esc edit · pgup/pgdn scroll · q quit · ? help · tab/→ next tab
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 
 
 
-y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+y apply · n/esc edit · pgup/pgdn scroll · q quit · ? help · tab/→ next tab
 === 60x24 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 
 
 
-y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help …
+y apply · n/esc edit · pgup/pgdn scroll · q quit · ? help …
 === 100x32 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.
 
 
 
-y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+y apply · n/esc edit · pgup/pgdn scroll · q quit · ? help · tab/→ next tab
