@@ -35,7 +35,7 @@ esc close · ↑/↓ scroll
 │   tick                               │
 │ • show the miss in Doctor            │
 │                                      │
-│   renew --lease ac-zoj --now         │
+│   renew --lease dm-zoj --now         │
 │                                      │
 │ Uses renew with the --now flag.      │
 │                                      │
@@ -77,7 +77,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ • renew on resume, not on the next tick                                      │
 │ • show the miss in Doctor                                                    │
 │                                                                              │
-│   renew --lease ac-zoj --now                                                 │
+│   renew --lease dm-zoj --now                                                 │
 │                                                                              │
 │ Uses renew with the --now flag.                                              │
 │                                                                              │
@@ -120,7 +120,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 │ • renew on resume, not on the next tick                                                                              │
 │ • show the miss in Doctor                                                                                            │
 │                                                                                                                      │
-│   renew --lease ac-zoj --now                                                                                         │
+│   renew --lease dm-zoj --now                                                                                         │
 │                                                                                                                      │
 │ Uses renew with the --now flag.                                                                                      │
 │                                                                                                                      │
@@ -177,7 +177,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet 
 │ • renew on resume, not on the next tick                                                          │
 │ • show the miss in Doctor                                                                        │
 │                                                                                                  │
-│   renew --lease ac-zoj --now                                                                     │
+│   renew --lease dm-zoj --now                                                                     │
 │                                                                                                  │
 │ Uses renew with the --now flag.                                                                  │
 │                                                                                                  │

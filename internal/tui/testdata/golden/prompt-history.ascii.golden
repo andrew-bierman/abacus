@@ -1,9 +1,9 @@
 === 40x12 ===
  Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
-│ ▸ (held)   ac-zoj  glm-schedul…  12m │
-│   (held)   ac-00h  codex-macbo…   3m │
-│   (stale)  ac-1k2  claude-mac        │
+│ ▸ (held)   dm-zoj  bot-schedul…  12m │
+│   (held)   dm-00h  agent-noteb…   3m │
+│   (stale)  dm-1k2  claude-mac        │
 │   (free)   ac-9x1                    │
 │                                      │
 │                                      │
@@ -15,9 +15,9 @@
  Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
-│ ▸ (held)   ac-zoj  glm-schedul…  12m │
-│   (held)   ac-00h  codex-macbo…   3m │
-│   (stale)  ac-1k2  claude-mac        │
+│ ▸ (held)   dm-zoj  bot-schedul…  12m │
+│   (held)   dm-00h  agent-noteb…   3m │
+│   (stale)  dm-1k2  claude-mac        │
 │   (free)   ac-9x1                    │
 │                                      │
 │                                      │
@@ -45,9 +45,9 @@
 === 80x12 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
-│ ▸ (held)   ac-zoj  glm-scheduler-01                                      12m │
-│   (held)   ac-00h  codex-macbookpro                                       3m │
-│   (stale)  ac-1k2  claude-mac                                                │
+│ ▸ (held)   dm-zoj  bot-scheduler-01                                      12m │
+│   (held)   dm-00h  agent-notebook-1                                       3m │
+│   (stale)  dm-1k2  claude-mac                                                │
 │   (free)   ac-9x1                                                            │
 │                                                                              │
 │                                                                              │
@@ -59,9 +59,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
-│ ▸ (held)   ac-zoj  glm-scheduler-01                                      12m │
-│   (held)   ac-00h  codex-macbookpro                                       3m │
-│   (stale)  ac-1k2  claude-mac                                                │
+│ ▸ (held)   dm-zoj  bot-scheduler-01                                      12m │
+│   (held)   dm-00h  agent-notebook-1                                       3m │
+│   (stale)  dm-1k2  claude-mac                                                │
 │   (free)   ac-9x1                                                            │
 │                                                                              │
 │                                                                              │
@@ -89,9 +89,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 === 120x12 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
-│ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
-│   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
-│   (stale)  ac-1k2  claude-mac                                        │ │ holder      glm-scheduler-01                │
+│ ▸ (held)   dm-zoj  bot-scheduler-01                              12m │ │ dm-zoj (held)                               │
+│   (held)   dm-00h  agent-notebook-1                               3m │ │                                             │
+│   (stale)  dm-1k2  claude-mac                                        │ │ holder      bot-scheduler-01                │
 │   (free)   ac-9x1                                                    │ │ expires     12m                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -103,9 +103,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor                                 
 abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
-│ ▸ (held)   ac-zoj  glm-scheduler-01                              12m │ │ ac-zoj (held)                               │
-│   (held)   ac-00h  codex-macbookpro                               3m │ │                                             │
-│   (stale)  ac-1k2  claude-mac                                        │ │ holder      glm-scheduler-01                │
+│ ▸ (held)   dm-zoj  bot-scheduler-01                              12m │ │ dm-zoj (held)                               │
+│   (held)   dm-00h  agent-notebook-1                               3m │ │                                             │
+│   (stale)  dm-1k2  claude-mac                                        │ │ holder      bot-scheduler-01                │
 │   (free)   ac-9x1                                                    │ │ expires     12m                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -134,9 +134,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor                                 
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────╮
-│ ▸ (held)   ac-zoj  glm-scheduler-01                  12m │
-│   (held)   ac-00h  codex-macbookpro                   3m │
-│   (stale)  ac-1k2  claude-mac                            │
+│ ▸ (held)   dm-zoj  bot-scheduler-01                  12m │
+│   (held)   dm-00h  agent-notebook-1                   3m │
+│   (stale)  dm-1k2  claude-mac                            │
 │   (free)   ac-9x1                                        │
 │                                                          │
 │                                                          │
@@ -159,9 +159,9 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 abacus   Board  Tasks  [Leases]  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────╮ ╭─ Lease ─────────────────────────────╮
-│ ▸ (held)   ac-zoj  glm-scheduler-01                  12m │ │ ac-zoj (held)                       │
-│   (held)   ac-00h  codex-macbookpro                   3m │ │                                     │
-│   (stale)  ac-1k2  claude-mac                            │ │ holder      glm-scheduler-01        │
+│ ▸ (held)   dm-zoj  bot-scheduler-01                  12m │ │ dm-zoj (held)                       │
+│   (held)   dm-00h  agent-notebook-1                   3m │ │                                     │
+│   (stale)  dm-1k2  claude-mac                            │ │ holder      bot-scheduler-01        │
 │   (free)   ac-9x1                                        │ │ expires     12m                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │

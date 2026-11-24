@@ -31,9 +31,9 @@ func InsightsReport() core.InsightsReport {
 // LeasesReport is the demo lease table.
 func LeasesReport() core.LeasesReport {
 	return core.LeasesReport{Header: core.Header{Source: core.SourceLive}, Leases: []core.Lease{
-		{Resource: "ac-zoj", State: core.LeaseHeld, Holder: "glm-scheduler-01", ExpiresAt: "12m"},
-		{Resource: "ac-00h", State: core.LeaseHeld, Holder: "codex-macbookpro", ExpiresAt: "3m"},
-		{Resource: "ac-1k2", State: core.LeaseStale, Holder: "claude-mac"},
+		{Resource: "dm-zoj", State: core.LeaseHeld, Holder: "bot-scheduler-01", ExpiresAt: "12m"},
+		{Resource: "dm-00h", State: core.LeaseHeld, Holder: "agent-notebook-1", ExpiresAt: "3m"},
+		{Resource: "dm-1k2", State: core.LeaseStale, Holder: "claude-mac"},
 		{Resource: "ac-9x1", State: core.LeaseFree}}}
 }
 

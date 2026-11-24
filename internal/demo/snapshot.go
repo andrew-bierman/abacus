@@ -21,7 +21,7 @@ func TaskSnapshot(now time.Time) core.TaskSnapshot {
 	epic := t("ac-01", "Fleet workspace", "open", 1, "epic", "mei", 24*30, []string{"workspace"})
 	epic.Description = "# Goal\n\nOne place to see and steer the fleet.\n\n- leases show who holds what\n- queues show what is running\n- tasks show what is next\n\nKeep every screen readable at **60x24**."
 	hb := t("ac-12", "wire the lease heartbeat", "in_progress", 0, "bug", "ada", 24*9, []string{"core", "leases"}, child)
-	hb.Description = "The heartbeat misses a beat when a session resumes, so a live lease looks stale for up to a minute.\n\n## Plan\n\n- renew on resume, not on the next tick\n- show the miss in Doctor\n\n```\nrenew --lease ac-zoj --now\n```\n\nUses `renew` with the `--now` flag."
+	hb.Description = "The heartbeat misses a beat when a session resumes, so a live lease looks stale for up to a minute.\n\n## Plan\n\n- renew on resume, not on the next tick\n- show the miss in Doctor\n\n```\nrenew --lease dm-zoj --now\n```\n\nUses `renew` with the `--now` flag."
 	hb.Comments = []core.TaskComment{
 		{Author: "mei", Text: "Seen twice on the laptop after sleep.", CreatedAt: ago(30)},
 		{Author: "ada", Text: "Reproduced. The tick interval is the cause; fix is small.", CreatedAt: ago(6)},

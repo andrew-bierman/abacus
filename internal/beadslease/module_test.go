@@ -99,7 +99,7 @@ func TestStatusSummarizesHeldStaleAndFreeLeases(t *testing.T) {
 		t.Fatalf("status = %+v", st)
 	}
 	joined := strings.Join(st.Lines, "\n")
-	for _, want := range []string{"cpu-quiet-window", "glm-andrew-bierman", "2026-11-21T20:15:00Z", "deploy-slot", "old-agent", "stale", "bench", "free"} {
+	for _, want := range []string{"cpu-quiet-window", "agent-fixture-user", "2026-11-21T20:15:00Z", "deploy-slot", "old-agent", "stale", "bench", "free"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("lines missing %q:\n%s", want, joined)
 		}
@@ -457,7 +457,7 @@ func TestLeasesAreTheTypedDomainReadAndSourceIsLive(t *testing.T) {
 	if err != nil || r.Source != core.SourceLive || len(r.Leases) != 3 {
 		t.Fatalf("%+v %v", r, err)
 	}
-	if l := r.Leases[0]; l.State != core.LeaseHeld || l.Holder != "glm-andrew-bierman" || l.ExpiresAt != "2026-11-21T20:15:00Z" {
+	if l := r.Leases[0]; l.State != core.LeaseHeld || l.Holder != "agent-fixture-user" || l.ExpiresAt != "2026-11-21T20:15:00Z" {
 		t.Fatalf("held lease = %+v", l)
 	}
 	var _ core.LeaseProvider = m
@@ -494,7 +494,7 @@ func TestMissingActorIsAGuidedSetupStateNotAnError(t *testing.T) {
 }
 
 func TestMissingHubIsAPlainNotConnectedReason(t *testing.T) {
-	body := `{"schemaVersion":1,"ok":false,"error":{"reason":"hub-failure","exitCode":1,"message":"coord list failed: fork/exec /h/Code/agent-coordination/bin/coord: no such file or directory"}}`
+	body := `{"schemaVersion":1,"ok":false,"error":{"reason":"hub-failure","exitCode":1,"message":"coord list failed: fork/exec /h/hub/bin/coord: no such file or directory"}}`
 	m := newMod(&fake{resp: map[string]result{"--json list": {out: body, exit: 1}}}, Options{})
 	_, err := m.Leases(context.Background())
 	var nc *core.NotConnectedError

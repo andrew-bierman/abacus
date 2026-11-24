@@ -184,7 +184,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet 
 │   ],                                                                                             │
 │   "description": "The heartbeat misses a beat when a session resumes, so a live lease looks      │
 │ stale for up to a minute.\n\n## Plan\n\n- renew on resume, not on the next tick\n- show the miss │
-│ in Doctor\n\n```\nrenew --lease ac-zoj --now\n```\n\nUses `renew` with the `--now` flag.",       │
+│ in Doctor\n\n```\nrenew --lease dm-zoj --now\n```\n\nUses `renew` with the `--now` flag.",       │
 │   ↕ +29 more                                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · ↑/↓ scroll

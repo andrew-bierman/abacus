@@ -62,7 +62,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ ac-12 ────────────────────────────────────────────────────────────────────╮
 │                                                                              │
-│   renew --lease ac-zoj --now                                                 │
+│   renew --lease dm-zoj --now                                                 │
 │                                                                              │
 │ Uses renew with the --now flag.                                              │
 │                                                                              │

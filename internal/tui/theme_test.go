@@ -151,7 +151,7 @@ func TestTintIsStableDistinctAndDegradesWithTheProfile(t *testing.T) {
 		t.Fatal("the tint must apply to the given text")
 	}
 	seen := map[string]bool{}
-	for _, k := range []string{"ada", "bob", "codex", "claude-mac", "glm-scheduler-01", "ops", "dev/web", "work", "amy", "zed", "mia", "kai"} {
+	for _, k := range []string{"ada", "bob", "codex", "claude-mac", "bot-scheduler-01", "ops", "dev/web", "work", "amy", "zed", "mia", "kai"} {
 		seen[th.Tint(k, "x")] = true
 	}
 	if len(seen) < 3 {

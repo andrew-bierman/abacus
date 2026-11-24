@@ -19,15 +19,15 @@ func NewWorkspace() WorkspaceProvider { return WorkspaceProvider{} }
 
 // demoSessions are the sessions the demo "server" has, matched to items by the same core matcher
 // the real adapter uses, so the demo shows exactly what a real read would. Two sessions claim
-// "ac-1k2" so the ambiguous case is visible, "T-3" is found only by a word in a label, and "T-2"
+// "dm-1k2" so the ambiguous case is visible, "T-3" is found only by a word in a label, and "T-2"
 // and the rest have no session.
 var demoSessions = []struct{ id, label string }{
 	{"demo:s1", "Lambe · T-1"},
 	{"demo:s3", "review T-3 notes"},
-	{"demo:s4", "Lambe · ac-zoj"},
-	{"demo:s5", "ac-00h"},
-	{"demo:s6", "Lambe · ac-1k2"},
-	{"demo:s7", "retry ac-1k2"},
+	{"demo:s4", "Lambe · dm-zoj"},
+	{"demo:s5", "dm-00h"},
+	{"demo:s6", "Lambe · dm-1k2"},
+	{"demo:s7", "retry dm-1k2"},
 	{"demo:s8", "Lambe · ac-09"},
 }
 

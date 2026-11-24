@@ -1,21 +1,21 @@
 === 40x12 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────╮
-│ search ac-▏                  18 hits │
+│ search ac-▏                  15 hits │
 │ Tasks (14)                           │
 │ ▸ ac-33   help over…  in progress ·… │
 │   ac-27   board thr…  blocked · P3   │
 │   ac-30   saved fil…  open · P3      │
 │   ac-25   doctor: s…  blocked · P2 … │
 │   ac-20   split gra…  in progress ·… │
-│   ↕ +15 more                         │
+│   ↕ +12 more                         │
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
 === 40x30 ===
  [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────╮
-│ search ac-▏                  18 hits │
+│ search ac-▏                  15 hits │
 │ Tasks (14)                           │
 │ ▸ ac-33   help over…  in progress ·… │
 │   ac-27   board thr…  blocked · P3   │
@@ -32,11 +32,11 @@ esc close · enter jump · ↑/↓ move …
 │   ac-01   Fleet wor…  open · P1 · m… │
 │   ac-36   verify to…  deferred · P3… │
 │                                      │
-│ Leases (4) · read 5m ago, may be ou… │
-│   ac-00h  held by c…                 │
-│   ac-1k2  stale · l…                 │
+│ Leases (1) · read 5m ago, may be ou… │
 │   ac-9x1  free                       │
-│   ac-zoj  held by g…                 │
+│                                      │
+│                                      │
+│                                      │
 │                                      │
 │                                      │
 │                                      │
@@ -45,21 +45,21 @@ esc close · enter jump · ↑/↓ move …
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
-│ search ac-▏                                                          18 hits │
+│ search ac-▏                                                          15 hits │
 │ Tasks (14)                                                                   │
 │ ▸ ac-33   help overlay per view                       in progress · P3 · mei │
 │   ac-27   board thread digest                         blocked · P3           │
 │   ac-30   saved filters                               open · P3              │
 │   ac-25   doctor: stale export warning                blocked · P2 · ada     │
 │   ac-20   split graph source from export              in progress · P1 · ada │
-│   ↕ +15 more                                                                 │
+│   ↕ +12 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
-│ search ac-▏                                                          18 hits │
+│ search ac-▏                                                          15 hits │
 │ Tasks (14)                                                                   │
 │ ▸ ac-33   help overlay per view                       in progress · P3 · mei │
 │   ac-27   board thread digest                         blocked · P3           │
@@ -76,11 +76,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │   ac-01   Fleet workspace                             open · P1 · mei        │
 │   ac-36   verify tool flags against help              deferred · P3 · mei    │
 │                                                                              │
-│ Leases (4) · read 5m ago, may be out of date                                 │
-│   ac-00h  held by codex-macbookpro · expires 3m                              │
-│   ac-1k2  stale · last holder claude-mac                                     │
+│ Leases (1) · read 5m ago, may be out of date                                 │
 │   ac-9x1  free                                                               │
-│   ac-zoj  held by glm-scheduler-01 · expires 12m                             │
+│                                                                              │
+│                                                                              │
+│                                                                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -89,21 +89,21 @@ esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ search ac-▏                                                                                                  18 hits │
+│ search ac-▏                                                                                                  15 hits │
 │ Tasks (14)                                                                                                           │
 │ ▸ ac-33   help overlay per view                                                               in progress · P3 · mei │
 │   ac-27   board thread digest                                                                 blocked · P3           │
 │   ac-30   saved filters                                                                       open · P3              │
 │   ac-25   doctor: stale export warning                                                        blocked · P2 · ada     │
 │   ac-20   split graph source from export                                                      in progress · P1 · ada │
-│   ↕ +15 more                                                                                                         │
+│   ↕ +12 more                                                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ search ac-▏                                                                                                  18 hits │
+│ search ac-▏                                                                                                  15 hits │
 │ Tasks (14)                                                                                                           │
 │ ▸ ac-33   help overlay per view                                                               in progress · P3 · mei │
 │   ac-27   board thread digest                                                                 blocked · P3           │
@@ -120,11 +120,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 │   ac-01   Fleet workspace                                                                     open · P1 · mei        │
 │   ac-36   verify tool flags against help                                                      deferred · P3 · mei    │
 │                                                                                                                      │
-│ Leases (4) · read 5m ago, may be out of date                                                                         │
-│   ac-00h  held by codex-macbookpro · expires 3m                                                                      │
-│   ac-1k2  stale · last holder claude-mac                                                                             │
+│ Leases (1) · read 5m ago, may be out of date                                                                         │
 │   ac-9x1  free                                                                                                       │
-│   ac-zoj  held by glm-scheduler-01 · expires 12m                                                                     │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
@@ -134,7 +134,7 @@ esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 abacus   [Board]  Tasks  Leases  Queues  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────╮
-│ search ac-▏                                      18 hits │
+│ search ac-▏                                      15 hits │
 │ Tasks (14)                                               │
 │ ▸ ac-33   help overlay per view   in progress · P3 · mei │
 │   ac-27   board thread digest     blocked · P3           │
@@ -151,15 +151,15 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │   ac-01   Fleet workspace         open · P1 · mei        │
 │   ac-36   verify tool flags aga…  deferred · P3 · mei    │
 │                                                          │
-│ Leases (4) · read 5m ago, may be out of date             │
-│   ↕ +4 more                                              │
+│ Leases (1) · read 5m ago, may be out of date             │
+│   ac-9x1  free                                           │
 ╰──────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group …
 === 100x32 ===
 abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
-│ search ac-▏                                                                              18 hits │
+│ search ac-▏                                                                              15 hits │
 │ Tasks (14)                                                                                       │
 │ ▸ ac-33   help overlay per view                                           in progress · P3 · mei │
 │   ac-27   board thread digest                                             blocked · P3           │
@@ -176,11 +176,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet 
 │   ac-01   Fleet workspace                                                 open · P1 · mei        │
 │   ac-36   verify tool flags against help                                  deferred · P3 · mei    │
 │                                                                                                  │
-│ Leases (4) · read 5m ago, may be out of date                                                     │
-│   ac-00h  held by codex-macbookpro · expires 3m                                                  │
-│   ac-1k2  stale · last holder claude-mac                                                         │
+│ Leases (1) · read 5m ago, may be out of date                                                     │
 │   ac-9x1  free                                                                                   │
-│   ac-zoj  held by glm-scheduler-01 · expires 12m                                                 │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │

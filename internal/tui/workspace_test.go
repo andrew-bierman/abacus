@@ -255,7 +255,7 @@ func TestWorkspaceKeyIsUnboundElsewhere(t *testing.T) {
 
 func TestFooterOffersWOnlyWithWorkspaceData(t *testing.T) {
 	m := demoWorkspaceModel(t, asciiTheme(), &wsRecorder{}, 140, 32)
-	if last := lines(press(m, "3"))[31]; !strings.Contains(last, "w workspace") { // ac-zoj is placed
+	if last := lines(press(m, "3"))[31]; !strings.Contains(last, "w workspace") { // dm-zoj is placed
 		t.Errorf("footer lacks w: %q", last)
 	}
 	m = press(press(press(press(m, "3"), "j"), "j"), "j") // ac-9x1: not placed
