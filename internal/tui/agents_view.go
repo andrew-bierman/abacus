@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"strconv"
@@ -106,7 +107,7 @@ func (s *agentsSection) activate() tea.Cmd {
 
 func (s *agentsSection) deactivate() { s.hidden = true }
 
-// wait is the wanted rhythm: quick while anything is blocked or working.
+// retune sets the wanted rhythm: quick while anything is blocked or working.
 func (s *agentsSection) retune() {
 	s.poll.Base = agentsIdleEvery
 	for _, p := range s.panes() {
@@ -402,7 +403,7 @@ func (s *agentsSection) detailLines(g duoGeom) []string {
 	if p.Host != "" {
 		out = append(out, field("machine", p.Host))
 	}
-	out = append(out, field("session", firstOf(p.SessionLabel, p.Session)))
+	out = append(out, field("session", cmp.Or(p.SessionLabel, p.Session)))
 	if r := s.rep; r != nil {
 		if r.State == core.Degraded && r.Reason != "" {
 			out = append(out, "", th.Text(KindWarn, "workspace: "+san(r.Reason)))
@@ -415,13 +416,6 @@ func (s *agentsSection) detailLines(g duoGeom) []string {
 		}
 	}
 	return out
-}
-
-func firstOf(a, b string) string {
-	if a != "" {
-		return a
-	}
-	return b
 }
 
 // emptyBody is the body of a view with nothing to list: no workspace running, a workspace with no

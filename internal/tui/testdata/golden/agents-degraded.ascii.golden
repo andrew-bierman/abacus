@@ -114,8 +114,8 @@ abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                         
 │   quiet      ac-1k2                     -  claude       -            │ │ task       ac-zoj lease                     │
 │                                                                      │ │ match      exact                            │
 │                                                                      │ │ process    claude                           │
-│                                                                      │ │ directory  /work/abacus-worktrees/ac-zoj    │
-│                                                                      │ │ repo       abacus                           │
+│                                                                      │ │ directory  /work/fleet-worktrees/ac-zoj     │
+│                                                                      │ │ repo       fleet                            │
 │                                                                      │ │ branch     feat/agents-view                 │
 │                                                                      │ │ session    Lambe · ac-zoj                   │
 │                                                                      │ │                                             │
@@ -170,8 +170,8 @@ abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                         
 │   quiet      ac-1k2                      -  claude       │ │ task       ac-zoj lease             │
 │                                                          │ │ match      exact                    │
 │                                                          │ │ process    claude                   │
-│                                                          │ │ directory  /work/abacus-worktrees/… │
-│                                                          │ │ repo       abacus                   │
+│                                                          │ │ directory  /work/fleet-worktrees/a… │
+│                                                          │ │ repo       fleet                    │
 │                                                          │ │ branch     feat/agents-view         │
 │                                                          │ │ session    Lambe · ac-zoj           │
 │                                                          │ │                                     │
@@ -202,8 +202,8 @@ abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                         
 │   (idle)     scratch              3h  aider        -             -  Ready        │ │ task       ac-zoj lease                             │
 │   quiet      ac-1k2                -  claude       -             -  -            │ │ match      exact                                    │
 │                                                                                  │ │ process    claude                                   │
-│                                                                                  │ │ directory  /work/abacus-worktrees/ac-zoj            │
-│                                                                                  │ │ repo       abacus                                   │
+│                                                                                  │ │ directory  /work/fleet-worktrees/ac-zoj             │
+│                                                                                  │ │ repo       fleet                                    │
 │                                                                                  │ │ branch     feat/agents-view                         │
 │                                                                                  │ │ session    Lambe · ac-zoj                           │
 │                                                                                  │ │                                                     │

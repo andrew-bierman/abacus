@@ -209,6 +209,20 @@ type hostSweep struct {
 	tripped   bool
 }
 
+// noteDrift counts a pane whose output was not in a known shape.
+func (h *hostSweep) noteDrift() {
+	h.mu.Lock()
+	h.drift++
+	h.mu.Unlock()
+}
+
+// noteTruncated records that something was cut.
+func (h *hostSweep) noteTruncated() {
+	h.mu.Lock()
+	h.truncated = true
+	h.mu.Unlock()
+}
+
 func (h *hostSweep) add(p core.AgentPane, terminal bool) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -343,15 +357,11 @@ func (m *Module) sweepSession(ctx context.Context, h *hostSweep, s session, item
 	}
 	bs, trunc, err := parseBlocks(out)
 	if err != nil {
-		h.mu.Lock()
-		h.drift++
-		h.mu.Unlock()
+		h.noteDrift()
 		return
 	}
 	if trunc {
-		h.mu.Lock()
-		h.truncated = true
-		h.mu.Unlock()
+		h.noteTruncated()
 	}
 	var wg sync.WaitGroup
 	for _, b := range bs {
@@ -387,9 +397,7 @@ func (m *Module) sweepBlock(ctx context.Context, h *hostSweep, s session, b bloc
 	wg.Wait()
 	switch {
 	case statusErr:
-		h.mu.Lock()
-		h.drift++
-		h.mu.Unlock()
+		h.noteDrift()
 		return
 	case !statusOK && !procOK:
 		return // the pane is gone or does not answer: nothing to say, and nothing to claim
@@ -467,9 +475,7 @@ func (m *Module) process(ctx context.Context, h *hostSweep, sem chan struct{}, s
 	}
 	p, err := parseProcess(out)
 	if err != nil {
-		h.mu.Lock()
-		h.drift++
-		h.mu.Unlock()
+		h.noteDrift()
 		return proc{}, false
 	}
 	if ctx.Err() == nil {

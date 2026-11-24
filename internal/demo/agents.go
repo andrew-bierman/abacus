@@ -48,7 +48,7 @@ func AgentsReport(now time.Time, items []core.WorkspaceItem) core.AgentReport {
 	panes := []core.AgentPane{
 		{Session: "demo:s4", SessionLabel: "Lambe · ac-zoj", Block: "demo:b1", Agent: "claude-code", State: core.AgentBlocked, Kind: core.AgentKindPermission,
 			Msg: "Approve edit to internal/core/agents.go?", NRecords: 2, UpdatedAt: ago(now, 4*time.Minute), Reported: true,
-			Process: "claude", Cwd: "/work/abacus-worktrees/ac-zoj", Repo: "abacus", Branch: "feat/agents-view"},
+			Process: "claude", Cwd: "/work/fleet-worktrees/ac-zoj", Repo: "fleet", Branch: "feat/agents-view"},
 		{Session: "demo:s5", SessionLabel: "ac-00h", Block: "demo:b2", Agent: "codex", State: core.AgentBlocked, Kind: core.AgentKindQuestion,
 			Msg: "Which tracker should the export target?", NRecords: 1, UpdatedAt: ago(now, 9*time.Minute), Reported: true,
 			Process: "codex", Cwd: "/work/export", Repo: "export", Branch: "main"},
@@ -60,7 +60,7 @@ func AgentsReport(now time.Time, items []core.WorkspaceItem) core.AgentReport {
 			Process: "claude", Cwd: "/work/docs", Repo: "docs", Branch: "review/t-3"},
 		{Session: "demo:s8", SessionLabel: "Lambe · ac-09", Block: "demo:b5", Agent: "claude-code", State: core.AgentWorking, Progress: pct(60),
 			Title: "goldens", Msg: "Writing goldens", RecordID: "goldens/ascii", NRecords: 3, UpdatedAt: ago(now, 40*time.Second), Reported: true,
-			Process: "claude", Cwd: "/work/abacus", Repo: "abacus", Branch: "feat/queue-digest"},
+			Process: "claude", Cwd: "/work/fleet", Repo: "fleet", Branch: "feat/queue-digest"},
 		{Session: "demo:s9", SessionLabel: "pair: ac-00h + ac-09", Block: "demo:b6", Agent: "codex", State: core.AgentWorking,
 			Msg: "Comparing the two exports", NRecords: 1, UpdatedAt: ago(now, 20*time.Second), Reported: true,
 			Process: "codex", Cwd: "/work/pair", Repo: "pair", Branch: "main"},
