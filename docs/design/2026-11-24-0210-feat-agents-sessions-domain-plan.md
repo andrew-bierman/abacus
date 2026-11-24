@@ -1,7 +1,7 @@
 # Agents domain: a sessions tab for local AI coding agents
 
-Status: phase 2 underway (`internal/agents` has the opencode, claude, codex and pi readers; git and
-quota readers, the core wiring and the tab are open).
+Status: phase 2 underway (`internal/agents` has the opencode, claude, codex, pi and git readers;
+the quota reader, the core wiring and the tab are open).
 
 ## Goal
 
@@ -66,7 +66,7 @@ Written here, because nothing covers it:
 | gopsutil implementation of that seam | `gopsutil.go` | `gopsutil/v4` | done |
 | Discovery, session build, child tree, port attribution, orphan detection | `discover.go` | `Machine` seam, cross-tick state in `Collector` | done |
 | Transcript reads: tokens, context, model, title, true state | phases 2 | per-harness readers | done |
-| Git branch and dirty counts per session cwd | `git.go` | `Runner` seam | open |
+| Git branch and dirty counts per session cwd | `git.go` | `Runner` seam | done |
 | Quota gauges | `quota.go` | harness state files | open |
 | Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | open |
 
@@ -297,6 +297,37 @@ Tests in `pi_test.go`, synthetic sessions only, built line by line with invented
 - `PathFor` picks the newest transcript in the encoded directory, finds a flat `sessionDir` by
   header cwd, and honors `since` in both.
 
+### `git.go`
+
+`Git` reads one session directory's branch and working-tree counts. It shells out through a
+`Runner` seam, so tests never read this machine. `Runner` is declared here instead of imported
+from `core`: the Sessions domain will import `agents`, and importing back would cycle. Its shape
+matches `core.Runner`, so `core.ExecRunner` drops in unchanged.
+
+- **One command per directory**: `git -C <cwd> status --porcelain --branch`. The `##` header is
+  the branch (`## main...origin/main`, `## No commits yet on main`; a detached HEAD has no
+  branch) and the following lines are the counts. A separate `branch` command would double the
+  cost of one atomic fact.
+- **Counts match abtop's projects panel**: a porcelain code containing `?` or `A` counts as
+  `Added`; one containing `M` counts as `Modified`. Deletes, renames and conflicts are not
+  distorted into either number.
+- **Cache**: results are kept per directory for 10s (`TTL`, `Now` injectable), the cadence abtop
+  polls git. Several sessions share a cwd, so one tick still runs one command per project. A
+  directory that is not a work tree, a missing `git`, or a failed command yields the zero
+  status, never an error; the UI shows no branch instead of flickering. A nil `Runner` returns
+  the zero status rather than panicking.
+- `Session` gains `Git GitStatus`, so the join stores the read on the session it describes.
+  `Collector` does not shell out; the core wiring fills it, as it fills the transcript fields.
+
+Tests in `git_test.go` with a fake `Runner`:
+
+- a branch and mixed `??`/`A`/`M` lines produce the expected counts;
+- the header is parsed for a normal branch, a repository with no commits, and a detached HEAD;
+- `R`, `D` and conflict lines add to neither count;
+- a non-repository or failed command yields the zero status and caches that failure;
+- a second read within `TTL` reuses the cached result, and one after it re-runs;
+- two sessions in one directory share one command.
+
 ## Cost model
 
 Chosen to stay cheap on a machine with large histories (this one has 233M of Codex JSONL and a
@@ -318,7 +349,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `claude.go`: Claude Code JSONL reader, incremental by offset
 - [x] `codex.go`: Codex JSONL rollout reader, incremental by offset
 - [x] `pi.go`: Pi JSONL reader, incremental by offset
-- [ ] `git.go`: branch and dirty counts per session cwd
+- [x] `git.go`: branch and dirty counts per session cwd
 - [ ] `quota.go`: Claude and Codex quota gauges
 - [ ] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
 - [ ] `cli`: `abacus sessions [--json]`
@@ -409,6 +440,10 @@ Found while building the readers; none blocks the tab, and each names the item t
   entries carry `id` and `contextWindow`. The tab item can match the assistant message's provider
   and model against that list when it wants a pi percentage; until then the reader reports the
   fill with a zero limit, which draws nothing rather than a guess.
+- **The git cache neither collapses concurrent first reads nor expires entries.** Two callers
+  asking for the same directory at once can both run `git status`, and a directory seen once stays
+  in the map for the process lifetime. The core wiring owns the call pattern: keep one `Git` on
+  one goroutine, or add single-flight and per-entry expiry if it parallelizes or runs for days.
 
 ## Pass log
 
@@ -428,3 +463,7 @@ One line per completed item: what it did and how it was verified.
   points), and synthetic tests pin offset resume, inode replacement, flat `sessionDir` lookup,
   the turn states (including parallel calls and `deferred`), name clearing, and the split between
   response and auxiliary usage.
+- git reader — `go build ./...`, `go test ./...`; one cached read-only `git status --porcelain
+  --branch` per directory matches abtop's added/modified rule, with synthetic tests pinning
+  branch headers (including unborn and detached), per-directory TTL reuse, failed-read caching,
+  and the read deadline.

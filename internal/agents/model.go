@@ -149,8 +149,9 @@ type Session struct {
 	Model string `json:"model,omitempty"`
 	State State  `json:"state"`
 
-	Tokens  Tokens  `json:"tokens"`
-	Context Context `json:"context"`
+	Tokens  Tokens    `json:"tokens"`
+	Context Context   `json:"context"`
+	Git     GitStatus `json:"git"`
 
 	Children []Child `json:"children,omitempty"`
 	Ports    []Port  `json:"ports,omitempty"`
