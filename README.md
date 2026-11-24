@@ -146,10 +146,13 @@ or error messages that help you fix one.
   nothing new from it (board-beads#15 is decided: compose the Vercel CLI).
 - **Rex** (optional): a terminal workspace. When a Rex server is reachable abacus can say which
   terminal session a run, lease or task lives in; the interface calls this the "workspace" and
-  it is not a fifth tab. abacus composes only the `rex` CLI: `ls --json` and `version --json`,
-  always with `--autostart=false`, behind an argv allowlist and a scrubbed environment
+  it is not a fifth tab. abacus composes only the `rex` CLI (reads, `capture`, the `events` change
+  feed, and `focus`, `run`, `split`, `new` and `window new` writes), always with
+  `--autostart=false`, behind exact argv allowlists and a scrubbed environment
   (`HOME`, `PATH`, the XDG dirs and `REX_*`), and never starts a server or types into a
-  session. Only this machine and the hosts you list in `ABACUS_REX_HOSTS` are ever contacted
+  terminal. On a row, `t` brings its terminal forward and `W` opens one running your `agent_command`
+  (`abacus config set agent_command '["prog","Work on {task_id}: {title}"]'`), each after a confirm
+  screen; `abacus rex layout` opens the cockpit tabs. Only this machine and the hosts you list in `ABACUS_REX_HOSTS` are ever contacted
   (`-S` can open an ssh connection); `ABACUS_REX_PASS_ENV=SSH_AUTH_SOCK` opts in to passing a
   variable on. Detection is `REX_SESSION`/`REX_SERVER` in the environment, else a short probe; no
   server is "not connected", not an error, and an absent Rex is invisible in Doctor.
