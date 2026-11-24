@@ -276,6 +276,11 @@ func TestPlanLinesNameEveryFieldOfACreateAndAnUpdate(t *testing.T) {
 	if got := strings.Join(upd.Lines, "|"); got != want {
 		t.Fatalf("update lines %q, want %q", got, want)
 	}
+	// a value that is not changing is shown once, not as "x -> x"
+	same := plan(t, w, core.TaskChange{Op: core.TaskUpdate, ID: "t-1", Title: "same", Before: core.Task{ID: "t-1", Title: "same"}})
+	if got := strings.Join(same.Lines, "|"); got != `update task t-1|title: "same"` {
+		t.Fatalf("lines %q", got)
+	}
 	// with no task read first, the old priority is not invented
 	noBefore := plan(t, w, core.TaskChange{Op: core.TaskUpdate, ID: "t-1", Priority: &one})
 	if got := strings.Join(noBefore.Lines, "|"); got != `update task t-1|priority: "1"` {
