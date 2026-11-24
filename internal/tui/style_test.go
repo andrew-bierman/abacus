@@ -245,7 +245,7 @@ func TestTheCursorRowIsPlainInTasksQueuesAndBoardTasks(t *testing.T) {
 	bm = press(press(bm, "j"), "j") // the first task row
 	found := false
 	for _, l := range strings.Split(sized(bm, 120, 40).View(), "\n") {
-		if strings.Contains(l, "▸ #16") {
+		if strings.Contains(l, "▸") && strings.Contains(l, "#16") { // the cursor, the new-marker cell, then the id
 			found = true
 			if strings.Contains(l, th.Tint("codex via ada", "codex via ada")) {
 				t.Errorf("the Board task cursor row carries no tint: %q", l)

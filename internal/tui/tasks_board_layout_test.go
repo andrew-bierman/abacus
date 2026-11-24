@@ -417,7 +417,7 @@ func TestBoardDetailIsClippedToTheBodyWithAMarker(t *testing.T) {
 	for _, w := range []int{100, 120} {
 		v := boardAt(w, 14, r).View()
 		rows := strings.Split(strings.TrimRight(v, "\n"), "\n")
-		if len(rows) > 14 || !strings.Contains(v, "more") || strings.Count(v, "╯") != 2 {
+		if len(rows) > 14 || !strings.Contains(v, "of 32: pgup/pgdn") || strings.Count(v, "╯") != 2 { // the marker says which lines are shown and how to read the rest
 			t.Errorf("w=%d: the detail is clipped to the body, says so, and both frames close (%d rows):\n%s", w, len(rows), v)
 		}
 		if strings.Contains(v, "line 29") {

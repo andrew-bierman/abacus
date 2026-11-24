@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ New thread ───────────────────────╮
+│ ▸ Channel  ▏                         │
+│     dev/web (3)                      │
+│     work (3)                         │
+│     dev (1)                          │
+│     ops                              │
+│   Message                            │
+│                                      │
+│   ↕ +3 more                          │
+╰──────────────────────────────────────╯
+ctrl+s review · esc cancel · q quit …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────╮
+│ ▸ Channel  ▏                         │
+│     dev/web (3)                      │
+│     work (3)                         │
+│     dev (1)                          │
+│     ops                              │
+│   Message                            │
+│                                      │
+│   0/4000 characters                  │
+│   ↑↓ pick · enter next · tab message │
+│   · ctrl+s review · esc cancel       │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────╮
+│ ▸ Channel  ▏                                                                 │
+│     dev/web (3)                                                              │
+│     work (3)                                                                 │
+│     dev (1)                                                                  │
+│     ops                                                                      │
+│   Message                                                                    │
+│                                                                              │
+│   ↕ +2 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────╮
+│ ▸ Channel  ▏                                                                 │
+│     dev/web (3)                                                              │
+│     work (3)                                                                 │
+│     dev (1)                                                                  │
+│     ops                                                                      │
+│   Message                                                                    │
+│                                                                              │
+│   0/4000 characters                                                          │
+│   ↑↓ pick · enter next · tab message · ctrl+s review · esc cancel            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Channel  ▏                                                                                                         │
+│     dev/web (3)                                                                                                      │
+│     work (3)                                                                                                         │
+│     dev (1)                                                                                                          │
+│     ops                                                                                                              │
+│   Message                                                                                                            │
+│                                                                                                                      │
+│   ↕ +2 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Channel  ▏                                                                                                         │
+│     dev/web (3)                                                                                                      │
+│     work (3)                                                                                                         │
+│     dev (1)                                                                                                          │
+│     ops                                                                                                              │
+│   Message                                                                                                            │
+│                                                                                                                      │
+│   0/4000 characters                                                                                                  │
+│   ↑↓ pick · enter next · tab message · ctrl+s review · esc cancel                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────╮
+│ ▸ Channel  ▏                                             │
+│     dev/web (3)                                          │
+│     work (3)                                             │
+│     dev (1)                                              │
+│     ops                                                  │
+│   Message                                                │
+│                                                          │
+│   0/4000 characters                                      │
+│   ↑↓ pick · enter next · tab message · ctrl+s review ·   │
+│   esc cancel                                             │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ Channel  ▏                                                                                     │
+│     dev/web (3)                                                                                  │
+│     work (3)                                                                                     │
+│     dev (1)                                                                                      │
+│     ops                                                                                          │
+│   Message                                                                                        │
+│                                                                                                  │
+│   0/4000 characters                                                                              │
+│   ↑↓ pick · enter next · tab message · ctrl+s review · esc cancel                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab

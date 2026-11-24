@@ -934,8 +934,14 @@ func TestACursorThatComesRoundAgainEndsThePaging(t *testing.T) {
 		f.out["read "+c+" --json --limit 5"] = `{"threads":[]}`
 	}
 	r, err := readyModule(t, f, Options{}).Board(context.Background())
-	if err != nil || !strings.Contains(r.Truncated, "channels are listed") || len(f.calls) > 12 {
-		t.Fatalf("%q %v calls=%d", r.Truncated, err, len(f.calls))
+	pages := 0
+	for _, c := range f.calls {
+		if strings.Contains(c, "channels list") {
+			pages++
+		}
+	}
+	if err != nil || !strings.Contains(r.Truncated, "only the first 5 channels are listed") || pages != 2 || len(r.Channels) != 5 {
+		t.Fatalf("%q %v pages=%d channels=%d (a repeated page adds nothing)", r.Truncated, err, pages, len(r.Channels))
 	}
 }
 

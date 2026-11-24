@@ -49,10 +49,31 @@ type boardSection struct {
 	th      Theme
 	geom
 	listNav // ids are "t:<id>" (threads) then "k:<id>" (tasks), cursor order
+
+	// reading state: what changed since the person last looked, this session only (nothing is kept)
+	stamp     map[string]string // row id -> what its row shows now
+	seen      map[string]string // row id -> what it showed when last looked at
+	baselined bool              // the first read arrived: what was there then is not "new"
+	baseAt    time.Time         // the newest activity on that first read: an older thread that only now enters the read is not new
+	mine      map[string]bool   // threads the person just wrote to: their own change is not "new"
+	detailOff int               // scroll of the message panel
+
+	// writing (board_compose.go)
+	writer     core.BoardWriter
+	applier    *core.BoardApplier
+	mode       boardMode
+	draft      boardDraft
+	plan       core.BoardPlan
+	planCtx    []string
+	seq        int  // bumped to drop the answer of a command that was cancelled
+	confirmOff int  // scroll of the confirm screen
+	seenEnd    bool // the confirm screen was scrolled to its end
+	outcome    string
+	refetch    bool // a write landed while a read was in flight: read once more
 }
 
 func newBoardSection(p core.BoardProvider) *boardSection {
-	s := &boardSection{p: p, th: DefaultTheme()}
+	s := &boardSection{p: p, th: DefaultTheme(), stamp: map[string]string{}, seen: map[string]string{}, mine: map[string]bool{}}
 	if bi, ok := p.(boardInspector); ok {
 		s.inspect = bi.InspectCmd
 	}
@@ -60,14 +81,28 @@ func newBoardSection(p core.BoardProvider) *boardSection {
 }
 
 func (s *boardSection) SetTheme(t Theme) { s.th = t }
-func (s *boardSection) Capturing() bool  { return false }
+func (s *boardSection) Capturing() bool  { return s.mode != bmList }
 
 // canInspect: the browser handoff is offered only for a loaded, healthy board.
 func (s *boardSection) canInspect() bool { return s.inspect != nil && s.loaded && s.err == nil }
 
 func (s *boardSection) Bindings() []key.Binding {
+	if s.mode != bmList {
+		return s.composeBindings()
+	}
 	enter, back := s.bindings(s.width(), len(s.rows()))
-	out := append(moveBindings(), enter, back, keyReload)
+	var out []key.Binding
+	if s.canWrite() { // writing first: the footer cuts from the end
+		out = append(out, keyBoardNew)
+		if len(s.rows()) > 0 {
+			out = append(out, keyBoardReply)
+		}
+	}
+	out = append(out, moveBindings()...)
+	out = append(out, enter, back, keyReload)
+	if len(s.rows()) > 0 {
+		out = append(out, keyScroll)
+	}
 	if s.canInspect() {
 		out = append(out, keyBrowser)
 	}
@@ -107,17 +142,19 @@ func (s *boardSection) deactivate() { s.active = false; s.gen++ }
 // boardRow is one selectable line: a thread or a task. Its detail body is built only when asked
 // for, so a render builds one body (the selected row's), not one per row.
 type boardRow struct {
-	id   string
-	body func() []string
+	id    string
+	msgID string // the message a reply goes to
+	desc  string // what a reply form says it answers
+	body  func() []string
 }
 
 func (s *boardSection) rows() []boardRow {
 	var out []boardRow
 	for _, t := range s.report.Threads {
-		out = append(out, boardRow{id: "t:" + t.Root.ID, body: func() []string { return threadBody(t) }})
+		out = append(out, boardRow{id: "t:" + t.Root.ID, msgID: t.Root.ID, desc: replyDesc(t.Root), body: func() []string { return threadBody(t) }})
 	}
 	for _, t := range s.report.Tasks {
-		out = append(out, boardRow{id: "k:" + t.ID, body: func() []string { return taskBody(t) }})
+		out = append(out, boardRow{id: "k:" + t.ID, msgID: t.ID, desc: replyDesc(core.BoardMessage{ID: t.ID, Channel: t.Channel, Text: t.Text}), body: func() []string { return taskBody(t) }})
 	}
 	return out
 }
@@ -184,6 +221,15 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.report, s.err, s.loaded, s.busy, s.readAt = m.report, m.err, true, false, nowFn()
 		s.reanchor(s.ids(), true) // follow: the clamped row under the cursor is selected
 		s.settle(len(s.report.Threads) + len(s.report.Tasks))
+		s.absorb()
+		if s.refetch { // a write landed while this read was in flight: its answer may predate it
+			s.refetch = false
+			return s, s.fetch()
+		}
+	case boardDescribedMsg:
+		s.described(m)
+	case boardAppliedMsg:
+		return s, s.applied(m)
 	case boardTickMsg:
 		if !s.active || m.gen != s.gen { // not visible, or a tick of an earlier visit
 			return s, nil
@@ -199,28 +245,137 @@ func (s *boardSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		s.resize(m)
 		s.fit(s.width())
+		s.confirmOff, s.seenEnd = 0, false // a different size shows different lines: read it again
 	case tea.KeyMsg:
 		s.notice = ""
+		if s.mode != bmList {
+			return s.compose(m)
+		}
 		ids := s.ids()
+		before := s.cursor
 		switch {
+		case s.drilled && (key.Matches(m, keyUp) || key.Matches(m, keyDown)): // only the message is on screen: the arrows read it
+			s.scrollDetail(m)
 		case key.Matches(m, keyUp):
 			s.up(ids)
 		case key.Matches(m, keyDown):
 			s.down(ids)
+		case m.Type == tea.KeyPgUp || m.Type == tea.KeyPgDown:
+			s.scrollDetail(m)
 		case key.Matches(m, keyEnter):
 			s.enter(s.width(), len(ids))
+			s.detailOff = 0
 		case key.Matches(m, keyBack):
 			s.back()
+			s.detailOff = 0
 		case key.Matches(m, keyReload):
 			if !s.busy {
 				return s, s.fetch()
 			}
+		case key.Matches(m, keyBoardNew) && s.writer != nil:
+			s.startPost()
+		case key.Matches(m, keyBoardReply) && s.writer != nil:
+			s.startReply()
 		case key.Matches(m, keyBrowser) && s.canInspect():
 			return s, tea.ExecProcess(s.inspect(), func(err error) tea.Msg { return boardInspectDoneMsg{err} })
 		}
 		s.remember(ids)
+		if s.cursor != before {
+			s.detailOff = 0
+		}
 	}
+	s.markSeen()
 	return s, nil
+}
+
+// scrollDetail moves the message panel by a line (the arrows, when only it is shown) or a page.
+func (s *boardSection) scrollDetail(k tea.KeyMsg) {
+	page := max(s.bodyH(s.notice)-panelChromeH-1, 1)
+	step := map[tea.KeyType]int{tea.KeyUp: -1, tea.KeyDown: 1, tea.KeyPgUp: -page, tea.KeyPgDown: page}[k.Type]
+	if step == 0 { // k and j
+		step = map[string]int{"k": -1, "j": 1}[k.String()]
+	}
+	s.detailOff = max(0, s.detailOff+step) // the view clamps it to the text
+}
+
+// ---- unread markers: this session only, nothing is stored ----
+
+func threadStamp(t core.BoardThread) string {
+	last := ""
+	if t.Last != nil {
+		last = t.Last.ID
+	}
+	return fmt.Sprintf("%d|%s", t.Replies, last)
+}
+
+func taskStamp(t core.BoardTask) string { return t.State + "|" + t.Claimant }
+
+// absorb takes in a new read: the first one is the baseline (everything on it is already seen), a
+// later one leaves a row marked new when it appeared or changed. Threads the person just wrote to
+// are seen, and rows that left the board are forgotten.
+func (s *boardSection) absorb() {
+	if s.err != nil {
+		return
+	}
+	st := map[string]string{}
+	for _, t := range s.report.Threads {
+		st["t:"+t.Root.ID] = threadStamp(t)
+	}
+	for _, t := range s.report.Tasks {
+		st["k:"+t.ID] = taskStamp(t)
+	}
+	s.stamp = st
+	if !s.baselined {
+		s.baselined = true
+		for id, v := range st {
+			s.seen[id] = v
+		}
+		for _, t := range s.report.Threads {
+			if at, err := time.Parse(time.RFC3339, activityAt(t)); err == nil && at.After(s.baseAt) {
+				s.baseAt = at
+			}
+		}
+	}
+	// a thread that was already old when the first read was made, and only now comes into the bounded
+	// read (the channels it is in became more active), is not news
+	for _, t := range s.report.Threads {
+		id := "t:" + t.Root.ID
+		if _, ok := s.seen[id]; ok {
+			continue
+		}
+		if at, err := time.Parse(time.RFC3339, activityAt(t)); err != nil || !at.After(s.baseAt) {
+			s.seen[id] = st[id]
+		}
+	}
+	for id := range s.mine {
+		if v, ok := st[id]; ok {
+			s.seen[id] = v
+			delete(s.mine, id)
+		}
+	}
+	for id := range s.seen {
+		if _, ok := st[id]; !ok {
+			delete(s.seen, id)
+		}
+	}
+	s.markSeen()
+}
+
+func (s *boardSection) isNew(id string) bool {
+	v, ok := s.stamp[id]
+	return s.baselined && ok && s.seen[id] != v
+}
+
+// markSeen marks the row whose message is on screen (beside the list, or drilled into) as seen.
+func (s *boardSection) markSeen() {
+	if !s.loaded || s.err != nil || s.mode != bmList || !(!isStacked(s.width()) || s.drilled) {
+		return
+	}
+	if ids := s.ids(); s.cursor < len(ids) {
+		if v, ok := s.stamp[ids[s.cursor]]; ok {
+			s.seen[ids[s.cursor]] = v
+		}
+	}
 }
 
 // stateLines is the Board before it can list anything, as one framed panel: loading, not connected
@@ -246,18 +401,79 @@ func (s *boardSection) stateView() string {
 }
 
 func (s *boardSection) View() string {
+	if s.mode != bmList {
+		return joinLines(s.composeView())
+	}
 	if s.loaded && s.err == nil {
 		return s.connectedView()
 	}
 	return s.stateView()
 }
 
-// threadCols and taskCols are the board tables: the id and the text always stay, the channel,
-// author and claimant drop first as the panel narrows.
+// replyDesc is what a reply form says it answers: the message, where, by whom, and its first line.
+func replyDesc(m core.BoardMessage) string {
+	d := hash + san(m.ID) + " in " + orDash(m.Channel)
+	if m.Author != "" {
+		d += " by " + san(m.Author)
+	}
+	if l := firstLine(m.Text); l != "" {
+		d += ": " + san(l)
+	}
+	return d
+}
+
+// ageText is how long ago an ISO time was, as the search results say it ("3m", "15h", "2d").
+func ageText(iso string) string {
+	t, err := time.Parse(time.RFC3339, iso)
+	if err != nil {
+		return "-"
+	}
+	return core.SearchAge(nowFn().Sub(t))
+}
+
+// threadCols and taskCols are the board tables: the id (with its new marker) and the text always stay;
+// the channel, author, age and claimant drop first as the panel narrows.
 var (
-	threadCols = table{cols: []column{{min: 8, max: 8, prio: 0}, {min: 6, max: 14, prio: 2}, {min: 6, max: 14, prio: 3}, {min: 8, prio: 1}}, gap: 2}
-	taskCols   = table{cols: []column{{min: 8, max: 8, prio: 0}, {min: 5, max: 10, prio: 0}, {min: 6, max: 16, prio: 3}, {min: 8, prio: 1}}, gap: 2}
+	threadCols = table{cols: []column{{min: 9, max: 9, prio: 0}, {min: 6, max: 14, prio: 2}, {min: 6, max: 14, prio: 3}, {min: 3, max: 8, prio: 2}, {min: 8, prio: 1}}, gap: 2}
+	taskCols   = table{cols: []column{{min: 9, max: 9, prio: 0}, {min: 5, max: 10, prio: 0}, {min: 6, max: 16, prio: 3}, {min: 8, prio: 1}}, gap: 2}
 )
+
+// boardChanRows is how many lines of the list the channel names may take.
+const boardChanRows = 2
+
+// chanLines are the channel names, newest activity first, as at most boardChanRows lines and a
+// count of the rest (the new-thread form lists them all, filtered as you type).
+func chanLines(th Theme, chans []core.BoardChannel, iw int) []string {
+	var names []string
+	for _, c := range chans {
+		name := san(c.Path)
+		if c.Threads > 0 { // a board that gives no counts shows none
+			name += th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads))
+		}
+		names = append(names, name)
+	}
+	for shown := len(names); ; shown-- {
+		lines := wrap(strings.Join(names[:shown], " · "), iw)
+		if shown == 0 {
+			return nil
+		}
+		if shown == len(names) && len(lines) <= boardChanRows {
+			return lines
+		}
+		if len(lines) <= boardChanRows-1 || shown == 1 {
+			return append(lines, th.Text(KindMuted, fmt.Sprintf("+%d more channels", len(names)-shown)))
+		}
+	}
+}
+
+// markCell is the id cell of a row, led by a dot when the row appeared or changed since the person
+// last looked (a space otherwise, so the ids line up).
+func (s *boardSection) markCell(th Theme, row, id string) (styled, plain string) {
+	if s.isNew(row) {
+		return th.Text(KindAccent, "●") + id, "●" + id
+	}
+	return " " + id, " " + id
+}
 
 // connectedView is the board as a framed list (channels, threads, tasks) with the selected message
 // or task in a detail panel beside it from bpWide columns, or after Enter below that.
@@ -267,6 +483,7 @@ func (s *boardSection) connectedView() string {
 	g := duoLayout(w, s.bodyH(s.notice))
 	iw := g.listInner()
 	rows := s.rows()
+	canPost := s.writer != nil
 
 	title := titled("Board", r.Source)
 	lines := wrap(r.Summarize(), iw)
@@ -278,28 +495,28 @@ func (s *boardSection) connectedView() string {
 	}
 	lines = append(lines, "", th.Section("Channels"))
 	if len(r.Channels) == 0 {
-		lines = append(lines, th.Text(KindMuted, "none yet: the first post makes one"))
-	}
-	var chans []string
-	for _, c := range r.Channels {
-		name := san(c.Path)
-		if c.Threads > 0 { // a board that gives no counts shows none
-			name += th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads))
+		none := "none yet: the first post makes one"
+		if canPost {
+			none += " (press n)"
 		}
-		chans = append(chans, name)
+		lines = append(lines, wrap(th.Text(KindMuted, none), iw)...)
 	}
-	if len(chans) > 0 {
-		lines = append(lines, wrap(strings.Join(chans, " · "), iw)...)
-	}
+	lines = append(lines, chanLines(th, r.Channels, iw)...)
 
 	lines = append(lines, "", th.Section("Recent threads"))
 	if len(r.Threads) == 0 {
-		lines = append(lines, th.Text(KindMuted, "no threads yet"))
+		none := "no threads yet"
+		if canPost {
+			none += ": press n to start one"
+		}
+		lines = append(lines, wrap(th.Text(KindMuted, none), iw)...)
 	}
 	var trows, tplain [][]string
 	for _, t := range r.Threads {
-		tplain = append(tplain, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), orDash(t.Root.Author), san(firstLine(t.Root.Text))})
-		trows = append(trows, []string{hash + san(t.Root.ID), orDash(t.Root.Channel), th.Tint(t.Root.Author, orDash(t.Root.Author)), san(firstLine(t.Root.Text))})
+		id, idPlain := s.markCell(th, "t:"+t.Root.ID, hash+san(t.Root.ID))
+		age := ageText(activityAt(t))
+		tplain = append(tplain, []string{idPlain, orDash(t.Root.Channel), orDash(t.Root.Author), age, san(firstLine(t.Root.Text))})
+		trows = append(trows, []string{id, orDash(t.Root.Channel), th.Tint(t.Root.Author, orDash(t.Root.Author)), th.Text(KindMuted, age), san(firstLine(t.Root.Text))})
 	}
 	first := len(lines)
 	lines = append(lines, renderRows(th, threadCols, iw, trows, tplain, s.cursor)...)
@@ -309,8 +526,9 @@ func (s *boardSection) connectedView() string {
 	}
 	var krows, kplain [][]string
 	for _, t := range r.Tasks {
-		kplain = append(kplain, []string{hash + san(t.ID), orDash(t.State), orDash(t.Claimant), san(firstLine(t.Text))})
-		krows = append(krows, []string{hash + san(t.ID), orDash(t.State), th.Tint(t.Claimant, orDash(t.Claimant)), san(firstLine(t.Text))})
+		id, idPlain := s.markCell(th, "k:"+t.ID, hash+san(t.ID))
+		kplain = append(kplain, []string{idPlain, orDash(t.State), orDash(t.Claimant), san(firstLine(t.Text))})
+		krows = append(krows, []string{id, orDash(t.State), th.Tint(t.Claimant, orDash(t.Claimant)), san(firstLine(t.Text))})
 	}
 	// the cursor runs over threads then tasks: draw the task rows with the cursor shifted past the threads
 	lines = append(lines, renderRows(th, taskCols, iw, krows, kplain, s.cursor-len(r.Threads))...)
@@ -332,11 +550,51 @@ func (s *boardSection) connectedView() string {
 		for _, b := range rows[s.cursor].body() {
 			detail = append(detail, wrap(b, g.detail-panelChromeW)...)
 		}
+		if s.cursorCut() {
+			detail = append(detail, "", th.Text(KindMuted, fmt.Sprintf("… cut at %d characters: the board has more", core.BoardMaxText)))
+		}
 	}
 	list := windowLines(th, lines, cursorLine, g.inner, &s.top)
-	body := g.draw(th, title, list, detailTitle, clipLines(th, detail, g.inner), s.drilled)
+	body := g.draw(th, title, list, detailTitle, scrollLines(th, detail, g.inner, &s.detailOff), s.drilled)
 	if s.notice != "" {
 		body = append(body, noticeLine(th, w, s.notice)...)
 	}
 	return joinLines(body)
+}
+
+// cursorCut is whether the selected message was cut short by the read.
+func (s *boardSection) cursorCut() bool {
+	ids := s.ids()
+	if s.cursor >= len(ids) {
+		return false
+	}
+	if s.cursor < len(s.report.Threads) {
+		t := s.report.Threads[s.cursor]
+		return t.Root.Cut || (t.Last != nil && t.Last.Cut)
+	}
+	return s.report.Tasks[s.cursor-len(s.report.Threads)].Cut
+}
+
+// activityAt is when a thread last changed: its latest reply, else its root.
+func activityAt(t core.BoardThread) string {
+	if t.Last != nil && t.Last.At != "" {
+		return t.Last.At
+	}
+	return t.Root.At
+}
+
+// scrollLines shows rows lines of lines from *off (rows <= 0: all), with a last row that says which
+// lines are shown when it cuts. *off is clamped to the text.
+func scrollLines(th Theme, lines []string, rows int, off *int) []string {
+	if rows <= 0 || len(lines) <= rows {
+		*off = 0
+		return lines
+	}
+	if rows == 1 {
+		return lines[:1]
+	}
+	vis := rows - 1
+	*off = max(0, min(*off, len(lines)-vis))
+	out := append([]string(nil), lines[*off:*off+vis]...)
+	return append(out, th.Text(KindMuted, fmt.Sprintf("↕ %d-%d of %d: pgup/pgdn", *off+1, *off+vis, len(lines))))
 }

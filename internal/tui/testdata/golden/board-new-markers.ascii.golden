@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Board ────────────────────────────╮
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1) ·   │
+│ ops                                  │
+│                                      │
+│ Recent threads                       │
+│ ▸  #15  dev/w…  ada    15h  checkou… │
+│   ↕ +8 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────╮
+│ 4 channels, 3 recent threads, 2 open │
+│ tasks                                │
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1) ·   │
+│ ops                                  │
+│                                      │
+│ Recent threads                       │
+│ ▸  #15  dev/w…  ada    15h  checkou… │
+│   ●#2   dev     ada    20m  deploys… │
+│   ●#19  ops     codex  5m   queue d… │
+│                                      │
+│ Tasks                                │
+│    #16  claimed  codex vi…  fix CVE… │
+│    #6   ready    -          review … │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 4 channels, 3 recent threads, 2 open tasks                                   │
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops                                       │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸  #15  dev/web  ada    15h  checkout times out for carts over 40 items, st… │
+│   ↕ +6 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 4 channels, 3 recent threads, 2 open tasks                                   │
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops                                       │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸  #15  dev/web  ada    15h  checkout times out for carts over 40 items, st… │
+│   ●#2   dev      ada    20m  deploys are green again                         │
+│   ●#19  ops      codex  5m   queue drained, nothing stuck                    │
+│                                                                              │
+│ Tasks                                                                        │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web                      │
+│    #6   ready    -              review the fix                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 3 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
+│                                                                      │ │ checkout times out for carts over 40 items, │
+│ Channels                                                             │ │ started after the 14:02 deploy              │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ 2 replies, latest:                          │
+│                                                                      │ │ #17 by ada/claude Nov 22 20:14              │
+│ Recent threads                                                       │ │ rolled back to d4e5f6; watching the error   │
+│ ▸  #15  dev/web  ada    15h  checkout times out for carts over 40 i… │ │ rate                                        │
+│   ↕ +6 more                                                          │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 3 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
+│                                                                      │ │ checkout times out for carts over 40 items, │
+│ Channels                                                             │ │ started after the 14:02 deploy              │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ 2 replies, latest:                          │
+│                                                                      │ │ #17 by ada/claude Nov 22 20:14              │
+│ Recent threads                                                       │ │ rolled back to d4e5f6; watching the error   │
+│ ▸  #15  dev/web  ada    15h  checkout times out for carts over 40 i… │ │ rate                                        │
+│   ●#2   dev      ada    20m  deploys are green again                 │ │                                             │
+│   ●#19  ops      codex  5m   queue drained, nothing stuck            │ │                                             │
+│                                                                      │ │                                             │
+│ Tasks                                                                │ │                                             │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │                                             │
+│    #6   ready    -              review the fix                       │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮
+│ 4 channels, 3 recent threads, 2 open tasks               │
+│                                                          │
+│ Channels                                                 │
+│ dev/web (3) · work (3) · dev (1) · ops                   │
+│                                                          │
+│ Recent threads                                           │
+│ ▸  #15  dev/web  ada    15h  checkout times out for car… │
+│   ●#2   dev      ada    20m  deploys are green again     │
+│   ●#19  ops      codex  5m   queue drained, nothing stu… │
+│                                                          │
+│ Tasks                                                    │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │
+│    #6   ready    -              review the fix           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread…
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────╮
+│ 4 channels, 3 recent threads, 2 open tasks               │ │ #15 in dev/web by ada Nov 22 20:12  │
+│                                                          │ │ checkout times out for carts over   │
+│ Channels                                                 │ │ 40 items, started after the 14:02   │
+│ dev/web (3) · work (3) · dev (1) · ops                   │ │ deploy                              │
+│                                                          │ │ 2 replies, latest:                  │
+│ Recent threads                                           │ │ #17 by ada/claude Nov 22 20:14      │
+│ ▸  #15  dev/web  ada    15h  checkout times out for car… │ │ rolled back to d4e5f6; watching the │
+│   ●#2   dev      ada    20m  deploys are green again     │ │ error rate                          │
+│   ●#19  ops      codex  5m   queue drained, nothing stu… │ │                                     │
+│                                                          │ │                                     │
+│ Tasks                                                    │ │                                     │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │ │                                     │
+│    #6   ready    -              review the fix           │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh …

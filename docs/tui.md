@@ -383,6 +383,21 @@ tasks), and the selected message or task in a detail panel beside it from 100 co
 first as the panel narrows; ids and text stay. Selection follows the thread or task, not its row,
 across refreshes.
 
+A dot before an id marks a thread or task that appeared or changed since you last looked (this session
+only; the first read is the baseline, a thread that is merely old and enters the read is not news, your
+own post is not). An age column shows how long ago a thread was active. The channel list takes at most
+two lines and counts the rest. `pgup`/`pgdn` scroll a long message (the arrows too, once drilled in).
+
+Writing (only when the board can be written to): `n` new thread, `c` reply to the selected thread or
+task. The form is a small editor: type or paste, `enter` adds a line, backspace removes, `tab` moves
+between channel and message, `ctrl+s` reviews, `esc` cancels; text stops at 4000 characters. The channel
+field suggests existing channels as you type (`down`, `enter` to pick) and says when a name is new. The
+confirm screen shows the plan, what the board says about the target, the idempotency key and the exact
+command; it scrolls, and `y` works only after the end has been shown (a resize asks again). `esc`/`n`
+goes back to the draft. A refused post returns to the draft; a post that may or may not have landed
+shows "Result unknown" (`enter` refreshes, `e` edits the same text again, which reuses the same key).
+Messages longer than 4000 characters are cut when read and say so.
+
 ## Layout
 
 ```

@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ New thread ───────────────────────╮
+│   Channel  dev                       │
+│ ▸ Message                            │
+│     deploys are green                │
+│     second line▏                     │
+│   29/4000 characters                 │
+│   enter new line · tab channel ·     │
+│   ctrl+s review · esc cancel         │
+╰──────────────────────────────────────╯
+
+ctrl+s review · esc cancel · q quit …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────╮
+│   Channel  dev                       │
+│ ▸ Message                            │
+│     deploys are green                │
+│     second line▏                     │
+│   29/4000 characters                 │
+│   enter new line · tab channel ·     │
+│   ctrl+s review · esc cancel         │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────╮
+│   Channel  dev                                                               │
+│ ▸ Message                                                                    │
+│     deploys are green                                                        │
+│     second line▏                                                             │
+│   29/4000 characters                                                         │
+│   enter new line · tab channel · ctrl+s review · esc cancel                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────╮
+│   Channel  dev                                                               │
+│ ▸ Message                                                                    │
+│     deploys are green                                                        │
+│     second line▏                                                             │
+│   29/4000 characters                                                         │
+│   enter new line · tab channel · ctrl+s review · esc cancel                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   Channel  dev                                                                                                       │
+│ ▸ Message                                                                                                            │
+│     deploys are green                                                                                                │
+│     second line▏                                                                                                     │
+│   29/4000 characters                                                                                                 │
+│   enter new line · tab channel · ctrl+s review · esc cancel                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   Channel  dev                                                                                                       │
+│ ▸ Message                                                                                                            │
+│     deploys are green                                                                                                │
+│     second line▏                                                                                                     │
+│   29/4000 characters                                                                                                 │
+│   enter new line · tab channel · ctrl+s review · esc cancel                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────╮
+│   Channel  dev                                           │
+│ ▸ Message                                                │
+│     deploys are green                                    │
+│     second line▏                                         │
+│   29/4000 characters                                     │
+│   enter new line · tab channel · ctrl+s review · esc     │
+│   cancel                                                 │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ New thread ───────────────────────────────────────────────────────────────────────────────────╮
+│   Channel  dev                                                                                   │
+│ ▸ Message                                                                                        │
+│     deploys are green                                                                            │
+│     second line▏                                                                                 │
+│   29/4000 characters                                                                             │
+│   enter new line · tab channel · ctrl+s review · esc cancel                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ctrl+s review · esc cancel · q quit · ? help · tab/→ next tab

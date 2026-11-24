@@ -134,8 +134,8 @@ output (`internal/board/testdata`). Provides the Board domain (read) and Board p
   binary with a token-free environment. Lookup: `ABACUS_BOARD_BIN`, else the built-in `board`. The
   unrelated npm package `vb` is never looked for or run.
 - Read argvs, element by element, optionally followed by `--url URL`: `channels list --json
-  --limit N`, `read CHANNEL --json --limit N`, `read ID --json`, `tasks --json --limit N`
-  (N 1-100). One Board read is at most 1 + 3 + 1 calls. Never `serve`, `tail`, `wait`, `inspect`
+  --limit N [--after CURSOR]`, `read CHANNEL --json --limit N`, `read ID --json`, `tasks --json --limit N`
+  (N 1-100). One Board read is at most 4 + 3 + 1 calls (up to 4 channel pages, followed by the cursor; a cursor that repeats, or cannot be passed on, ends the walk). Never `serve`, `tail`, `wait`, `inspect`
   (except the explicit-keypress handoff), `whoami` or any other write verb.
 - Write argvs: `post CHANNEL --json [--url URL] --idempotency-key abacus-HEX16 -- TEXT` and
   `reply ID --json [...] -- TEXT`; the text follows `--` so it can never be an option.
@@ -148,7 +148,8 @@ output (`internal/board/testdata`). Provides the Board domain (read) and Board p
 - Unknown outcome (writes): a timeout, cancel, runner error, `network_error`/`timeout` reason,
   unreadable stdout or an exit with no failure document is "result unknown"; permission_denied,
   login_required, missing_scope, channel_not_found and validation errors are "not applied".
-  Only `missing_scope` and `network_error` were captured from the real 0.54.0 CLI.
+  Captured from the real 0.54.0 CLI: `missing_scope`, `login_required`, `network_error`, `channel_not_found`. `timeout` never
+  appears: the CLI has no client deadline, so a stalled board is cut by abacus's own deadline (a timeout, result unknown for writes).
 - Environment passed on (BOARD_URL is never inherited; credentials only reach an https or
   loopback target): `HOME`, `PATH`, `TMPDIR`, `USER`, `LANG`, `LC_*`, `TERM`, `NO_COLOR`,
   the XDG dirs, `BOARD_URL`, `BOARD_NAME`, `BOARD_TOKEN`, `VERCEL_AUTH_TOKEN`, `VERCEL_ORG_ID`,

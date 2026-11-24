@@ -21,6 +21,15 @@ may change behavior, and patch versions are fixes and small additions.
   PageRank-style score), Cycles and Parallel tracks, with value bars, `s` `S` sort, `enter` to open the
   task and `g` for its graph, and the meaning of each number on `?`. The insights report gains
   `influencers` (additive).
+- Board: write from the TUI. `n` starts a thread and `c` replies to the selected one, through the same
+  gate as `abacus board post|reply`: a multi-line form (paste works, capped at 4000 characters as you
+  type), a channel picker that filters as you type, a confirm screen with the exact command and the
+  idempotency key (scrollable; `y` only works once all of it has been shown), and a "result unknown"
+  screen, never "not applied", when the board does not answer. Channels beyond the first 50 are read
+  page by page (up to 200, the rest counted), long messages are cut at 4000 characters and marked
+  (`cut` in the JSON, additive), threads that changed since you looked get a dot, and the list shows
+  how long ago each thread was active. `pgup`/`pgdn` scroll a long message. The post plan gains a
+  `Key` and an idempotency-key line (additive).
 - Terminal workspace (optional), first class: `m` brings an item's terminal to the front and `W`
   opens a terminal running the new `agent_command` setting (an argv with `{task_id}` and `{title}`,
   each word one argument, never a shell) from a task, run or lease, each behind the usual plan,
@@ -93,6 +102,12 @@ may change behavior, and patch versions are fixes and small additions.
   that times out is reported as an unknown result, never as not applied. The prompt (`:`) still never
   writes. `core.Task` gained additive `labels` and `depends_on` (filled by a single-task re-read);
   `schema_version` stays 1.
+
+### Fixed
+
+- Board: a read that ran out of time said "canceled: context deadline exceeded"; it now says "the
+  board did not answer in time" (and is a timeout). Failure reasons `board_outdated`, `lockout`,
+  `not_available` and `canceled` get plain one-line states.
 
 ## [0.4.0] - 2026-11-23
 

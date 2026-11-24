@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Confirm this post ────────────────╮
+│   post a new thread to channel dev   │
+│   text: "deploys are green"          │
+│   board:                             │
+│   http://127.0.0.1:4100/api/board    │
+│   (board_url (config))               │
+│   idempotency key: abacus-           │
+│   5cb1524890b8fdb0 (the same text to │
+│ ↕ lines 1-7 of 20: j/k or pgup/pgdn… │
+╰──────────────────────────────────────╯
+pgup/pgdn scroll · n/esc edit · q quit …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Confirm this post ────────────────╮
+│   post a new thread to channel dev   │
+│   text: "deploys are green"          │
+│   board:                             │
+│   http://127.0.0.1:4100/api/board    │
+│   (board_url (config))               │
+│   idempotency key: abacus-           │
+│   5cb1524890b8fdb0 (the same text to │
+│   the same place within 10 minutes   │
+│   posts once)                        │
+│   existing channel dev               │
+│   If the board does not answer,      │
+│   abacus cannot tell whether this    │
+│   landed: it will say "result        │
+│   unknown", never "not applied".     │
+│                                      │
+│ exact command:                       │
+│   board post dev --json --           │
+│   idempotency-key abacus-            │
+│   5cb1524890b8fdb0 -- "deploys are   │
+│   green"                             │
+╰──────────────────────────────────────╯
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit…
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Confirm this post ────────────────────────────────────────────────────────╮
+│   post a new thread to channel dev                                           │
+│   text: "deploys are green"                                                  │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                │
+│   idempotency key: abacus-5cb1524890b8fdb0 (the same text to the same place  │
+│   within 10 minutes posts once)                                              │
+│   existing channel dev                                                       │
+│   If the board does not answer, abacus cannot tell whether this landed: it   │
+│ ↕ lines 1-7 of 12: j/k or pgup/pgdn to read all of it                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this post ────────────────────────────────────────────────────────╮
+│   post a new thread to channel dev                                           │
+│   text: "deploys are green"                                                  │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                │
+│   idempotency key: abacus-5cb1524890b8fdb0 (the same text to the same place  │
+│   within 10 minutes posts once)                                              │
+│   existing channel dev                                                       │
+│   If the board does not answer, abacus cannot tell whether this landed: it   │
+│   will say "result unknown", never "not applied".                            │
+│                                                                              │
+│ exact command:                                                               │
+│   board post dev --json --idempotency-key abacus-5cb1524890b8fdb0 --         │
+│   "deploys are green"                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Confirm this post ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   post a new thread to channel dev                                                                                   │
+│   text: "deploys are green"                                                                                          │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                                                        │
+│   idempotency key: abacus-5cb1524890b8fdb0 (the same text to the same place within 10 minutes posts once)            │
+│   existing channel dev                                                                                               │
+│   If the board does not answer, abacus cannot tell whether this landed: it will say "result unknown", never "not     │
+│   applied".                                                                                                          │
+│ ↕ lines 1-7 of 10: j/k or pgup/pgdn to read all of it                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this post ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   post a new thread to channel dev                                                                                   │
+│   text: "deploys are green"                                                                                          │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                                                        │
+│   idempotency key: abacus-5cb1524890b8fdb0 (the same text to the same place within 10 minutes posts once)            │
+│   existing channel dev                                                                                               │
+│   If the board does not answer, abacus cannot tell whether this landed: it will say "result unknown", never "not     │
+│   applied".                                                                                                          │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   board post dev --json --idempotency-key abacus-5cb1524890b8fdb0 -- "deploys are green"                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this post ────────────────────────────────────╮
+│   post a new thread to channel dev                       │
+│   text: "deploys are green"                              │
+│   board: http://127.0.0.1:4100/api/board (board_url      │
+│   (config))                                              │
+│   idempotency key: abacus-5cb1524890b8fdb0 (the same     │
+│   text to the same place within 10 minutes posts once)   │
+│   existing channel dev                                   │
+│   If the board does not answer, abacus cannot tell       │
+│   whether this landed: it will say "result unknown",     │
+│   never "not applied".                                   │
+│                                                          │
+│ exact command:                                           │
+│   board post dev --json --idempotency-key abacus-        │
+│   5cb1524890b8fdb0 -- "deploys are green"                │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this post ────────────────────────────────────────────────────────────────────────────╮
+│   post a new thread to channel dev                                                               │
+│   text: "deploys are green"                                                                      │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                                    │
+│   idempotency key: abacus-5cb1524890b8fdb0 (the same text to the same place within 10 minutes    │
+│   posts once)                                                                                    │
+│   existing channel dev                                                                           │
+│   If the board does not answer, abacus cannot tell whether this landed: it will say "result      │
+│   unknown", never "not applied".                                                                 │
+│                                                                                                  │
+│ exact command:                                                                                   │
+│   board post dev --json --idempotency-key abacus-5cb1524890b8fdb0 -- "deploys are green"         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab

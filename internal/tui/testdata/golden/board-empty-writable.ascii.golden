@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Board ────────────────────────────╮
+│ (press n)                            │
+│                                      │
+│ Recent threads                       │
+│ no threads yet: press n to start one │
+│                                      │
+│ Tasks                                │
+│ no open tasks                        │
+│   ↕ +5 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────╮
+│ 0 channels, 0 recent threads, 0 open │
+│ tasks                                │
+│                                      │
+│ Channels                             │
+│ none yet: the first post makes one   │
+│ (press n)                            │
+│                                      │
+│ Recent threads                       │
+│ no threads yet: press n to start one │
+│                                      │
+│ Tasks                                │
+│ no open tasks                        │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ none yet: the first post makes one (press n)                                 │
+│                                                                              │
+│ Recent threads                                                               │
+│ no threads yet: press n to start one                                         │
+│                                                                              │
+│ Tasks                                                                        │
+│ no open tasks                                                                │
+│   ↕ +3 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · ↑/↓ move …
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 0 channels, 0 recent threads, 0 open tasks                                   │
+│                                                                              │
+│ Channels                                                                     │
+│ none yet: the first post makes one (press n)                                 │
+│                                                                              │
+│ Recent threads                                                               │
+│ no threads yet: press n to start one                                         │
+│                                                                              │
+│ Tasks                                                                        │
+│ no open tasks                                                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · ↑/↓ move …
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────────────╮
+│ none yet: the first post makes one (press n)                         │ │ nothing selected                            │
+│                                                                      │ │                                             │
+│ Recent threads                                                       │ │                                             │
+│ no threads yet: press n to start one                                 │ │                                             │
+│                                                                      │ │                                             │
+│ Tasks                                                                │ │                                             │
+│ no open tasks                                                        │ │                                             │
+│   ↕ +3 more                                                          │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · ↑/↓ move · r refresh
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────────────╮
+│ 0 channels, 0 recent threads, 0 open tasks                           │ │ nothing selected                            │
+│                                                                      │ │                                             │
+│ Channels                                                             │ │                                             │
+│ none yet: the first post makes one (press n)                         │ │                                             │
+│                                                                      │ │                                             │
+│ Recent threads                                                       │ │                                             │
+│ no threads yet: press n to start one                                 │ │                                             │
+│                                                                      │ │                                             │
+│ Tasks                                                                │ │                                             │
+│ no open tasks                                                        │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · ↑/↓ move · r refresh
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮
+│ 0 channels, 0 recent threads, 0 open tasks               │
+│                                                          │
+│ Channels                                                 │
+│ none yet: the first post makes one (press n)             │
+│                                                          │
+│ Recent threads                                           │
+│ no threads yet: press n to start one                     │
+│                                                          │
+│ Tasks                                                    │
+│ no open tasks                                            │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread…
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────╮
+│ 0 channels, 0 recent threads, 0 open tasks               │ │ nothing selected                    │
+│                                                          │ │                                     │
+│ Channels                                                 │ │                                     │
+│ none yet: the first post makes one (press n)             │ │                                     │
+│                                                          │ │                                     │
+│ Recent threads                                           │ │                                     │
+│ no threads yet: press n to start one                     │ │                                     │
+│                                                          │ │                                     │
+│ Tasks                                                    │ │                                     │
+│ no open tasks                                            │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · ↑/↓ move · r refresh

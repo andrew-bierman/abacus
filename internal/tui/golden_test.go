@@ -390,7 +390,7 @@ func scenarios() []scenario {
 		{name: "doctor", build: std, keys: []string{"6"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board", overlay: true},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
-	}, append(append(append(append(append(searchScenarios(), treeScenarios()...), promptScenarios()...), liveScenarios()...), editScenarios()...), marksScenarios()...)...)
+	}, append(append(append(append(append(append(searchScenarios(), treeScenarios()...), promptScenarios()...), liveScenarios()...), editScenarios()...), marksScenarios()...), boardScenarios()...)...)
 }
 
 func render(t *testing.T, sc scenario, th Theme, w, h int) string {

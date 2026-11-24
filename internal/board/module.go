@@ -589,7 +589,7 @@ func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 // maxChannelPages pages. A first page that cannot be read is an error; a later page that cannot is
 // named in more (the channels read so far stay). more is also set when the cap stopped the walk.
 func (m *Module) listChannels(ctx context.Context) (chans []channelJSON, more string, err error) {
-	after, seen := "", map[string]bool{}
+	after, seen, have := "", map[string]bool{}, map[string]bool{}
 	for page := 0; page < maxChannelPages; page++ {
 		argv := []string{"channels", "list", "--json", "--limit", strconv.Itoa(maxChannels)}
 		if after != "" {
@@ -606,7 +606,12 @@ func (m *Module) listChannels(ctx context.Context) (chans []channelJSON, more st
 			}
 			return chans, fmt.Sprintf("only the first %d channels are listed: the next page could not be read", len(chans)), nil
 		}
-		chans = append(chans, *cd.Channels...)
+		for _, c := range *cd.Channels { // a page the board repeats adds nothing
+			if !have[c.Path] {
+				have[c.Path] = true
+				chans = append(chans, c)
+			}
+		}
 		switch {
 		case cd.Next == nil || *cd.Next == "":
 			return chans, "", nil
