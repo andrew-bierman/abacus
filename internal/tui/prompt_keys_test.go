@@ -145,7 +145,7 @@ func TestShellKeysNeverCollideWithAnySectionKey(t *testing.T) {
 func TestHelpOverlayListsThePromptCommands(t *testing.T) {
 	m := press(pm(t, 100, 40), "?")
 	out := strings.Join(lines(m), "\n")
-	for _, want := range []string{"Commands", "tasks board leases queues doctor", "list tree kanban graph insights", "search TEXT", "filter QUERY", "ctx NAME", "help", ": ", "command"} {
+	for _, want := range []string{"Commands", "tasks board leases queues agents doctor", "list tree kanban graph insights", "search TEXT", "filter QUERY", "ctx NAME", "help", ": ", "command"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("help lacks %q:\n%s", want, out)
 		}

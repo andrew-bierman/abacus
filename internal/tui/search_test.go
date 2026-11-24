@@ -395,7 +395,7 @@ func TestSearchLoadsAnUnloadedDomainOnce(t *testing.T) {
 	for _, k := range typed("checkout") {
 		m = press(m, k)
 	}
-	if out := m.View(); !strings.Contains(out, "Board is still loading") {
+	if out := m.View(); !strings.Contains(out, "Board and Agents are still loading") {
 		t.Errorf("loading state:\n%s", out)
 	}
 	for _, msg := range runBoardCmd(cmd) {

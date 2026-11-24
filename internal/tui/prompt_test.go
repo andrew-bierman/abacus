@@ -299,7 +299,7 @@ func TestPromptHistory(t *testing.T) {
 func TestPromptCapturesEveryKey(t *testing.T) {
 	m := press(pm(t, 100, 32), "3")
 	m = press(m, ":")
-	for _, k := range []string{"q", "1", "6", "?", "j", "/", "n", "x", "o", "r", "y", "d", "g"} {
+	for _, k := range []string{"q", "1", "5", "?", "j", "/", "n", "x", "o", "r", "y", "d", "g"} {
 		m = press(m, k)
 		if activeTab(m) != "Leases" || prm(m) == nil {
 			t.Fatalf("%q leaked out of the prompt (tab %s, open %v)", k, activeTab(m), prm(m) != nil)

@@ -19,7 +19,7 @@ func TestHeaderContextAppearsFromOneHundredColumnsAndNeverMovesTheTabs(t *testin
 		if lipgloss.Width(h) != w {
 			t.Errorf("%d: the tab bar row is %d wide", w, lipgloss.Width(h))
 		}
-		if !strings.HasPrefix(h, "abacus   Board  [Tasks]  Leases  Queues  Doctor") {
+		if !strings.HasPrefix(h, "abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor") {
 			t.Errorf("%d: the tab bar is not intact at the left: %q", w, h)
 		}
 		if !strings.HasSuffix(strings.TrimRight(h, " "), "fleet · 14 tasks · 3 ready") {

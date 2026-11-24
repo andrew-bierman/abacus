@@ -3,6 +3,8 @@
 - [Tool contract](tool-contract.md): what abacus requires of each provider tool, the typed
   reports, and the safety rules for reads and writes.
 - [TUI](tui.md): the terminal interface, its layout and keys.
+- [Agents](agents.md): the running-agents dashboard, where each fact comes from, how a state is
+  inferred, the live monitor, limits and privacy.
 - [Built-in tools](built-in-tools.md): the tools inside the binary, how they are pinned, verified
   and unpacked, the threat model, and licenses.
 - [Development](development.md): building from source, test isolation and the checks.

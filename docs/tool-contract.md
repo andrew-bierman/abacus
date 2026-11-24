@@ -1,6 +1,6 @@
 # Tool contract
 
-Providers are how abacus fills its fleet domains (Board, Tasks, Leases, Queues); users see domains, not
+Providers are how abacus fills its fleet domains (Board, Tasks, Leases, Queues; Agents is native, below); users see domains, not
 providers. `bd` (Tasks, with reads and allowlisted writes) is composed the same way as the tools
 below: through its documented `--json` surface, behind an argv allowlist. Graph insights are not a
 provider tool: they are computed in-process (see "Graph engine"). See `docs/design/2026-11-21-1700-feat-fleet-domains-plan.md`.
@@ -309,6 +309,27 @@ rex command makes, are ignored so reads cannot cause reads). While it is connect
 connected) and never starts a server.
 
 **Not done**: `session.select` (needs a client), window labels as placements, `rex hosts`.
+
+**Deferred** until someone runs them against a real Rex and records argv and JSON: `rex window
+focus`, `rex window new`, `session.select` (also needs a client with Remote control on; `rex-tui`
+support is unknown), window labels via `session.view`, `rex hosts`, program status, spawning. A
+rung is data (a name and an argv), so each is a new value, not a new type.
+## Agents (native feeds, plus an optional built-in monitor)
+
+The Agents domain has no required tool. Any module that implements `core.AgentFeed`
+(`Agents(ctx) ([]Agent, AgentsExtra, error)`) is a feed; `core.ReadAgents` runs every ready feed side by
+side (each under a 10 s deadline), merges the answers by harness and pid or session id, and turns a
+failed feed into a note instead of failing the domain. The report is `AgentsReport` (`schema_version`
+1; additive only; `agents` is `[]`, never null). Pointer fields are nil when unknown. `state` is a
+closed set and `source` says how it was learned.
+
+- Native feed (`internal/agents`, module `agents`): process list, session-file tails and tmux panes,
+  every source injected, nothing written. See `docs/agents.md` for limits and state inference.
+- Live monitor (module `abtop`, built in, optional): argv allowlist is exactly `--json`; deadline 15 s;
+  output capped at 8 MiB; environment reduced to HOME, PATH, USER/LOGNAME, TMUX*, XDG_*, TMPDIR, LANG,
+  CLAUDE_CONFIG_DIR and CODEX_HOME. Output is read tolerantly (unknown fields ignored, missing ones
+  unknown). It has no schema version, so the shape of the pinned release is the contract, and anything
+  without a `sessions` list degrades to a note. No write path exists.
 
 ## Graph engine (in-process)
 
