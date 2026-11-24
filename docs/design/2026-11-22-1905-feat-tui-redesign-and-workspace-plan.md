@@ -28,7 +28,7 @@ Rebuild how every tab is drawn, on top of a core that already holds the data. Ad
 
 ### Problem Frame
 
-The TUI works but looks like a log. Verified from `internal/tui/testdata/golden` and tmux at 100x32 and 60x24: no panels or borders, a single weight of text, fixed-width columns cut with an ellipsis (`(held) ac-zoj by glm-scheduler-01 (ex…`), and a 30-row terminal that is mostly empty. Only Queues uses a side-by-side layout; Board, Tasks, Leases and Doctor are single-column line lists with `padTo(trunc(x, N), N)` literals. Breakpoints are scattered numbers (`wideBreakpoint=100`, brand at 60, header rule at height 16). The owner wants this to be the tasteful, responsive first client over core before native Swift, Linux and Windows apps arrive.
+The TUI works but looks like a log. Verified from `internal/tui/testdata/golden` and tmux at 100x32 and 60x24: no panels or borders, a single weight of text, fixed-width columns cut with an ellipsis (`(held) dm-zoj by bot-scheduler-01 (ex…`), and a 30-row terminal that is mostly empty. Only Queues uses a side-by-side layout; Board, Tasks, Leases and Doctor are single-column line lists with `padTo(trunc(x, N), N)` literals. Breakpoints are scattered numbers (`wideBreakpoint=100`, brand at 60, header rule at height 16). The owner wants this to be the tasteful, responsive first client over core before native Swift, Linux and Windows apps arrive.
 
 The owner also wants strong but optional Rex support. Today abacus only offers `rex -S <machine>` from a Queues run.
 
@@ -80,7 +80,7 @@ The owner also wants strong but optional Rex support. Today abacus only offers `
 
 **Outside this plan**
 
-- Windows verification (the plan assumes it follows; the Windows plan in `docs/plans/` still applies).
+- Windows verification (the plan assumes it follows; the Windows plan in `docs/design/` still applies).
 - Mouse support, new tabs, new write verbs, the `bd` write path.
 
 ### Key Decisions

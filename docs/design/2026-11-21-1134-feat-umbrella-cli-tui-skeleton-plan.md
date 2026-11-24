@@ -136,7 +136,7 @@ beaddeck/
   internal/cli/           # doctor, status, version, exit codes, --json
   internal/tui/           # shell, sections, demo mode, splash
   docs/tool-contract.md
-  docs/plans/
+  docs/design/
 ```
 
 ---
@@ -204,7 +204,7 @@ beaddeck/
   - Covers R12. The client exposes no refresh call, and a fake server asserts no `POST` is ever received during a full status read.
   - Doctor mapping: a `fail` check yields exit 1 semantics; `warn` and `skip` do not.
   - Integration: against an `httptest` server serving the fixtures behind bearer auth, a full status read returns the snapshot, queue, and history.
-- **Verification:** Tests pass with an isolated HOME; no test reads `~/.local/state/lambe`, `~/.local/bin/lambe`, or `~/Code/agent-coordination/lambe.yaml`.
+- **Verification:** Tests pass with an isolated HOME; no test reads `~/.local/state/lambe`, `~/.local/bin/lambe`, or `<hub>/lambe.yaml`.
 
 ### U4. CLI: version, doctor, status
 
@@ -267,7 +267,7 @@ beaddeck/
 | Build | `go build ./...` | all units |
 | Vet | `go vet ./...` | all units |
 | Tests | `go test ./...` with `HOME`, `XDG_CONFIG_HOME`, `XDG_STATE_HOME` set to a temp dir and a private `GOCACHE` | U1–U5 |
-| Isolation | grep of the test tree shows no reference to the production paths listed in U3's verification (`~/.local/state/lambe`, `~/.local/bin/lambe`, `~/Code/agent-coordination/lambe.yaml`) | U3, U5 |
+| Isolation | grep of the test tree shows no reference to the production paths listed in U3's verification (`~/.local/state/lambe`, `~/.local/bin/lambe`, `<hub>/lambe.yaml`) | U3, U5 |
 | No remote | `git remote` is empty until the owner picks a name | all units |
 
 ## Definition of Done

@@ -150,7 +150,7 @@ Compile and checks [ran]:
 - **Not reproducible byte-for-byte [ran]:** two identical compiles of linux-x64 gave different
   sha256. The pin therefore has to be of the artifact we publish, not of a recipe's output.
 - Windows: Bun supports `bun-windows-x64` [inferred, not tried]; abacus has no Windows support
-  yet (`docs/plans/2026-11-22-1900-plan-windows-support.md`).
+  yet (`docs/design/2026-11-22-1900-plan-windows-support.md`).
 - macOS [inferred]: an unsigned or ad-hoc-signed Mach-O from a cross-compile; first-run
   Gatekeeper behavior for a downloaded binary was not tested. The other four tools face the same
   question, so this is not new risk, but it is unverified.
