@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
  List  Kanban  Graph [Insights]
 ╭─ ▸ Insights · graph analysis · sor… ─╮
 │ Next picks  3                        │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
  List  Kanban  Graph [Insights]
 ╭─ ▸ Insights · graph analysis · sor… ─╮
@@ -43,7 +43,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
  List  Kanban  Graph [Insights]                               14 tasks · 3 ready
 ╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────╮
 │ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
@@ -56,7 +56,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · v view · enter open task …
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
  List  Kanban  Graph [Insights]                               14 tasks · 3 ready
 ╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────╮
@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · v view · enter open task …
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
  List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
 ╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────────────────────────────────────────────╮
 │ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
 ╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────────────────────────────────────────────╮
@@ -131,7 +131,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
  List  Kanban  Graph [Insights]           14 tasks · 3 ready
 ╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────╮
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · v view …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban  Graph [Insights]                                                   14 tasks · 3 ready
 ╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────────────────────────╮

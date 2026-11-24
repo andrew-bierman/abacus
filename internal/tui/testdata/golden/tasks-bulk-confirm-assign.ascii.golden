@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ╭─ ▸ Confirm 2 changes ────────────────╮
 │ assign mei to 2 tasks                │
 │   left out: ac-15 (already assigned  │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ↑/↓ scroll · n/esc cancel · q quit …
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────╮
 │ assign mei to 2 tasks                │
@@ -43,7 +43,7 @@
 
 y apply · n/esc cancel · q quit · ? hel…
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                        │
 │   left out: ac-15 (already assigned to mei)                                  │
@@ -56,7 +56,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                        │
@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                                                                │
 │   left out: ac-15 (already assigned to mei)                                                                          │
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                                                                │
@@ -131,7 +131,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────╮
 │ assign mei to 2 tasks                                    │
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                                            │
