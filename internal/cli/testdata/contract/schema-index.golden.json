@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "schemas": [
+    {
+      "name": "report",
+      "commands": "version, doctor, status",
+      "file": "report.json"
+    },
+    {
+      "name": "board",
+      "commands": "board",
+      "file": "board.json"
+    },
+    {
+      "name": "tasks",
+      "commands": "tasks",
+      "file": "tasks.json"
+    },
+    {
+      "name": "leases",
+      "commands": "leases",
+      "file": "leases.json"
+    },
+    {
+      "name": "queues",
+      "commands": "queues",
+      "file": "queues.json"
+    },
+    {
+      "name": "agents",
+      "commands": "agents",
+      "file": "agents.json"
+    },
+    {
+      "name": "search",
+      "commands": "search",
+      "file": "search.json"
+    },
+    {
+      "name": "tasks-list",
+      "commands": "tasks list",
+      "file": "tasks-list.json"
+    },
+    {
+      "name": "tasks-tree",
+      "commands": "tasks list --tree",
+      "file": "tasks-tree.json"
+    },
+    {
+      "name": "tasks-show",
+      "commands": "tasks show",
+      "file": "tasks-show.json"
+    },
+    {
+      "name": "tasks-board",
+      "commands": "tasks board",
+      "file": "tasks-board.json"
+    },
+    {
+      "name": "tasks-graph",
+      "commands": "tasks graph",
+      "file": "tasks-graph.json"
+    },
+    {
+      "name": "tasks-history",
+      "commands": "tasks history",
+      "file": "tasks-history.json"
+    },
+    {
+      "name": "setup",
+      "commands": "setup",
+      "file": "setup.json"
+    },
+    {
+      "name": "setup-repair",
+      "commands": "setup --repair",
+      "file": "setup-repair.json"
+    },
+    {
+      "name": "config-show",
+      "commands": "config show",
+      "file": "config-show.json"
+    },
+    {
+      "name": "write-dry-run",
+      "commands": "every single write with --dry-run",
+      "file": "write-dry-run.json"
+    },
+    {
+      "name": "write-applied-task",
+      "commands": "every tasks write with --yes",
+      "file": "write-applied-task.json"
+    },
+    {
+      "name": "write-applied-board",
+      "commands": "board post and reply with --yes",
+      "file": "write-applied-board.json"
+    },
+    {
+      "name": "bulk-dry-run",
+      "commands": "tasks bulk --dry-run",
+      "file": "bulk-dry-run.json"
+    },
+    {
+      "name": "bulk-result",
+      "commands": "tasks bulk --yes",
+      "file": "bulk-result.json"
+    },
+    {
+      "name": "error",
+      "commands": "any command that fails, with --json",
+      "file": "error.json"
+    },
+    {
+      "name": "schema-index",
+      "commands": "schema --json",
+      "file": "schema-index.json"
+    }
+  ]
+}

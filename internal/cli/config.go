@@ -47,10 +47,7 @@ func runConfig(rest []string, d Deps) int {
 			return core.ExitFail
 		}
 		if *asJSON {
-			jsonOut(d.Out, struct {
-				Path string `json:"path"`
-				core.Config
-			}{st.Path, c})
+			jsonOut(d.Out, core.ConfigShow{Path: st.Path, Config: c})
 			return core.ExitOK
 		}
 		fmt.Fprintf(d.Out, "%s\n", st.Path)

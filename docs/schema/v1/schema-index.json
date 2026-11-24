@@ -1,0 +1,45 @@
+{
+  "$defs": {
+    "SchemaIndexEntry": {
+      "properties": {
+        "commands": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "commands",
+        "file",
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: schema --json",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "schemas": {
+      "items": {
+        "$ref": "#/$defs/SchemaIndexEntry"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "schemas"
+  ],
+  "title": "schema-index",
+  "type": "object"
+}

@@ -9,7 +9,7 @@ import (
 )
 
 // topCommands are the commands completion offers, in the order usage lists them.
-var topCommands = []string{"board", "tasks", "leases", "queues", "agents", "tui", "search", "rex", "setup", "config", "version", "doctor", "status", "licenses", "completion", "help"}
+var topCommands = []string{"board", "tasks", "leases", "queues", "agents", "tui", "search", "rex", "setup", "config", "schema", "version", "doctor", "status", "licenses", "completion", "help"}
 
 // taskVerbs are the `tasks` subcommands, in the order the help lists them.
 var taskVerbs = []string{"list", "show", "board", "graph", "history", "create", "update", "close", "reopen", "label", "assign", "priority", "dep", "comment", "bulk"}
@@ -40,6 +40,7 @@ var subHelp = map[string]string{
 	"rex":            "usage: abacus rex layout [--new NAME] [--yes] [--dry-run] [--json]\n\nOpens the cockpit tabs in a terminal workspace; it only opens tabs.",
 	"rex layout":     "usage: abacus rex layout [--new NAME] [--yes] [--dry-run] [--json]",
 	"config":         "usage: abacus config show [--json] | get KEY | set KEY VALUE | path\nkeys: " + strings.Join(core.ConfigKeys, ", "),
+	"schema":         "usage: abacus schema [NAME] [--out DIR] [--json]\n\nWith no NAME, list the schemas of the --json outputs (JSON Schema, draft 2020-12; every document carries schema_version 1).\nWith a NAME, print that schema. With --out DIR, write every schema to DIR as NAME.json. Writes only into DIR.",
 	"licenses":       "usage: abacus licenses\n\nPrints the third-party notices and license texts carried in this file.",
 	"completion":     "usage: abacus completion bash|zsh|fish\n\nPrints a shell completion script, for example: source <(abacus completion bash)",
 	"help":           "usage: abacus help [command]",

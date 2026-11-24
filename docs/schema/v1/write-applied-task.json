@@ -1,0 +1,45 @@
+{
+  "$defs": {
+    "TaskResult": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: every tasks write with --yes",
+  "properties": {
+    "applied": {
+      "type": "boolean"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "result": {
+      "$ref": "#/$defs/TaskResult"
+    },
+    "schema_version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "applied",
+    "plan_digest",
+    "result",
+    "schema_version"
+  ],
+  "title": "write-applied-task",
+  "type": "object"
+}

@@ -57,6 +57,7 @@ first run:
   setup       report and (with --yes) perform first-run setup; --dry-run, --repair fixes a half-created workspace
   rex         layout: open the cockpit tabs in a terminal workspace (optional); --new NAME
   config      show|get|set|path: settings (actor, tracker_dir, lambe_config, board_url, ...)
+  schema      the JSON Schemas of every --json output, for clients; --out DIR writes them
 
 diagnostics:
   version     print versions and which providers were detected
@@ -126,6 +127,8 @@ func dispatch(args []string, d Deps) int {
 		return runRex(rest, d)
 	case "config":
 		return runConfig(rest, d)
+	case "schema":
+		return runSchema(rest, d)
 	case "licenses":
 		return runLicenses(rest, d)
 	case "completion":

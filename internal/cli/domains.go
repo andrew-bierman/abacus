@@ -379,14 +379,7 @@ func runWrite(d Deps, f writeFlow) int {
 		return planChanged(d, f.label, f.expect, f.digest)
 	}
 	if f.dry && f.asJSON {
-		jsonOut(d.Out, struct {
-			DryRun     bool       `json:"dry_run"`
-			Lines      []string   `json:"change"`
-			Context    []string   `json:"context,omitempty"`
-			Argv       []string   `json:"argv"`
-			Steps      [][]string `json:"steps,omitempty"`
-			PlanDigest string     `json:"plan_digest"`
-		}{true, f.lines, f.ctx, f.argv, f.more, f.digest})
+		jsonOut(d.Out, core.WriteDryRun{DryRun: true, Lines: f.lines, Context: f.ctx, Argv: f.argv, Steps: f.more, PlanDigest: f.digest})
 		return core.ExitOK
 	}
 	if !f.asJSON {
@@ -417,11 +410,7 @@ func runWrite(d Deps, f writeFlow) int {
 		return failf(d, core.CodeFor(err), "%s: %s\n", f.label, core.DescribeWriteError(err))
 	}
 	if f.asJSON {
-		jsonOut(d.Out, struct {
-			Applied    bool   `json:"applied"`
-			Result     any    `json:"result"`
-			PlanDigest string `json:"plan_digest"`
-		}{true, res, f.digest})
+		jsonOut(d.Out, core.WriteApplied{Applied: true, Result: res, PlanDigest: f.digest})
 	} else {
 		fmt.Fprintln(d.Out, done)
 	}

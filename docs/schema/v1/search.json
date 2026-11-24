@@ -1,0 +1,166 @@
+{
+  "$defs": {
+    "SearchDomain": {
+      "properties": {
+        "age": {
+          "type": "string"
+        },
+        "docs": {
+          "type": "integer"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "read_at": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "stale": {
+          "type": "boolean"
+        },
+        "state": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "docs",
+        "domain",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "SearchGroup": {
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/$defs/SearchResult"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "truncated": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "domain",
+        "results",
+        "title",
+        "total"
+      ],
+      "type": "object"
+    },
+    "SearchResult": {
+      "properties": {
+        "age": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "matched": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "meta": {
+          "type": "string"
+        },
+        "rank": {
+          "type": "integer"
+        },
+        "snippet": {
+          "type": "string"
+        },
+        "stale": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "id",
+        "kind",
+        "label",
+        "rank",
+        "title"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: search",
+  "properties": {
+    "domains": {
+      "items": {
+        "$ref": "#/$defs/SearchDomain"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "groups": {
+      "items": {
+        "$ref": "#/$defs/SearchGroup"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "query": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "total": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "domains",
+    "groups",
+    "query",
+    "schema_version",
+    "total"
+  ],
+  "title": "search",
+  "type": "object"
+}

@@ -18,14 +18,6 @@ var bulkOps = map[string]core.TaskOp{
 	"label-add": core.TaskLabelAdd, "label-remove": core.TaskLabelRemove, "assign": core.TaskAssign,
 }
 
-// bulkItemJSON is one task of a planned batch in --dry-run --json.
-type bulkItemJSON struct {
-	ID     string   `json:"id"`
-	Title  string   `json:"title,omitempty"`
-	Change string   `json:"change"`
-	Argv   []string `json:"argv"`
-}
-
 // runTaskBulk handles `tasks bulk`: one verb on up to 25 tasks. Every task is read first, the plan lists
 // every task with its exact command, one confirm covers the batch, and each task is read again and
 // guarded right before its own write, so a task that changed is skipped and reported, never written.
@@ -136,18 +128,11 @@ func runTaskBulk(rest []string, d Deps) int {
 		return planChanged(d, "tasks bulk", expect, digest)
 	}
 	if dry && asJSON {
-		items := make([]bulkItemJSON, len(plan.Items))
+		items := make([]core.BulkDryRunItem, len(plan.Items))
 		for i, it := range plan.Items {
-			items[i] = bulkItemJSON{ID: it.Change.ID, Title: it.Change.Before.Title, Change: core.BulkItemText(it.Change), Argv: it.Argv}
+			items[i] = core.BulkDryRunItem{ID: it.Change.ID, Title: it.Change.Before.Title, Change: core.BulkItemText(it.Change), Argv: it.Argv}
 		}
-		jsonOut(d.Out, struct {
-			SchemaVersion int             `json:"schema_version"`
-			DryRun        bool            `json:"dry_run"`
-			Op            string          `json:"op"`
-			Items         []bulkItemJSON  `json:"items"`
-			Skipped       []core.BulkSkip `json:"skipped,omitempty"`
-			PlanDigest    string          `json:"plan_digest"`
-		}{1, true, op, items, plan.Skipped, digest})
+		jsonOut(d.Out, core.BulkDryRun{SchemaVersion: 1, DryRun: true, Op: op, Items: items, Skipped: plan.Skipped, PlanDigest: digest})
 		return core.ExitOK
 	}
 	if !asJSON {

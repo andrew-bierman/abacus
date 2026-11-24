@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "ErrorBody": {
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "unknown_outcome": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: any command that fails, with --json",
+  "properties": {
+    "error": {
+      "$ref": "#/$defs/ErrorBody"
+    },
+    "schema_version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "error",
+    "schema_version"
+  ],
+  "title": "error",
+  "type": "object"
+}

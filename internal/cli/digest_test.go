@@ -160,3 +160,15 @@ func TestSetupDigestGuardsTheSteps(t *testing.T) {
 		t.Fatalf("code=%d out=%s actor=%q", ok.code, ok.out, c.Actor)
 	}
 }
+
+// Only the argv tells two batches of the same tasks apart when the value differs.
+func TestBulkDigestFollowsTheValueInTheArgv(t *testing.T) {
+	m := newEditMod()
+	dry := func(value string) string {
+		_, out, _, _ := runIn(t, "", []core.Module{m}, "tasks", "bulk", "--ids", "t-1,t-3", "--op", "label-add", "--value", value, "--dry-run", "--json")
+		return digestOf(t, out)
+	}
+	if dry("sprint") == dry("backlog") {
+		t.Fatal("two batches that run different commands share a digest")
+	}
+}

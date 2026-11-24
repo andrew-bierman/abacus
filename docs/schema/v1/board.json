@@ -1,0 +1,181 @@
+{
+  "$defs": {
+    "BoardChannel": {
+      "properties": {
+        "messages": {
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "threads": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "BoardMessage": {
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "cut": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "BoardTask": {
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "claimant": {
+          "type": "string"
+        },
+        "cut": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "until": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "state"
+      ],
+      "type": "object"
+    },
+    "BoardThread": {
+      "properties": {
+        "last": {
+          "$ref": "#/$defs/BoardMessage"
+        },
+        "replies": {
+          "type": "integer"
+        },
+        "root": {
+          "$ref": "#/$defs/BoardMessage"
+        }
+      },
+      "required": [
+        "replies",
+        "root"
+      ],
+      "type": "object"
+    },
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: board",
+  "properties": {
+    "channels": {
+      "items": {
+        "$ref": "#/$defs/BoardChannel"
+      },
+      "type": "array"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/BoardTask"
+      },
+      "type": "array"
+    },
+    "threads": {
+      "items": {
+        "$ref": "#/$defs/BoardThread"
+      },
+      "type": "array"
+    },
+    "title": {
+      "type": "string"
+    },
+    "truncated": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "schema_version",
+    "state",
+    "title"
+  ],
+  "title": "board",
+  "type": "object"
+}

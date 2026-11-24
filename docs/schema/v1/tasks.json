@@ -1,0 +1,319 @@
+{
+  "$defs": {
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "InsightsReport": {
+      "properties": {
+        "blockers": {
+          "items": {
+            "$ref": "#/$defs/Pick"
+          },
+          "type": "array"
+        },
+        "bottlenecks": {
+          "items": {
+            "$ref": "#/$defs/Ranked"
+          },
+          "type": "array"
+        },
+        "critical_path": {
+          "items": {
+            "$ref": "#/$defs/Ranked"
+          },
+          "type": "array"
+        },
+        "critical_path_note": {
+          "type": "string"
+        },
+        "cycles": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "type": "array"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "graph_edges": {
+          "type": "integer"
+        },
+        "graph_nodes": {
+          "type": "integer"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "influencers": {
+          "items": {
+            "$ref": "#/$defs/Ranked"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "setup": {
+          "$ref": "#/$defs/Guide"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "top_picks": {
+          "items": {
+            "$ref": "#/$defs/Pick"
+          },
+          "type": "array"
+        },
+        "total_actionable": {
+          "type": "integer"
+        },
+        "total_blocked": {
+          "type": "integer"
+        },
+        "tracks": {
+          "items": {
+            "$ref": "#/$defs/Track"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "domain",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "Pick": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "score": {
+          "type": "number"
+        },
+        "title": {
+          "type": "string"
+        },
+        "unblocks": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "Ranked": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Task": {
+      "properties": {
+        "assignee": {
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "priority",
+        "status",
+        "title"
+      ],
+      "type": "object"
+    },
+    "TaskCounts": {
+      "properties": {
+        "blocked": {
+          "type": "integer"
+        },
+        "closed": {
+          "type": "integer"
+        },
+        "deferred": {
+          "type": "integer"
+        },
+        "in_progress": {
+          "type": "integer"
+        },
+        "open": {
+          "type": "integer"
+        },
+        "ready": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "blocked",
+        "closed",
+        "deferred",
+        "in_progress",
+        "open",
+        "ready",
+        "total"
+      ],
+      "type": "object"
+    },
+    "Track": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks",
+  "properties": {
+    "counts": {
+      "$ref": "#/$defs/TaskCounts"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "insights": {
+      "$ref": "#/$defs/InsightsReport"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "recent": {
+      "items": {
+        "$ref": "#/$defs/Task"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "counts",
+    "domain",
+    "schema_version",
+    "state",
+    "title"
+  ],
+  "title": "tasks",
+  "type": "object"
+}

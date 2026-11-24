@@ -22,12 +22,7 @@ func setupFor(d Deps, entries []core.Entry) *core.Setup {
 	return core.NewSetup(entries, o)
 }
 
-type setupResult struct {
-	Step    core.StepID `json:"step"`
-	Applied bool        `json:"applied"`
-	Message string      `json:"message,omitempty"`
-	Error   string      `json:"error,omitempty"`
-}
+type setupResult = core.SetupResult
 
 // runSetup is `abacus setup [--json] [--yes] [--dry-run]`: report the first-run steps and,
 // only when asked (--yes, or a y at the prompt), perform them through the same confirmed,
@@ -114,11 +109,7 @@ func runSetup(rest []string, d Deps) int {
 		steps = s.Steps(ctx) // what is left after applying
 	}
 	if asJSON {
-		jsonOut(d.Out, struct {
-			Steps      []core.StepInfo `json:"steps"`
-			Applied    []setupResult   `json:"results,omitempty"`
-			PlanDigest string          `json:"plan_digest"`
-		}{steps, results, digest})
+		jsonOut(d.Out, core.SetupReport{Steps: steps, Results: results, PlanDigest: digest})
 	} else {
 		renderSetup(d.Out, steps, results, yes || dry, canAsk)
 	}
@@ -193,10 +184,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 	digest := ""
 	finish := func(code int) int {
 		if asJSON {
-			jsonOut(d.Out, struct {
-				Results    []setupResult `json:"results"`
-				PlanDigest string        `json:"plan_digest,omitempty"`
-			}{[]setupResult{res}, digest})
+			jsonOut(d.Out, core.SetupRepairReport{Results: []setupResult{res}, PlanDigest: digest})
 		}
 		return code
 	}

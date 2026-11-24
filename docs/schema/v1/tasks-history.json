@@ -1,0 +1,60 @@
+{
+  "$defs": {
+    "TaskHistoryEvent": {
+      "properties": {
+        "actor": {
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "kind"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks history",
+  "properties": {
+    "events": {
+      "items": {
+        "$ref": "#/$defs/TaskHistoryEvent"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "id": {
+      "type": "string"
+    },
+    "read_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "events",
+    "id",
+    "read_at",
+    "schema_version"
+  ],
+  "title": "tasks-history",
+  "type": "object"
+}
