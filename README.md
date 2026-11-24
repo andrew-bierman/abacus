@@ -164,6 +164,11 @@ abacus board|tasks|leases|queues [--json]
 abacus tasks create [--title T] [--description D] [--priority N] [--type X] [--yes] [--dry-run]
 abacus tasks update ID [--title T] [--description D] [--priority N] [--status S] [--yes] [--dry-run]
 abacus tasks close  ID [--reason R] [--yes] [--dry-run]
+abacus tasks label add|remove ID LABEL [--yes] [--dry-run]
+abacus tasks assign ID NAME | ID --clear [--yes] [--dry-run]
+abacus tasks priority ID 0-4 [--yes] [--dry-run]
+abacus tasks dep add|remove ID --blocked-by OTHER | --blocks OTHER [--yes] [--dry-run]
+abacus tasks comment ID TEXT | ID --text TEXT [--yes] [--dry-run]
 abacus search QUERY [--domain D] [--limit N] [--json]   search tasks, board, leases and queues
 abacus tui     [--demo]
 abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup

@@ -27,6 +27,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
 | `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task; on a Tasks detail they scroll it |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
+| `t` `u` `a` `p` `b` `B` `c` | Tasks (List view): on the selected task, add a label, remove a label, assign (blank unassigns), set the priority, add a blocker, remove a blocker, add a comment. Each opens a one-field form (`enter` reviews, `esc` cancels) and then the same confirm screen: `y` applies, `n` or `esc` cancels. From another Tasks view they say `switch to the List view (v)` |
 | `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice saying b9s is optional and where to get it if it is not there). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
 | `w` | Leases, Tasks: go to the selected row's workspace session (see "Workspace" below). Offered only when the row has a placement or an ambiguity |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
@@ -216,9 +217,27 @@ differ by a refresh.)
   written"), never confirmed unchecked. What remains is the gap between that last read and the tracker
   running the command. A write the tracker confirmed but whose re-read shows another status (someone
   moved it again) is reported as written, not as failed, and audited as `applied-mismatch`.
-- **Insights view.** `n` works from any view; `e`, `x` and the workspace key act on the list's task,
-  which this view does not show, so they only say `switch to the List view (v)`.
-- **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e` and `x` forms and
+- **More edits.** On the List view's selected task, `t` adds a label, `u` removes one (a task with one
+  label offers it), `a` assigns (the field starts with the current assignee; blank unassigns), `p` sets
+  the priority, `b` adds a blocker (the task waits for the id you type), `B` removes one, `c` adds a
+  one-line comment. The comment text can start with `-`. Every one goes the way a card move goes: the
+  form only describes the change; the task is read again before the confirm screen and once more right
+  before the write after `y`; any mismatch drops the change ("changed since you opened it", or "already
+  has the label", "already waits for") and nothing is written; a task that cannot be read refuses the
+  change. A blocker is checked against the whole tracker before anything is planned: the task itself,
+  an id that is not in the tracker, an edge that already exists (of any kind), a removal of a link that
+  is not a blocking one (a parent link is never removed here) and anything that would close a cycle,
+  including through parent links, are refused in the form, naming the chain (`a waits for b waits for
+  a`). Without the whole tracker (only recent changes loaded) blockers are not offered. The tracker
+  guards what it can itself: an assignment carries `--if-assignee` (the holder you saw), so another
+  actor's change makes it refuse (exit 13, nothing written); labels, priority and blockers have no
+  guard in the tracker, so abacus's two reads are their protection, and the tracker still refuses a
+  cycle or a missing task on its own. A comment is not idempotent: if the write times out its result
+  is unknown ("may or may not have been added: check the task's comments before retrying"), never
+  "not applied". The prompt (`:`) never writes; it does not take these words.
+- **Insights view.** `n` works from any view; `e`, `x`, the edit keys above and the workspace key act
+  on the list's task, which this view does not show, so they only say `switch to the List view (v)`.
+- **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e`, `x` and edit-key forms and
   the confirm gate below are unchanged and now act on the task under the cursor.
 
 `abacus tasks list [--query Q] [--sort KEY] [--reverse] [--preset P] [--tree] [--json]` and
