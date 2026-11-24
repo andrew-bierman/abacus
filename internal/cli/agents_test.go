@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/demo"
@@ -20,7 +19,6 @@ func runAgentsCmd(t *testing.T, args ...string) (int, string, string) {
 }
 
 func TestAgentsPlainReportMarksGuessesAndFilters(t *testing.T) {
-	agentsNow = func() time.Time { return time.Now() }
 	code, out, _ := runAgentsCmd(t, "--state", "running")
 	if code != 0 || !strings.Contains(out, "Agents  connected") || !strings.Contains(out, "orchard@feat/pear-counter") || strings.Contains(out, "mill@main") {
 		t.Fatalf("%d\n%s", code, out)

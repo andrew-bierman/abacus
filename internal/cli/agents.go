@@ -11,9 +11,6 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// agentsNow is the clock the plain report ages rows against (a test seam).
-var agentsNow = time.Now
-
 // runAgents handles `agents [--json] [--harness H] [--state S] [--repo R] [WORDS...]`: every
 // running coding agent, from one read of the Agents domain. Read-only. Words after the flags are
 // matched against the task, repository, branch and harness.
@@ -48,7 +45,11 @@ func runAgents(rest []string, d Deps) int {
 		jsonOut(d.Out, r)
 		return core.ExitOK
 	}
-	renderAgents(d.Out, r, agentsNow())
+	now := time.Now()
+	if d.Now != nil {
+		now = d.Now()
+	}
+	renderAgents(d.Out, r, now)
 	return core.ExitOK
 }
 
