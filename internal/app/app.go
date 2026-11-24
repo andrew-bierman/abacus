@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/bd"
 	"github.com/andrew-bierman/abacus/internal/beadslease"
 	"github.com/andrew-bierman/abacus/internal/board"
@@ -75,7 +76,7 @@ func boardURL(e Env, cfg core.Config) (url, source, bad string) {
 // ABACUS_LAMBE_CONFIG, then the lambe_config setup saved (if the file is still there).
 func Build(o cli.Options, e Env) *core.Registry {
 	if o.Demo {
-		return core.NewRegistry(lambe.NewDemo(), demo.NewLeases(), demo.NewTasks(), demo.NewBoard())
+		return core.NewRegistry(lambe.NewDemo(), demo.NewLeases(), demo.NewTasks(), demo.NewBoard(), demo.NewAgents())
 	}
 	cfg, _ := e.Config.Load() // an unreadable file reads as empty here; Doctor reports it
 	choice := core.ResolveTracker(e.Getenv("ABACUS_BD_DIR"), cfg, e.Cwd, e.Workspace)
@@ -93,7 +94,7 @@ func Build(o cli.Options, e Env) *core.Registry {
 		Bin: e.Getenv("ABACUS_BD_BIN"), Ref: ref, InitDir: choice.Offer, ConfigMissing: choice.Missing,
 		OnInit: saveTracker(e.Config),
 	})
-	return core.NewRegistry(
+	mods := []core.Module{
 		lambe.New(lambe.Options{
 			Bin:        e.Getenv("ABACUS_LAMBE_BIN"),
 			StateDir:   e.Getenv("ABACUS_LAMBE_STATE_DIR"),
@@ -114,7 +115,16 @@ func Build(o cli.Options, e Env) *core.Registry {
 		rex.New(rex.Options{Bin: e.Getenv("ABACUS_REX_BIN"), Getenv: e.Getenv,
 			Hosts: rex.ParseHosts(e.Getenv("ABACUS_REX_HOSTS")), PassEnv: rex.ParsePassEnv(e.Getenv("ABACUS_REX_PASS_ENV"))}),
 		core.NewConfigCheck(e.Config),
-	)
+	}
+	return core.NewRegistry(append(mods, agentFeeds(e)...)...)
+}
+
+// agentFeeds are the Agents domain's modules: the native feed (processes and session files) and the
+// built-in live monitor, which adds context use, rate limits, ports and subagents when it is there.
+// ABACUS_ABTOP_BIN overrides the monitor's location.
+func agentFeeds(e Env) []core.Module {
+	local := agents.NewLocal(agents.Options{})
+	return []core.Module{local, agents.NewMonitor(agents.MonitorOptions{Bin: e.Getenv("ABACUS_ABTOP_BIN"), Enrich: local.Enrich})}
 }
 
 // insights is the Tasks graph-insights provider: bv's analysis package run in this process over

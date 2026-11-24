@@ -152,3 +152,20 @@ func TestAgentStateClosedSet(t *testing.T) {
 		t.Fatal("unknown values normalize")
 	}
 }
+
+func TestAgentsAreSearchable(t *testing.T) {
+	rep := core.AgentsReport{Agents: core.MergeAgents([]core.Agent{
+		{Harness: core.HarnessCodex, PID: 2, State: core.AgentWaiting, Source: core.EvidenceMonitor, Repo: "mill", Branch: "main", Task: "Package the wheat module", LastActivity: "2026-11-23T11:30:00Z"},
+		{Harness: core.HarnessClaude, PID: 3, State: core.AgentRunning, Source: core.EvidenceMonitor, Repo: "orchard", Branch: "feat/pears", Cwd: "/work/orchard"},
+	})}
+	ix := core.NewSearchIndex(core.SearchFeed{Domain: core.DomainAgents, Docs: core.AgentsSearchDocs(rep), ReadAt: searchNow})
+	for q, want := range map[string]string{"wheat": "codex:2", "status:running": "claude-code:3", "who:codex": "codex:2", "pears": "claude-code:3", "orchard": "claude-code:3", "in:agents status:waiting": "codex:2"} {
+		r, err := ix.Search(q, core.SearchOptions{Now: searchNow})
+		if err != nil || r.Total != 1 || r.Groups[0].Results[0].ID != want {
+			t.Errorf("%q: %v %+v", q, err, r.Groups)
+		}
+	}
+	if r, _ := ix.Search("status:running wheat", core.SearchOptions{Now: searchNow}); r.Total != 0 {
+		t.Error("predicates and words both apply")
+	}
+}

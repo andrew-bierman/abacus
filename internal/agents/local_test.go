@@ -47,13 +47,14 @@ func byPID(l []core.Agent, pid int) core.Agent {
 func TestLocalAgentsEndToEnd(t *testing.T) {
 	codexDir := "home/u/.codex/sessions/" + now.Local().Format("2006/01/02") + "/"
 	fsys := fstest.MapFS{
-		"home/u/.claude/projects/-work-orchard/a.jsonl": file(fixture(t, "claude-toolwait.jsonl"), 20*time.Second),
-		"home/u/.claude/projects/-work-orchard/b.jsonl": file(fixture(t, "claude-working.jsonl"), 2*time.Second),
-		"home/u/.claude/projects/-work-cellar/c.jsonl":  file(fixture(t, "claude-done.jsonl"), 5*time.Minute),
-		"home/u/.claude/projects/-work-attic/d.jsonl":   file(strings.ReplaceAll(fixture(t, "claude-done.jsonl"), "/work/cellar", "/work/attic"), 3*time.Hour),
-		codexDir + "rollout-x.jsonl":                    file(fixture(t, "codex-session.jsonl"), 40*time.Second),
-		"work/orchard/.git/HEAD":                        {Data: []byte("ref: refs/heads/feat/pears\n")},
-		"work/mill/.git/HEAD":                           {Data: []byte("ref: refs/heads/main\n")},
+		"home/u/.claude/projects/-work-orchard/a.jsonl":                                    file(fixture(t, "claude-toolwait.jsonl"), 20*time.Second),
+		"home/u/.claude/projects/-work-orchard/b.jsonl":                                    file(fixture(t, "claude-working.jsonl"), 2*time.Second),
+		"home/u/.claude/projects/-work-cellar/c.jsonl":                                     file(fixture(t, "claude-done.jsonl"), 5*time.Minute),
+		"home/u/.claude/projects/-work-orchard/0a1b2c3d-1111-2222-3333-444455556666.jsonl": file(strings.ReplaceAll(fixture(t, "claude-done.jsonl"), "/work/cellar", "/work/orchard"), 30*time.Minute),
+		"home/u/.claude/projects/-work-attic/d.jsonl":                                      file(strings.ReplaceAll(fixture(t, "claude-done.jsonl"), "/work/cellar", "/work/attic"), 3*time.Hour),
+		codexDir + "rollout-x.jsonl":                                                       file(fixture(t, "codex-session.jsonl"), 40*time.Second),
+		"work/orchard/.git/HEAD":                                                           {Data: []byte("ref: refs/heads/feat/pears\n")},
+		"work/mill/.git/HEAD":                                                              {Data: []byte("ref: refs/heads/main\n")},
 	}
 	start := now.Add(-time.Hour).Unix()
 	procs := []Proc{
@@ -204,6 +205,11 @@ func TestHarnessMatching(t *testing.T) {
 	}{
 		{Proc{Name: "claude"}, core.HarnessClaude},
 		{Proc{Name: "Claude Helper"}, ""},
+		{Proc{Name: "Codex"}, ""}, // the desktop app is not the command-line agent
+		{Proc{Name: "2.1.325", Args: []string{"claude", "--resume", "x"}}, core.HarnessClaude},
+		{Proc{Name: "2.1.325", Args: []string{"/home/u/.local/bin/claude", "--chrome-native-host"}}, ""},
+		{Proc{Name: "codex", Args: []string{"codex", "app-server"}}, ""},
+		{Proc{Name: "2.1.325"}, ""},
 		{Proc{Name: "codex"}, core.HarnessCodex},
 		{Proc{Name: "node", Args: []string{"node", "/x/@openai/codex/bin/codex.js"}}, core.HarnessCodex},
 		{Proc{Name: "node", Args: []string{"node", "server.js"}}, ""},
@@ -252,5 +258,25 @@ func TestPanesAndTermOf(t *testing.T) {
 	}
 	if termOf(500, procs, nil) != nil || termOf(999, procs, got) != nil {
 		t.Fatal("no pane must give nil")
+	}
+}
+
+func TestResumedSessionIsFoundByIDEvenIfNotWrittenSinceStart(t *testing.T) {
+	id := "0a1b2c3d-1111-2222-3333-444455556666"
+	fsys := fstest.MapFS{
+		"home/u/.claude/projects/-work-orchard/" + id + ".jsonl": file(fixture(t, "claude-toolwait.jsonl"), 30*time.Minute),
+		"home/u/.claude/projects/-work-orchard/other.jsonl":      file(fixture(t, "claude-working.jsonl"), 40*time.Minute),
+	}
+	procs := []Proc{{PID: 600, PPID: 1, Name: "2.9.9", Args: []string{"claude", "--resume", id}, Cwd: "/work/orchard", StartUnix: now.Add(-10 * time.Minute).Unix()},
+		{PID: 601, PPID: 1, Name: "2.9.9", Args: []string{"claude"}, Cwd: "/work/orchard", StartUnix: now.Add(-10 * time.Minute).Unix()}}
+	got, _, _ := newLocal(fsys, procs, nil, nil).Agents(context.Background())
+	if a := byPID(got, 600); a.SessionID != "sess-claude-1" || a.Source != core.EvidenceTranscript {
+		t.Fatalf("%+v", a)
+	}
+	if a := byPID(got, 601); a.SessionID != "" || a.State != core.AgentUnknown { // no session written since it started: nothing is claimed
+		t.Fatalf("a fresh process must not inherit an older session: %+v", a)
+	}
+	if resumeID([]string{"claude", "--resume", "../../etc"}) != "" || resumeID([]string{"claude", "--resume"}) != "" {
+		t.Fatal("only a plain id is a session id")
 	}
 }

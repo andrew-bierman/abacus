@@ -83,6 +83,7 @@ func readDomainsLite(ctx context.Context, entries []Entry) DomainsReport {
 	d.readLeases(ctx, entries)
 	d.readQueues(ctx, entries)
 	d.readBoard(ctx, entries)
+	d.Agents = ReadAgents(ctx, entries)
 	return d
 }
 
@@ -143,6 +144,7 @@ func overviewFrom(entries []Entry, d DomainsReport) Overview {
 			return d.Queues.Summary
 		}),
 		domainLine(d.Board.Header, func() string { return d.Board.Summary }),
+		domainLine(d.Agents.Header, func() string { return d.Agents.Summary }),
 	}
 	for i := range lines {
 		l := lines[i]

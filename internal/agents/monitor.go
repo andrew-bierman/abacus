@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -56,6 +57,9 @@ type Monitor struct {
 	lookup   func(string) (string, error)
 	explicit string
 	enrich   func([]core.Agent)
+	mu       sync.Mutex
+	ran      bool
+	lastErr  error
 }
 
 // NewMonitor returns the monitor feed.
@@ -97,7 +101,12 @@ func (m *Monitor) Detect(context.Context) core.Detection {
 }
 
 func (m *Monitor) Doctor(ctx context.Context) []core.Check {
-	_, _, err := m.Agents(ctx)
+	m.mu.Lock()
+	ran, err := m.ran, m.lastErr
+	m.mu.Unlock()
+	if !ran { // nothing has read it yet: one snapshot
+		_, _, err = m.Agents(ctx)
+	}
 	if err != nil {
 		return []core.Check{{Name: "live session monitor", Status: core.StatusWarn, Detail: core.CleanAgentText(err.Error(), 160)}}
 	}
@@ -106,8 +115,16 @@ func (m *Monitor) Doctor(ctx context.Context) []core.Check {
 
 func (m *Monitor) Status(context.Context) core.Status { return core.Status{} }
 
-// Agents runs one snapshot and maps it.
+// Agents runs one snapshot and maps it, remembering whether it worked for Doctor.
 func (m *Monitor) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, error) {
+	a, x, err := m.snapshot(ctx)
+	m.mu.Lock()
+	m.ran, m.lastErr = true, err
+	m.mu.Unlock()
+	return a, x, err
+}
+
+func (m *Monitor) snapshot(ctx context.Context) ([]core.Agent, core.AgentsExtra, error) {
 	bin := m.Bin()
 	if bin == "" {
 		return nil, core.AgentsExtra{}, errors.New("not found")

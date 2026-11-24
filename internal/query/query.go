@@ -96,7 +96,7 @@ type fieldDef struct {
 	set  []string // allowed values of a kMember field
 }
 
-var domains = []string{"tasks", "board", "leases", "queues"}
+var domains = []string{"tasks", "board", "leases", "queues", "agents"}
 
 // fields maps every canonical field to how it is parsed and matched.
 var fields = map[string]fieldDef{

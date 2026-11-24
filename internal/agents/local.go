@@ -6,8 +6,10 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -36,6 +38,7 @@ type Options struct {
 // Local is the native feed: processes, session files and terminal panes, all read-only.
 type Local struct {
 	o    Options
+	mu   sync.Mutex
 	last scan // what the last read saw, for Doctor
 }
 
@@ -75,12 +78,16 @@ func (l *Local) Name() string { return "agents" }
 func (l *Local) Detect(context.Context) core.Detection { return core.Detection{State: core.Ready} }
 
 func (l *Local) Status(context.Context) core.Status {
-	s := core.Status{Summary: fmt.Sprintf("%d agents seen", l.last.agents)}
-	return s
+	l.mu.Lock()
+	n := l.last.agents
+	l.mu.Unlock()
+	return core.Status{Summary: fmt.Sprintf("%d agent processes", n)}
 }
 
 func (l *Local) Doctor(context.Context) []core.Check {
+	l.mu.Lock()
 	s := l.last
+	l.mu.Unlock()
 	procs := core.Check{Name: "agent processes", Status: core.StatusOK, Detail: fmt.Sprintf("%d processes read, %d agents", s.procs, s.agents)}
 	if s.procErr != "" {
 		procs = core.Check{Name: "agent processes", Status: core.StatusWarn, Detail: "the process list could not be read: " + s.procErr}
@@ -110,21 +117,22 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 	ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 	defer cancel()
 	now := l.o.Now()
-	l.last = scan{}
+	sc := &scan{}
+	defer func() { l.mu.Lock(); l.last = *sc; l.mu.Unlock() }()
 	procs, perr := l.o.Procs(ctx)
 	if perr != nil {
-		l.last.procErr = core.CleanAgentText(perr.Error(), 120)
+		sc.procErr = core.CleanAgentText(perr.Error(), 120)
 	}
-	l.last.procs = len(procs)
+	sc.procs = len(procs)
 	aps := harnessProcs(procs)
-	l.last.agents = len(aps)
+	sc.agents = len(aps)
 	panes, _ := l.o.Panes(ctx) // no multiplexer is normal
 	byPID := map[int]Proc{}
 	for _, p := range procs {
 		byPID[p.PID] = p
 	}
 	bud := &budget{left: scanBudget}
-	claude, codex := l.claudeSessions(ctx, aps, bud, now), l.codexSessionsFor(ctx, aps, bud, now)
+	claude, codex := l.claudeSessions(ctx, sc, aps, bud, now), l.codexSessionsFor(ctx, sc, aps, bud, now)
 	used := map[string]bool{}
 	var out []core.Agent
 	// newest process first, so the newest process gets the newest session of its directory
@@ -136,7 +144,15 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 			pool = codex
 		}
 		if p.Harness == core.HarnessClaude || p.Harness == core.HarnessCodex {
-			if s, ok := takeSession(pool[p.Cwd], used, time.Unix(p.StartUnix, 0).Add(-10*time.Second)); ok {
+			var s session
+			var ok bool
+			if id := resumeID(p.Args); id != "" && p.Harness == core.HarnessClaude {
+				s, ok = takeSession(pool["resume:"+id], used, time.Time{})
+			}
+			if !ok {
+				s, ok = takeSession(pool[p.Cwd], used, time.Unix(p.StartUnix, 0).Add(-10*time.Second))
+			}
+			if ok {
 				a = withSession(a, s, now)
 			}
 		}
@@ -165,6 +181,9 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 	}
 	for i := range out {
 		out[i].ID = core.AgentID(out[i])
+	}
+	if perr != nil {
+		perr = fmt.Errorf("the process list could not be read: %w", perr)
 	}
 	return out, core.AgentsExtra{}, perr
 }
@@ -212,24 +231,33 @@ func (l *Local) Enrich(list []core.Agent) {
 
 // claudeSessions reads, for each directory a Claude Code process runs in, the newest session
 // files of that directory's project folder.
-func (l *Local) claudeSessions(ctx context.Context, aps []agentProc, b *budget, now time.Time) map[string][]session {
+func (l *Local) claudeSessions(ctx context.Context, sc *scan, aps []agentProc, b *budget, now time.Time) map[string][]session {
 	out := map[string][]session{}
 	if l.o.FS == nil {
 		return out
 	}
 	root := l.claudeProjects()
 	if _, err := fs.Stat(l.o.FS, root); err == nil {
-		l.last.dirs = append(l.last.dirs, "Claude Code")
+		sc.dirs = append(sc.dirs, "Claude Code")
 	}
 	read := func(f fileRef) (session, bool) {
-		if l.last.sessionFiles >= maxFilesParsed || ctx.Err() != nil {
+		if sc.sessionFiles >= maxFilesParsed || ctx.Err() != nil {
 			return session{}, false
 		}
-		l.last.sessionFiles++
+		sc.sessionFiles++
 		return readClaude(l.o.FS, f, b)
 	}
 	for _, p := range aps {
-		if p.Harness != core.HarnessClaude || out[p.Cwd] != nil {
+		if p.Harness != core.HarnessClaude {
+			continue
+		}
+		if id := resumeID(p.Args); id != "" && out["resume:"+id] == nil { // a resumed session may not have written since the process started
+			if s, ok := read(fileRef{name: path.Join(root, encodeClaudeDir(p.Cwd), id+".jsonl")}); ok {
+				s.Cwd = p.Cwd
+				out["resume:"+id] = []session{s}
+			}
+		}
+		if out[p.Cwd] != nil {
 			continue
 		}
 		for _, f := range newest(l.o.FS, path.Join(root, encodeClaudeDir(p.Cwd)), 8) {
@@ -279,7 +307,7 @@ func hasSession(l []session, id string) bool {
 }
 
 // codexSessionsFor reads Codex session files from the last three days' folders.
-func (l *Local) codexSessionsFor(ctx context.Context, aps []agentProc, b *budget, now time.Time) map[string][]session {
+func (l *Local) codexSessionsFor(ctx context.Context, sc *scan, aps []agentProc, b *budget, now time.Time) map[string][]session {
 	out := map[string][]session{}
 	if l.o.FS == nil {
 		return out
@@ -288,7 +316,7 @@ func (l *Local) codexSessionsFor(ctx context.Context, aps []agentProc, b *budget
 	if _, err := fs.Stat(l.o.FS, root); err != nil {
 		return out
 	}
-	l.last.dirs = append(l.last.dirs, "Codex")
+	sc.dirs = append(sc.dirs, "Codex")
 	var files []fileRef
 	for d := 0; d < 3; d++ {
 		day := now.AddDate(0, 0, -d).Local()
@@ -296,10 +324,10 @@ func (l *Local) codexSessionsFor(ctx context.Context, aps []agentProc, b *budget
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].mod.After(files[j].mod) })
 	for _, f := range files {
-		if l.last.sessionFiles >= maxFilesParsed || ctx.Err() != nil {
+		if sc.sessionFiles >= maxFilesParsed || ctx.Err() != nil {
 			break
 		}
-		l.last.sessionFiles++
+		sc.sessionFiles++
 		if s, ok := readCodex(l.o.FS, f, b); ok {
 			out[s.Cwd] = append(out[s.Cwd], s)
 		}
@@ -309,6 +337,18 @@ func (l *Local) codexSessionsFor(ctx context.Context, aps []agentProc, b *budget
 	}
 	return out
 }
+
+// resumeID is the session id of `claude --resume ID` or `-r ID` ("" when the process is not one).
+func resumeID(args []string) string {
+	for i, a := range args {
+		if (a == "--resume" || a == "-r" || a == "--session-id") && i+1 < len(args) && sessionIDRE.MatchString(args[i+1]) {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
+var sessionIDRE = regexp.MustCompile(`^[0-9a-fA-F-]{8,64}$`)
 
 // termOf finds the pane a process runs in: the pane's own process is the process or one of its
 // ancestors.

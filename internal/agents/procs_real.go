@@ -53,5 +53,5 @@ func scanProcesses(ctx context.Context) ([]Proc, error) {
 // candidateName is whether a process name is worth asking for details: a harness binary or one
 // of the runtimes a harness runs under.
 func candidateName(name string) bool {
-	return harnessOf(Proc{Name: name}) != "" || harnessRunner(name)
+	return harnessOf(Proc{Name: name}) != "" || harnessRunner(name) || versionLike(name)
 }

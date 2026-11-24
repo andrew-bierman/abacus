@@ -31,6 +31,14 @@
       "docs": 1,
       "read_at": "2026-11-23T04:20:00Z",
       "age": "just now"
+    },
+    {
+      "domain": "agents",
+      "title": "Agents",
+      "state": "not_connected",
+      "docs": 0,
+      "read_at": "2026-11-23T04:20:00Z",
+      "age": "just now"
     }
   ],
   "groups": [

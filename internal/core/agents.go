@@ -198,6 +198,26 @@ func (a Agent) Last() time.Time {
 	return t
 }
 
+// Age is how long ago the agent was last active as a short word ("4s", "3m", "2h", "5d"), "" when unknown.
+func (a Agent) Age(now time.Time) string {
+	t := a.Last()
+	if t.IsZero() {
+		return ""
+	}
+	d := now.Sub(t)
+	switch {
+	case d < 0:
+		return "0s"
+	case d < time.Minute:
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	case d < 48*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	}
+	return fmt.Sprintf("%dd", int(d.Hours()/24))
+}
+
 // Guess reports whether the state was inferred rather than reported by the monitor or the harness.
 func (a Agent) Guess() bool {
 	return a.Source != EvidenceMonitor && a.Source != EvidenceHook
@@ -559,7 +579,7 @@ func ReadAgents(ctx context.Context, entries []Entry) AgentsReport {
 			a = answer{name: names[i], err: errors.New("timed out")}
 		}
 		if a.err != nil {
-			r.Notes = append(r.Notes, CleanAgentText(a.name+": "+a.err.Error(), 200))
+			r.Notes = append(r.Notes, CleanAgentText(a.err.Error(), 200))
 		}
 		lists = append(lists, a.list)
 		r.RateLimits = append(r.RateLimits, a.extra.RateLimits...)

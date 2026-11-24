@@ -45,23 +45,52 @@ func harnessRunner(name string) bool {
 	return false
 }
 
-// harnessOf names the harness a process is, "" when it is none.
+// versionLike is a process name that is a bare version ("2.1.325"): Claude Code's native build runs
+// as versions/<version>, so the process is named by its version and only its arguments say "claude".
+func versionLike(name string) bool {
+	if name == "" || !strings.Contains(name, ".") {
+		return false
+	}
+	for _, r := range name {
+		if (r < '0' || r > '9') && r != '.' {
+			return false
+		}
+	}
+	return true
+}
+
+// helperArgs are the modes in which a harness binary runs something that is not a session: a
+// browser native-messaging host, an MCP or app server.
+var helperArgs = map[string]bool{"--chrome-native-host": true, "mcp-server": true, "app-server": true, "mcp": true, "--mcp": true}
+
+// harnessOf names the harness a process is, "" when it is none. Names are matched exactly and in
+// lower case: the desktop apps ("Codex", "Claude") are not the command-line agents.
 func harnessOf(p Proc) string {
-	base := strings.TrimSuffix(strings.ToLower(filepath.Base(p.Name)), ".exe")
-	if len(p.Args) > 0 && (base == "node" || base == "bun" || base == "python" || base == "python3") {
+	for _, a := range p.Args[:min(len(p.Args), 4)] {
+		if helperArgs[a] {
+			return ""
+		}
+	}
+	names := []string{strings.TrimSuffix(filepath.Base(p.Name), ".exe")}
+	if len(p.Args) > 0 {
+		names = append(names, strings.TrimSuffix(filepath.Base(p.Args[0]), ".exe"))
+	}
+	for _, r := range harnessRules {
+		for _, n := range r.names {
+			for _, have := range names {
+				if have == n {
+					return r.id
+				}
+			}
+		}
+	}
+	if len(p.Args) > 0 && harnessRunner(p.Name) {
 		head := strings.ToLower(strings.Join(p.Args[:min(len(p.Args), 3)], " "))
 		for _, r := range harnessRules {
 			for _, f := range r.frags {
 				if strings.Contains(head, f) {
 					return r.id
 				}
-			}
-		}
-	}
-	for _, r := range harnessRules {
-		for _, n := range r.names {
-			if base == n {
-				return r.id
 			}
 		}
 	}
