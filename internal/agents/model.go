@@ -57,6 +57,13 @@ type Tokens struct {
 // Total is the billable-ish sum used for a session row: cache reads excluded.
 func (t Tokens) Total() int64 { return t.Input + t.Output + t.CacheCreate }
 
+// sum is every counter, including cache reads, for a per-turn sparkline point.
+func (t Tokens) sum() int64 { return t.Total() + t.CacheRead }
+
+// prompt is what the model saw: input plus both cache counters, because input excludes cached
+// content.
+func (t Tokens) prompt() int64 { return t.Input + t.CacheRead + t.CacheCreate }
+
 func (t Tokens) add(o Tokens) Tokens {
 	return Tokens{Input: t.Input + o.Input, Output: t.Output + o.Output,
 		CacheRead: t.CacheRead + o.CacheRead, CacheCreate: t.CacheCreate + o.CacheCreate}

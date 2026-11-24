@@ -70,7 +70,7 @@ Work continues on `feat/agents-sessions`, landing with pull request #57.
 The loop works the first unchecked item. Tick one per pass.
 
 - [x] `harness.go`: `HarnessSpec` registry; discovery consults it instead of a hardcoded map
-- [ ] `jsonl_spec.go`: generic JSONL adapter (dotted-path mapping, additive vs cumulative usage)
+- [x] `jsonl_spec.go`: generic JSONL adapter (dotted-path mapping, additive vs cumulative usage)
 - [ ] port the three existing JSONL readers onto the generic adapter, deleting the duplication
 - [ ] `grok` adapter (verified against the store on this machine)
 - [ ] `gemini` adapter (documented-only until a real session exists)
@@ -112,3 +112,14 @@ One line per completed item: what it did and how it was verified.
   explicit contract tests pin a dropped alias, a normalized `.exe` duplicate and a wrong store
   root (each mutation fails as intended); review residual: `Roots`/`Kind` are declared and tested
   but consumed by the adapter items.
+- generic JSONL adapter — added `internal/agents/jsonl_spec.go` with a `JSONLMapping` of dotted
+  paths for identity, timestamp, role vocabulary, text, model and the four token counters plus
+  additive/cumulative usage, optional cache-inclusive input, explicit or derived context fill,
+  and a compiled path table; incremental reads use the existing cursor, budget, rotation and drain
+  lifecycle. Tests build synthetic nested/event fixtures with invented names and pin incremental
+  appends, additive and cumulative levels, resets, zero markers, tool state, titles, escaped dots,
+  array indexes, block/nested prompt text, frozen roles, cache-split input, large counters,
+  timestamp units and malformed mappings; `go build ./...`, `go vet ./internal/agents` and
+  `go test ./...` pass. Review applied the cumulative-fill, block-text and frozen-roles findings;
+  residual: no production caller until the next adapter item, and cumulative records that omit a
+  counter still replace the whole level.

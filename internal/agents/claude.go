@@ -264,12 +264,12 @@ func (c *claudeFile) assistant(e claudeEntry) {
 
 	// All three are prompt tokens: input excludes cached content, so the prompt the model saw
 	// is their sum.
-	used := u.Input + u.CacheRead + u.CacheCreate
+	used := t.prompt()
 	c.contextUsed = used
 	if used > c.maxContext {
 		c.maxContext = used
 	}
-	c.history = appendHistoryPoint(c.history, t.Input+t.Output+t.CacheRead+t.CacheCreate)
+	c.history = appendHistoryPoint(c.history, t.sum())
 }
 
 func (c *claudeFile) user(e claudeEntry) {
