@@ -160,12 +160,14 @@ board-beads is only the beads-backed backend a board can use; it stays a library
 ## Rex (`rex`), optional workspace
 
 Provides the workspace capability (`core.WorkspaceProvider`): where a run, lease, task or queue
-row lives as a terminal session. It is optional and pre-1.0 (the Rex CLI is closed source), and
-nothing else depends on it. The UI says "workspace"; "Rex" appears only in Doctor, how-to-connect
+row lives as a terminal session, and the agents capability (`core.AgentProvider`, see "Agents
+(block calls)" below): what the agent in each pane is doing. It is optional and pre-1.0 (the Rex
+CLI is closed source), and nothing else depends on it. The UI says "workspace"; "Rex" appears only in Doctor, how-to-connect
 and error text (and in commands you are shown to copy).
 
 **Verified** against the Rex server API reference (`help.json`, API revision 13) as a local file,
-never against a running Rex (no `rex` was run to write this):
+never against a running Rex (no `rex` was run to write this part; the block calls of the Agents
+view were run, see below):
 - `session.list` returns `{"sessions":[{"session_id","label"}]}` (fixture `ls-help-example.json` is
   its response example, verbatim). `server.version` has `api_revision` (the newest revision the
   server supports) and `api_min_revision` (the oldest).
@@ -186,14 +188,28 @@ here). Each is a place a real Rex could differ, so check them before relying on 
   agent's name). The machine a run carries equals the Rex host name (not enforced anywhere).
 - A bare `rex` opens the workspace on this machine (used only as a command to copy).
 
-**What abacus runs**, element by element, nothing else (the argv allowlist test lists refused forms):
-`rex --autostart=false ls --json`, `rex --autostart=false version --json` and
-`rex -S HOST --autostart=false ls --json`. HOST is a name, `user@name` or `name:port`: dot-separated
+**What abacus runs**, element by element, nothing else (the argv allowlist tests list the refused
+forms, and a test pins that the refused list is longer than the allowed one):
+
+| Argv (after an optional `-S HOST`, except `version`) | For |
+| --- | --- |
+| `--autostart=false ls --json` | the session list |
+| `--autostart=false version --json` (never with `-S`) | detection and the revision gate |
+| `--autostart=false block ls -s SESSION --json` | the panes of one session (Agents) |
+| `--autostart=false block call -s SESSION -b BLOCK program_status` | the status records a program reported in a pane (Agents) |
+| `--autostart=false block call -s SESSION -b BLOCK process` | the foreground process name and directory of a pane (Agents) |
+
+HOST is a name, `user@name` or `name:port`: dot-separated
 labels of letters, digits, hyphens and underscores (a label starts and ends with a letter or digit),
 an optional user of up to 32 characters, an optional port from 1 to 65535, at most 253 characters in
-all, never a leading dash, never an IPv6 literal. `--autostart=false` is always there, so a read can
-never start a server. Never `new`, `send`, `capture`, `api call`, `window`, `server`, `config`, `do`
-or `hosts`.
+all, never a leading dash, never an IPv6 literal. SESSION is `session:` and BLOCK is `block:` followed
+by lowercase hex digits and hyphens (at most 128 characters, never a leading dash or a space).
+`--autostart=false` is always there, so a read can never start a server. Never `new`, `send`,
+`capture`, `api call`, `events`, `window`, `server`, `config`, `do`, `hosts`, `block inspect`,
+`block ls -A`, or `block call` with any other method (`write`, `reset`, `clear`, `resize`,
+`set_theme`, ... : `rex block call` is a generic verb and some methods type into or change a
+terminal, so the two method names are literals in the matcher and no argument word is accepted
+after them).
 
 **Network egress.** `rex -S HOST` makes Rex talk to HOST, which may mean opening an ssh connection
 to it. The machine names come from run data (any program can write them), so abacus contacts only
@@ -279,8 +295,75 @@ on an explicit keypress.
 
 **Deferred** until someone runs them against a real Rex and records argv and JSON: `rex window
 focus`, `rex window new`, `session.select` (also needs a client with Remote control on; `rex-tui`
-support is unknown), window labels via `session.view`, `rex hosts`, program status, spawning. A
-rung is data (a name and an argv), so each is a new value, not a new type.
+support is unknown), window labels via `session.view`, `rex hosts`, spawning, `rex events`
+streaming, focusing a pane. A rung is data (a name and an argv), so each is a new value, not a new type.
+
+### Agents (block calls)
+
+Provides `core.AgentProvider` (`internal/core/agents.go`, `internal/rex/agents.go`): one row per
+agent pane on this machine and each `ABACUS_REX_HOSTS` host, for the TUI's Agents view. The TUI
+says "workspace" and "terminal", never "Rex". No CLI command prints it yet; `AgentReport` is typed
+(`schema_version` 1) for when one does.
+
+**Verified live** on 2026-11-24 against `rex 0.1.0-preview.22`, API revision 19, on throwaway
+sessions only (created for the check, labelled `spike-abacus-agents`, killed afterwards; no other
+session, no other host, no window was touched), with OSC 7501 emitted by `printf`:
+- `block ls -s SESSION --json` prints `{"blocks":[{block_id,label,creator_name,flavor,host_id,
+  placement,window_id,owner?}]}`. Only flavor `com.superlogical.terminal.shell` is a terminal.
+  `block ls -A --json` is refused by Rex ("requires one session"), so there is no one-call fleet
+  view: a sweep is one `ls`, then `block ls` per session, then two calls per terminal pane.
+- `block call -s S -b B program_status` prints `{"records":[{id?,state,kind?,app?,effective_app?,
+  title?,msg?,progress?,updated_at,owner?}]}`; `msg` and `title` come back already decoded;
+  `effective_app` inherits from the root record. `process` prints `{last_exit, child, foreground,
+  ancestors?, home}`; Rex never returns an argv beyond argv0.
+- Global flags before the subcommand work (`rex --autostart=false block ls ...`).
+- An unknown session or block exits 3 ("not found"). Here any non-zero exit means "this pane is
+  gone, skip it"; the meaning 3 has for `ls` (more than one server) is not reused.
+- Timing: about 35 ms per call; 20 sessions took 2.2 s one at a time and 0.42 s with 8 at once.
+
+**UNTESTED, and so assumed the safe way:**
+- That `program_status` and `process` never wake an idle terminal (Rex documents that only for
+  `modes` and `ports`). Assumed they might, so the calls are bounded, infrequent and cached.
+- That they are read-only. Rex publishes no machine-readable read-only annotation for its API; the
+  method descriptions say "List the status ..." and "Get the processes". The safety is the argv pin,
+  not Rex.
+- `-S HOST` for any block call (no remote host was contacted), the cost of an unreachable host, and
+  clock skew between a remote server and this machine (a remote wait is shown with `~`).
+- The no-server exit code 4 on the block calls (any non-zero exit is "skip" anyway).
+- Whether `block call` and these methods exist at API revisions 10 to 13 (a failing call is "no
+  agent data", never an error banner).
+- The real process names and `app` values of claude, codex and others. The agent name is the
+  record's `effective_app`; a pane with no status is listed only when its foreground program is in a
+  small named set (`knownAgentProcesses`, easy to extend).
+- "Unseen done": Rex has no seen flag (it is client-side state), so a finished agent shows plain
+  `done`, never "unseen".
+
+**Bounds.** One sweep at a time (callers meanwhile share its answer); concurrency 8; a hard 4 s
+budget for the whole sweep (its own, the one second workspace budget is unchanged); at most 500
+sessions, 64 panes per session and 256 agent panes per host; 256 records per pane read and the most
+severe shown with a count; a per-host circuit breaker (three calls that could not run stop the sweep
+asking that host, and the report says so); a pane's foreground process is reused for 12 s, the
+status is read every sweep; the TUI polls only while the Agents tab is visible (5 s while anything is
+blocked or working, else 15 s, backing off to 60 s after a slow or failed sweep, `r` at once).
+
+**Untrusted text.** Everything in a record (`msg`, `title`, `app`, `id`) and every label is program
+output. core sanitizes and clips it (message 200 characters, others 64) before any front-end sees
+it; an unknown `state` reads as `idle` and an unknown `kind` as none (the OSC 7501 spec says so).
+
+**Repo and branch** come from reading `.git/HEAD` (a `.git` directory, or a worktree's `.git` file
+pointing at `<main>/.git/worktrees/<name>`), walking up at most 12 levels from the pane's directory,
+never following a symlink and never running `git` (a program controls that directory and git can run
+helpers its config names). Remote panes show the path as text and are never read.
+
+**Order.** Blocked (permission, then auth, then question, then any other), error, done, working,
+idle, then panes that run a known agent but reported nothing; within a group the longest waiting
+first. `working` or `blocked` with no newer report for 10 minutes is marked `stale` (the protocol
+has no heartbeat, so `working` only means "last report").
+
+**Matching** is the workspace matcher on the session label, the pane label, the status title and
+message and the directory's last element; a pane naming two items is `ambiguous` with the candidates,
+never a pick. Opening a pane is the existing open plan (the `-S` handoff for another machine, else
+the command to copy); nothing is typed into, focused or closed.
 ## Graph engine (in-process)
 
 The Tasks insights (top picks, blockers, critical path, cycles, actionable and blocked counts) are

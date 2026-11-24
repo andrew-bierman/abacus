@@ -6,6 +6,72 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Decision for Andrew (the argv allowlist grows, read this first)
+
+This release is the first to let abacus run anything on Rex beyond `ls --json` and `version --json`.
+Everything else here is ordinary work inside the existing design; this one thing changes the
+guarantees, so it needs an explicit yes (or cut A3, or all three).
+
+abacus used to run exactly: `rex [-S HOST] --autostart=false ls --json` and
+`rex --autostart=false version --json`. It now also runs, each with `--autostart=false` first and an
+optional `-S HOST` (a host only from `ABACUS_REX_HOSTS`) before it:
+
+| # | Argv | Why |
+| --- | --- | --- |
+| A1 | `block ls -s SESSION --json` | the panes of one session (Rex rejects `block ls --json -A`, so there is no fleet call) |
+| A2 | `block call -s SESSION -b BLOCK program_status` | the status records a program reported in a pane: the live signal the Agents view exists for |
+| A3 | `block call -s SESSION -b BLOCK process` | foreground process name and directory: the agent name when it reports none, and the repo and branch source |
+
+SESSION and BLOCK are `session:` and `block:` ids (lowercase hex and hyphens, at most 128 characters,
+no leading dash). Nothing else is accepted in any position: not `block ls -A`, not `block inspect`,
+`new`, `close`, `send` or `capture`, not `block call` with any other method, not an argument word after
+the method, not `api call` or `events`. Tests pin the allowed list and a longer refused list, each also
+refused through the runner, plus a check that loosening the method pin would let `write` through.
+
+The honest caveats:
+
+- `rex block call` is a generic verb: the same command with the method `write` types into a pane. The
+  whole safety here is the argv pin (the method name is a literal), not anything Rex promises. Rex
+  publishes no read-only annotation for its API methods; "read-only" rests on their descriptions and a
+  live check on throwaway sessions.
+- UNTESTED: that `program_status` and `process` never wake an idle terminal (Rex documents that only
+  for two other methods). Assumed they might, so they are bounded (4 s sweep budget, 8 at a time, one
+  sweep at a time, a per-host breaker, 5 to 60 s polling only while the tab is visible).
+- UNTESTED: `-S HOST` for these calls (no remote host was contacted), the cost of an unreachable host,
+  remote clock skew, the revision window 10 to 13 for these methods, and real claude and codex process
+  names. Tested live on rex 0.1.0-preview.22, API revision 19, on throwaway sessions only.
+- Everything a pane reports (message, title, app, ids) is untrusted program output: sanitized and
+  clipped in core. Nothing creates, focuses, closes or types into a pane, and there is no `api call`.
+- With no Rex, no server, or a Rex whose block calls fail, the feature is silent: no tab, no banner.
+
+Decisions for you: (1) approve A1 to A3 as written, or cut A3 (then no directory, repo, branch or
+process-name fallback, and a pane with no status is invisible); (2) the placement: a sixth tab "Agents"
+after Doctor (key `6`, plus `:agents`) that exists only when Rex is present, so `1` to `5` never move,
+or `:agents` with no tab. The first is built; (3) cost and file-overlap stay out of v1. Declining A2 or
+A3 reduces this to the placement-only layer that was already there, which needs no change.
+
+### Added
+
+- The Agents view (`docs/plans/2026-11-24-feat-agents-view-plan.md`): a tab after Doctor, shown only
+  when a terminal workspace provider is present, with one row per agent pane on this machine and in
+  `ABACUS_REX_HOSTS`: the status its program reported (working, blocked on a permission, auth or
+  question, error, done), progress, message, record id, how long ago (marked stale after 10 minutes
+  of silence), the task or lease it names (ambiguous when it names two, never a pick), repo and
+  branch (read from `.git/HEAD`, never by running git, local panes only). Sorted so what needs a
+  person is first. `w` opens the pane's workspace through the existing gated handoff. `:agents`
+  goes there. "Unseen done" is not possible (Rex has no seen flag): a finished agent shows `done`.
+  New: `core.AgentProvider`, `AgentReport` (`schema_version` 1), the Rex adapter's bounded sweep,
+  the demo fleet, `taskview.Poller.Expedite`, fixtures recorded from a live Rex (see
+  `internal/rex/testdata/README.md`). No CLI command prints the report yet.
+
+### Changed
+
+- `:agents` is in the command table, so help and tab completion list it even where there is no Agents
+  tab (there it answers "Agents is not available"). Every other screen of an install without Rex is
+  unchanged.
+- The README no longer says the workspace "is not a fifth tab": it adds one Agents view, only when
+  Rex is present. The workspace placements on Queues, Leases and Tasks are unchanged.
+
 ## [0.4.0] - 2026-11-23
 
 First release since 0.2.0. The 0.3.0 section below was never tagged; its changes ship here.

@@ -24,11 +24,12 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | Key | Action |
 | --- | --- |
 | `tab`, `right` / `shift+tab`, `left` | next / previous domain |
-| `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
+| `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor (`6`: Agents, only when a terminal workspace provider is present) |
 | `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task; on a Tasks detail they scroll it |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
 | `o` | Tasks: open the full view in the tracker directory (probes for it first; an error notice saying b9s is optional and where to get it if it is not there). Board: open the board in the browser (the local web inspector, until Ctrl-C), only when connected. Queues: hand the selected run's machine to a session |
 | `w` | Leases, Tasks: go to the selected row's workspace session (see "Workspace" below). Offered only when the row has a placement or an ambiguity |
+| `w` | Agents: open the selected pane's workspace through the same gate (see "Agents" below) |
 | `i`, `s` | a guided tab: start its setup step (workspace, actor name, Queues config) |
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues and Tasks, narrow layout only: open the detail; `esc` closes it, a second `esc` clears the filter. Tasks, wide layout: `enter` focuses the detail to scroll it, `esc` leaves |
@@ -450,6 +451,40 @@ where the selected item lives. Nothing changes anywhere without workspace data.
   is dropped when the body is too small to draw.
 - **Demo.** The demo workspace places some demo items (one ambiguous). A demo session never runs a
   step: `o` and `w` only show the command, including `o` on a run the workspace does not place.
+
+## Agents
+
+When an optional terminal workspace provider is present (and in the demo) there is a sixth tab,
+Agents, after Doctor, so the digit jumps `1` to `5` never move; `6` and `:agents` go to it. Without
+a provider the tab does not exist, the shell is unchanged, and `:agents` says "Agents is not
+available". It answers "what is the fleet doing?": one row per agent pane, from core's typed
+`AgentReport`, sorted so what needs a person is first (blocked on a permission, then auth, then a
+question; error; done; working; idle; and last a pane that runs an agent but has reported nothing,
+shown as `quiet`), the longest waiting first.
+
+- **List.** State, what the pane is about (the task, lease or run it names, `ambiguous` when it names
+  two, else its session label, then `@machine` for another machine), how long ago (a `~` before it on
+  another machine, whose clock is not ours; `stale` after it when a working or blocked pane has had no
+  newer report for 10 minutes), the agent, why it is blocked, progress and the message. Columns drop
+  by priority with the width (message, progress, kind first); the state and the subject never do.
+- **Detail** (beside the list from 100 columns, on `enter` below): the message, title, progress,
+  record id and how many records the pane holds (the most severe is shown), process, directory, repo
+  and branch (local panes only, read from files), the task named with how it matched, the machine and
+  session; and a note when the workspace read was degraded, cached or truncated.
+- **Empty states.** No workspace running: why, and that it is optional. A workspace with no agents:
+  how many terminals were looked at and how an agent shows up (the status escape sequence OSC 7501,
+  or a known agent as the foreground program). A failed or unrecognized read is shown as such, never
+  as an empty fleet.
+- **Refresh.** Only while the tab is visible: every 5 s while any pane is blocked or working, else
+  every 15 s, backing off to 60 s after a slow (over 2 s) or failed sweep; one sweep at a time; `r`
+  refreshes at once. A hidden tab never reads.
+- **Keys.** `j` `k` move, `enter` and `esc` open and close the detail when stacked, `r` refreshes,
+  `w` opens the selected pane's workspace: only the interactive `<workspace tool> -S <that pane's
+  machine>` step core built is run (the same `runnable` check as the workspace layer), a pane on this
+  machine and anything else is a framed notice with the command to copy, and a demo session only
+  shows the command. No key types into, focuses or closes a pane.
+- **Words.** Bodies say "workspace" and "terminal", never the tool's name (the command to copy is the
+  one place it appears); every text from a pane is sanitized by core and again by `san`.
 
 ## Demo
 

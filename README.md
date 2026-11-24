@@ -145,17 +145,25 @@ or error messages that help you fix one.
   Ctrl-C returns. board-beads is only the beads-backed backend a board can use; abacus needs
   nothing new from it (board-beads#15 is decided: compose the Vercel CLI).
 - **Rex** (optional): a terminal workspace. When a Rex server is reachable abacus can say which
-  terminal session a run, lease or task lives in; the interface calls this the "workspace" and
-  it is not a fifth tab. abacus composes only the `rex` CLI: `ls --json` and `version --json`,
-  always with `--autostart=false`, behind an argv allowlist and a scrubbed environment
-  (`HOME`, `PATH`, the XDG dirs and `REX_*`), and never starts a server or types into a
-  session. Only this machine and the hosts you list in `ABACUS_REX_HOSTS` are ever contacted
-  (`-S` can open an ssh connection); `ABACUS_REX_PASS_ENV=SSH_AUTH_SOCK` opts in to passing a
-  variable on. Detection is `REX_SESSION`/`REX_SERVER` in the environment, else a short probe; no
-  server is "not connected", not an error, and an absent Rex is invisible in Doctor.
-  `ABACUS_REX_BIN` overrides the lookup. Opening a placement runs only on an explicit keypress
-  and is the existing `rex -S <machine>` handoff, else the command to copy. See
-  `docs/tool-contract.md`.
+  terminal session a run, lease or task lives in (the "workspace" layer on Queues, Leases and
+  Tasks), and it adds one **Agents** view (a sixth tab after Doctor, `:agents`) that says what
+  every agent pane on this machine and in `ABACUS_REX_HOSTS` is doing: the status its program
+  reported (working, blocked on a permission or a question, error, done), progress, how long ago,
+  the task or lease it names, repo and branch. The Agents tab exists only when `rex` is found, so
+  an install without Rex is unchanged and the digit jumps `1` to `5` never move. abacus composes
+  only the `rex` CLI, always with `--autostart=false`, behind an exact argv allowlist and a
+  scrubbed environment (`HOME`, `PATH`, the XDG dirs and `REX_*`), and never starts a server or
+  types into a session. The allowlist is these five shapes and nothing else: `ls --json`,
+  `version --json`, `block ls -s SESSION --json`, `block call -s SESSION -b BLOCK program_status`
+  and `block call -s SESSION -b BLOCK process` (the last three are what the Agents view reads; the
+  method name is a literal because `rex block call` can also write to a terminal, and no argument
+  word is accepted). Only this machine and the hosts you list in `ABACUS_REX_HOSTS` are ever
+  contacted (`-S` can open an ssh connection); `ABACUS_REX_PASS_ENV=SSH_AUTH_SOCK` opts in to
+  passing a variable on. Detection is `REX_SESSION`/`REX_SERVER` in the environment, else a short
+  probe; no server is "not connected", not an error, and an absent Rex is invisible in Doctor.
+  `ABACUS_REX_BIN` overrides the lookup. Opening a pane or placement runs only on an explicit
+  keypress and is the existing `rex -S <machine>` handoff, else the command to copy. See
+  `docs/tool-contract.md` (what was and was not verified against a live Rex).
 
 ## Usage
 
@@ -245,21 +253,4 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
-
-## Credits
-
-- [Beads](https://github.com/steveyegge/beads) is the tracker everything sits on.
-- [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) by Jeffrey Emanuel supplies the
-  graph analysis. Its license ships unmodified in the archive as `third_party/bv/LICENSE`.
-- [Vercel Board](https://github.com/vercel/board) (Apache-2.0) is the message board the Board
-  domain reads and posts to; abacus only runs its CLI as a subprocess.
-- [b9s](https://github.com/vanderheijden86/b9s) (MIT) is the full tree and graph view abacus can hand off to.
-- [k9s](https://k9scli.io) inspired the keyboard-first feel.
-
-## Development
-
-See [docs/development.md](docs/development.md) to build from source and run the checks.
-
-## License
-
-GPL-3.0-or-later. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
+```
