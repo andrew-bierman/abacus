@@ -233,7 +233,7 @@ func firstOf(a []string) string {
 func runTaskWrite(verb string, rest []string, d Deps) int {
 	op := core.TaskOp(verb)
 	if op != core.TaskCreate && op != core.TaskUpdate && op != core.TaskClose {
-		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, create, update, close, label, assign, priority, dep, comment, bulk)\n", verb)
+		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, graph, history, create, update, close, label, assign, priority, dep, comment, bulk)\n", verb)
 		return core.ExitUsage
 	}
 	ch := core.TaskChange{Op: op}
