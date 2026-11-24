@@ -127,3 +127,29 @@ func TestBulkRefusesWhenATaskCannotBeReadFirst(t *testing.T) {
 		t.Fatalf("code=%d err=%s", code, errOut)
 	}
 }
+
+func TestBulkYesJSONPrintsTheTypedReport(t *testing.T) {
+	m := newEditMod()
+	m.changeAfter = 4 // t-1 is applied, the other two moved after the plan
+	m.again = core.Task{Title: "one", Status: "in_progress", Priority: 2}
+	code, out, _, _ := runBulk(t, "", m, "--ids", "t-1,t-2,t-3", "--op", "close", "--yes", "--json")
+	var r struct {
+		SchemaVersion int    `json:"schema_version"`
+		BatchID       string `json:"batch_id"`
+		Op            string `json:"op"`
+		Applied       int    `json:"applied"`
+		Skipped       int    `json:"skipped"`
+		Items         []struct {
+			ID      string `json:"id"`
+			Outcome string `json:"outcome"`
+			Detail  string `json:"detail"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(out), &r); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if code != 1 || r.SchemaVersion != 1 || !strings.HasPrefix(r.BatchID, "batch-") || r.Op != "close" || r.Applied != 1 || r.Skipped != 2 || len(r.Items) != 3 ||
+		r.Items[0].Outcome != "applied" || r.Items[1].Outcome != "skipped" || r.Items[1].Detail == "" {
+		t.Errorf("code=%d %+v", code, r)
+	}
+}
