@@ -6,3 +6,4 @@
 .cache/
 /internal/embedtools/blobs/
 /internal/embedtools/.blobs.*
+cover.out
