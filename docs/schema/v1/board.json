@@ -177,5 +177,6 @@
     "title"
   ],
   "title": "board",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

@@ -72,6 +72,7 @@ func SchemaDoc(s SchemaSpec) (map[string]any, error) {
 	sort.Strings(req)
 	root["required"] = dedup(req)
 	root["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+	root["x-abacus-schema"] = SchemaVersion // marks the file as one abacus wrote, so --out only ever replaces its own
 	root["title"] = s.Name
 	root["description"] = "The --json output of: " + s.Commands
 	if len(g.defs) > 0 {

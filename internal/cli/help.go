@@ -40,7 +40,7 @@ var subHelp = map[string]string{
 	"rex":            "usage: abacus rex layout [--new NAME] [--yes] [--dry-run] [--json]\n\nOpens the cockpit tabs in a terminal workspace; it only opens tabs.",
 	"rex layout":     "usage: abacus rex layout [--new NAME] [--yes] [--dry-run] [--json]",
 	"config":         "usage: abacus config show [--json] | get KEY | set KEY VALUE | path\nkeys: " + strings.Join(core.ConfigKeys, ", "),
-	"schema":         "usage: abacus schema [NAME] [--out DIR] [--json]\n\nWith no NAME, list the schemas of the --json outputs (JSON Schema, draft 2020-12; every document carries schema_version 1).\nWith a NAME, print that schema. With --out DIR, write every schema to DIR as NAME.json. Writes only into DIR.",
+	"schema":         "usage: abacus schema [NAME] [--out DIR [--force]] [--json]\n\nWith no NAME, list the schemas of the --json outputs (JSON Schema, draft 2020-12; every document carries schema_version 1).\nWith a NAME, print that schema. With --out DIR, write every schema to DIR as NAME.json. Writes only into DIR, and never over a symbolic link or a file that is not an abacus schema (--force replaces the latter).",
 	"licenses":       "usage: abacus licenses\n\nPrints the third-party notices and license texts carried in this file.",
 	"completion":     "usage: abacus completion bash|zsh|fish\n\nPrints a shell completion script, for example: source <(abacus completion bash)",
 	"help":           "usage: abacus help [command]",

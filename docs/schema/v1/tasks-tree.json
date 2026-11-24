@@ -222,5 +222,6 @@
     "total"
   ],
   "title": "tasks-tree",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

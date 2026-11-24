@@ -56,5 +56,6 @@
     "schema_version"
   ],
   "title": "write-dry-run",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

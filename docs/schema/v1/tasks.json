@@ -315,5 +315,6 @@
     "title"
   ],
   "title": "tasks",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

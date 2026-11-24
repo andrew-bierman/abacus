@@ -70,5 +70,6 @@
     "schema_version"
   ],
   "title": "setup-repair",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

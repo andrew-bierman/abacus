@@ -162,5 +162,6 @@
     "total"
   ],
   "title": "search",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

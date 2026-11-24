@@ -41,5 +41,6 @@
     "schemas"
   ],
   "title": "schema-index",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

@@ -1443,5 +1443,6 @@
     "version"
   ],
   "title": "report",
-  "type": "object"
+  "type": "object",
+  "x-abacus-schema": 1
 }

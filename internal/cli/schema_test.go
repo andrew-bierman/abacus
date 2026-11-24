@@ -265,3 +265,46 @@ func validate(root, s map[string]any, v any, path string) []string {
 	}
 	return errs
 }
+
+func TestSchemaOutNeverOverwritesOrFollows(t *testing.T) {
+	// a user's own tasks.json is left alone and nothing at all is written
+	dir := t.TempDir()
+	mine := filepath.Join(dir, "tasks.json")
+	if err := os.WriteFile(mine, []byte(`{"my":"data"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	code, out, errOut := run(t, nil, "schema", "--out", dir, "--json")
+	got, _ := os.ReadFile(mine)
+	ents, _ := os.ReadDir(dir)
+	if code != 1 || string(got) != `{"my":"data"}` || len(ents) != 1 || errorCode(out) != "refused" || !strings.Contains(errOut, "not an abacus schema") {
+		t.Fatalf("code=%d out=%s err=%s files=%d content=%s", code, out, errOut, len(ents), got)
+	}
+	// --force replaces it, an earlier abacus schema is replaced without it
+	if code, _, e := run(t, nil, "schema", "--out", dir, "--force"); code != 0 {
+		t.Fatalf("--force: %d %s", code, e)
+	}
+	if code, _, _ := run(t, nil, "schema", "--out", dir); code != 0 {
+		t.Fatal("re-running over abacus's own files is fine")
+	}
+	if left, _ := filepath.Glob(filepath.Join(dir, ".schema-*")); len(left) != 0 {
+		t.Errorf("temporary files left: %v", left)
+	}
+
+	// a symlink is never written through or replaced, even with --force
+	dir2, outside := t.TempDir(), filepath.Join(t.TempDir(), "victim.txt")
+	if err := os.WriteFile(outside, []byte("precious"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(dir2, "error.json")); err != nil {
+		t.Skip("no symlinks here")
+	}
+	for _, args := range [][]string{{"schema", "--out", dir2}, {"schema", "--out", dir2, "--force"}} {
+		code, out, _ := run(t, nil, append(args, "--json")...)
+		b, _ := os.ReadFile(outside)
+		fi, _ := os.Lstat(filepath.Join(dir2, "error.json"))
+		ents, _ := os.ReadDir(dir2)
+		if code != 1 || string(b) != "precious" || fi.Mode()&os.ModeSymlink == 0 || len(ents) != 1 || errorCode(out) != "refused" {
+			t.Errorf("%v: code=%d out=%s victim=%q files=%d", args, code, out, b, len(ents))
+		}
+	}
+}

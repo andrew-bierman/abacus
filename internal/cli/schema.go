@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -19,9 +21,10 @@ func runSchema(rest []string, d Deps) int {
 	}
 	fs := flag.NewFlagSet("schema", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
-	var asJSON bool
+	var asJSON, force bool
 	var out string
 	jsonVar(d, fs, &asJSON, "print the list as JSON")
+	fs.BoolVar(&force, "force", false, "with --out: replace an existing file that is not an abacus schema")
 	fs.StringVar(&out, "out", "", "write every schema into this folder as NAME.json")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -47,20 +50,7 @@ func runSchema(rest []string, d Deps) int {
 		return core.ExitUsage
 	}
 	if out != "" {
-		if err := os.MkdirAll(out, 0o755); err != nil {
-			return failf(d, core.CodeFailed, "schema: %v\n", err)
-		}
-		for _, s := range specs {
-			b, err := core.SchemaJSON(s)
-			if err != nil {
-				return failf(d, core.CodeFailed, "schema: %v\n", err)
-			}
-			if err := os.WriteFile(filepath.Join(out, s.Name+".json"), b, 0o644); err != nil {
-				return failf(d, core.CodeFailed, "schema: %v\n", err)
-			}
-		}
-		fmt.Fprintf(d.Out, "wrote %d schemas to %s\n", len(specs), out)
-		return core.ExitOK
+		return writeSchemas(d, out, specs, force)
 	}
 	idx := core.SchemaIndex{Schemas: []core.SchemaIndexEntry{}}
 	for _, s := range specs {
@@ -74,4 +64,73 @@ func runSchema(rest []string, d Deps) int {
 		fmt.Fprintf(d.Out, "%-20s %s\n", e.Name, e.Commands)
 	}
 	return core.ExitOK
+}
+
+// writeSchemas writes NAME.json for every spec into dir. Nothing is written until every target has been
+// checked: a symlink is never written through or replaced, and an existing regular file is replaced only if
+// it is an abacus schema (it carries "x-abacus-schema") or --force was given. Each file is written to a
+// temporary name in dir and renamed into place, so a failure never leaves half a schema.
+func writeSchemas(d Deps, dir string, specs []core.SchemaSpec, force bool) int {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return failf(d, core.CodeFailed, "schema: %v\n", err)
+	}
+	docs := make([][]byte, len(specs))
+	for i, s := range specs {
+		b, err := core.SchemaJSON(s)
+		if err != nil {
+			return failf(d, core.CodeFailed, "schema: %v\n", err)
+		}
+		docs[i] = b
+		target := filepath.Join(dir, s.Name+".json")
+		fi, err := os.Lstat(target)
+		switch {
+		case err != nil && os.IsNotExist(err):
+		case err != nil:
+			return failf(d, core.CodeFailed, "schema: %v\n", err)
+		case fi.Mode()&os.ModeSymlink != 0:
+			return failf(d, core.CodeRefused, "schema: %s is a symbolic link: not written through or replaced; nothing was written\n", target)
+		case !fi.Mode().IsRegular():
+			return failf(d, core.CodeRefused, "schema: %s is not a regular file; nothing was written\n", target)
+		case !force && !isAbacusSchema(target):
+			return failf(d, core.CodeRefused, "schema: %s exists and is not an abacus schema: nothing was written (--force replaces it)\n", target)
+		}
+	}
+	for i, s := range specs {
+		if err := writeAtomic(filepath.Join(dir, s.Name+".json"), docs[i]); err != nil {
+			return failf(d, core.CodeFailed, "schema: %v\n", err)
+		}
+	}
+	fmt.Fprintf(d.Out, "wrote %d schemas to %s\n", len(specs), dir)
+	return core.ExitOK
+}
+
+func isAbacusSchema(path string) bool {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var m map[string]json.RawMessage
+	return json.Unmarshal(bytes.TrimSpace(b), &m) == nil && m["x-abacus-schema"] != nil
+}
+
+func writeAtomic(path string, b []byte) error {
+	f, err := os.CreateTemp(filepath.Dir(path), ".schema-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	_, err = f.Write(b)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Chmod(tmp, 0o644)
+	}
+	if err == nil {
+		err = os.Rename(tmp, path)
+	}
+	if err != nil {
+		_ = os.Remove(tmp)
+	}
+	return err
 }
