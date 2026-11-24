@@ -1,0 +1,151 @@
+package serve
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"regexp"
+	"sync"
+	"time"
+
+	"github.com/andrew-bierman/abacus/internal/core"
+)
+
+// planIDRE is the only shape of plan id the server accepts.
+var planIDRE = regexp.MustCompile(`^plan_[0-9a-f]{32}$`)
+
+type ended int
+
+const (
+	endedApplied   ended = iota + 1 // claimed by an apply (single use)
+	endedUnwritten                  // claimed, then refused before anything was written
+	endedExpired                    // too old, or pushed out by newer plans
+	endedCancelled                  // plan.cancel
+)
+
+// heldPlan is a plan the server holds for one apply. The client never sends an argv: it names this plan.
+type heldPlan struct {
+	id, kind, digest string
+	expires          time.Time
+	// apply runs the write. wrote is false when it was refused before the provider was asked (a stale
+	// plan, an audit log that cannot be written): nothing happened.
+	apply func(ctx context.Context) (res *core.ServeApplied, wrote bool, err error)
+}
+
+// planStore holds at most max live plans and remembers (bounded) how the ended ones ended, so a second
+// apply, an expired plan and an unknown id are told apart. It is the single-use guard of the protocol.
+type planStore struct {
+	mu         sync.Mutex
+	live       map[string]*heldPlan
+	order      []string
+	ended      map[string]ended
+	endedOrder []string
+	max        int
+	ttl        time.Duration
+	now        func() time.Time
+}
+
+const maxEnded = 1024
+
+func newPlanStore(max int, ttl time.Duration, now func() time.Time) *planStore {
+	return &planStore{live: map[string]*heldPlan{}, ended: map[string]ended{}, max: max, ttl: ttl, now: now}
+}
+
+func newPlanID() string {
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		panic("serve: no random source: " + err.Error()) // a plan id that could be guessed is worse than no server
+	}
+	return "plan_" + hex.EncodeToString(b[:])
+}
+
+// end moves a plan out of the live set. Callers hold mu.
+func (p *planStore) end(id string, why ended) {
+	delete(p.live, id)
+	for i, o := range p.order {
+		if o == id {
+			p.order = append(p.order[:i], p.order[i+1:]...)
+			break
+		}
+	}
+	if _, seen := p.ended[id]; !seen {
+		p.endedOrder = append(p.endedOrder, id)
+		if len(p.endedOrder) > maxEnded {
+			delete(p.ended, p.endedOrder[0])
+			p.endedOrder = p.endedOrder[1:]
+		}
+	}
+	p.ended[id] = why
+}
+
+// add holds a plan, expiring the old ones and pushing out the oldest when full.
+func (p *planStore) add(h *heldPlan) (expires time.Time) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	now := p.now()
+	for _, id := range append([]string(nil), p.order...) {
+		if !now.Before(p.live[id].expires) {
+			p.end(id, endedExpired)
+		}
+	}
+	for len(p.live) >= p.max {
+		p.end(p.order[0], endedExpired)
+	}
+	h.expires = now.Add(p.ttl)
+	p.live[h.id] = h
+	p.order = append(p.order, h.id)
+	return h.expires
+}
+
+// take claims a plan for one apply and removes it, so no second apply can reach it. A digest that is
+// not the plan's is refused without consuming the plan (nothing was written: the client had the wrong one).
+func (p *planStore) take(id, expect string) (*heldPlan, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	h := p.live[id]
+	if h == nil {
+		switch p.ended[id] {
+		case endedApplied:
+			return nil, &apiError{rpc: rpcServer, code: core.CodeAlreadyApplied, msg: "this plan was already applied (a plan is single use)", planID: id, outcome: "already_applied"}
+		case endedUnwritten:
+			return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: "this plan was refused when it was applied and nothing was written: plan again", planID: id, outcome: "changed"}
+		case endedExpired:
+			return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: "this plan is no longer held (it expired): plan again", planID: id, outcome: "changed"}
+		}
+		return nil, &apiError{rpc: rpcServer, code: core.CodeNotFound, msg: "no such plan", planID: id, outcome: "not_applied"}
+	}
+	if !p.now().Before(h.expires) {
+		p.end(id, endedExpired)
+		return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: fmt.Sprintf("this plan expired after %s: plan again", p.ttl), planID: id, digest: h.digest, outcome: "changed"}
+	}
+	if expect != "" && expect != h.digest {
+		return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: fmt.Sprintf("the plan you reviewed (%s) is not the plan held under this id (%s): nothing was written", expect[:12], h.digest[:12]), planID: id, digest: h.digest, outcome: "changed"}
+	}
+	p.end(id, endedApplied)
+	return h, nil
+}
+
+// unwritten records that a claimed plan was refused before anything was written.
+func (p *planStore) unwritten(id string) {
+	p.mu.Lock()
+	p.ended[id] = endedUnwritten
+	p.mu.Unlock()
+}
+
+// cancel discards a plan the client no longer wants.
+func (p *planStore) cancel(id string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.live[id] == nil {
+		return &apiError{rpc: rpcServer, code: core.CodeNotFound, msg: "no such plan", planID: id}
+	}
+	p.end(id, endedCancelled)
+	return nil
+}
+
+func (p *planStore) size() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return len(p.live)
+}
