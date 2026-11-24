@@ -107,12 +107,14 @@ the address in that tool's own terms; `command` is a line a person can copy to g
   ancestors) and emit `kind: cmux surface`, `ref: <workspace>/<surface>` and a focus command from
   cmux's own CLI. It is read only, like the tmux match, and needs a verified list of the variable
   names and CLI verbs before it is written; none is guessed here.
-- **rex session**: Rex already places runs, leases and tasks in terminal sessions through the
-  workspace layer (the `w` key). Agents are matched by process and directory, not by an id Rex
-  knows, so the wiring is a lookup of the agent's directory and pid ancestry against Rex's session
-  list, emitting `kind: rex session`. The jump itself should then be the same placement handoff the
-  other tabs use (confirmed, never typing into a session), with the copyable command as the fallback.
-  This waits for the Rex placement rework (PR #50) to land so it is built once, on the final seam.
+- **rex session**: wired through the workspace layer the other tabs use. An agent is a workspace item of
+  kind `agent`, named by its worktree or else its repository (an agent with neither has none, and
+  nothing is guessed from a path). Where a Rex tab or pane is named for that, the detail shows its
+  placement, `w` offers the usual open plan, and `m` brings its pane forward after the same confirm
+  screen. `W` (work on this) is refused on an agent row: it starts a new agent for a task. Two agents in
+  the same repository share a name, so a placement can be ambiguous, and the layer then says so rather
+  than choosing. The tmux line to copy stays in the detail as the fallback; `term.kind` is still only
+  detected for tmux.
 - Whatever the kind, abacus never runs `command` itself from the Agents tab, and a ref that does not
   match the kind's expected shape is dropped rather than put in a command line.
 

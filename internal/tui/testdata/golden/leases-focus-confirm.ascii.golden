@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  Tasks  [Leases]  Queues  Doctor
+ [Leases]  3/6
 ╭─ ▸ Workspace ────────────────────────╮
 │ bring the terminal for bd-43 to the  │
 │ front                                │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 y apply · n/esc cancel
 === 40x30 ===
- Board  Tasks  [Leases]  Queues  Doctor
+ [Leases]  3/6
 ────────────────────────────────────────
 ╭─ ▸ Workspace ────────────────────────╮
 │ bring the terminal for bd-43 to the  │
@@ -43,7 +43,7 @@ y apply · n/esc cancel
 
 y apply · n/esc cancel
 === 80x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                    │
 │ session: General                                                             │
@@ -56,7 +56,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 y apply · n/esc cancel
 === 80x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                    │
@@ -87,7 +87,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 y apply · n/esc cancel
 === 120x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                                                            │
 │ session: General                                                                                                     │
@@ -100,7 +100,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 y apply · n/esc cancel
 === 120x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                                                            │
@@ -131,7 +131,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 y apply · n/esc cancel
 === 60x24 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Workspace ────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                │
@@ -156,7 +156,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 y apply · n/esc cancel
 === 140x32 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                                                                                │

@@ -42,7 +42,8 @@ type agentsSection struct {
 	gen    int
 	th     Theme
 	geom
-	listNav // ids are agent ids
+	listNav          // ids are agent ids
+	ws      *wsLayer // the optional workspace layer; nil without one
 
 	query     string
 	typing    bool
@@ -58,13 +59,53 @@ func newAgentsSection(read func(context.Context) core.AgentsReport) *agentsSecti
 	return &agentsSection{read: read, th: DefaultTheme()}
 }
 
+func (s *agentsSection) setWorkspace(w *wsLayer) { s.ws = w }
+func (s *agentsSection) layer() *wsLayer         { return s.ws }
+
+// wsDetailVisible: the detail is drawn beside the list, or on its own once opened.
+func (s *agentsSection) wsDetailVisible() bool { return !isStacked(s.width()) || s.drilled }
+
+// agentItem is the workspace item of an agent: the name a terminal tab for it would carry, its
+// worktree or else its repository. An agent with neither has no item, so nothing is guessed.
+func agentItem(a core.Agent) (core.WorkspaceItem, bool) {
+	id := a.Worktree
+	if id == "" {
+		id = a.Repo
+	}
+	if !core.ItemIDRE.MatchString(id) {
+		return core.WorkspaceItem{}, false
+	}
+	return itemOf(core.WorkspaceAgent, id, "")
+}
+
+func (s *agentsSection) wsItems() []core.WorkspaceItem {
+	var items []core.WorkspaceItem
+	for _, a := range s.report.Agents {
+		if it, ok := agentItem(a); ok {
+			items = append(items, it)
+		}
+	}
+	return itemList(items...)
+}
+
+// wsSelected is the agent under the cursor and the name that fills a command.
+func (s *agentsSection) wsSelected() (core.WorkspaceItem, string, bool) {
+	l := s.visible()
+	if s.cursor >= len(l) {
+		return core.WorkspaceItem{}, "", false
+	}
+	it, ok := agentItem(l[s.cursor])
+	return it, it.ID, ok
+}
+
 func (s *agentsSection) SetTheme(t Theme) { s.th = t }
 func (s *agentsSection) Capturing() bool  { return s.typing }
 
 func (s *agentsSection) Bindings() []key.Binding {
 	enter, back := s.bindings(s.width(), len(s.visible()))
 	back.SetEnabled(s.drilled || s.query != "" || s.state != "" || s.harness != "")
-	return append(moveBindings(), enter, back, keyFilter, keyAgentState, keyAgentHarness, keyAgentSort, keyAgentScroll, keyReload)
+	it, _, ok := s.wsSelected()
+	return append(moveBindings(), enter, back, keyFilter, keyAgentState, keyAgentHarness, keyAgentSort, keyAgentScroll, keyReload, s.ws.jumpBinding(it, ok))
 }
 
 func (s *agentsSection) fetch() tea.Cmd {
@@ -166,6 +207,13 @@ func (s *agentsSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.report, s.loaded, s.busy, s.readAt = m.report, true, false, nowFn()
 		s.reanchor(s.ids(), false)
 		s.settle(len(s.visible()))
+		return s, s.ws.fetch(s.wsItems())
+	case workspaceMsg:
+		s.ws.receive(m)
+	case handoffDoneMsg:
+		if s.ws.done() && m.err != nil {
+			s.ws.note = []string{"The workspace did not open: " + core.Sanitize(m.err.Error())}
+		}
 	case agentsTickMsg:
 		if m.gen != s.gen || !s.active {
 			return s, nil
@@ -183,7 +231,13 @@ func (s *agentsSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.typeKey(m)
 			return s, nil
 		}
+		if s.ws.swallow() { // the key that closes a workspace notice does nothing else
+			return s, nil
+		}
 		switch {
+		case key.Matches(m, keyWorkspace):
+			it, _, ok := s.wsSelected()
+			return s, s.ws.jump(it, ok)
 		case key.Matches(m, keyUp):
 			s.up(s.ids())
 			s.detailTop = 0
@@ -474,6 +528,9 @@ func (s *agentsSection) detailLines(iw int) []string {
 		srcs = append(srcs, string(e))
 	}
 	out = append(out, field("seen by", strings.Join(srcs, ", ")))
+	if it, ok := agentItem(a); ok {
+		out = append(out, s.ws.detail(th, it, ok, 11)...)
+	}
 	if a.Term != nil {
 		out = append(out, field(a.Term.Kind, a.Term.Ref))
 		if a.Term.Command != "" {
@@ -534,6 +591,9 @@ func (s *agentsSection) View() string {
 		if len(r.Agents) == 0 {
 			return joinLines(box(th, "Agents", unavailableBody(th, r.Reason, innerW(w)), w, s.h))
 		}
+	}
+	if box, ok := s.ws.noteBox(th, w, s.h); ok {
+		return joinLines(box)
 	}
 	var top []string
 	if s.h >= hSummary {

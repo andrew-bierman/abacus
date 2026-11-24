@@ -114,3 +114,20 @@ func TestAgentWhereIsTheRepoOrTheDirectoryName(t *testing.T) {
 		}
 	}
 }
+
+func TestAgentItemIsNamedByWorktreeOrRepoAndNeverGuessed(t *testing.T) {
+	for _, c := range []struct {
+		a    core.Agent
+		want string
+	}{
+		{core.Agent{Repo: "orchard"}, "orchard"},
+		{core.Agent{Repo: "cellar", Worktree: "cellar-barrels"}, "cellar-barrels"},
+		{core.Agent{Cwd: "/work/barn"}, ""},   // no repository: nothing is guessed from a path
+		{core.Agent{Repo: "x; rm -rf /"}, ""}, // never an id a command line could misread
+	} {
+		it, ok := agentItem(c.a)
+		if ok != (c.want != "") || it.ID != c.want || (ok && it.Kind != core.WorkspaceAgent) {
+			t.Errorf("%+v: %+v %v, want %q", c.a, it, ok, c.want)
+		}
+	}
+}

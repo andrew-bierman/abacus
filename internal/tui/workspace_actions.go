@@ -98,7 +98,7 @@ func (w *wsLayer) actionBindings(h wsHost) []key.Binding {
 	focus, work := keyFocus, keyWork
 	p, _, _ := w.find(it)
 	focus.SetEnabled(ok && p != nil && p.Block != "")
-	work.SetEnabled(ok)
+	work.SetEnabled(ok && it.Kind != core.WorkspaceAgent) // "work on this" starts an agent for a task; an agent row is already one
 	return []key.Binding{focus, work}
 }
 
@@ -124,6 +124,10 @@ func (w *wsLayer) actionKey(k tea.KeyMsg, h wsHost) (tea.Cmd, bool) {
 	}
 	it, title, ok := h.wsSelected()
 	if !ok {
+		return nil, true
+	}
+	if it.Kind == core.WorkspaceAgent && key.Matches(k, keyWork) {
+		w.note = []string{"Work on this starts a new agent for a task. Open it from Tasks."}
 		return nil, true
 	}
 	req := core.PlacementRequest{Item: it}
