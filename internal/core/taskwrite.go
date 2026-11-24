@@ -30,6 +30,15 @@ const (
 	// TaskInit creates the managed workspace (bd init). It is the one write that is not about
 	// an existing issue, and it goes through the same plan, confirm, single-use and audit gate.
 	TaskInit TaskOp = "init"
+
+	// The edits beyond create, update and close. Each is one exact bd argv; none is a delete.
+	TaskLabelAdd    TaskOp = "label-add"
+	TaskLabelRemove TaskOp = "label-remove"
+	TaskPriority    TaskOp = "priority"
+	TaskAssign      TaskOp = "assign"
+	TaskDepAdd      TaskOp = "dep-add"
+	TaskDepRemove   TaskOp = "dep-remove"
+	TaskAddComment  TaskOp = "comment"
 )
 
 // TaskChange is what a user asked for. Before is display-only (the current values, so the
@@ -55,6 +64,19 @@ type TaskChange struct {
 	Expect string
 	// Warning is display-only, one line on the confirm screen (a card moved while it is blocked).
 	Warning string
+
+	// Label is the label a label-add or label-remove names.
+	Label string
+	// Assignee is who an assign hands the task to: nil is not an assign, "" unassigns. IfAssignee is who
+	// holds it now ("" is nobody): bd refuses (exit 13) and writes nothing when someone else changed it.
+	Assignee   *string
+	IfAssignee string
+	// Blocker is the task a dep-add or dep-remove says holds ID back (ID is the held task). BlockerTitle is
+	// display-only.
+	Blocker      string
+	BlockerTitle string
+	// Text is the comment a comment adds.
+	Text string
 }
 
 // TaskStatuses are the statuses an update may set; closed is only reachable through close.
@@ -69,6 +91,26 @@ var StatusGuardRE = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 
 // TaskIDRE is the only shape of issue ID that ever reaches an argv.
 var TaskIDRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
+
+// LabelRE is the only shape of label that reaches an argv: no comma (bd would split it into several),
+// no space and nothing a flag parser could read as an option.
+var LabelRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9:._/-]{0,63}$`)
+
+// MaxCommentBytes bounds one comment (it is one argv element).
+const MaxCommentBytes = 8000
+
+// CommentTextOK is whether text may reach an argv as a comment: non-blank, valid, at most
+// MaxCommentBytes, and no control character but a newline or tab.
+func CommentTextOK(s string) bool {
+	return strings.TrimSpace(s) != "" && len(s) <= MaxCommentBytes && utf8.ValidString(s) && checkText("comment", s, true) == nil
+}
+
+// AssigneeOK is whether a name may reach an argv as an assignee or an assignee guard: "" (nobody) or
+// printable text of at most 128 bytes with no edge space.
+func AssigneeOK(s string) bool {
+	return len(s) <= 128 && utf8.ValidString(s) && strings.TrimSpace(s) == s &&
+		!strings.ContainsFunc(s, func(r rune) bool { return !strconv.IsPrint(r) })
+}
 
 // TaskResult is the issue a write returned.
 type TaskResult struct {
@@ -187,6 +229,44 @@ func validate(ch TaskChange) error {
 			return fmt.Errorf("the task is already %s", ch.Status)
 		}
 	case TaskClose, TaskReopen:
+	case TaskLabelAdd, TaskLabelRemove:
+		if !LabelRE.MatchString(ch.Label) {
+			return fmt.Errorf("invalid label %q (letters, digits and : . _ / -, up to 64 characters, no spaces or commas)", ch.Label)
+		}
+	case TaskPriority:
+		if ch.Priority == nil {
+			return errors.New("a priority is required")
+		}
+		if ch.Before.ID != "" && ch.Before.Priority == *ch.Priority {
+			return fmt.Errorf("%s is already priority %d", ch.ID, *ch.Priority)
+		}
+	case TaskAssign:
+		switch {
+		case ch.Assignee == nil:
+			return errors.New("an assignee is required (empty to unassign)")
+		case !AssigneeOK(*ch.Assignee):
+			return errors.New("invalid assignee name")
+		case !AssigneeOK(ch.IfAssignee):
+			return errors.New("the current assignee is not a plain name, so it cannot be used as the guard of an assignment")
+		case *ch.Assignee == ch.IfAssignee && ch.IfAssignee == "":
+			return fmt.Errorf("%s is already unassigned", ch.ID)
+		case *ch.Assignee == ch.IfAssignee:
+			return fmt.Errorf("%s is already assigned to %s", ch.ID, ch.IfAssignee)
+		}
+	case TaskDepAdd, TaskDepRemove:
+		switch {
+		case !TaskIDRE.MatchString(ch.Blocker):
+			return fmt.Errorf("invalid issue id %q", ch.Blocker)
+		case ch.Blocker == ch.ID:
+			return errors.New("a task cannot depend on itself")
+		}
+	case TaskAddComment:
+		switch {
+		case strings.TrimSpace(ch.Text) == "":
+			return errors.New("a comment needs text")
+		case !CommentTextOK(ch.Text):
+			return fmt.Errorf("a comment is at most %d bytes of text with no control characters", MaxCommentBytes)
+		}
 	case TaskInit:
 		return checkText("directory", ch.Dir, false)
 	default:
@@ -195,13 +275,19 @@ func validate(ch TaskChange) error {
 	if ch.Op != TaskCreate && !TaskIDRE.MatchString(ch.ID) {
 		return fmt.Errorf("invalid issue id %q", ch.ID)
 	}
+	if ch.Op != TaskDepAdd && ch.Op != TaskDepRemove && ch.Blocker != "" {
+		return errors.New("a blocker belongs to a dependency change only")
+	}
 	if ch.Priority != nil && (*ch.Priority < 0 || *ch.Priority > 4) {
 		return errors.New("priority must be 0-4")
 	}
-	for label, v := range map[string]string{"title": ch.Title, "reason": ch.Reason, "warning": ch.Warning} {
+	for label, v := range map[string]string{"title": ch.Title, "reason": ch.Reason, "warning": ch.Warning, "blocker title": ch.BlockerTitle} {
 		if err := checkText(label, v, false); err != nil {
 			return err
 		}
+	}
+	if err := checkText("text", ch.Text, true); err != nil {
+		return err
 	}
 	return checkText("description", ch.Description, true)
 }
@@ -265,6 +351,9 @@ func describe(ch TaskChange) []string {
 			}
 			out = append(out, field("priority", old, fmt.Sprint(*ch.Priority)))
 		}
+		return out
+	}
+	if out, ok := describeEdit(ch, field); ok {
 		return out
 	}
 	verb, to := "close", "closed"
@@ -390,4 +479,136 @@ func DisplayArgv(argv []string) string {
 		out[i] = a
 	}
 	return strings.Join(out, " ")
+}
+
+// describeEdit is the confirm text of the edits beyond create, update and close.
+func describeEdit(ch TaskChange, field func(name, old, nw string) string) ([]string, bool) {
+	head := func(l string) []string {
+		out := []string{l}
+		if ch.Before.Title != "" {
+			out = append(out, field("title", "", ch.Before.Title))
+		}
+		return out
+	}
+	var out []string
+	switch ch.Op {
+	case TaskLabelAdd:
+		out = append(head("add a label to task "+ch.ID), field("label", "", ch.Label))
+	case TaskLabelRemove:
+		out = append(head("remove a label from task "+ch.ID), field("label", "", ch.Label))
+	case TaskPriority:
+		out = head("set the priority of task " + ch.ID)
+		old := ""
+		if ch.Before.ID != "" {
+			old = fmt.Sprint(ch.Before.Priority)
+		}
+		out = append(out, field("priority", old, fmt.Sprint(*ch.Priority)))
+	case TaskAssign:
+		verb := "assign task " + ch.ID
+		if ch.Assignee != nil && *ch.Assignee == "" {
+			verb = "unassign task " + ch.ID
+		}
+		out = head(verb)
+		who := func(s string) string {
+			if s == "" {
+				return "nobody"
+			}
+			return s
+		}
+		if ch.Assignee != nil {
+			out = append(out, field("assignee", who(ch.IfAssignee), who(*ch.Assignee)))
+		}
+	case TaskDepAdd, TaskDepRemove:
+		verb := "make task " + ch.ID + " wait for " + ch.Blocker
+		if ch.Op == TaskDepRemove {
+			verb = "stop task " + ch.ID + " waiting for " + ch.Blocker
+		}
+		out = head(verb)
+		if ch.BlockerTitle != "" {
+			out = append(out, field("blocker", "", ch.Blocker+" "+ch.BlockerTitle))
+		}
+	case TaskAddComment:
+		out = append(head("add a comment to task "+ch.ID), field("comment", "", ch.Text))
+	default:
+		return nil, false
+	}
+	if ch.Warning != "" {
+		out = append(out, "warning: "+ch.Warning)
+	}
+	return out, true
+}
+
+// NeedsFresh is whether a change must be checked against a re-read of its task right before it is
+// confirmed and again right before it runs: every edit beyond create, update and close. Where bd offers
+// a guard (assign) the argv carries it as well; the rest have none, so this check is their protection.
+func NeedsFresh(op TaskOp) bool {
+	switch op {
+	case TaskLabelAdd, TaskLabelRemove, TaskPriority, TaskAssign, TaskDepAdd, TaskDepRemove, TaskAddComment:
+		return true
+	}
+	return false
+}
+
+// ErrCannotVerify means the task could not be re-read, so a change that needs the check was not run.
+var ErrCannotVerify = errors.New("could not verify the task's current state; nothing was written")
+
+type staleError struct{ msg string }
+
+func (e staleError) Error() string {
+	return e.msg + ": nothing was written; refresh and plan the change again"
+}
+func (e staleError) Is(target error) bool { return target == ErrChanged }
+
+// CheckFresh compares a change with the task as it is now. It returns an error (that is ErrChanged)
+// when the change no longer fits: someone else moved the field it was planned against, or the change
+// would now be a no-op (the label is already there, the edge already exists).
+func CheckFresh(ch TaskChange, cur Task) error {
+	has := func(l []string, v string) bool { return slices.Contains(l, v) }
+	switch ch.Op {
+	case TaskLabelAdd:
+		if has(cur.Labels, ch.Label) {
+			return staleError{fmt.Sprintf("%s already has the label %s", ch.ID, ch.Label)}
+		}
+	case TaskLabelRemove:
+		if !has(cur.Labels, ch.Label) {
+			return staleError{fmt.Sprintf("%s no longer has the label %s", ch.ID, ch.Label)}
+		}
+	case TaskPriority:
+		if cur.Priority == *ch.Priority {
+			return staleError{fmt.Sprintf("%s is already priority %d", ch.ID, cur.Priority)}
+		}
+		if ch.Before.ID != "" && cur.Priority != ch.Before.Priority {
+			return staleError{fmt.Sprintf("%s is now priority %d (it was %d)", ch.ID, cur.Priority, ch.Before.Priority)}
+		}
+	case TaskAssign:
+		if cur.Assignee != ch.IfAssignee {
+			return staleError{fmt.Sprintf("%s is now held by %q (it was %q)", ch.ID, cur.Assignee, ch.IfAssignee)}
+		}
+	case TaskDepAdd:
+		if has(cur.DependsOn, ch.Blocker) {
+			return staleError{fmt.Sprintf("%s already waits for %s", ch.ID, ch.Blocker)}
+		}
+	case TaskDepRemove:
+		if !has(cur.DependsOn, ch.Blocker) {
+			return staleError{fmt.Sprintf("%s no longer waits for %s", ch.ID, ch.Blocker)}
+		}
+	}
+	return nil
+}
+
+// Fresh re-reads the task and runs CheckFresh: the check front ends make after the confirm and right
+// before the write. Changes that need no check pass untouched. A task that cannot be read refuses the
+// change (ErrCannotVerify): it is never applied unchecked.
+func Fresh(ctx context.Context, r TaskReader, ch TaskChange) error {
+	if !NeedsFresh(ch.Op) {
+		return nil
+	}
+	if r == nil {
+		return ErrCannotVerify
+	}
+	cur, err := r.ReadTask(ctx, ch.ID)
+	if err != nil {
+		return fmt.Errorf("%w (%s)", ErrCannotVerify, Sanitize(err.Error()))
+	}
+	return CheckFresh(ch, cur)
 }
