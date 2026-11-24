@@ -1,0 +1,152 @@
+{
+  "$defs": {
+    "BoardResult": {
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "BulkItemResult": {
+      "properties": {
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "outcome"
+      ],
+      "type": "object"
+    },
+    "BulkReport": {
+      "properties": {
+        "applied": {
+          "type": "integer"
+        },
+        "batch_id": {
+          "type": "string"
+        },
+        "failed": {
+          "type": "integer"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/BulkItemResult"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "not_run": {
+          "type": "integer"
+        },
+        "op": {
+          "type": "string"
+        },
+        "plan_digest": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "skipped": {
+          "type": "integer"
+        },
+        "unknown": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "applied",
+        "batch_id",
+        "failed",
+        "items",
+        "not_run",
+        "op",
+        "schema_version",
+        "skipped",
+        "unknown"
+      ],
+      "type": "object"
+    },
+    "TaskResult": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: serve apply",
+  "properties": {
+    "board": {
+      "$ref": "#/$defs/BoardResult"
+    },
+    "bulk": {
+      "$ref": "#/$defs/BulkReport"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "task": {
+      "$ref": "#/$defs/TaskResult"
+    }
+  },
+  "required": [
+    "kind",
+    "outcome",
+    "plan_digest",
+    "plan_id",
+    "schema_version"
+  ],
+  "title": "serve-applied",
+  "type": "object",
+  "x-abacus-schema": 1
+}

@@ -1,0 +1,164 @@
+{
+  "$defs": {
+    "Ambiguity": {
+      "properties": {
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Placement"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "item": {
+          "$ref": "#/$defs/WorkspaceItem"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "candidates",
+        "item"
+      ],
+      "type": "object"
+    },
+    "OpenPlan": {
+      "properties": {
+        "copy": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "rungs": {
+          "items": {
+            "$ref": "#/$defs/OpenRung"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "rungs"
+      ],
+      "type": "object"
+    },
+    "OpenRung": {
+      "properties": {
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "interactive": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "argv",
+        "interactive",
+        "name"
+      ],
+      "type": "object"
+    },
+    "Placement": {
+      "properties": {
+        "block": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "item": {
+          "$ref": "#/$defs/WorkspaceItem"
+        },
+        "label": {
+          "type": "string"
+        },
+        "match": {
+          "type": "string"
+        },
+        "open": {
+          "$ref": "#/$defs/OpenPlan"
+        },
+        "session": {
+          "type": "string"
+        },
+        "tab": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "item"
+      ],
+      "type": "object"
+    },
+    "WorkspaceItem": {
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: status (domains.workspace), serve workspace",
+  "properties": {
+    "ambiguous": {
+      "items": {
+        "$ref": "#/$defs/Ambiguity"
+      },
+      "type": "array"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "placements": {
+      "items": {
+        "$ref": "#/$defs/Placement"
+      },
+      "type": "array"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "stale": {
+      "type": "boolean"
+    },
+    "state": {
+      "type": "string"
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version"
+  ],
+  "title": "workspace",
+  "type": "object",
+  "x-abacus-schema": 1
+}

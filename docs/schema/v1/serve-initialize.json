@@ -1,0 +1,109 @@
+{
+  "$defs": {
+    "ServeCapabilities": {
+      "properties": {
+        "limits": {
+          "$ref": "#/$defs/ServeLimits"
+        },
+        "methods": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "notifications": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "topics": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "limits",
+        "methods",
+        "notifications",
+        "topics"
+      ],
+      "type": "object"
+    },
+    "ServeLimits": {
+      "properties": {
+        "default_deadline_ms": {
+          "type": "integer"
+        },
+        "max_deadline_ms": {
+          "type": "integer"
+        },
+        "max_depth": {
+          "type": "integer"
+        },
+        "max_in_flight": {
+          "type": "integer"
+        },
+        "max_plans": {
+          "type": "integer"
+        },
+        "max_request_bytes": {
+          "type": "integer"
+        },
+        "max_response_bytes": {
+          "type": "integer"
+        },
+        "plan_ttl_seconds": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "default_deadline_ms",
+        "max_deadline_ms",
+        "max_depth",
+        "max_in_flight",
+        "max_plans",
+        "max_request_bytes",
+        "max_response_bytes",
+        "plan_ttl_seconds"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: serve initialize",
+  "properties": {
+    "abacus_version": {
+      "type": "string"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/ServeCapabilities"
+    },
+    "protocol_version": {
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "abacus_version",
+    "capabilities",
+    "protocol_version",
+    "schema_version"
+  ],
+  "title": "serve-initialize",
+  "type": "object",
+  "x-abacus-schema": 1
+}
