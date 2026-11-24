@@ -173,3 +173,46 @@ func TestEditsGoThroughTheGateAndAreAudited(t *testing.T) {
 		t.Fatalf("single use: %v", err)
 	}
 }
+
+func TestCommentAndAssigneeRefuseHiddenAndBidiCharacters(t *testing.T) {
+	for _, r := range []rune{0x200B, 0x200E, 0x200F, 0x202A, 0x202E, 0x2066, 0x2069, 0x2028, 0x2029, 0xFEFF, 0x00AD} {
+		s := "a" + string(r) + "b"
+		if core.CommentTextOK(s) {
+			t.Errorf("comment with U+%04X must be refused", r)
+		}
+		if core.AssigneeOK(s) {
+			t.Errorf("assignee with U+%04X must be refused", r)
+		}
+		if _, err := core.PlanTaskChange(&fakeWriter{}, core.TaskChange{Op: core.TaskAddComment, ID: "t-1", Text: s}); err == nil {
+			t.Errorf("planning a comment with U+%04X must fail", r)
+		}
+	}
+	if !core.CommentTextOK("héllo ☃ 日本語\nline\ttab") {
+		t.Error("ordinary unicode text, newlines and tabs stay allowed")
+	}
+}
+
+func TestFreshDepRunsTheRecheckAndRefusesWithoutOne(t *testing.T) {
+	ch := core.TaskChange{Op: core.TaskDepAdd, ID: "t-1", Blocker: "t-2"}
+	r := &readerFake{}
+	var called int
+	ok := func(context.Context, core.TaskChange) error { called++; return nil }
+	if err := core.FreshDep(context.Background(), r, ch, ok); err != nil || called != 1 {
+		t.Fatalf("%v %d", err, called)
+	}
+	if err := core.FreshDep(context.Background(), r, ch, nil); !errors.Is(err, core.ErrCannotVerify) {
+		t.Fatalf("no recheck must refuse: %v", err)
+	}
+	no := func(context.Context, core.TaskChange) error { return core.Stale("cycle") }
+	if err := core.FreshDep(context.Background(), r, ch, no); !errors.Is(err, core.ErrChanged) {
+		t.Fatalf("%v", err)
+	}
+	// a stale task stops before the recheck runs; non-dep ops never call it
+	called = 0
+	if err := core.FreshDep(context.Background(), &readerFake{t: core.Task{Labels: []string{"x"}}}, core.TaskChange{Op: core.TaskLabelAdd, ID: "t-1", Label: "x"}, ok); !errors.Is(err, core.ErrChanged) || called != 0 {
+		t.Fatalf("%v %d", err, called)
+	}
+	if err := core.FreshDep(context.Background(), r, core.TaskChange{Op: core.TaskAddComment, ID: "t-1", Text: "x"}, nil); err != nil {
+		t.Fatalf("%v", err)
+	}
+}

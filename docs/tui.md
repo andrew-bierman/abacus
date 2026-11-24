@@ -231,8 +231,13 @@ differ by a refresh.)
   a`). Without the whole tracker (only recent changes loaded) blockers are not offered. The tracker
   guards what it can itself: an assignment carries `--if-assignee` (the holder you saw), so another
   actor's change makes it refuse (exit 13, nothing written); labels, priority and blockers have no
-  guard in the tracker, so abacus's two reads are their protection, and the tracker still refuses a
-  cycle or a missing task on its own. A comment is not idempotent: if the write times out its result
+  guard in the tracker, so abacus's two reads are their protection; for a blocker the whole tracker is
+  read again right before the write and the same checks (cycle, existing edge) run on that fresh read, so
+  a cycle made by someone else in between is refused by abacus, the tracker's own refusal being only the
+  backstop. A blocking link whose target is gone can still be removed. Comments and assignee names refuse
+  hidden characters (zero-width, bidi controls, line separators). A label outside the plain shape
+  (letters, digits and `: . _ / -`, up to 64) that exists on a task cannot be removed with `u`; use the
+  tracker's own tools for it. A comment is not idempotent: if the write times out its result
   is unknown ("may or may not have been added: check the task's comments before retrying"), never
   "not applied". The prompt (`:`) never writes; it does not take these words.
 - **Insights view.** `n` works from any view; `e`, `x`, the edit keys above and the workspace key act

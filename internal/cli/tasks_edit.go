@@ -182,7 +182,12 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 		apply: func(au core.Audit) (any, string, error) {
 			// the task is read again after the confirm: a change by someone else in between is refused, and
 			// nothing is written or audited (an aborted plan never reaches the gate)
-			if err := core.Fresh(ctx, r, plan.Change); err != nil {
+			if err := core.FreshDep(ctx, r, plan.Change, taskview.RecheckDep(pr.Source, func() time.Time {
+				if d.Now != nil {
+					return d.Now()
+				}
+				return time.Now()
+			})); err != nil {
 				return core.TaskResult{}, "", err
 			}
 			res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())

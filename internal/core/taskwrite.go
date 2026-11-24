@@ -102,15 +102,20 @@ const MaxCommentBytes = 8000
 // CommentTextOK is whether text may reach an argv as a comment: non-blank, valid, at most
 // MaxCommentBytes, and no control character but a newline or tab.
 func CommentTextOK(s string) bool {
-	return strings.TrimSpace(s) != "" && len(s) <= MaxCommentBytes && utf8.ValidString(s) && checkText("comment", s, true) == nil
+	return strings.TrimSpace(s) != "" && len(s) <= MaxCommentBytes && utf8.ValidString(s) && checkText("comment", s, true) == nil &&
+		!strings.ContainsFunc(s, hiddenRune)
 }
 
 // AssigneeOK is whether a name may reach an argv as an assignee or an assignee guard: "" (nobody) or
 // printable text of at most 128 bytes with no edge space.
 func AssigneeOK(s string) bool {
 	return len(s) <= 128 && utf8.ValidString(s) && strings.TrimSpace(s) == s &&
-		!strings.ContainsFunc(s, func(r rune) bool { return !strconv.IsPrint(r) })
+		!strings.ContainsFunc(s, func(r rune) bool { return !strconv.IsPrint(r) || hiddenRune(r) })
 }
+
+// hiddenRune is a rune that draws nothing or reorders what is around it: format characters (zero-width,
+// bidi controls, BOM, soft hyphen) and the line and paragraph separators.
+func hiddenRune(r rune) bool { return unicode.Is(unicode.Cf, r) || r == 0x2028 || r == 0x2029 }
 
 // TaskResult is the issue a write returned.
 type TaskResult struct {
@@ -594,6 +599,30 @@ func CheckFresh(ch TaskChange, cur Task) error {
 		}
 	}
 	return nil
+}
+
+// DepRecheck re-runs a dependency edit's checks (existing edge, cycle, unknown task) against a fresh read
+// of the whole tracker; it returns an error that is ErrChanged for a change that no longer fits, or
+// ErrCannotVerify when the tracker cannot be read.
+type DepRecheck func(ctx context.Context, ch TaskChange) error
+
+// Stale is the error for a change that no longer fits the tracker (it is ErrChanged).
+func Stale(msg string) error { return staleError{msg} }
+
+// FreshDep is Fresh plus, for a dependency edit, the whole-tracker recheck: a cycle made between the
+// plan and the write is refused here, the tracker's own refusal being only the backstop. A dependency edit
+// without a recheck is refused.
+func FreshDep(ctx context.Context, r TaskReader, ch TaskChange, recheck DepRecheck) error {
+	if err := Fresh(ctx, r, ch); err != nil {
+		return err
+	}
+	if ch.Op != TaskDepAdd && ch.Op != TaskDepRemove {
+		return nil
+	}
+	if recheck == nil {
+		return ErrCannotVerify
+	}
+	return recheck(ctx, ch)
 }
 
 // Fresh re-reads the task and runs CheckFresh: the check front ends make after the confirm and right

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -14,7 +15,7 @@ import (
 // editAt is the Tasks tab over fixtures with a writer and a reader, the audit recorded.
 func editAt(w, h int) (*tasksSection, taskProv, *memAudit) {
 	p, au := tasksFake(), &memAudit{}
-	s := newTasksSection(core.Providers{Writer: p, Reader: p}, &config{audit: au})
+	s := newTasksSection(core.Providers{Writer: p, Reader: p, Source: p}, &config{audit: au})
 	s.SetTheme(asciiTheme())
 	s.Update(tea.WindowSizeMsg{Width: w, Height: h})
 	s.Update(tasksMsg{report: demo.TasksReport()})
@@ -444,3 +445,43 @@ func TestPromptWithEditWordsNeverWritesOrOpensAForm(t *testing.T) {
 		t.Fatalf("the prompt wrote (or the writer is not the recorder): %v", ok)
 	}
 }
+
+// a cycle made by someone else between the confirm screen and y is refused at apply
+func TestEditDepCycleCreatedAfterTheConfirmIsRefusedAtApply(t *testing.T) {
+	s, p, au := editAt(100, 32)
+	onTask(t, s, "ac-12")
+	send(s, "b")
+	typeIn(s, "ac-30")
+	send(s, "enter")
+	s.Update(taskVerifiedMsg{id: "ac-12", task: baseTask("ac-12")})
+	if s.mode != modeConfirm {
+		t.Fatalf("%v %q", s.mode, s.notice)
+	}
+	snap := fixtureSnapshot() // ac-30 now waits for ac-12: ac-12 waiting for ac-30 closes a cycle
+	for i := range snap.Issues {
+		if snap.Issues[i].ID == "ac-30" {
+			snap.Issues[i].Deps = append(snap.Issues[i].Deps, core.TaskDep{DependsOn: "ac-12", Type: "blocks"})
+		}
+	}
+	s.src = freshSnap{snap}
+	yes(s)
+	if ran(p) != "" || au.n != 0 || !strings.Contains(s.notice, "cycle") {
+		t.Errorf("ran %q audit %d notice %q", ran(p), au.n, s.notice)
+	}
+	// no source: a dependency edit is never applied unchecked
+	s2, p2, _ := editAt(100, 32)
+	onTask(t, s2, "ac-12")
+	send(s2, "b")
+	typeIn(s2, "ac-30")
+	send(s2, "enter")
+	s2.Update(taskVerifiedMsg{id: "ac-12", task: baseTask("ac-12")})
+	s2.src = nil
+	yes(s2)
+	if ran(p2) != "" || !strings.Contains(s2.notice, "could not verify") {
+		t.Errorf("ran %q notice %q", ran(p2), s2.notice)
+	}
+}
+
+type freshSnap struct{ snap core.TaskSnapshot }
+
+func (s freshSnap) Snapshot(context.Context) (core.TaskSnapshot, error) { return s.snap, nil }

@@ -18,8 +18,9 @@ type editMod struct {
 	reads   int
 	readErr error
 	// after the Nth read the task changes to again (a change by someone else between confirm and write)
-	changeAfter int
-	again       core.Task
+	snaps, cycleAfter int
+	changeAfter       int
+	again             core.Task
 }
 
 func (m *editMod) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
@@ -55,6 +56,14 @@ func (m *editMod) ReadTask(_ context.Context, id string) (core.Task, error) {
 }
 
 func (m *editMod) Snapshot(context.Context) (core.TaskSnapshot, error) {
+	m.snaps++
+	if m.cycleAfter > 0 && m.snaps > m.cycleAfter { // someone made t-2 wait for t-3 in between
+		return core.TaskSnapshot{Issues: []core.TaskIssue{
+			{ID: "t-1", Title: "one", Status: "open", Deps: []core.TaskDep{{DependsOn: "t-2", Type: "blocks"}}},
+			{ID: "t-2", Title: "two", Status: "open", Deps: []core.TaskDep{{DependsOn: "t-3", Type: "blocks"}}},
+			{ID: "t-3", Title: "three", Status: "open"},
+		}}, nil
+	}
 	return core.TaskSnapshot{Issues: []core.TaskIssue{
 		{ID: "t-1", Title: "one", Status: "open", Deps: []core.TaskDep{{DependsOn: "t-2", Type: "blocks"}}},
 		{ID: "t-2", Title: "two", Status: "open"},
@@ -274,5 +283,43 @@ func TestEditAuditFailureBlocksTheWrite(t *testing.T) {
 	code, _, errOut, _ := runAudit(t, "", []core.Module{m}, au, "tasks", "label", "add", "t-1", "bug", "--yes")
 	if code != 1 || len(m.ran) != 0 || !strings.Contains(errOut, "disk full") {
 		t.Fatalf("code=%d ran=%v err=%q", code, m.ran, errOut)
+	}
+}
+
+// a cycle made between the plan and the write is refused client-side: nothing runs, nothing is audited
+func TestEditDepCycleCreatedAfterThePlanIsRefusedAtApply(t *testing.T) {
+	m := newEditMod()
+	m.cycleAfter = 1
+	code, _, errOut, au := runIn(t, "", []core.Module{m}, "tasks", "dep", "add", "t-3", "--blocked-by", "t-2", "--yes")
+	if code != 1 || len(m.ran) != 0 || au.n != 0 || !strings.Contains(errOut, "cycle") || !strings.Contains(errOut, "nothing was written") {
+		t.Fatalf("code=%d ran=%v audit=%d err=%q", code, m.ran, au.n, errOut)
+	}
+}
+
+// --json prints exactly one JSON document on stdout, whatever the outcome; failures print none
+func TestEditJSONIsOneDocumentAndFailuresPrintNoneOnStdout(t *testing.T) {
+	one := func(out string) {
+		t.Helper()
+		dec := json.NewDecoder(strings.NewReader(out))
+		var v any
+		if err := dec.Decode(&v); err != nil || dec.More() {
+			t.Fatalf("want exactly one JSON document, got %q (%v)", out, err)
+		}
+	}
+	for name, args := range map[string][]string{
+		"label": {"label", "add", "t-1", "bug"}, "assign": {"assign", "t-1", "ada"}, "priority": {"priority", "t-1", "0"},
+		"dep": {"dep", "add", "t-3", "--blocked-by", "t-2"}, "comment": {"comment", "t-1", "hi"},
+	} {
+		for _, mode := range []string{"--dry-run", "--yes"} {
+			_, out, _, _ := runIn(t, "", []core.Module{newEditMod()}, append(append([]string{"tasks"}, args...), mode, "--json")...)
+			one(out)
+			_ = name
+		}
+	}
+	m := newEditMod()
+	m.fail = errors.New("bd: boom")
+	code, out, _, _ := runIn(t, "", []core.Module{m}, "tasks", "comment", "t-1", "hi", "--yes", "--json")
+	if code != 1 || strings.TrimSpace(out) != "" {
+		t.Fatalf("a failed write prints nothing on stdout: %d %q", code, out)
 	}
 }

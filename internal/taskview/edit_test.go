@@ -1,6 +1,8 @@
 package taskview
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -116,3 +118,48 @@ func ringItoa(i int) string {
 	}
 	return s
 }
+
+// a dangling blocking edge (its target is gone) can be removed; adding one to a missing task cannot
+func TestPlanDepRemovesADanglingBlockingEdge(t *testing.T) {
+	v := edView(false, edIssue("a", "open", edDep("gone", "blocks")), edIssue("b", "open", edDep("gone2", "parent-child")))
+	ch, err := v.PlanDep(false, "a", "gone")
+	if err != nil || ch.Op != core.TaskDepRemove || ch.Blocker != "gone" || ch.BlockerTitle != "" {
+		t.Fatalf("%+v %v", ch, err)
+	}
+	if _, err := v.PlanDep(false, "b", "gone2"); err == nil || !strings.Contains(err.Error(), "not as a blocker") {
+		t.Errorf("a dangling parent link is not removed here: %v", err)
+	}
+	if _, err := v.PlanDep(false, "a", "never"); err == nil || !strings.Contains(err.Error(), "does not wait") {
+		t.Errorf("no such edge: %v", err)
+	}
+	if _, err := v.PlanDep(true, "a", "gone"); err == nil || !strings.Contains(err.Error(), "not in this tracker") {
+		t.Errorf("adding to a missing task: %v", err)
+	}
+}
+
+// at apply the same checks run on a fresh snapshot: a cycle made in between is refused
+func TestRecheckDepRefusesWhatTheFreshSnapshotNoLongerAllows(t *testing.T) {
+	snap := core.TaskSnapshot{Issues: []core.TaskIssue{edIssue("a", "open"), edIssue("b", "open"), edIssue("c", "open", edDep("a", "blocks"))}}
+	re := RecheckDep(snapSrc{snap: snap}, time.Now)
+	add := core.TaskChange{Op: core.TaskDepAdd, ID: "a", Blocker: "c"} // c waits for a: a waits for c is a cycle
+	if err := re(context.Background(), add); !errors.Is(err, core.ErrChanged) || !strings.Contains(err.Error(), "cycle") {
+		t.Fatalf("%v", err)
+	}
+	if err := re(context.Background(), core.TaskChange{Op: core.TaskDepAdd, ID: "b", Blocker: "c"}); err != nil {
+		t.Fatalf("%v", err)
+	}
+	if err := re(context.Background(), core.TaskChange{Op: core.TaskDepRemove, ID: "b", Blocker: "a"}); !errors.Is(err, core.ErrChanged) {
+		t.Fatalf("an edge that is gone: %v", err)
+	}
+	bad := RecheckDep(snapSrc{err: errors.New("boom")}, time.Now)
+	if err := bad(context.Background(), add); !errors.Is(err, core.ErrCannotVerify) {
+		t.Fatalf("an unreadable tracker refuses: %v", err)
+	}
+}
+
+type snapSrc struct {
+	snap core.TaskSnapshot
+	err  error
+}
+
+func (s snapSrc) Snapshot(context.Context) (core.TaskSnapshot, error) { return s.snap, s.err }

@@ -1,9 +1,11 @@
 package taskview
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -24,12 +26,15 @@ func (v *View) PlanDep(add bool, blocked, blocker string) (core.TaskChange, erro
 	if !ok {
 		return core.TaskChange{}, fmt.Errorf("%s is not in this tracker", blocked)
 	}
-	ki, ok := v.byID[blocker]
-	if !ok {
+	held := v.snap.Issues[bi]
+	var title string
+	ki, known := v.byID[blocker]
+	if known {
+		title = v.snap.Issues[ki].Title
+	} else if add { // an edge to a task that is gone can still be removed, never added
 		return core.TaskChange{}, fmt.Errorf("%s is not in this tracker", blocker)
 	}
-	held, by := v.snap.Issues[bi], v.snap.Issues[ki]
-	ch := core.TaskChange{Op: core.TaskDepAdd, ID: blocked, Blocker: blocker, BlockerTitle: by.Title, Expect: held.Status,
+	ch := core.TaskChange{Op: core.TaskDepAdd, ID: blocked, Blocker: blocker, BlockerTitle: title, Expect: held.Status,
 		Before: core.Task{ID: held.ID, Title: held.Title, Status: held.Status, Priority: held.Priority, Type: held.Type, Assignee: held.Assignee}}
 	var link string
 	for _, d := range held.Deps {
@@ -54,6 +59,24 @@ func (v *View) PlanDep(add bool, blocked, blocker string) (core.TaskChange, erro
 		return core.TaskChange{}, fmt.Errorf("that would make a cycle: %s", strings.Join(append(path, blocker), " waits for "))
 	}
 	return ch, nil
+}
+
+// RecheckDep is the DepRecheck over a tracker source: the plan's own checks (PlanDep) run again on a fresh
+// snapshot right before the write.
+func RecheckDep(src core.TaskSource, now func() time.Time) core.DepRecheck {
+	return func(ctx context.Context, ch core.TaskChange) error {
+		if src == nil {
+			return core.ErrCannotVerify
+		}
+		snap, err := src.Snapshot(ctx)
+		if err != nil {
+			return fmt.Errorf("%w (%s)", core.ErrCannotVerify, core.Sanitize(err.Error()))
+		}
+		if _, err := Build(snap, now()).PlanDep(ch.Op == core.TaskDepAdd, ch.ID, ch.Blocker); err != nil {
+			return core.Stale(err.Error())
+		}
+		return nil
+	}
 }
 
 // waitPath is a chain of waits-for (and parent-child) links from "from" down to "to", or nil. The

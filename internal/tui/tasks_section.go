@@ -625,6 +625,7 @@ func (s *tasksSection) toConfirm(ch core.TaskChange) {
 
 func (s *tasksSection) apply(p core.WritePlan) tea.Cmd {
 	op := s.op
+	recheck := taskview.RecheckDep(s.src, nowFn)
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
 		defer cancel()
@@ -642,7 +643,7 @@ func (s *tasksSection) apply(p core.WritePlan) tea.Cmd {
 				return taskAppliedMsg{err: core.ErrChanged, op: op}
 			}
 		}
-		if err := core.Fresh(ctx, s.reader, p.Change); err != nil { // the edits without a tracker-side guard: read once more right before the write
+		if err := core.FreshDep(ctx, s.reader, p.Change, recheck); err != nil { // the edits without a tracker-side guard: read once more right before the write
 			return taskAppliedMsg{err: err, op: op, ch: p.Change}
 		}
 		res, err := s.applier.Apply(ctx, p)
