@@ -27,8 +27,12 @@ func TestEveryTabRendersWithinEverySize(t *testing.T) {
 		// every render builds its own model, so nothing is shared between them.
 		t.Run(sc.name, func(t *testing.T) {
 			t.Parallel()
-			for _, w := range gridWidths {
-				for _, h := range gridHeights {
+			ws, hs := gridWidths, gridHeights
+			if sc.lite {
+				ws, hs = []int{1, 3, 39, 40, 41, 59, 60, 61, 99, 100, 101, 139, 140, 200}, []int{1, 3, 11, 12, 13, 23, 24, 40, 100}
+			}
+			for _, w := range ws {
+				for _, h := range hs {
 					for _, e := range invariantErrs(sc, render(t, sc, th, w, h), w, h) {
 						t.Errorf("%s %dx%d: %s", sc.name, w, h, e)
 					}

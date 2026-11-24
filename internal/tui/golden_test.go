@@ -59,6 +59,9 @@ type scenario struct {
 	// notGrid keeps a small variation of another scenario out of the size grid (every size from 1x1 to
 	// 300x100): the golden still covers it, the grid test (the slowest in the package) does not repeat it.
 	notGrid bool
+	// lite uses a smaller size grid (still one cell below, at and above each breakpoint): the scenario
+	// builds a model from disk, which costs a few hundred milliseconds a render.
+	lite bool
 }
 
 // typed is a string as the key presses that type it.

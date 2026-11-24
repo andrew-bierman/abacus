@@ -507,10 +507,10 @@ func liveScenarios() []scenario {
 		{name: "tasks-live-changed", build: changed, keys: []string{"2", "T"}, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-history", build: withHistory(false), keys: nil, tab: "Tasks", extra: framedSizes},
 		{name: "tasks-history-hostile", build: withHistory(true), keys: nil, tab: "Tasks", extra: framedSizes},
-		{name: "tasks-filter-save", build: savedModel, keys: append(append([]string{"2", "/"}, typed("label:ui")...), "ctrl+s", "u", "i", " "), tab: "Tasks", extra: framedSizes},
-		{name: "tasks-filter-pick", build: savedModel, keys: []string{"2", "ctrl+o"}, tab: "Tasks", extra: framedSizes},
-		{name: "tasks-switch-pick", build: switchModel, keys: []string{"2", "P"}, tab: "Tasks", extra: framedSizes},
-		{name: "tasks-switch-confirm", build: switchModel, keys: []string{"2", "P", "enter"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-filter-save", lite: true, build: savedModel, keys: append(append([]string{"2", "/"}, typed("label:ui")...), "ctrl+s", "u", "i", " "), tab: "Tasks", extra: framedSizes},
+		{name: "tasks-filter-pick", lite: true, build: savedModel, keys: []string{"2", "ctrl+o"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-switch-pick", lite: true, build: switchModel, keys: []string{"2", "P"}, tab: "Tasks", extra: framedSizes},
+		{name: "tasks-switch-confirm", lite: true, build: switchModel, keys: []string{"2", "P", "enter"}, tab: "Tasks", extra: framedSizes},
 	}
 }
 
