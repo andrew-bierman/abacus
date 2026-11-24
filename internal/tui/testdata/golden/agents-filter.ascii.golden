@@ -96,7 +96,7 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 │                                                                      │ │            orchard report                   │
 │                                                                      │ │ where      orchard@feat/pear-counter        │
 │                                                                      │ │ directory  /work/orchard                    │
-│                                                                      │ │   ↕ +17 more                                │
+│                                                                      │ │   ↕ +18 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
 === 120x30 ===
@@ -117,6 +117,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                                      │ │ last seen  4s ago  152300 tokens            │
 │                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                 │
 │                                                                      │ │ seen by    monitor                          │
+│                                                                      │ │ terminal lookup skipped: another agent sha… │
 │                                                                      │ │ tmux pane  work:1.0                         │
 │                                                                      │ │ go there   tmux switch-client -t %3         │
 │                                                                      │ │                                             │
@@ -126,8 +127,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                                      │ │                                             │
 │                                                                      │ │ Ports                                       │
 │                                                                      │ │   5173  node dev-server.js                  │
-│                                                                      │ │                                             │
-│                                                                      │ │   ↕ +3 more                                 │
+│                                                                      │ │   ↕ +4 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
 === 60x24 ===
@@ -173,6 +173,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                          │ │ last seen  4s ago  152300 tokens    │
 │                                                          │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%         │
 │                                                          │ │ seen by    monitor                  │
+│                                                          │ │ terminal lookup skipped: another a… │
 │                                                          │ │ tmux pane  work:1.0                 │
 │                                                          │ │ go there   tmux switch-client -t %3 │
 │                                                          │ │                                     │
@@ -184,7 +185,6 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                          │ │   5173  node dev-server.js          │
 │                                                          │ │                                     │
 │                                                          │ │ Child processes                     │
-│                                                          │ │   go build ./...  117 MB            │
-│                                                          │ │   node dev-server.js  78 MB         │
+│                                                          │ │   ↕ +2 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness…

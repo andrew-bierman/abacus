@@ -8,7 +8,7 @@ sort:attention  ~ guessed from files
 │            orchard report            │
 │ where      orchard@feat/pear-counter │
 │ directory  /work/orchard             │
-│   ↕ +17 more                         │
+│   ↕ +18 more                         │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
@@ -29,6 +29,7 @@ sort:attention  ~ guessed from files
 │ last seen  4s ago  152300 tokens     │
 │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%          │
 │ seen by    monitor                   │
+│ terminal lookup skipped: another ag… │
 │ tmux pane  work:1.0                  │
 │ go there   tmux switch-client -t %3  │
 │                                      │
@@ -38,8 +39,7 @@ sort:attention  ~ guessed from files
 │                                      │
 │ Ports                                │
 │   5173  node dev-server.js           │
-│                                      │
-│   ↕ +3 more                          │
+│   ↕ +4 more                          │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
@@ -52,7 +52,7 @@ sort:attention  ~ guessed from files
 │ where      orchard@feat/pear-counter                                         │
 │ directory  /work/orchard                                                     │
 │ agent      claude-demo-1  pid 41022                                          │
-│   ↕ +16 more                                                                 │
+│   ↕ +17 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
 === 80x30 ===
@@ -72,6 +72,7 @@ sort:attention  ~ guessed from files
 │ last seen  4s ago  152300 tokens                                             │
 │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                                                  │
 │ seen by    monitor                                                           │
+│ terminal lookup skipped: another agent shares this name                      │
 │ tmux pane  work:1.0                                                          │
 │ go there   tmux switch-client -t %3                                          │
 │                                                                              │
@@ -82,8 +83,7 @@ sort:attention  ~ guessed from files
 │ Ports                                                                        │
 │   5173  node dev-server.js                                                   │
 │                                                                              │
-│ Child processes                                                              │
-│   ↕ +2 more                                                                  │
+│   ↕ +3 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
 === 120x12 ===
@@ -96,7 +96,7 @@ sort:attention  ~ guessed from files
 │   ○ idle~     Claude Code  cellar@fix/…  Rename the …   7m  ···· ?   │ │            orchard report                   │
 │   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ where      orchard@feat/pear-counter        │
 │   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │ directory  /work/orchard                    │
-│                                                                      │ │   ↕ +17 more                                │
+│                                                                      │ │   ↕ +18 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
 === 120x30 ===
@@ -117,6 +117,7 @@ sort:attention  ~ guessed from files
 │                                                                      │ │ last seen  4s ago  152300 tokens            │
 │                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                 │
 │                                                                      │ │ seen by    monitor                          │
+│                                                                      │ │ terminal lookup skipped: another agent sha… │
 │                                                                      │ │ tmux pane  work:1.0                         │
 │                                                                      │ │ go there   tmux switch-client -t %3         │
 │                                                                      │ │                                             │
@@ -126,8 +127,7 @@ sort:attention  ~ guessed from files
 │                                                                      │ │                                             │
 │                                                                      │ │ Ports                                       │
 │                                                                      │ │   5173  node dev-server.js                  │
-│                                                                      │ │                                             │
-│                                                                      │ │   ↕ +3 more                                 │
+│                                                                      │ │   ↕ +4 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
 === 60x24 ===
@@ -144,6 +144,7 @@ sort:attention  ~ guessed from files
 │ last seen  4s ago  152300 tokens                         │
 │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                              │
 │ seen by    monitor                                       │
+│ terminal lookup skipped: another agent shares this name  │
 │ tmux pane  work:1.0                                      │
 │ go there   tmux switch-client -t %3                      │
 │                                                          │
@@ -151,8 +152,7 @@ sort:attention  ~ guessed from files
 │  ├─ Survey the orchard  done  12400 tok                  │
 │  └─ Check the harvest tests  working  8200 tok           │
 │                                                          │
-│ Ports                                                    │
-│   ↕ +5 more                                              │
+│   ↕ +6 more                                              │
 ╰──────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move …
 === 100x32 ===
@@ -173,6 +173,7 @@ sort:attention  ~ guessed from files
 │                                                          │ │ last seen  4s ago  152300 tokens    │
 │                                                          │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%         │
 │                                                          │ │ seen by    monitor                  │
+│                                                          │ │ terminal lookup skipped: another a… │
 │                                                          │ │ tmux pane  work:1.0                 │
 │                                                          │ │ go there   tmux switch-client -t %3 │
 │                                                          │ │                                     │
@@ -184,7 +185,6 @@ sort:attention  ~ guessed from files
 │                                                          │ │   5173  node dev-server.js          │
 │                                                          │ │                                     │
 │                                                          │ │ Child processes                     │
-│                                                          │ │   go build ./...  117 MB            │
-│                                                          │ │   node dev-server.js  78 MB         │
+│                                                          │ │   ↕ +2 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort …
