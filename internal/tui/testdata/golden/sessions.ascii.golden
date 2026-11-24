@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Sessions]  5/6
+╭─ ▸ Sessions · 2 sessions, 1 active… ─╮
+│ quota  claude  5h 42%  30d 7%        │
+│                                      │
+│   state       session       ctx      │
+│ ▸ ◐ thinking  Invoice list  ░░░░░ 5% │
+│   ○ waiting   tidy the sc…  ░░░░░ 0% │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Sessions]  5/6
+────────────────────────────────────────
+╭─ ▸ Sessions · 2 sessions, 1 active… ─╮
+│ quota  claude  5h 42%  30d 7%        │
+│                                      │
+│   state       session       ctx      │
+│ ▸ ◐ thinking  Invoice list  ░░░░░ 5% │
+│   ○ waiting   tidy the sc…  ░░░░░ 0% │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+╭─ ▸ Sessions · 2 sessions, 1 active, 1 orphaned ports, 1 unreadable ──────────╮
+│ quota  claude  5h 42%  30d 7%                                                │
+│                                                                              │
+│   state       harness  session           tokens  ctx       branch      ports │
+│ ▸ ◐ thinking  claude   Invoice list         130  ░░░░░ 5%  main +2 ~3      1 │
+│   ○ waiting   codex    tidy the scripts     650  ░░░░░ 0%  -               - │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 2 sessions, 1 active, 1 orphaned ports, 1 unreadable ──────────╮
+│ quota  claude  5h 42%  30d 7%                                                │
+│                                                                              │
+│   state       harness  session           tokens  ctx       branch      ports │
+│ ▸ ◐ thinking  claude   Invoice list         130  ░░░░░ 5%  main +2 ~3      1 │
+│   ○ waiting   codex    tidy the scripts     650  ░░░░░ 0%  -               - │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor                                     fleet · 14 tasks · 3 ready
+╭─ ▸ Sessions · 2 sessions, 1 active, 1 orphaned ports, 1 unreadable ──╮ ╭─ Session ───────────────────────────────────╮
+│ quota  claude  5h 42%  30d 7%                                        │ │ Invoice list (thinking)                     │
+│                                                                      │ │ harness     claude                          │
+│   state      harne…  session       toke…  ctx       branch     ports │ │ pid         1000                            │
+│ ▸ ◐ thinki…  claude  Invoice list    130  ░░░░░ 5%  main +2 …      1 │ │ model       claude-sonnet-5                 │
+│   ○ waiting  codex   tidy the sc…    650  ░░░░░ 0%  -              - │ │ cwd         /home/dev/shop                  │
+│                                                                      │ │ git         main  +2 added  ~3 modified     │
+│                                                                      │ │ running     2h14m                           │
+│                                                                      │ │   ↕ +27 more                                │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor                                     fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 2 sessions, 1 active, 1 orphaned ports, 1 unreadable ──╮ ╭─ Session ───────────────────────────────────╮
+│ quota  claude  5h 42%  30d 7%                                        │ │ Invoice list (thinking)                     │
+│                                                                      │ │ harness     claude                          │
+│   state      harne…  session       toke…  ctx       branch     ports │ │ pid         1000                            │
+│ ▸ ◐ thinki…  claude  Invoice list    130  ░░░░░ 5%  main +2 …      1 │ │ model       claude-sonnet-5                 │
+│   ○ waiting  codex   tidy the sc…    650  ░░░░░ 0%  -              - │ │ cwd         /home/dev/shop                  │
+│                                                                      │ │ git         main  +2 added  ~3 modified     │
+│                                                                      │ │ running     2h14m                           │
+│                                                                      │ │ last write  20s ago                         │
+│                                                                      │ │                                             │
+│                                                                      │ │ Context                                     │
+│                                                                      │ │ █░░░░░░░░░░░░░░░  5%  5k / 100k             │
+│                                                                      │ │                                             │
+│                                                                      │ │ Tokens                                      │
+│                                                                      │ │ total 130   input 100   output 20           │
+│                                                                      │ │ cache read 300   cache create 10            │
+│                                                                      │ │                                             │
+│                                                                      │ │ Per turn                                    │
+│                                                                      │ │ ▁▃▂▆▄█  6 turns                             │
+│                                                                      │ │                                             │
+│                                                                      │ │ Quota claude                                │
+│                                                                      │ │ 5h   ████░░░░░░ 42%  resets 2h14m           │
+│                                                                      │ │ 30d  █░░░░░░░░░ 7%  resets 4d0h             │
+│                                                                      │ │                                             │
+│                                                                      │ │ Children                                    │
+│                                                                      │ │   ↕ +10 more                                │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 2 sessions, 1 active, 1 orphaned ports, … ─╮
+│ quota  claude  5h 42%  30d 7%                            │
+│                                                          │
+│   state       harness  session          tokens  ctx      │
+│ ▸ ◐ thinking  claude   Invoice list        130  ░░░░░ 5% │
+│   ○ waiting   codex    tidy the scrip…     650  ░░░░░ 0% │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor                 fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 2 sessions, 1 active, 1 orphaned ports, … ─╮ ╭─ Session ───────────────────────────╮
+│ quota  claude  5h 42%  30d 7%                            │ │ Invoice list (thinking)             │
+│                                                          │ │ harness     claude                  │
+│   state       harness  session          tokens  ctx      │ │ pid         1000                    │
+│ ▸ ◐ thinking  claude   Invoice list        130  ░░░░░ 5% │ │ model       claude-sonnet-5         │
+│   ○ waiting   codex    tidy the scrip…     650  ░░░░░ 0% │ │ cwd         /home/dev/shop          │
+│                                                          │ │ git         main  +2 added  ~3 mod… │
+│                                                          │ │ running     2h14m                   │
+│                                                          │ │ last write  20s ago                 │
+│                                                          │ │                                     │
+│                                                          │ │ Context                             │
+│                                                          │ │ █░░░░░░░░░░░░  5%  5k / 100k        │
+│                                                          │ │                                     │
+│                                                          │ │ Tokens                              │
+│                                                          │ │ total 130   input 100   output 20   │
+│                                                          │ │ cache read 300   cache create 10    │
+│                                                          │ │                                     │
+│                                                          │ │ Per turn                            │
+│                                                          │ │ ▁▃▂▆▄█  6 turns                     │
+│                                                          │ │                                     │
+│                                                          │ │ Quota claude                        │
+│                                                          │ │ 5h   ████░░░░░░ 42%  resets 2h14m   │
+│                                                          │ │ 30d  █░░░░░░░░░ 7%  resets 4d0h     │
+│                                                          │ │                                     │
+│                                                          │ │ Children                            │
+│                                                          │ │ 1001  node dev-server  200M         │
+│                                                          │ │                                     │
+│                                                          │ │   ↕ +8 more                         │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail

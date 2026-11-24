@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Sessions]  5/6
+╭─ ▸ Sessions ─────────────────────────╮
+│ state unavailable: process table     │
+│ vanished                             │
+│                                      │
+│ press r to read again; abacus doctor │
+│ shows the details.                   │
+╰──────────────────────────────────────╯
+
+
+
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Sessions]  5/6
+────────────────────────────────────────
+╭─ ▸ Sessions ─────────────────────────╮
+│ state unavailable: process table     │
+│ vanished                             │
+│                                      │
+│ press r to read again; abacus doctor │
+│ shows the details.                   │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+╭─ ▸ Sessions ─────────────────────────────────────────────────────────────────╮
+│ state unavailable: process table vanished                                    │
+│                                                                              │
+│ press r to read again; abacus doctor shows the details.                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions ─────────────────────────────────────────────────────────────────╮
+│ state unavailable: process table vanished                                    │
+│                                                                              │
+│ press r to read again; abacus doctor shows the details.                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+╭─ ▸ Sessions ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ state unavailable: process table vanished                                                                            │
+│                                                                                                                      │
+│ press r to read again; abacus doctor shows the details.                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ state unavailable: process table vanished                                                                            │
+│                                                                                                                      │
+│ press r to read again; abacus doctor shows the details.                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Sessions ─────────────────────────────────────────────╮
+│ state unavailable: process table vanished                │
+│                                                          │
+│ press r to read again; abacus doctor shows the details.  │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions ─────────────────────────────────────────────────────────────────────────────────────╮
+│ state unavailable: process table vanished                                                        │
+│                                                                                                  │
+│ press r to read again; abacus doctor shows the details.                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail

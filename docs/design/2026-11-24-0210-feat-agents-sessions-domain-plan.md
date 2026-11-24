@@ -464,7 +464,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
 - [x] `cli`: `abacus sessions [--json]`
 - [x] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
-- [ ] `tui`: golden tests for the sessions tab
+- [x] `tui`: golden tests for the sessions tab
 - [ ] shipping: push the branch and open the pull request
 
 ## Phases
@@ -666,3 +666,9 @@ One line per completed item: what it did and how it was verified.
   40 columns with section tests for the happy frame, empty and disappearing selections, polling
   overlap/hidden tabs, transient and first-read failures, stale quota, data sentinels and
   hostile text; golden scenarios are the next item.
+- tui golden tests — `go build ./...`, `go vet ./...`, `go test ./...`; adds seven sessions-tab
+  golden scenarios (happy frame, drilled detail, scrolled detail, empty state, stale quota,
+  first-read error, hostile text) with a fixture `SessionProvider` so the tab renders the same
+  invented report as the section tests. Verified with generated goldens at the standard grid
+  plus wide/side-by-side sizes and checked against width, height, chrome and control-character
+  invariants.

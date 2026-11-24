@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Sessions]  5/6
+╭─ ▸ Sessions · 0 sessions, 0 active ──╮
+│ no agent sessions are running        │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Sessions]  5/6
+────────────────────────────────────────
+╭─ ▸ Sessions · 0 sessions, 0 active ──╮
+│ no agent sessions are running        │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+╭─ ▸ Sessions · 0 sessions, 0 active ──────────────────────────────────────────╮
+│ no agent sessions are running                                                │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 0 sessions, 0 active ──────────────────────────────────────────╮
+│ no agent sessions are running                                                │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor                                     fleet · 14 tasks · 3 ready
+╭─ ▸ Sessions · 0 sessions, 0 active ──────────────────────────────────╮ ╭─ Session ───────────────────────────────────╮
+│ no agent sessions are running                                        │ │ no agent sessions are running               │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor                                     fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 0 sessions, 0 active ──────────────────────────────────╮ ╭─ Session ───────────────────────────────────╮
+│ no agent sessions are running                                        │ │ no agent sessions are running               │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 0 sessions, 0 active ──────────────────────╮
+│ no agent sessions are running                            │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Sessions]  Doctor                 fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Sessions · 0 sessions, 0 active ──────────────────────╮ ╭─ Session ───────────────────────────╮
+│ no agent sessions are running                            │ │ no agent sessions are running       │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll detail

@@ -97,6 +97,19 @@ func leaseFake() leaseProv {
 	return leaseProv{named{f, "beads-lease"}}
 }
 
+// sessionsProv is a fixture Sessions provider: it answers with the section's own fixture report,
+// so the goldens pin the same invented sessions, ports and quota the section tests describe.
+type sessionsProv struct{ named }
+
+func (sessionsProv) Sessions(context.Context) (core.SessionsReport, error) {
+	return sessionsFixtureReport(), nil
+}
+
+func sessionsFake() sessionsProv {
+	f := &modtest.Fake{IDStr: "sessions", Det: core.Detection{State: core.Ready, Version: "1.0.0"}}
+	return sessionsProv{named{f, "agent sessions"}}
+}
+
 // taskProv is a fixture Tasks provider and writer; it records writes and never touches a tracker.
 type taskProv struct {
 	named
@@ -201,16 +214,32 @@ func noFullView(string) tea.Cmd { return nil }
 
 // load wires the shell to fixture data by injecting the messages the commands would deliver.
 func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
+	return fixtureModel(t, th, view, nil, nil)
+}
+
+// loadSessions is load plus the fixture Sessions provider and its typed report, so the tab renders
+// the same invented sessions, ports and quota the section tests assert on. It is kept out of the
+// shared load so the other domains' goldens never list a provider they do not render.
+func loadSessions(t *testing.T, th Theme, edit func(*core.SessionsReport)) tea.Model {
+	rep := sessionsFixtureReport()
+	if edit != nil {
+		edit(&rep)
+	}
+	ses := sessionsFake()
+	return fixtureModel(t, th, nil, []core.Entry{{Module: ses, Detection: ses.Det}}, &rep)
+}
+
+func fixtureModel(t *testing.T, th Theme, view func(lambe.View) lambe.View, extra []core.Entry, sessions *core.SessionsReport) tea.Model {
 	t.Helper()
 	demo := lambe.NewDemo()
 	lease, tasks, ghost, brd := leaseFake(), tasksFake(), brokenFake(), boardFake()
-	en := []core.Entry{
+	en := append([]core.Entry{
 		{Module: brd, Detection: brd.Det},
 		{Module: demo, Detection: demo.Detect(context.Background())},
 		{Module: lease, Detection: lease.Det},
 		{Module: tasks, Detection: tasks.Det},
 		{Module: ghost, Detection: ghost.Det},
-	}
+	}, extra...)
 	var m tea.Model = New(en, WithTheme(th), WithFullView(noFullView), WithAudit(&memAudit{}))
 	v, err := demo.Read(context.Background())
 	if err != nil {
@@ -225,12 +254,16 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
 	m, _ = m.Update(taskSnapshotMsg{snap: fixtureSnapshot()})
 	m, _ = m.Update(insightsMsg{report: fixtureInsights()})
+	if sessions != nil {
+		m, _ = m.Update(sessionsMsg{report: *sessions})
+	}
 	m, _ = m.Update(doctorMsg{report: core.DoctorReport(context.Background(), "", en)})
 	return m
 }
 
 func scenarios() []scenario {
 	std := func(t *testing.T, th Theme) tea.Model { return load(t, th, nil) }
+	sessStd := func(t *testing.T, th Theme) tea.Model { return loadSessions(t, th, nil) }
 	wsStd := func(t *testing.T, th Theme) tea.Model { return demoWorkspaceModel(t, th, &wsRecorder{}, 100, 32) }
 	return append([]scenario{
 		{name: "queues", build: std, keys: []string{"4"}, tab: "Queues"},
@@ -336,6 +369,34 @@ func scenarios() []scenario {
 		{name: "leases-workspace-ambiguous", build: wsStd, keys: []string{"3", "j", "j"}, tab: "Leases", extra: workspaceSizes},
 		{name: "leases-workspace-notice", build: wsStd, keys: []string{"3", "w"}, tab: "Leases", extra: workspaceSizes},
 		{name: "tasks-workspace", build: wsStd, keys: []string{"2", "j"}, tab: "Tasks", extra: workspaceSizes},
+		// The Sessions tab over the fixture report: the happy frame, the drilled detail, what an
+		// empty machine or a failed first read says, and the data sentinels and hostile text the
+		// section flattens.
+		{name: "sessions", build: sessStd, keys: []string{"5"}, tab: "Sessions", extra: framedSizes},
+		{name: "sessions-detail", build: sessStd, keys: []string{"5", "enter"}, tab: "Sessions", extra: framedSizes},
+		{name: "sessions-detail-scrolled", build: sessStd, keys: []string{"5", "enter", "pgdown"}, tab: "Sessions", extra: framedSizes},
+		{name: "sessions-empty", tab: "Sessions", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+			return loadSessions(t, th, func(r *core.SessionsReport) {
+				r.Sessions, r.Orphans, r.Unreadable, r.Quotas = nil, nil, nil, nil
+			})
+		}},
+		{name: "sessions-stale-quota", tab: "Sessions", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+			return loadSessions(t, th, func(r *core.SessionsReport) { r.Quotas[0].Updated = goldenNow.Add(-11 * time.Minute) })
+		}},
+		{name: "sessions-error", tab: "Sessions", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+			ses := sessionsFake()
+			var m tea.Model = New([]core.Entry{{Module: ses, Detection: ses.Det}}, WithTheme(th), WithAudit(&memAudit{}), WithFullView(noFullView))
+			m, _ = m.Update(sessionsMsg{err: errors.New("process table vanished")})
+			return m
+		}},
+		{name: "sessions-hostile", tab: "Sessions", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+			return loadSessions(t, th, func(r *core.SessionsReport) {
+				r.Sessions[0].Title = "evil \x1b[2Jtitle"
+				r.Sessions[0].CWD = "/home/dev/\x07shop"
+				r.Sessions[0].Children[0].Command = "node\x1b]0;x\x07"
+				r.Orphans[0].Command = "node\x1b[2J"
+			})
+		}},
 		{name: "doctor", build: std, keys: []string{"6"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board", overlay: true},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
