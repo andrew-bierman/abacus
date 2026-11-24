@@ -28,17 +28,19 @@ type Deps struct {
 	Audit    core.Audit // nil means the default file audit log
 	Version  string
 	Build    func(Options) *core.Registry
-	RunTUI   func(entries []core.Entry) error
+	RunTUI   func(entries []core.Entry, tab string) error
 	// Setup builds the first-run setup over the detected modules; nil means the real one.
 	Setup func(entries []core.Entry) *core.Setup
 	// Config is the abacus config file; the zero value means the default path.
 	Config core.ConfigStore
+	// Exe is this program's path (what the layout's tabs run); nil means os.Executable.
+	Exe func() (string, error)
 	// Now is the clock for ages in the task views; nil means time.Now.
 	Now func() time.Time
 }
 
 func usage(d Deps) {
-	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show|board browse; tasks create|update|close|label|assign|priority|dep|comment change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n  search    find tasks, board threads, leases and runs; --domain, --limit, --json\n\nfirst run:\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json; --repair fixes a half-created workspace\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n  licenses  print the third-party notices and license texts carried in this file\n\nflags: --json, --lambe-config FILE, --demo (tui); tasks writes: --yes, --dry-run\n", brand.Name)
+	fmt.Fprintf(d.Err, "usage: %s <command> [flags]\n\nfleet:\n  board     channels, recent threads and tasks; board post|reply send a message\n  tasks     task summary; tasks list|show|board browse; tasks create|update|close|label|assign|priority|dep|comment change tasks\n  leases    held, stale and free leases\n  queues    runs, queue, attention and history\n  tui       interactive cockpit\n  search    find tasks, board threads, leases and runs; --domain, --limit, --json\n\nfirst run:\n  rex       layout: open the cockpit tabs in a terminal workspace (optional); --new NAME, --yes, --dry-run, --json\n  setup     report and (with --yes) perform first-run setup; --dry-run, --json; --repair fixes a half-created workspace\n  config    show|get|set|path: abacus settings (actor, tracker_dir, lambe_config, board_url)\n\ndiagnostics:\n  version   print versions and which providers were detected\n  doctor    health checks across providers\n  status    state summary across providers and fleet domains\n  licenses  print the third-party notices and license texts carried in this file\n\nflags: --json, --lambe-config FILE, --demo and --tab NAME (tui); tasks writes: --yes, --dry-run\n", brand.Name)
 }
 
 // Run dispatches a command and returns the process exit code.
@@ -60,6 +62,8 @@ func Run(args []string, d Deps) int {
 		return runSearch(rest, d)
 	case "setup":
 		return runSetup(rest, d)
+	case "rex":
+		return runRex(rest, d)
 	case "config":
 		return runConfig(rest, d)
 	case "licenses":
@@ -75,11 +79,16 @@ func Run(args []string, d Deps) int {
 	asJSON := fs.Bool("json", false, "print JSON")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the daemon")
 	fs.BoolVar(&o.Demo, "demo", false, "render from fixtures (tui)")
+	tab := fs.String("tab", "", "tab to open first: board, tasks, leases, queues or doctor (tui)")
 	if err := fs.Parse(rest); err != nil {
 		return core.ExitUsage
 	}
 	if fs.NArg() > 0 {
 		fmt.Fprintf(d.Err, "%s: unexpected argument %q\n", cmd, fs.Arg(0))
+		return core.ExitUsage
+	}
+	if *tab != "" && (cmd != "tui" || !core.ValidTab(*tab)) {
+		fmt.Fprintf(d.Err, "%s: --tab is for tui and takes board, tasks, leases, queues or doctor\n", cmd)
 		return core.ExitUsage
 	}
 	ctx := context.Background()
@@ -93,7 +102,7 @@ func Run(args []string, d Deps) int {
 		if d.RunTUI == nil {
 			return core.ExitFail
 		}
-		if err := d.RunTUI(tuiEntries(entries)); err != nil {
+		if err := d.RunTUI(tuiEntries(entries), strings.ToLower(*tab)); err != nil {
 			fmt.Fprintf(d.Err, "tui: %v\n", err)
 			return core.ExitFail
 		}

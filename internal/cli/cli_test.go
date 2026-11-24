@@ -21,7 +21,7 @@ func run(t *testing.T, mods []core.Module, args ...string) (code int, out, errOu
 	code = cli.Run(args, cli.Deps{
 		Out: &o, Err: &e, Version: "test",
 		Build:  func(cli.Options) *core.Registry { return core.NewRegistry(mods...) },
-		RunTUI: func([]core.Entry) error { return nil },
+		RunTUI: func([]core.Entry, string) error { return nil },
 	})
 	return code, o.String(), e.String()
 }
@@ -151,7 +151,7 @@ func tuiEntries(t *testing.T, mods ...core.Module) []core.Entry {
 	var o, e bytes.Buffer
 	cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t",
 		Build:  func(cli.Options) *core.Registry { return core.NewRegistry(mods...) },
-		RunTUI: func(en []core.Entry) error { got = en; return nil }})
+		RunTUI: func(en []core.Entry, _ string) error { got = en; return nil }})
 	return got
 }
 
@@ -188,7 +188,7 @@ func TestTUIFailureAndMissingRunnerExitOne(t *testing.T) {
 	build := func(cli.Options) *core.Registry { return core.NewRegistry(ready("a")) }
 	var o, e bytes.Buffer
 	code := cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build,
-		RunTUI: func([]core.Entry) error { return errors.New("no terminal") }})
+		RunTUI: func([]core.Entry, string) error { return errors.New("no terminal") }})
 	if code != 1 || !strings.Contains(e.String(), "tui: no terminal") {
 		t.Fatalf("runner error: code=%d stderr=%q", code, e.String())
 	}
@@ -262,5 +262,32 @@ func TestStatusLabelsATrackerSubsetSourceInTextAndJSON(t *testing.T) {
 	_, out, _ = run(t, []core.Module{live}, "status")
 	if strings.Contains(out, "source:") {
 		t.Fatalf("a live status carries no source line:\n%s", out)
+	}
+}
+
+func TestTUITabFlagPassesTheLowerCasedTabAndRefusesAnythingElse(t *testing.T) {
+	build := func(cli.Options) *core.Registry { return core.NewRegistry(ready("a")) }
+	for _, tab := range []string{"board", "Tasks", "LEASES", "queues", "doctor"} {
+		var got string
+		var o, e bytes.Buffer
+		code := cli.Run([]string{"tui", "--tab", tab}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build, RunTUI: func(_ []core.Entry, tb string) error { got = tb; return nil }})
+		if code != 0 || got != strings.ToLower(tab) {
+			t.Errorf("%s: code=%d tab=%q %q", tab, code, got, e.String())
+		}
+	}
+	for _, args := range [][]string{{"tui", "--tab", "nope"}, {"tui", "--tab", "../x"}, {"status", "--tab", "board"}, {"doctor", "--tab", "tasks"}} {
+		var ran bool
+		var o, e bytes.Buffer
+		code := cli.Run(args, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build, RunTUI: func([]core.Entry, string) error { ran = true; return nil }})
+		if code != core.ExitUsage || ran || !strings.Contains(e.String(), "--tab") {
+			t.Errorf("%v: code=%d ran=%v %q", args, code, ran, e.String())
+		}
+	}
+	// Without the flag the tab is empty: the first tab.
+	got := "x"
+	var o, e bytes.Buffer
+	cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build, RunTUI: func(_ []core.Entry, tb string) error { got = tb; return nil }})
+	if got != "" {
+		t.Errorf("%q", got)
 	}
 }
