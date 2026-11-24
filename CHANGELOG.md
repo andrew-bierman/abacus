@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to abacus (working name) are documented here. The format follows
+All notable changes to abacus are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). abacus is pre-1.0: minor versions
 may change behavior, and patch versions are fixes and small additions.
 
@@ -202,8 +202,7 @@ The headline changes, in plain words:
   `THIRD_PARTY_NOTICES.md` lists bv v0.27.0 as a linked library and `third_party/bv/LICENSE`
   still ships verbatim, now copied from the pinned Go module and checked against a sha256 pin in
   `bundled-tools.json` (`linked_licenses`; the build fails on a mismatch or if the linked version
-  is not the pinned one; `update-bundled-tools.sh --license bv` re-pins). The owner has reviewed
-  and accepts that license.
+  is not the pinned one; `update-bundled-tools.sh --license bv` re-pins). The license is shipped verbatim.
 - The archive is smaller because it no longer carries the bv binary (bytes, 0.0.0 build before to
   after): darwin-amd64 82,277,755 to 66,749,912 (-15.5 MB), darwin-arm64 75,243,652 to 60,629,053
   (-14.6 MB), linux-amd64 80,695,147 to 65,322,147 (-15.4 MB), linux-arm64 74,049,082 to
@@ -220,10 +219,6 @@ The headline changes, in plain words:
   `unavailable` or `optional` instead of `missing`; the raw `where: "missing"` in JSON is unchanged.
 
 
-- Assessment of bv and b9s as importable Go packages for the Tasks graph insights
-  (`docs/plans/2026-11-22-graph-core-assessment.md`): measurements, a decision and the bv license
-  rider recorded verbatim. Docs only; insights still come from the bv subprocess. No code or
-  dependency change.
 - `docs/plans/2026-11-22-board-bundling-assessment.md`: how to ship the Board domain without asking for Node (compiled binary measured, native client judged, trust model, recommendation).
 - An optional workspace layer. `internal/core` gains a `WorkspaceProvider` capability (not a fifth
   domain; navigation stays four tabs plus Doctor): typed placements saying where a run, lease,

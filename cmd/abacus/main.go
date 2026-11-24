@@ -1,4 +1,4 @@
-// Command abacus (working name) is the fleet cockpit CLI/TUI for Beads-powered agent fleets.
+// Command abacus is the fleet cockpit CLI/TUI for Beads-powered agent fleets.
 package main
 
 import (

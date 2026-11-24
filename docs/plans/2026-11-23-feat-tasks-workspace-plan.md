@@ -222,7 +222,7 @@ All written as the argv after `bd [-C DIR]`. Every entry is an exact whole-argv 
 ### Assumptions
 
 - A1. The installed bd 1.3.4 is representative; the existing `supportedSchema` check on `bd status` stays and U1 adds an equivalent check on the export's first record [inferred].
-- A2. A tracker of a few thousand issues fits one export in memory and one analysis in milliseconds (the assessment measured about 5 ms for 200 issues [verified in `docs/plans/2026-11-22-graph-core-assessment.md`]); larger trackers hit the 64 MiB cap and say so.
+- A2. A tracker of a few thousand issues fits one export in memory and one analysis in milliseconds (measured about 5 ms for 200 issues [verified in `docs/plans/2026-11-22-graph-core-assessment.md`]); larger trackers hit the 64 MiB cap and say so.
 - A3. Descriptions and comments are plain text or markdown written by agents and people; they are untrusted.
 - A4. The shared TUI package is being changed by another agent in small PRs; goldens for Tasks are owned by this plan from U1 onward.
 

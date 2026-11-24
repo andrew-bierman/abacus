@@ -10,7 +10,7 @@ package graph_test
 //     those seven issues written as tracker JSONL.
 //   - chain, diamond, cycle, closed, big200: the robot JSON under testdata/robot is HAND-WRITTEN
 //     in bv's documented shape, with values worked out from the graph (and, for the first four,
-//     the probe table in docs/plans/2026-11-22-graph-core-assessment.md). It was not captured
+//     a hand-built probe table). It was not captured
 //     from a bv run.
 //
 // What is compared (assertParity), field by field: actionable and blocked counts, graph size,

@@ -29,8 +29,7 @@ A tool is composable when it provides the first five items. The sixth is optiona
 6. **Optional `serve` local API.** A read-only HTTP API on `127.0.0.1` only, bearer token
    delivered through a `0600` descriptor file, versioned routes, and a single JSON error
    envelope. Client duties (loopback check before sending the token, no redirects, bounded
-   timeouts, never print the token) are in Lambe's state-API doc. Mutating routes are a
-   separate, explicit owner decision.
+   timeouts, never print the token) are in Lambe's state-API doc. Mutating routes need an explicit decision.
 
 ## What the umbrella reports
 
@@ -362,8 +361,7 @@ never block. Every id, title and reason in the report is sanitized.
 `go 1.26.11` (CI and the release workflow read the toolchain from `go.mod`) and lipgloss is a
 pseudo-version (see the assessment). bv is linked, not bundled: the `abacus` binary statically
 links parts of bv's Go packages (bv v0.27.0 `pkg/analysis` and the packages it depends on). That
-code is under bv's license (MIT with an OpenAI/Anthropic rider; the owner has reviewed and accepts
-it), which ships verbatim in the release archive as `third_party/bv/LICENSE`, copied from the
+code is under bv's license (MIT with an additional AI-provider clauseit), which ships verbatim in the release archive as `third_party/bv/LICENSE`, copied from the
 pinned Go module and checked against the sha256 in the `linked_licenses` entry of
 `bundled-tools.json` (the packaging fails on any mismatch, or if the linked version is not the
 pinned one). The archive's `THIRD_PARTY_NOTICES.md` lists bv as a linked library and ends with
