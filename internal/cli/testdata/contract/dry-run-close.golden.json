@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "bd",
+    "close",
+    "ac-12"
+  ],
+  "change": [
+    "close task ac-12",
+    "reason: \"done\""
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

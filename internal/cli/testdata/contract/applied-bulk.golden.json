@@ -1,0 +1,32 @@
+{
+  "applied": 2,
+  "batch_id": "batch-000000000000",
+  "failed": 0,
+  "items": [
+    {
+      "id": "ac-12",
+      "outcome": "applied",
+      "argv": [
+        "bd",
+        "label-add",
+        "ac-12",
+        "--label=sprint"
+      ]
+    },
+    {
+      "id": "ac-15",
+      "outcome": "applied",
+      "argv": [
+        "bd",
+        "label-add",
+        "ac-15",
+        "--label=sprint"
+      ]
+    }
+  ],
+  "not_run": 0,
+  "op": "label-add",
+  "schema_version": 1,
+  "skipped": 0,
+  "unknown": 0
+}

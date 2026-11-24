@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "version": "0.0.0-contract",
+  "modules": [
+    {
+      "id": "lambe",
+      "name": "Lambe",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "api_version": 1
+      }
+    },
+    {
+      "id": "beads-lease",
+      "name": "Leases (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      }
+    },
+    {
+      "id": "bd",
+      "name": "Tasks (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      }
+    },
+    {
+      "id": "board",
+      "name": "Fake board",
+      "detection": {
+        "state": "ready",
+        "version": "0.54.0"
+      }
+    },
+    {
+      "id": "agents",
+      "name": "Agents (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      }
+    }
+  ],
+  "bundled": {
+    "total": 4,
+    "verified": 0,
+    "elsewhere": [
+      "lambe",
+      "board"
+    ],
+    "embedded": false,
+    "line": "Development build: tools are not built in; build with make build"
+  }
+}

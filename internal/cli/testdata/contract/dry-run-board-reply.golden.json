@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "board",
+    "reply",
+    "15",
+    "--idempotency-key",
+    "abacus-10e099a3b8278f8b",
+    "--",
+    "rolled back"
+  ],
+  "change": [
+    "reply in the thread of message 15",
+    "text: \"rolled back\"",
+    "board: the default board (board_url (config))",
+    "idempotency key: abacus-10e099a3b8278f8b (a retry of the same text a moment later usually reuses it, but not across a ten-minute clock boundary)"
+  ],
+  "context": [
+    "existing channel 15"
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

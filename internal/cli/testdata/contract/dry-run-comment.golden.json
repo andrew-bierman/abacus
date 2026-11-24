@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "bd",
+    "comment",
+    "ac-12",
+    "--",
+    "Reproduced on the laptop."
+  ],
+  "change": [
+    "add a comment to task ac-12",
+    "title: \"wire the lease heartbeat\"",
+    "comment: \"Reproduced on the laptop.\""
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "bd",
+    "label-add",
+    "ac-12",
+    "--label=ui"
+  ],
+  "change": [
+    "add a label to task ac-12",
+    "title: \"wire the lease heartbeat\"",
+    "label: \"ui\""
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

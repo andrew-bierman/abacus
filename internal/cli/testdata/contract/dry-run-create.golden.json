@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "bd",
+    "create",
+    "--title=Add a pear counter",
+    "--priority=2"
+  ],
+  "change": [
+    "create a new task",
+    "title: \"Add a pear counter\"",
+    "priority: 2",
+    "type: feature"
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

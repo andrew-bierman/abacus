@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "bd",
+    "update",
+    "ac-12",
+    "--status=blocked"
+  ],
+  "change": [
+    "update task ac-12",
+    "status: \"in_progress\" -\u003e \"blocked\""
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

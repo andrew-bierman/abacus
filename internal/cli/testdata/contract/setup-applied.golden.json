@@ -1,0 +1,35 @@
+{
+  "results": [
+    {
+      "step": "actor",
+      "applied": true,
+      "message": "leases will be held as me-mac"
+    }
+  ],
+  "schema_version": 1,
+  "steps": [
+    {
+      "step": "workspace",
+      "domain": "tasks",
+      "state": "unavailable",
+      "message": "Tasks: abacus's own tool for this is unavailable (see `abacus doctor`)"
+    },
+    {
+      "step": "queues",
+      "domain": "queues",
+      "state": "unavailable",
+      "message": "Queues: abacus's own tool for this is unavailable (see `abacus doctor`)"
+    },
+    {
+      "step": "actor",
+      "domain": "leases",
+      "state": "needed",
+      "message": "Leases need an actor name — run `abacus setup` to choose one",
+      "plan": [
+        "set the actor name leases are held under: me-mac",
+        "change it any time with: abacus config set actor NAME"
+      ],
+      "command": "abacus config set actor me-mac"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "board",
+    "post",
+    "dev",
+    "--idempotency-key",
+    "abacus-1748787d927489d8",
+    "--",
+    "deploys are green again"
+  ],
+  "change": [
+    "post a new thread to channel dev",
+    "text: \"deploys are green again\"",
+    "board: the default board (board_url (config))",
+    "idempotency key: abacus-1748787d927489d8 (a retry of the same text a moment later usually reuses it, but not across a ten-minute clock boundary)"
+  ],
+  "context": [
+    "existing channel dev"
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

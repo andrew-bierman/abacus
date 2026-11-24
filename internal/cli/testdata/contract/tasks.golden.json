@@ -1,0 +1,154 @@
+{
+  "counts": {
+    "total": 14,
+    "open": 6,
+    "in_progress": 3,
+    "blocked": 2,
+    "deferred": 1,
+    "closed": 2,
+    "ready": 3
+  },
+  "domain": "tasks",
+  "insights": {
+    "domain": "tasks",
+    "title": "Insights",
+    "state": "connected",
+    "source": "graph analysis",
+    "summary": "3 actionable, 4 blocked, 1 cycles",
+    "top_picks": [
+      {
+        "id": "ac-12",
+        "title": "wire the lease heartbeat",
+        "reasons": [
+          "P0 bug in progress",
+          "unblocks the queue attention digest"
+        ],
+        "unblocks": 2
+      },
+      {
+        "id": "ac-15",
+        "title": "lease holder column",
+        "reasons": [
+          "P1 and ready",
+          "unblocks the stale lease warning"
+        ],
+        "unblocks": 1
+      },
+      {
+        "id": "ac-30",
+        "title": "saved filters",
+        "reasons": [
+          "ready, nothing waits on it"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "id": "ac-12",
+        "title": "wire the lease heartbeat",
+        "unblocks": 2
+      },
+      {
+        "id": "ac-15",
+        "title": "lease holder column",
+        "unblocks": 1
+      }
+    ],
+    "critical_path": [
+      {
+        "id": "ac-12",
+        "value": 3
+      },
+      {
+        "id": "ac-09",
+        "value": 2
+      },
+      {
+        "id": "ac-15",
+        "value": 2
+      },
+      {
+        "id": "ac-16",
+        "value": 1
+      }
+    ],
+    "bottlenecks": [
+      {
+        "id": "ac-12",
+        "value": 4.5
+      },
+      {
+        "id": "ac-15",
+        "value": 2
+      },
+      {
+        "id": "ac-09",
+        "value": 0.5
+      }
+    ],
+    "influencers": [
+      {
+        "id": "ac-12",
+        "value": 0.61
+      },
+      {
+        "id": "ac-09",
+        "value": 0.42
+      },
+      {
+        "id": "ac-15",
+        "value": 0.35
+      }
+    ],
+    "cycles": [
+      [
+        "ac-20",
+        "ac-21",
+        "ac-20"
+      ]
+    ],
+    "tracks": [
+      {
+        "id": "track-A",
+        "items": [
+          "ac-12",
+          "ac-09"
+        ]
+      },
+      {
+        "id": "track-B",
+        "items": [
+          "ac-15",
+          "ac-16"
+        ]
+      }
+    ],
+    "total_actionable": 3,
+    "total_blocked": 4
+  },
+  "recent": [
+    {
+      "id": "ac-12",
+      "title": "wire the lease heartbeat",
+      "status": "in_progress",
+      "priority": 0
+    },
+    {
+      "id": "ac-09",
+      "title": "queue attention digest",
+      "status": "open",
+      "priority": 2
+    },
+    {
+      "id": "ac-03",
+      "title": "retire the old poller",
+      "status": "closed",
+      "priority": 3
+    }
+  ],
+  "schema_version": 1,
+  "source": "live",
+  "state": "connected",
+  "summary": "14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready",
+  "title": "Tasks"
+}
