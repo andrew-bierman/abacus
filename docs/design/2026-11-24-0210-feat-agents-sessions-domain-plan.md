@@ -1,6 +1,7 @@
 # Agents domain: a sessions tab for local AI coding agents
 
-Status: phase 1 landed (`internal/agents`, discovery + processes + ports). Phases 2 to 4 open.
+Status: phase 2 underway (`internal/agents` has the opencode and claude readers; codex, pi, git and
+quota readers, the core wiring and the tab are open).
 
 ## Goal
 
@@ -41,7 +42,7 @@ the source, not the READMEs.
 | opencode v2 session store | `modernc.org/sqlite` | Pure Go, no CGO, so the one-binary promise holds. Reads 4 recent sessions in 1ms. |
 | Session list, port table | `charmbracelet/bubbles/table` | Already a dependency. |
 | Context and quota bars | `bubbles/progress` | Already a dependency. |
-| Token-rate and per-turn sparklines | `bubbles/sparkline` | Already a dependency. |
+| Token-rate and per-turn sparklines | none | `bubbles v1.0.0` ships no sparkline package (checked with `go list`). The series is `StoredSession.TokenHistory`; draw it as a row of `lipgloss` blocks, or bump the dependency only if that buys more than one panel. |
 | Selected-session detail scrolling | `bubbles/viewport` | Already a dependency. |
 | Panels, colour, layout | `lipgloss` (in the tree) | Same. |
 
@@ -85,6 +86,96 @@ Both are why `Collector` keeps the previous snapshot, and both match abtop:
   since ended while the socket is still listening. On the first read of a process there are
   none, and `Snapshot.Orphans` says so by being empty.
 
+## Per-harness readers
+
+One shape for every harness, so the join in `core` stays one loop:
+
+`StoredSession` gains `Context Context` and `TokenHistory []int64`. A zero `Context`, or an empty
+history, means "this harness does not record it", never "zero tokens". Tokens stay cumulative for
+the session, `Context.Used` is the last turn's window fill, and `TokenHistory` is one entry per
+assistant response, oldest first, bounded to the 200 points the sparkline draws.
+
+Readers differ in how they find a store, not in what they return:
+
+| Harness | Entry point | Store |
+| --- | --- | --- |
+| opencode | `OpenCodeStore.Sessions(ctx, since, limit)` | one SQLite row per session |
+| claude | `ClaudeStore.Transcript(path)`, `ClaudeStore.PathFor(cwd, since)` | one JSONL per session |
+
+opencode lists sessions because its database is the list. Claude has no list: a session exists
+because a transcript exists for a live process's cwd, so the caller passes the path it already
+resolved. Sweeping every project directory each tick is what the cost model forbids.
+
+### `claude.go`
+
+`ClaudeStore` reads `~/.claude/projects/<encoded-cwd>/<sessionId>.jsonl`, encoding the cwd the way
+Claude Code does (`/ \ : _ .` become `-`). `PathFor` returns the newest transcript in the encoded
+directory, and falls back to the newest transcript under any project directory whose mtime is at or
+after `since`, because worktree sessions live under a branch-keyed directory. A zero `since` accepts
+any.
+
+Per line, by `type`:
+
+| Line | Fact |
+| --- | --- |
+| `assistant` | `message.model`; `message.usage` tokens; `message.id` for dedupe; `tool_use` blocks; `timestamp` |
+| `user` (real prompt) | opens a turn; the first one is the title fallback; `cwd`, `sessionId`, `timestamp` |
+| `user` (synthetic) | ignored for title: `isMeta`, all-`tool_result`, or text opening with `<command-name>`, `<local-command-*>` or `<bash-*>`; a `tool_result` reopens the turn, the rest leave it alone, and an interrupt marker closes it |
+| `ai-title`, or legacy `summary` | title, preferred over the prompt fallback |
+| `cost-state` | ignored: cost in currency is a non-goal |
+
+Facts are derived the way abtop derives them, with three corrections the data on this machine forced:
+
+1. **Dedupe by `message.id`.** Claude Code writes one assistant line per content block, and every
+   line of a response carries the same `usage`. Summing by line doubles the real totals (measured
+   2.0x on two real transcripts here). A repeated id replaces the previous contribution instead of
+   adding to it, which also handles a usage snapshot that grows mid-stream.
+2. **Context is the last response's fill**: `input + cache_read + cache_creation`. `input_tokens`
+   excludes cached content, so the prompt the model saw is all three counts. abtop's
+   `input + cache_read` rule (with cache creation only on the first turn) undercounts the current
+   format, which mixes both cache fields in one response: 31.2k read as 11.9k on a real entry here.
+   The window limit is not recorded in the transcript, so it is inferred: 1M when the model name
+   carries `[1m]` or the observed high-water mark passed 200k, else 200k. `Context.Limit` is
+   therefore an inference and says so in its comment.
+3. **State follows the open turn**, judging a response's block lines together: a real user prompt
+   opens a turn (`thinking`); a response containing a `tool_use` that no later line closes is
+   `executing`; a `tool_result` closes the tool and reopens the turn, because the model is being
+   asked to answer it; anything else is `waiting`. abtop reports `executing` through that post-tool
+   generation because it never clears the pending tool; `thinking` is the truthful read and lasts
+   only until the next response lands. `discover.go` still owns `executing` by CPU delta and the
+   join prefers it, because an I/O-bound tool leaves the transcript ahead of the CPU.
+
+Incremental by offset, with `ClaudeStore` state keyed by path:
+
+- Stat and compare against the stored `os.FileInfo` with `os.SameFile`. A different file, or one
+  shorter than the stored offset, resets the accumulation and reparses from byte 0.
+- Seek to the stored offset and read whole lines. A trailing line without `\n` is not consumed, so a
+  half-written record is reread and never counted twice. Complete lines that are not JSON are
+  skipped and consumed.
+- Lines are capped at 10 MB; past the cap the rest of that line is discarded to its newline, so one
+  hostile record cannot make the tab allocate without bound.
+- `Updated` is the file's mtime. `Tokens`, `Context`, `TokenHistory`, `Model`, `Title`, `State`, `Dir`
+  and `ID` accumulate across reads.
+
+Deliberately not here: mapping a PID to `~/.claude/sessions/<pid>.json`, and subagent transcripts
+under `<sessionId>/subagents/`. Both need the live-process join and belong to the `core` wiring item;
+this reader takes a path and does not guess which pid owns it.
+
+Tests in `claude_test.go`, synthetic transcripts only, built line by line with invented prompts and
+ids:
+
+- one response split across block lines counts once, for tokens, context and history length;
+- a real prompt followed by a `tool_use` response reads `thinking` then `executing`, and a later
+  `tool_result` plus text response reads `waiting`;
+- synthetic user lines do not open a turn;
+- `ai-title` overrides the first-prompt fallback, and a transcript with neither leaves the title empty;
+- a line appended between reads adds only that line; a partial trailing line is not counted and is
+  counted exactly once when completed;
+- a truncated or replaced file resets totals instead of carrying them forward;
+- an over-cap line is skipped without stalling the next read;
+- `PathFor` picks the newest transcript in the encoded directory and falls back by mtime;
+- the context limit crosses to 1M only after the observed high-water mark passes 200k.
+
 ## Cost model
 
 Chosen to stay cheap on a machine with large histories (this one has 233M of Codex JSONL and a
@@ -103,7 +194,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `proc.go` + `gopsutil.go`: live state behind a `Machine` seam
 - [x] `discover.go`: sessions, child trees, ports, orphans, executing/waiting
 - [x] `opencode.go`: opencode v2 SQLite reader (tokens, model, title, parent, state)
-- [ ] `claude.go`: Claude Code JSONL reader, incremental by offset
+- [x] `claude.go`: Claude Code JSONL reader, incremental by offset
 - [ ] `codex.go`: Codex JSONL rollout reader, incremental by offset
 - [ ] `pi.go`: Pi JSONL reader, incremental by offset
 - [ ] `git.go`: branch and dirty counts per session cwd
@@ -133,15 +224,16 @@ The loop works the first unchecked item. Tick one per pass.
    | abtop panel | abacus tab |
    | --- | --- |
    | Header: host CPU/mem/load | `lipgloss` row over `gopsutil` host info |
-   | Context: 200-point token-rate sparkline + per-session % bars | `bubbles/sparkline` + `bubbles/progress` |
+   | Context: 200-point token-rate sparkline + per-session % bars | a lipgloss block row over `TokenHistory` + `bubbles/progress` |
    | Quota: 5h/7d gauges with reset countdown | `bubbles/progress` + a lipgloss countdown |
-   | Tokens: totals + per-turn sparkline | `bubbles/sparkline` |
+   | Tokens: totals + per-turn sparkline | the same lipgloss block row |
    | Projects: branch + dirty counts | phase 2 `git.go` |
    | Ports: table incl. orphans | `bubbles/table` |
    | Sessions: list + selected detail | `bubbles/table` or the existing tasks-list pattern, detail in `bubbles/viewport` |
 
    Golden tests in `internal/tui/testdata/golden/`, matching the other domains, with invented
-   names per `956fbb4`.
+   names per `956fbb4`. The sparkline is drawn rather than borrowed: `bubbles v1.0.0` has no
+   sparkline package, and none of the other four panels needs one.
 
 ## Fixtures
 
@@ -165,3 +257,6 @@ One line per completed item: what it did and how it was verified.
 
 - opencode v2 reader — `go build ./...`, `go test ./internal/agents`; verified against the
   real store (4 sessions, 1ms, busy session marked thinking).
+- claude JSONL reader — `go build ./...`, `go test ./...`; totals match a deduped real transcript
+  (24/25,800/982,726/100,576 tokens, context 111,283), and synthetic tests pin offset resume,
+  partial lines, in-place and inode replacement, symlinks, the three-counter context sum and trim.

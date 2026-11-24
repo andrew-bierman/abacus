@@ -10,7 +10,10 @@
 // anywhere and no agent is ever started.
 package agents
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Harness names one agent product. It is data, not something the UI should switch on to
 // decide layout: a capability a harness lacks is simply empty.
@@ -54,6 +57,16 @@ type Tokens struct {
 // Total is the billable-ish sum used for a session row: cache reads excluded.
 func (t Tokens) Total() int64 { return t.Input + t.Output + t.CacheCreate }
 
+func (t Tokens) add(o Tokens) Tokens {
+	return Tokens{Input: t.Input + o.Input, Output: t.Output + o.Output,
+		CacheRead: t.CacheRead + o.CacheRead, CacheCreate: t.CacheCreate + o.CacheCreate}
+}
+
+func (t Tokens) sub(o Tokens) Tokens {
+	return Tokens{Input: t.Input - o.Input, Output: t.Output - o.Output,
+		CacheRead: t.CacheRead - o.CacheRead, CacheCreate: t.CacheCreate - o.CacheCreate}
+}
+
 // Context is how full the model's window is. Limit is 0 when the harness does not record
 // it, so a front-end shows nothing rather than a made-up percentage.
 type Context struct {
@@ -67,6 +80,35 @@ func (c Context) Percent() float64 {
 		return 0
 	}
 	return float64(c.Used) / float64(c.Limit) * 100
+}
+
+// maxTokenHistory is what a sparkline draws.
+const maxTokenHistory = 200
+
+// StoredSession is one session as its harness recorded it, independent of whether a process
+// is running right now. A store is the session list for harnesses that have one; the process
+// table only says which of them are live.
+type StoredSession struct {
+	ID       string
+	Title    string
+	Model    string
+	Dir      string
+	ParentID string
+	Tokens   Tokens
+	// Context is the last turn's window fill. A zero value means the harness does not record
+	// it, not that the window is empty.
+	Context Context
+	// TokenHistory is one point per assistant response, oldest first, bounded to what a
+	// sparkline draws. Empty when the harness does not record per-turn usage.
+	TokenHistory []int64
+	CostUSD      float64
+	Updated      time.Time
+	State        State
+}
+
+// String is for logs and doctor output, not for the UI.
+func (s StoredSession) String() string {
+	return fmt.Sprintf("%s %s %s", s.ID, s.State, s.Title)
 }
 
 // Child is one process the session spawned, so an abandoned dev server is visible.
@@ -137,10 +179,7 @@ func (s Snapshot) Active() int {
 func (s Snapshot) TotalTokens() Tokens {
 	var t Tokens
 	for _, x := range s.Sessions {
-		t.Input += x.Tokens.Input
-		t.Output += x.Tokens.Output
-		t.CacheRead += x.Tokens.CacheRead
-		t.CacheCreate += x.Tokens.CacheCreate
+		t = t.add(x.Tokens)
 	}
 	return t
 }

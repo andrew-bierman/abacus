@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -16,21 +15,6 @@ import (
 // opencode that wrote the v1 tables or a file that is not an opencode store at all; both
 // read as "nothing here", never as a failure of the tab.
 var ErrNoOpenCodeV2 = errors.New("agents: no session_v2 table (opencode v1 or not a store)")
-
-// StoredSession is one session as its harness recorded it, independent of whether a process
-// is running right now. A store is the session list for harnesses that have one; the process
-// table only says which of them are live.
-type StoredSession struct {
-	ID       string
-	Title    string
-	Model    string
-	Dir      string
-	ParentID string
-	Tokens   Tokens
-	CostUSD  float64
-	Updated  time.Time
-	State    State
-}
 
 // OpenCodeStore reads opencode's local SQLite database.
 //
@@ -156,9 +140,4 @@ func isNoSuchTable(err error) bool {
 		return false
 	}
 	return strings.Contains(err.Error(), "no such table")
-}
-
-// String is for logs and doctor output, not for the UI.
-func (s StoredSession) String() string {
-	return fmt.Sprintf("%s %s %s", s.ID, s.State, s.Title)
 }

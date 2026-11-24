@@ -105,6 +105,11 @@ func TestOpenCodeSessionsReadsTheV2Store(t *testing.T) {
 	if got[1].Model != "acme/glm-5.3#low" {
 		t.Errorf("model = %q, want variant suffix", got[1].Model)
 	}
+	// opencode records neither a context window nor per-turn usage, so the fields stay zero
+	// rather than being filled with a guess.
+	if a.Context != (Context{}) || a.TokenHistory != nil {
+		t.Errorf("context/history = %+v/%v, want the does-not-record sentinel", a.Context, a.TokenHistory)
+	}
 }
 
 func TestOpenCodeSessionsReportsBusyAndCompacting(t *testing.T) {
