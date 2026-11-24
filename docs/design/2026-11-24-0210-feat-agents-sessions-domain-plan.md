@@ -465,7 +465,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `cli`: `abacus sessions [--json]`
 - [x] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
 - [x] `tui`: golden tests for the sessions tab
-- [ ] shipping: push the branch and open the pull request
+- [x] shipping: push the branch and open the pull request
 
 ## Phases
 
@@ -672,3 +672,6 @@ One line per completed item: what it did and how it was verified.
   invented report as the section tests. Verified with generated goldens at the standard grid
   plus wide/side-by-side sizes and checked against width, height, chrome and control-character
   invariants.
+- shipping — pushed `feat/agents-sessions` to `origin` and opened
+  https://github.com/andrew-bierman/abacus/pull/57 against `main`. Final tree verified with
+  `go build ./...`, `go vet ./...`, and `go test ./...`.
