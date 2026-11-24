@@ -3,7 +3,7 @@
 ╭─ ▸ Confirm 2 changes ────────────────╮
 │ assign mei to 2 tasks                │
 │   left out: ac-15 (already assigned  │
-│   to mei)                            │
+│   to "mei")                          │
 │                                      │
 │ each task is read again right before │
 │ its own write; one that changed is   │
@@ -17,7 +17,7 @@
 ╭─ ▸ Confirm 2 changes ────────────────╮
 │ assign mei to 2 tasks                │
 │   left out: ac-15 (already assigned  │
-│   to mei)                            │
+│   to "mei")                          │
 │                                      │
 │ each task is read again right before │
 │ its own write; one that changed is   │
@@ -46,7 +46,7 @@ y apply · n/esc cancel · q quit · ? hel…
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                        │
-│   left out: ac-15 (already assigned to mei)                                  │
+│   left out: ac-15 (already assigned to "mei")                                │
 │                                                                              │
 │ each task is read again right before its own write; one that changed is      │
 │ skipped                                                                      │
@@ -60,7 +60,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                        │
-│   left out: ac-15 (already assigned to mei)                                  │
+│   left out: ac-15 (already assigned to "mei")                                │
 │                                                                              │
 │ each task is read again right before its own write; one that changed is      │
 │ skipped                                                                      │
@@ -90,7 +90,7 @@ y apply · n/esc cancel · q quit · ? help · tab/→ next tab
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                                                                │
-│   left out: ac-15 (already assigned to mei)                                                                          │
+│   left out: ac-15 (already assigned to "mei")                                                                        │
 │                                                                                                                      │
 │ each task is read again right before its own write; one that changed is skipped                                      │
 │                                                                                                                      │
@@ -104,7 +104,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                                                                │
-│   left out: ac-15 (already assigned to mei)                                                                          │
+│   left out: ac-15 (already assigned to "mei")                                                                        │
 │                                                                                                                      │
 │ each task is read again right before its own write; one that changed is skipped                                      │
 │                                                                                                                      │
@@ -135,7 +135,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────╮
 │ assign mei to 2 tasks                                    │
-│   left out: ac-15 (already assigned to mei)              │
+│   left out: ac-15 (already assigned to "mei")            │
 │                                                          │
 │ each task is read again right before its own write; one  │
 │ that changed is skipped                                  │
@@ -160,7 +160,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────╮
 │ assign mei to 2 tasks                                                                            │
-│   left out: ac-15 (already assigned to mei)                                                      │
+│   left out: ac-15 (already assigned to "mei")                                                    │
 │                                                                                                  │
 │ each task is read again right before its own write; one that changed is skipped                  │
 │                                                                                                  │
