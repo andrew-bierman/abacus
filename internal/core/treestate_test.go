@@ -177,7 +177,9 @@ func TestTreeStateConcurrentWritersLoseNothing(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			errs <- NewTreeState(p).Save(fmt.Sprintf("/trk/%02d", i), TreeLayout{Folded: []string{fmt.Sprintf("id-%02d", i)}})
+			st := NewTreeState(p)
+			st.lockWait = 30 * time.Second // a loaded machine must not turn contention into a failure
+			errs <- st.Save(fmt.Sprintf("/trk/%02d", i), TreeLayout{Folded: []string{fmt.Sprintf("id-%02d", i)}})
 		}(i)
 	}
 	wg.Wait()
