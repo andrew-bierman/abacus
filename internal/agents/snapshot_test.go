@@ -2,183 +2,36 @@ package agents
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
+	"errors"
 	"strings"
 	"testing"
 )
 
-// fakeFS builds a procfs-shaped tree in a temp dir, so every test reads a fixture and never
-// this machine. Nothing here touches a real pid.
-type fakeFS struct {
-	t    *testing.T
-	root string
+// fakeMachine is the whole test surface for live state: a fixed process table, cwds and
+// sockets. No test here reads this machine.
+type fakeMachine struct {
+	procs map[int]Proc
+	cwds  map[int]string
+	socks []Socket
+	err   error
 }
 
-func newFakeFS(t *testing.T) *fakeFS {
-	t.Helper()
-	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "net"), 0o755); err != nil {
-		t.Fatal(err)
+func (f *fakeMachine) Procs(context.Context) (map[int]Proc, error) {
+	if f.err != nil {
+		return nil, f.err
 	}
-	f := &fakeFS{t: t, root: root}
-	f.writeTCP("tcp")
-	return f
+	return f.procs, nil
 }
 
-// writeTCP writes a /proc/net/tcp{6} table with the real header and the given rows.
-func (f *fakeFS) writeTCP(name string, rows ...string) {
-	f.t.Helper()
-	body := "  sl  local_address rem_address   st tx_queue:rx_queue tr:tm->when retrnsmt   uid  timeout inode\n"
-	body += strings.Join(rows, "\n")
-	if len(rows) > 0 {
-		body += "\n"
+func (f *fakeMachine) CWD(_ context.Context, pid int) string { return f.cwds[pid] }
+
+func (f *fakeMachine) Listeners(context.Context) ([]Socket, error) {
+	if f.err != nil {
+		return nil, f.err
 	}
-	if err := os.WriteFile(filepath.Join(f.root, "net", name), []byte(body), 0o644); err != nil {
-		f.t.Fatal(err)
-	}
+	return f.socks, nil
 }
 
-// listeningRow is one LISTEN socket row. inode ties it to a process's fd.
-func listeningRow(port int, inode string) string {
-	return fmt.Sprintf("   0: 0100007F:%04X 00000000:0000 0A 00000000:00000000 00:00000000 00000000  1000        0 %s  1 0 0 10 0", port, inode)
-}
-
-// proc creates a process directory. utime and stime are the CPU ticks a descendant sample is
-// derived from.
-func (f *fakeFS) proc(pid, ppid int, comm string, utime, stime uint64, argv ...string) {
-	f.t.Helper()
-	dir := filepath.Join(f.root, strconv.Itoa(pid))
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		f.t.Fatal(err)
-	}
-	// Fields after the parenthesised comm: state, ppid, then enough fillers that utime lands
-	// on field 14 and stime on 15, exactly as procfs numbers them.
-	after := []string{"S", strconv.Itoa(ppid)}
-	for len(after) < 11 {
-		after = append(after, "0")
-	}
-	after = append(after, strconv.FormatUint(utime, 10), strconv.FormatUint(stime, 10))
-	stat := fmt.Sprintf("%d (%s) %s\n", pid, comm, strings.Join(after, " "))
-	if err := os.WriteFile(filepath.Join(dir, "stat"), []byte(stat), 0o644); err != nil {
-		f.t.Fatal(err)
-	}
-	if len(argv) > 0 {
-		if err := os.WriteFile(filepath.Join(dir, "cmdline"), []byte(strings.Join(argv, "\x00")+"\x00"), 0o644); err != nil {
-			f.t.Fatal(err)
-		}
-	}
-	status := "Name:\t" + comm + "\nVmRSS:\t   12345 kB\n"
-	if err := os.WriteFile(filepath.Join(dir, "status"), []byte(status), 0o644); err != nil {
-		f.t.Fatal(err)
-	}
-}
-
-func (f *fakeFS) cwd(pid int, dir string) {
-	f.t.Helper()
-	if err := os.Symlink(dir, filepath.Join(f.root, strconv.Itoa(pid), "cwd")); err != nil {
-		f.t.Fatal(err)
-	}
-}
-
-// socket gives a process a file descriptor holding a socket inode.
-func (f *fakeFS) socket(pid int, fd, inode string) {
-	f.t.Helper()
-	dir := filepath.Join(f.root, strconv.Itoa(pid), "fd")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		f.t.Fatal(err)
-	}
-	if err := os.Symlink("socket:["+inode+"]", filepath.Join(dir, fd)); err != nil {
-		f.t.Fatal(err)
-	}
-}
-
-func (f *fakeFS) remove(pid int) {
-	f.t.Helper()
-	if err := os.RemoveAll(filepath.Join(f.root, strconv.Itoa(pid))); err != nil {
-		f.t.Fatal(err)
-	}
-}
-
-func (f *fakeFS) machine() Machine { return Machine{Root: f.root} }
-
-func TestProcsReadsNamePPIDAndRSS(t *testing.T) {
-	f := newFakeFS(t)
-	f.proc(100, 1, "claude", 10, 20, "/usr/local/bin/claude", "--resume")
-
-	procs, err := f.machine().Procs()
-	if err != nil {
-		t.Fatal(err)
-	}
-	p, ok := procs[100]
-	if !ok {
-		t.Fatalf("pid 100 missing from %v", procs)
-	}
-	if p.PPID != 1 {
-		t.Errorf("ppid = %d, want 1", p.PPID)
-	}
-	if p.Name != "claude" {
-		t.Errorf("name = %q, want claude", p.Name)
-	}
-	if p.RSSKB != 12345 {
-		t.Errorf("rss = %d, want 12345", p.RSSKB)
-	}
-	if p.CPUTime != 30 {
-		t.Errorf("cpu = %d, want 30", p.CPUTime)
-	}
-}
-
-// A comm may contain spaces and parentheses, so the stat fields must be counted from the
-// last ')' rather than from the start of the line.
-func TestParseStatHandlesParenthesisedComm(t *testing.T) {
-	f := newFakeFS(t)
-	f.proc(200, 7, "node (weird) name", 3, 4)
-
-	procs, err := f.machine().Procs()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := procs[200].PPID; got != 7 {
-		t.Errorf("ppid = %d, want 7", got)
-	}
-}
-
-func TestListenersMapPortToPID(t *testing.T) {
-	f := newFakeFS(t)
-	f.proc(200, 100, "node", 1, 1, "node", "server.js")
-	f.socket(200, "3", "999")
-	f.writeTCP("tcp", listeningRow(8080, "999"))
-
-	socks, err := f.machine().Listeners()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(socks) != 1 {
-		t.Fatalf("got %d sockets, want 1: %+v", len(socks), socks)
-	}
-	if socks[0].Port != 8080 || socks[0].PID != 200 {
-		t.Errorf("socket = %+v, want port 8080 pid 200", socks[0])
-	}
-}
-
-func TestDescendantsIsBounded(t *testing.T) {
-	procs := map[int]Proc{
-		1: {PID: 1},
-		2: {PID: 2, PPID: 1},
-		3: {PID: 3, PPID: 2},
-	}
-	if got := Descendants(procs, 1, 10); len(got) != 2 {
-		t.Errorf("descendants = %v, want two", got)
-	}
-	if got := Descendants(procs, 1, 1); len(got) != 1 {
-		t.Errorf("bounded descendants = %v, want one", got)
-	}
-}
-
-// The same agent ships under different executable names, so matching must not depend on the
-// exact one an install happens to use.
 func TestHarnessForMatchesSuffixAndRejectsDaemons(t *testing.T) {
 	cases := []struct {
 		name string
@@ -202,17 +55,31 @@ func TestHarnessForMatchesSuffixAndRejectsDaemons(t *testing.T) {
 	}
 }
 
-func TestSnapshotFindsSessionChildrenAndPorts(t *testing.T) {
-	f := newFakeFS(t)
-	f.proc(100, 1, "claude", 10, 20, "/usr/bin/claude")
-	f.cwd(100, "/home/dev/proj")
-	f.proc(200, 100, "node", 1, 1, "node", "server.js")
-	f.cwd(200, "/home/dev/proj")
-	f.socket(200, "3", "999")
-	f.writeTCP("tcp", listeningRow(8080, "999"))
-	f.proc(300, 1, "bash", 1, 1, "bash") // not an agent
+func TestDescendantsIsBounded(t *testing.T) {
+	procs := map[int]Proc{
+		1: {PID: 1},
+		2: {PID: 2, PPID: 1},
+		3: {PID: 3, PPID: 2},
+	}
+	if got := Descendants(procs, 1, 10); len(got) != 2 {
+		t.Errorf("descendants = %v, want two", got)
+	}
+	if got := Descendants(procs, 1, 1); len(got) != 1 {
+		t.Errorf("bounded descendants = %v, want one", got)
+	}
+}
 
-	c := &Collector{Machine: f.machine()}
+func TestSnapshotFindsSessionChildrenAndPorts(t *testing.T) {
+	m := &fakeMachine{
+		procs: map[int]Proc{
+			100: {PID: 100, PPID: 1, Name: "claude", Argv: []string{"/usr/bin/claude"}},
+			200: {PID: 200, PPID: 100, Name: "node", Argv: []string{"node", "server.js"}},
+			300: {PID: 300, PPID: 1, Name: "bash", Argv: []string{"bash"}},
+		},
+		cwds:  map[int]string{100: "/home/dev/proj", 200: "/home/dev/proj"},
+		socks: []Socket{{Port: 8080, PID: 200}},
+	}
+	c := &Collector{Machine: m}
 	snap, err := c.Snapshot(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -243,17 +110,18 @@ func TestSnapshotFindsSessionChildrenAndPorts(t *testing.T) {
 }
 
 func TestSnapshotExecutingOnlyWhenChildCPUAdvances(t *testing.T) {
-	f := newFakeFS(t)
-	f.proc(100, 1, "claude", 10, 20, "/usr/bin/claude")
-	f.cwd(100, "/home/dev/proj")
-	f.proc(200, 100, "cargo", 5, 5, "cargo", "build")
-
-	c := &Collector{Machine: f.machine()}
+	m := &fakeMachine{
+		procs: map[int]Proc{
+			100: {PID: 100, PPID: 1, Name: "claude"},
+			200: {PID: 200, PPID: 100, Name: "cargo", CPUTime: 0.1},
+		},
+	}
+	c := &Collector{Machine: m}
 	if _, err := c.Snapshot(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 
-	f.proc(200, 100, "cargo", 50, 5, "cargo", "build") // the child burned CPU
+	m.procs[200] = Proc{PID: 200, PPID: 100, Name: "cargo", CPUTime: 2.5} // the child burned CPU
 	snap, err := c.Snapshot(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -262,8 +130,8 @@ func TestSnapshotExecutingOnlyWhenChildCPUAdvances(t *testing.T) {
 		t.Errorf("state = %q, want executing", got)
 	}
 
-	// A second read with no further progress goes back to waiting: accumulated CPU is a
-	// level, and a finished child keeps it.
+	// A further read with no progress goes back to waiting: accumulated CPU is a level, and
+	// a finished child keeps it.
 	snap, err = c.Snapshot(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -274,21 +142,22 @@ func TestSnapshotExecutingOnlyWhenChildCPUAdvances(t *testing.T) {
 }
 
 func TestSnapshotReportsOrphanPortAfterSessionExits(t *testing.T) {
-	f := newFakeFS(t)
-	f.proc(100, 1, "claude", 10, 20, "/usr/bin/claude")
-	f.cwd(100, "/home/dev/proj")
-	f.proc(200, 100, "node", 1, 1, "node", "server.js")
-	f.socket(200, "3", "999")
-	f.writeTCP("tcp", listeningRow(8080, "999"))
-
-	c := &Collector{Machine: f.machine()}
+	m := &fakeMachine{
+		procs: map[int]Proc{
+			100: {PID: 100, PPID: 1, Name: "claude"},
+			200: {PID: 200, PPID: 100, Name: "node", Argv: []string{"node", "server.js"}},
+		},
+		cwds:  map[int]string{100: "/home/dev/proj"},
+		socks: []Socket{{Port: 8080, PID: 200}},
+	}
+	c := &Collector{Machine: m}
 	if _, err := c.Snapshot(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 
 	// The session and its child ended; the server is still listening.
-	f.remove(100)
-	f.remove(200)
+	m.procs = map[int]Proc{}
+	m.socks = []Socket{{Port: 8080, PID: 0}}
 
 	snap, err := c.Snapshot(context.Background())
 	if err != nil {
@@ -309,19 +178,28 @@ func TestSnapshotReportsOrphanPortAfterSessionExits(t *testing.T) {
 	}
 }
 
-func TestSnapshotOnMissingProcFSIsAnError(t *testing.T) {
-	c := &Collector{Machine: Machine{Root: filepath.Join(t.TempDir(), "nope")}}
+func TestSnapshotReportsReadFailure(t *testing.T) {
+	c := &Collector{Machine: &fakeMachine{err: errors.New("boom")}}
 	if _, err := c.Snapshot(context.Background()); err == nil {
-		t.Fatal("want an error for a procfs that does not exist")
+		t.Fatal("want the read error")
 	}
 }
 
 func TestSnapshotHonoursContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	f := newFakeFS(t)
-	c := &Collector{Machine: f.machine()}
+	c := &Collector{Machine: &fakeMachine{}}
 	if _, err := c.Snapshot(ctx); err == nil {
 		t.Fatal("want the context error")
+	}
+}
+
+func TestCommandLineIsBounded(t *testing.T) {
+	long := Proc{Name: "claude", Argv: []string{"claude", strings.Repeat("x", 200)}}
+	if got := commandLine(long); len(got) != 80 {
+		t.Errorf("length = %d, want 80", len(got))
+	}
+	if got := commandLine(Proc{Name: "pi"}); got != "pi" {
+		t.Errorf("commandLine with no argv = %q, want pi", got)
 	}
 }

@@ -2,7 +2,6 @@ package agents
 
 import (
 	"context"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -55,7 +54,7 @@ type Collector struct {
 	// Now is injectable so a test can pin time; nil means time.Now.
 	Now func() time.Time
 
-	prevCPU   map[int]uint64
+	prevCPU   map[int]float64
 	prevPorts map[int]portOwner
 	started   bool
 }
@@ -72,11 +71,15 @@ func (c *Collector) Snapshot(ctx context.Context) (Snapshot, error) {
 	}
 	snap := Snapshot{Taken: now()}
 
-	procs, err := c.Machine.Procs()
+	machine := c.Machine
+	if machine == nil {
+		machine = Native{}
+	}
+	procs, err := machine.Procs(ctx)
 	if err != nil {
 		return snap, err
 	}
-	listeners, err := c.Machine.Listeners()
+	listeners, err := machine.Listeners(ctx)
 	if err != nil {
 		return snap, err
 	}
@@ -96,7 +99,7 @@ func (c *Collector) Snapshot(ctx context.Context) (Snapshot, error) {
 	}
 
 	var (
-		cpu      = make(map[int]uint64)
+		cpu      = make(map[int]float64)
 		owners   = make(map[int]portOwner)
 		sessions []Session
 	)
@@ -106,7 +109,7 @@ func (c *Collector) Snapshot(ctx context.Context) (Snapshot, error) {
 		if !ok {
 			continue
 		}
-		cwd := c.Machine.CWD(pid)
+		cwd := machine.CWD(ctx, pid)
 		s := Session{
 			Harness:    harness,
 			PID:        pid,
@@ -115,7 +118,7 @@ func (c *Collector) Snapshot(ctx context.Context) (Snapshot, error) {
 			State:      StateWaiting,
 			LastActive: snap.Taken,
 		}
-		var treeCPU uint64
+		var treeCPU float64
 		for _, d := range Descendants(procs, pid, maxChildren) {
 			cp, ok := procs[d]
 			if !ok {
@@ -184,27 +187,4 @@ func commandOf(procs map[int]Proc, pid int) string {
 		return commandLine(p)
 	}
 	return ""
-}
-
-// baseName is filepath.Base with the "." a caller would get for an empty path removed, so a
-// session with no readable directory simply has no project name.
-func baseName(dir string) string {
-	if dir == "" {
-		return ""
-	}
-	return filepath.Base(dir)
-}
-
-// commandLine renders a process for a one-line display: the binary and its arguments,
-// bounded so a long model prompt cannot push a column off screen.
-func commandLine(p Proc) string {
-	line := strings.Join(p.Argv, " ")
-	if line == "" {
-		return p.Name
-	}
-	const max = 80
-	if len(line) > max {
-		return line[:max]
-	}
-	return line
 }
