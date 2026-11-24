@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -14,7 +15,7 @@ import (
 
 func TestConfigRoundTripsAtomicallyWithPrivateModes(t *testing.T) {
 	st := core.ConfigStore{Path: filepath.Join(t.TempDir(), "c", "abacus", "config.json")}
-	if c, err := st.Load(); err != nil || c != (core.Config{}) {
+	if c, err := st.Load(); err != nil || !reflect.DeepEqual(c, core.Config{}) {
 		t.Fatalf("a missing file is an empty config: %+v %v", c, err)
 	}
 	if err := st.Update(func(c *core.Config) error { return c.Set("actor", "me-laptop") }); err != nil {
@@ -48,7 +49,7 @@ func TestConfigRefusesBadValuesAndUnknownKeys(t *testing.T) {
 			t.Errorf("Set(%q, %q) should fail", bad[0], bad[1])
 		}
 	}
-	if c != (core.Config{}) {
+	if !reflect.DeepEqual(c, core.Config{}) {
 		t.Fatalf("a refused set changed the config: %+v", c)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -42,9 +43,11 @@ type Model struct {
 
 	prompt      *prompt // the `:` command prompt while it is open (prompt.go)
 	promptHist  []string
-	over        *viewer // the describe or JSON panel while it is open (describe.go)
-	helpOff     int     // scroll of the help overlay
-	boardTarget string  // where the Board writes to, for the header context (never a credential)
+	over        *viewer  // the describe or JSON panel while it is open (describe.go)
+	helpOff     int      // scroll of the help overlay
+	boardTarget string   // where the Board writes to, for the header context (never a credential)
+	hosts       []wsHost // the sections that host the workspace layer, found by their tag
+	watch       *wsWatch // the workspace change feed; nil without one
 }
 
 // config is what Options set before the sections are built.
@@ -62,6 +65,9 @@ type config struct {
 	recents     core.RecentTrackers
 	recentsSet  bool
 	switcher    *core.Switcher // tests inject one; the default is built from the Tasks provider
+	tab         string         // the tab shown first ("" is the first one)
+	agent       func() []string
+	cwd         func() string // the folder "work on this" opens its terminal in
 }
 
 // Option customises the shell.
@@ -76,6 +82,16 @@ func WithAudit(a core.Audit) Option { return func(c *config) { c.audit = a } }
 // WithTreeState sets where the Tasks tree keeps its fold choices (default: the abacus state dir; a
 // demo session keeps them for the session only).
 func WithTreeState(t *core.TreeState) Option { return func(c *config) { c.treeState = t } }
+
+// WithTab shows the named tab (board, tasks, leases, queues or doctor) first. An unknown name is ignored.
+func WithTab(name string) Option { return func(c *config) { c.tab = strings.ToLower(name) } }
+
+// WithAgentCommand replaces how the configured agent command is read (tests inject one; the default
+// reads the abacus config each time "work on this" is pressed, so a change needs no restart).
+func WithAgentCommand(f func() []string) Option { return func(c *config) { c.agent = f } }
+
+// WithWorkDir replaces where "work on this" opens its terminal (the default is the current folder).
+func WithWorkDir(f func() string) Option { return func(c *config) { c.cwd = f } }
 
 // WithSetup replaces the first-run setup (tests inject one over fakes; the default is built
 // from the detected modules and the standard abacus paths).
@@ -94,7 +110,7 @@ func New(entries []core.Entry, opts ...Option) *Model {
 
 // NewWithHandoff injects how a command is handed the terminal (default: run it in place).
 func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, opts ...Option) *Model {
-	cfg := &config{th: DefaultTheme(), fullView: defaultFullView}
+	cfg := &config{th: DefaultTheme(), fullView: defaultFullView, agent: agentCommand, cwd: func() string { d, _ := os.Getwd(); return d }}
 	for _, o := range opts {
 		o(cfg)
 	}
@@ -140,8 +156,11 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	}
 	for _, d := range core.DomainOrder {
 		sec := domainSection(d, prov, handoff, cfg)
-		if h, ok := sec.(workspaceHost); ok { // the optional workspace layer; never runs without a key
-			h.setWorkspace(newWsLayer(string(d), prov.Workspace, isDemo(entries), handoff))
+		if h, ok := sec.(wsHost); ok { // the optional workspace layer; never runs without a key
+			l := newWsLayer(string(d), prov.Workspace, isDemo(entries), handoff)
+			l.attach(prov, cfg.audit, cfg.agent, cfg.cwd)
+			h.setWorkspace(l)
+			m.hosts = append(m.hosts, h)
 		}
 		if prov.Guiders[d] != nil && d != core.DomainBoard {
 			sec = newGuidedSection(d, sec, cfg.setup)
@@ -151,6 +170,14 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	m.tabs = append(m.tabs, tab{name: "Doctor", sec: newDoctorSection(present)})
 	for _, t := range m.tabs {
 		t.sec.SetTheme(m.th)
+	}
+	for i, t := range m.tabs {
+		if cfg.tab != "" && strings.EqualFold(t.name, cfg.tab) {
+			m.sel = i
+		}
+	}
+	if prov.Watcher != nil && !isDemo(entries) {
+		m.watch = newWsWatch(prov.Watcher)
 	}
 	return m
 }
@@ -227,9 +254,21 @@ var (
 // Run starts the program on the alternate screen. Adaptive colors query the terminal for its
 // background the first time they render; doing that once here, before Bubble Tea owns stdin,
 // keeps the reply from being read as keystrokes.
-func Run(entries []core.Entry) error {
+func Run(entries []core.Entry, tab string) error {
 	probeBackground()
-	return startProgram(New(entries), tea.WithAltScreen())
+	m := New(entries, WithTab(tab))
+	defer m.Close()
+	return startProgram(m, tea.WithAltScreen())
+}
+
+// Close stops what the shell started in the background (the workspace change feed and the command
+// it runs). It is safe to call more than once.
+func (m *Model) Close() { m.watch.stop() }
+
+// agentCommand reads the configured agent command from the abacus config.
+func agentCommand() []string {
+	c, _ := core.ConfigStore{Path: configPath()}.Load()
+	return c.AgentCommand
 }
 
 // step is the next tab from index from in direction dir (wrapping).
@@ -251,6 +290,7 @@ func (m *Model) Init() tea.Cmd {
 	if a, ok := m.active().(activator); ok {
 		cmds = append(cmds, a.activate())
 	}
+	cmds = append(cmds, m.watch.start())
 	return tea.Batch(cmds...)
 }
 
@@ -305,13 +345,80 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Only the visible tab shows the notice: the other tab with a handoff would repeat it.
 		_, c := m.active().Update(msg)
 		return m, c
+	case wsChangedMsg: // the change feed: read again now, and wait for the next change
+		return m, tea.Batch(m.watch.wait(), m.refreshWorkspace())
+	case wsActionMsg:
+		if h := m.hostFor(msg.tag); h != nil {
+			return m, h.layer().receiveAction(msg, h)
+		}
+		return m, nil
+	case wsOutputMsg:
+		if h := m.hostFor(msg.tag); h != nil {
+			h.layer().receiveOutput(msg)
+		}
+		return m, nil
 	}
 	// Async results and ticks go to every section; each ignores message types it does not own.
 	cmd := m.broadcast(msg)
+	if wm, ok := msg.(workspaceMsg); ok {
+		if h := m.hostFor(wm.tag); h != nil && h.layer().again {
+			h.layer().again = false
+			cmd = tea.Batch(cmd, h.layer().fetch(h.wsItems()))
+		}
+	}
+	if wm, ok := msg.(workspaceMsg); ok { // a read of where things live arrived: the shown terminal's output is read with it
+		if h := m.hostFor(wm.tag); h != nil && h == m.activeHost() {
+			cmd = tea.Batch(cmd, h.layer().captureCmd(h, true))
+		}
+	}
 	if m.search != nil {
 		m.search.refresh(m) // an async read may have changed what search sees; never rebuilt in View
 	}
 	return m, cmd
+}
+
+// activeHost is the visible section when it hosts the workspace layer and is not behind a setup guard.
+func (m *Model) activeHost() wsHost {
+	h, _ := inner(m.active()).(wsHost)
+	return h
+}
+
+// hostFor is the section whose layer carries tag.
+func (m *Model) hostFor(tag string) wsHost {
+	for _, h := range m.hosts {
+		if h.layer() != nil && h.layer().tag == tag {
+			return h
+		}
+	}
+	return nil
+}
+
+// refreshWorkspace reads where things live again for the visible section.
+func (m *Model) refreshWorkspace() tea.Cmd {
+	if h := m.activeHost(); h != nil {
+		return h.layer().fetch(h.wsItems())
+	}
+	return nil
+}
+
+// layerModal reports that the visible section's workspace layer has a plan on screen.
+func (m *Model) layerModal() bool {
+	h := m.activeHost()
+	return h != nil && h.layer().modal()
+}
+
+// sectionBindings are the visible section's keys plus those of its workspace actions; while a plan
+// is on screen they are only the plan's own.
+func (m *Model) sectionBindings() []key.Binding {
+	b := m.active().Bindings()
+	if h := m.activeHost(); h != nil {
+		if l := h.layer(); l.modal() {
+			return l.modalBindings()
+		} else {
+			b = append(append([]key.Binding(nil), b...), l.actionBindings(h)...)
+		}
+	}
+	return b
 }
 
 func (m *Model) broadcast(msg tea.Msg) tea.Cmd {
@@ -325,7 +432,7 @@ func (m *Model) broadcast(msg tea.Msg) tea.Cmd {
 
 func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	sec := m.active()
-	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !(sec.Capturing() || m.search != nil || m.prompt != nil || m.over != nil)) {
+	if key.Matches(k, keyQuit) && (k.String() == "ctrl+c" || !(sec.Capturing() || m.search != nil || m.prompt != nil || m.over != nil || m.layerModal())) {
 		return m, tea.Quit
 	}
 	hidden := tooSmall(m.width(), m.h) // the section is not drawn, so it must not act on keys
@@ -338,6 +445,17 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.over != nil {
 		return m.viewerKey(k, hidden)
+	}
+	if h := m.activeHost(); h != nil && !hidden && !m.showHelp {
+		l := h.layer()
+		if l.modal() { // a plan is on screen: y, n and s are its keys, and nothing else acts
+			return m, l.modalKey(k)
+		}
+		if !sec.Capturing() {
+			if cmd, ok := l.actionKey(k, h); ok {
+				return m, cmd
+			}
+		}
 	}
 	if sec.Capturing() {
 		if hidden {
@@ -377,6 +495,9 @@ func (m *Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		_, cmd := sec.Update(k)
+		if h := m.activeHost(); h != nil { // a new row may have a terminal to read
+			cmd = tea.Batch(cmd, h.layer().captureCmd(h, false))
+		}
 		return m, cmd
 	}
 	return m, nil
@@ -396,10 +517,13 @@ func (m *Model) ShortHelp() []key.Binding {
 	if m.showHelp && !tooSmall(m.width(), m.h) { // the way out is always on the footer, whatever the scroll
 		return []key.Binding{keyHelpClose, keyViewerScroll}
 	}
+	if m.layerModal() {
+		return m.sectionBindings()
+	}
 	if sec := m.active(); sec.Capturing() {
 		return append(append([]key.Binding(nil), sec.Bindings()...), keyQuit, keyHelp, keyNext)
 	}
-	return append(append([]key.Binding{keyHelp, keyQuit, keyNext, keyPrompt}, m.active().Bindings()...), m.describeKeys()...)
+	return append(append([]key.Binding{keyHelp, keyQuit, keyNext, keyPrompt}, m.sectionBindings()...), m.describeKeys()...)
 }
 
 // describes is whether the active section has an item to describe.
@@ -415,7 +539,7 @@ func (m *Model) describeKeys() []key.Binding {
 }
 
 func (m *Model) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{keyNext, keyPrev, keyJump, keySearch, keyPrompt, keyHelp, keyQuit}, append(append([]key.Binding(nil), m.active().Bindings()...), m.describeKeys()...)}
+	return [][]key.Binding{{keyNext, keyPrev, keyJump, keySearch, keyPrompt, keyHelp, keyQuit}, append(append([]key.Binding(nil), m.sectionBindings()...), m.describeKeys()...)}
 }
 
 // headerLines is the tab bar (and a rule under it when tall enough). When the tabs do not

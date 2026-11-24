@@ -11,6 +11,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/embedtools/embedtest"
+	"github.com/andrew-bierman/abacus/internal/rex"
 )
 
 // The tripwire: no message abacus prints may tell the user to install a tool, run the old bundle
@@ -26,7 +27,7 @@ func runAll(t *testing.T, e Env) string {
 	var all strings.Builder
 	for _, args := range [][]string{
 		{"doctor"}, {"status"}, {"version"}, {"setup", "--dry-run"}, {"tasks"}, {"leases"}, {"queues"}, {"board"},
-		{"doctor", "--json"}, {"status", "--json"},
+		{"doctor", "--json"}, {"status", "--json"}, {"rex", "layout", "--dry-run"},
 	} {
 		var o, er bytes.Buffer
 		cli.Run(args, cli.Deps{Out: &o, Err: &er, Version: "1.2.3", Config: e.Config,
@@ -171,7 +172,7 @@ func TestBuiltInSentencesCarryNoAdvice(t *testing.T) {
 				}
 			}
 		}
-		for _, s := range []string{core.HowToConnectBoard, core.BoardNotSetUp, core.BoardNotSignedIn, core.HowToConnectBoardDegraded, core.HowToConnectDegraded, core.HowToConnectInsights(), core.FullViewMissing, core.DevBuildLine} {
+		for _, s := range []string{core.HowToConnectBoard, core.BoardNotSetUp, core.BoardNotSignedIn, core.HowToConnectBoardDegraded, core.HowToConnectDegraded, core.HowToConnectInsights(), core.FullViewMissing, core.DevBuildLine, rex.HowToConnect} {
 			if bannedAdvice.MatchString(s) || bannedPATH.MatchString(s) {
 				t.Errorf("%q", s)
 			}

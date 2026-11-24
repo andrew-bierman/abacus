@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -25,13 +26,26 @@ var (
 // ErrOutputTooLarge is returned by a capped ExecRunner whose command printed more than MaxOut.
 var ErrOutputTooLarge = errors.New("output too large")
 
+// ErrOutputTruncated is returned, with the output, by an ExecRunner that keeps the tail of what a
+// command printed (KeepTail) when the command printed more than MaxOut: the start was dropped.
+var ErrOutputTruncated = errors.New("output truncated to its end")
+
 type limitBuf struct {
+	tail  bool // keep the last max bytes instead of the first
 	b     []byte
 	max   int
 	total int
 }
 
 func (l *limitBuf) Write(p []byte) (int, error) {
+	if l.tail {
+		l.total += len(p)
+		l.b = append(l.b, p...)
+		if len(l.b) > l.max {
+			l.b = append(l.b[:0], l.b[len(l.b)-l.max:]...)
+		}
+		return len(p), nil
+	}
 	if room := l.max - len(l.b); room > 0 {
 		l.b = append(l.b, p[:min(room, len(p))]...)
 	}
@@ -56,6 +70,9 @@ type ExecRunner struct {
 	Env     func() []string
 	// MaxOut, when positive, caps stdout: the rest is discarded and ErrOutputTooLarge returned.
 	MaxOut int
+	// KeepTail makes MaxOut keep the end of the output instead: the start is dropped and
+	// ErrOutputTruncated returned with what was kept (a terminal's scrollback: its end is what matters).
+	KeepTail bool
 	// Scrub filters the inherited environment before Env is added (see ScrubBeadsEnv).
 	Scrub func([]string) []string
 }
@@ -114,7 +131,7 @@ func (r ExecRunner) RunSplit(ctx context.Context, name string, args ...string) (
 	var err error
 	var lim *limitBuf
 	if r.MaxOut > 0 {
-		lim = &limitBuf{max: r.MaxOut}
+		lim = &limitBuf{max: r.MaxOut, tail: r.KeepTail}
 		cmd.Stdout = lim
 		err = cmd.Run()
 		out = lim.b
@@ -128,6 +145,9 @@ func (r ExecRunner) RunSplit(ctx context.Context, name string, args ...string) (
 		return nil, nil, -1, fmt.Errorf("%w after %s", ErrTimedOut, timeout)
 	}
 	if lim != nil && lim.total > lim.max {
+		if lim.tail {
+			return out, stderr.b, exitOf(err), ErrOutputTruncated
+		}
 		return out, stderr.b, 0, ErrOutputTooLarge
 	}
 	var ee *exec.ExitError
@@ -138,4 +158,79 @@ func (r ExecRunner) RunSplit(ctx context.Context, name string, args ...string) (
 		return nil, nil, -1, err
 	}
 	return out, stderr.b, 0, nil
+}
+
+// exitOf is the exit code of a finished command, 0 when it succeeded.
+func exitOf(err error) int {
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
+		return ee.ExitCode()
+	}
+	return 0
+}
+
+// StreamFunc runs a long-lived command and calls onLine with each line it prints until it exits
+// or ctx ends. It returns the exit code; err means it could not run or was cut off.
+type StreamFunc func(ctx context.Context, name string, args []string, onLine func([]byte)) (exit int, err error)
+
+// maxStreamLine bounds one line of a stream: a longer line is skipped whole, never buffered.
+const maxStreamLine = 256 << 10
+
+// ExecStream is the production StreamFunc: the command runs in its own process group with the
+// environment scrub filters and is killed, with everything it started, when ctx ends, so a
+// front-end that exits never leaves it behind. stderr is discarded.
+func ExecStream(scrub func([]string) []string) StreamFunc {
+	return func(ctx context.Context, name string, args []string, onLine func([]byte)) (int, error) {
+		if err := CheckBuiltIn(name); err != nil {
+			return -1, err
+		}
+		cmd := exec.CommandContext(ctx, name, args...)
+		setProcessGroup(cmd)
+		env := os.Environ()
+		if scrub != nil {
+			env = scrub(env)
+		}
+		cmd.Env = SidecarEnv(env)
+		cmd.WaitDelay = waitDelay
+		out, err := cmd.StdoutPipe()
+		if err != nil {
+			return -1, err
+		}
+		if err := cmd.Start(); err != nil {
+			return -1, err
+		}
+		r := bufio.NewReaderSize(out, 64<<10)
+		var line []byte
+		skipping := false
+		for {
+			chunk, isPrefix, rerr := r.ReadLine()
+			if len(chunk) > 0 && !skipping {
+				if len(line)+len(chunk) > maxStreamLine {
+					skipping, line = true, nil
+				} else {
+					line = append(line, chunk...)
+				}
+			}
+			if !isPrefix {
+				if !skipping && len(line) > 0 {
+					onLine(line)
+				}
+				line, skipping = nil, false
+			}
+			if rerr != nil {
+				break
+			}
+		}
+		werr := cmd.Wait()
+		if ctx.Err() != nil {
+			return -1, ctx.Err()
+		}
+		if ee := (*exec.ExitError)(nil); errors.As(werr, &ee) {
+			return ee.ExitCode(), nil
+		}
+		if werr != nil {
+			return -1, werr
+		}
+		return 0, nil
+	}
 }

@@ -329,6 +329,7 @@ type writeFlow struct {
 	label      string
 	lines, ctx []string // the plan, and read-only context for the confirm step
 	argv       []string
+	more       [][]string // later commands of a plan with several steps
 	yes, dry   bool
 	asJSON     bool
 	prompt     string
@@ -338,11 +339,12 @@ type writeFlow struct {
 func runWrite(d Deps, f writeFlow) int {
 	if f.dry && f.asJSON {
 		jsonOut(d.Out, struct {
-			DryRun  bool     `json:"dry_run"`
-			Lines   []string `json:"change"`
-			Context []string `json:"context,omitempty"`
-			Argv    []string `json:"argv"`
-		}{true, f.lines, f.ctx, f.argv})
+			DryRun  bool       `json:"dry_run"`
+			Lines   []string   `json:"change"`
+			Context []string   `json:"context,omitempty"`
+			Argv    []string   `json:"argv"`
+			Steps   [][]string `json:"steps,omitempty"`
+		}{true, f.lines, f.ctx, f.argv, f.more})
 		return core.ExitOK
 	}
 	if !f.asJSON {
@@ -350,6 +352,9 @@ func runWrite(d Deps, f writeFlow) int {
 			fmt.Fprintln(d.Out, l)
 		}
 		fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(f.argv))
+		for _, a := range f.more {
+			fmt.Fprintf(d.Out, "command: %s\n", core.DisplayArgv(a))
+		}
 	}
 	if f.dry {
 		return core.ExitOK

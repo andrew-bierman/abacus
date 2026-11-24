@@ -684,6 +684,11 @@ type Providers struct {
 	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
 	// Workspace is the optional terminal-workspace provider; nil means none is usable.
 	Workspace WorkspaceProvider
+	// Placer, Capturer and Watcher are the workspace provider's optional write, terminal-read and
+	// live-feed capabilities; nil when it has none (or there is no provider).
+	Placer   WorkspaceActor
+	Capturer WorkspaceCapturer
+	Watcher  WorkspaceWatcher
 	// Guiders are the ready providers that can say their domain needs setup.
 	Guiders map[DomainID]Guider
 	Missing map[DomainID]Header
@@ -720,6 +725,11 @@ func ResolveProviders(entries []Entry) Providers {
 	p.Reader, _, _ = pick[TaskReader](entries)
 	p.Insights, p.InsightsWhy, _ = pick[InsightsProvider](entries)
 	p.Workspace, _, _ = pick[WorkspaceProvider](entries)
+	if p.Workspace != nil {
+		p.Placer, _ = p.Workspace.(WorkspaceActor)
+		p.Capturer, _ = p.Workspace.(WorkspaceCapturer)
+		p.Watcher, _ = p.Workspace.(WorkspaceWatcher)
+	}
 	return p
 }
 

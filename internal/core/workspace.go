@@ -63,13 +63,16 @@ const (
 // bounded by core before a front-end sees them.
 type Placement struct {
 	// ID is stable for the same item in the same place, so a front-end can remember a choice.
-	ID      string         `json:"id"`
-	Item    WorkspaceItem  `json:"item"`
-	Host    string         `json:"host,omitempty"`
-	Session string         `json:"session,omitempty"`
-	Tab     string         `json:"tab,omitempty"`
-	Label   string         `json:"label,omitempty"`
-	Match   PlacementMatch `json:"match,omitempty"`
+	ID      string        `json:"id"`
+	Item    WorkspaceItem `json:"item"`
+	Host    string        `json:"host,omitempty"`
+	Session string        `json:"session,omitempty"`
+	Tab     string        `json:"tab,omitempty"`
+	// Block is the terminal pane whose own label names the item (a pane opened for it), when one
+	// does; Session is then the session that holds it. Additive: absent when only a session matches.
+	Block string         `json:"block,omitempty"`
+	Label string         `json:"label,omitempty"`
+	Match PlacementMatch `json:"match,omitempty"`
 	// Open is how to get to this placement, built by the provider's Open and cleaned by core. It
 	// is data for a front-end to run on an explicit keypress, never something core runs.
 	Open *OpenPlan `json:"open,omitempty"`
@@ -240,6 +243,7 @@ func cleanPlacement(p Placement) (Placement, bool) {
 		Host:    host,
 		Session: ClipRunes(Sanitize(p.Session), MaxIDRunes),
 		Tab:     ClipRunes(Sanitize(p.Tab), MaxLabelRunes),
+		Block:   ClipRunes(Sanitize(p.Block), MaxIDRunes),
 		Label:   ClipRunes(Sanitize(p.Label), MaxLabelRunes),
 		Match:   PlacementMatch(ClipRunes(Sanitize(string(p.Match)), MaxIDRunes)),
 	}, ok1 && ok2

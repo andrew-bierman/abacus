@@ -277,10 +277,39 @@ rung (focusing or selecting a session is unverified), the command to open the wo
 and a note naming the session to pick. Core and the adapter only build the plan; a front-end runs it
 on an explicit keypress.
 
-**Deferred** until someone runs them against a real Rex and records argv and JSON: `rex window
-focus`, `rex window new`, `session.select` (also needs a client with Remote control on; `rex-tui`
-support is unknown), window labels via `session.view`, `rex hosts`, program status, spawning. A
-rung is data (a name and an argv), so each is a new value, not a new type.
+**Verified against a real Rex** (0.1.0-preview.19, API revision 14, run as an isolated server on a
+temporary socket; fixtures are in `internal/rex/testdata`): `ls`, `version`, `block ls -s`, `window ls
+-s`, `capture -s -b --trim`, `focus`, `run`, `split`, `new`, `window new` (each with `--json` where
+it exists) and `events --json`. The supported revision window is 10 to 14.
+
+**Pane placements.** A pane whose own label names an item (a pane opened by "work on this" carries the
+item id as its label) is the item's placement, with the session that holds it; `Placement.block` is
+additive. `block ls -s` is read per session (at most 24 sessions, 4 at a time, 600 ms, best effort).
+Two panes naming one item are an ambiguity, never a pick.
+
+**Writes** go through the shared gate (plan, confirm, single use, audit before and after; a timeout,
+signal or unexpected exit is "result unknown"). Exact argv shapes, always `--autostart=false`, nothing
+that sends input, closes, moves or renames, `api call` unreachable:
+`[-S HOST] focus -s SESSION BLOCK`; `run -s SESSION --label ID [-c DIR] --keep-open --json -- CMD...`;
+`split -s SESSION [-b BLOCK] --split=right --label ID [-c DIR] --keep-open --json -- CMD...`;
+`new NAME --json --window TAB [-c DIR] --keep-open -- CMD...`;
+`window new -s SESSION TAB [-c DIR] --keep-open [--focus=false] --json -- CMD...`. Only focus takes `-S`,
+and only for a host in `ABACUS_REX_HOSTS`; work and the layout use the current session
+(`REX_SESSION`) or a session they create. The agent command (`config set agent_command
+'["prog","Work on {task_id}: {title}"]'`) keeps every word one argument; a title that would start a word
+with `-` is refused.
+
+**Terminal reads** (`capture`) keep the end of the output (128 KiB, 200 lines of 240 characters),
+sanitized, within a 2 s deadline, and only for a visible detail pane.
+
+**Change feed.** `events --json` (one process, own process group, killed on exit) invalidates the
+session and pane caches on session, pane, tab and rename events only (client connections, which every
+rex command makes, are ignored so reads cannot cause reads). While it is connected a read is reused up to
+60 s; otherwise 3 s polling as before. It reconnects with back-off (1 s to 1 min, 5 min if it never
+connected) and never starts a server.
+
+**Not done**: `session.select` (needs a client), window labels as placements, `rex hosts`.
+
 ## Graph engine (in-process)
 
 The Tasks insights (top picks, blockers, critical path, cycles, actionable and blocked counts) are

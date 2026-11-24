@@ -153,7 +153,7 @@ func TestRunProbesTheBackgroundBeforeBubbleTeOwnsTheTerminal(t *testing.T) {
 	defer func() { probeBackground, startProgram = oldProbe, oldStart }()
 	probeBackground = func() bool { order = append(order, "probe"); return true }
 	startProgram = func(tea.Model, ...tea.ProgramOption) error { order = append(order, "start"); return nil }
-	if err := Run(nil); err != nil {
+	if err := Run(nil, ""); err != nil {
 		t.Fatal(err)
 	}
 	if strings.Join(order, ",") != "probe,start" {

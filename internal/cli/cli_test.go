@@ -21,7 +21,7 @@ func run(t *testing.T, mods []core.Module, args ...string) (code int, out, errOu
 	code = cli.Run(args, cli.Deps{
 		Out: &o, Err: &e, Version: "test",
 		Build:  func(cli.Options) *core.Registry { return core.NewRegistry(mods...) },
-		RunTUI: func([]core.Entry) error { return nil },
+		RunTUI: func([]core.Entry, string) error { return nil },
 	})
 	return code, o.String(), e.String()
 }
@@ -151,7 +151,7 @@ func tuiEntries(t *testing.T, mods ...core.Module) []core.Entry {
 	var o, e bytes.Buffer
 	cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t",
 		Build:  func(cli.Options) *core.Registry { return core.NewRegistry(mods...) },
-		RunTUI: func(en []core.Entry) error { got = en; return nil }})
+		RunTUI: func(en []core.Entry, _ string) error { got = en; return nil }})
 	return got
 }
 
@@ -188,7 +188,7 @@ func TestTUIFailureAndMissingRunnerExitOne(t *testing.T) {
 	build := func(cli.Options) *core.Registry { return core.NewRegistry(ready("a")) }
 	var o, e bytes.Buffer
 	code := cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build,
-		RunTUI: func([]core.Entry) error { return errors.New("no terminal") }})
+		RunTUI: func([]core.Entry, string) error { return errors.New("no terminal") }})
 	if code != 1 || !strings.Contains(e.String(), "tui: no terminal") {
 		t.Fatalf("runner error: code=%d stderr=%q", code, e.String())
 	}
@@ -263,4 +263,75 @@ func TestStatusLabelsATrackerSubsetSourceInTextAndJSON(t *testing.T) {
 	if strings.Contains(out, "source:") {
 		t.Fatalf("a live status carries no source line:\n%s", out)
 	}
+}
+
+func TestTUITabFlagPassesTheLowerCasedTabAndRefusesAnythingElse(t *testing.T) {
+	build := func(cli.Options) *core.Registry { return core.NewRegistry(ready("a")) }
+	for _, tab := range []string{"board", "Tasks", "LEASES", "queues", "doctor"} {
+		var got string
+		var o, e bytes.Buffer
+		code := cli.Run([]string{"tui", "--tab", tab}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build, RunTUI: func(_ []core.Entry, tb string) error { got = tb; return nil }})
+		if code != 0 || got != strings.ToLower(tab) {
+			t.Errorf("%s: code=%d tab=%q %q", tab, code, got, e.String())
+		}
+	}
+	for _, args := range [][]string{{"tui", "--tab", "nope"}, {"tui", "--tab", "../x"}, {"status", "--tab", "board"}, {"doctor", "--tab", "tasks"}} {
+		var ran bool
+		var o, e bytes.Buffer
+		code := cli.Run(args, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build, RunTUI: func([]core.Entry, string) error { ran = true; return nil }})
+		if code != core.ExitUsage || ran || !strings.Contains(e.String(), "--tab") {
+			t.Errorf("%v: code=%d ran=%v %q", args, code, ran, e.String())
+		}
+	}
+	// Without the flag the tab is empty: the first tab.
+	got := "x"
+	var o, e bytes.Buffer
+	cli.Run([]string{"tui"}, cli.Deps{Out: &o, Err: &e, Version: "t", Build: build, RunTUI: func(_ []core.Entry, tb string) error { got = tb; return nil }})
+	if got != "" {
+		t.Errorf("%q", got)
+	}
+}
+
+func TestConfigSetAgentCommandIsAuditedAndShownBack(t *testing.T) {
+	dir := t.TempDir()
+	au := &auditRec{}
+	var o, e bytes.Buffer
+	d := cli.Deps{Out: &o, Err: &e, Version: "t", Config: core.ConfigStore{Path: dir + "/c.json"}, Audit: au}
+	code := cli.Run([]string{"config", "set", "agent_command", `["claude","Work on {task_id}: {title}"]`}, d)
+	if code != 0 || !strings.Contains(o.String(), `work on this will run: claude "Work on {task_id}: {title}"`) {
+		t.Fatalf("%d %q %q", code, o.String(), e.String())
+	}
+	if len(au.lines) != 2 || au.lines[0].Phase != "attempt" || au.lines[1].Phase != "ok" || au.lines[0].Domain != "config" || au.lines[0].Argv[0] != "claude" {
+		t.Fatalf("%+v", au.lines)
+	}
+	// A failed audit stops the change.
+	au2 := &auditRec{err: errors.New("disk full")}
+	o.Reset()
+	d.Audit = au2
+	if code := cli.Run([]string{"config", "set", "agent_command", `["other"]`}, d); code == 0 {
+		t.Fatal("fail closed")
+	}
+	if v, _ := d.Config.Load(); len(v.AgentCommand) != 2 {
+		t.Fatalf("not changed: %v", v.AgentCommand)
+	}
+	// Other keys are not audited.
+	au3 := &auditRec{}
+	d.Audit = au3
+	cli.Run([]string{"config", "set", "actor", "me"}, d)
+	if len(au3.lines) != 0 {
+		t.Fatalf("%+v", au3.lines)
+	}
+}
+
+type auditRec struct {
+	lines []core.AuditEntry
+	err   error
+}
+
+func (a *auditRec) Record(e core.AuditEntry) error {
+	if a.err != nil {
+		return a.err
+	}
+	a.lines = append(a.lines, e)
+	return nil
 }

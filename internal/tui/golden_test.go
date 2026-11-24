@@ -244,6 +244,10 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 func scenarios() []scenario {
 	std := func(t *testing.T, th Theme) tea.Model { return load(t, th, nil) }
 	wsStd := func(t *testing.T, th Theme) tea.Model { return demoWorkspaceModel(t, th, &wsRecorder{}, 100, 32) }
+	wsActionsStd := func(t *testing.T, th Theme) tea.Model {
+		m, _, _ := wsLive(t, newWSRunner(t), []string{"claude", "-p", "Work on {task_id}: {title}"}, 100, 32)
+		return m
+	}
 	return append([]scenario{
 		{name: "queues", build: std, keys: []string{"4"}, tab: "Queues"},
 		{name: "queues-drilled", build: std, keys: []string{"4", "enter"}, tab: "Queues"},
@@ -348,6 +352,10 @@ func scenarios() []scenario {
 		{name: "leases-workspace-ambiguous", build: wsStd, keys: []string{"3", "j", "j"}, tab: "Leases", extra: workspaceSizes},
 		{name: "leases-workspace-notice", build: wsStd, keys: []string{"3", "w"}, tab: "Leases", extra: workspaceSizes},
 		{name: "tasks-workspace", build: wsStd, keys: []string{"2", "j"}, tab: "Tasks", extra: workspaceSizes},
+		// Workspace actions and terminal output, over the real adapter with a scripted runner.
+		{name: "leases-terminal-output", build: wsActionsStd, tab: "Leases", extra: workspaceSizes},
+		{name: "leases-focus-confirm", build: wsActionsStd, keys: []string{"m"}, tab: "Leases", footHas: []string{"y apply", "n/esc cancel"}, extra: workspaceSizes},
+		{name: "leases-work-confirm", build: wsActionsStd, keys: []string{"W"}, tab: "Leases", footHas: []string{"y apply", "n/esc cancel"}, extra: workspaceSizes},
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board", overlay: true},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},

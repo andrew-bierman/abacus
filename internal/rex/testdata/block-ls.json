@@ -1,0 +1,40 @@
+{
+  "blocks": [
+    {
+      "block_id": "block:01a20c1b-bf06-7309-931b-f4c50ebfdfb2",
+      "label": "shell",
+      "creator_name": "com.superlogical.terminal",
+      "flavor": "com.superlogical.terminal.shell",
+      "host_id": "b3eb2262-082b-487d-9e8c-acb189ff08fc",
+      "placement": "placed",
+      "window_id": "window:01a20c1b-bf19-7b23-95b3-5455c748c560"
+    },
+    {
+      "block_id": "block:01a20c1d-f308-7d9c-8b81-e43ed6b6bdb7",
+      "label": "renamed-x",
+      "creator_name": "com.superlogical.terminal",
+      "flavor": "com.superlogical.terminal.shell",
+      "host_id": "b3eb2262-082b-487d-9e8c-acb189ff08fc",
+      "placement": "placed",
+      "window_id": "window:01a20c1d-f31d-7a58-b8eb-0cedf33ff953"
+    },
+    {
+      "block_id": "block:01a20c2b-ed0a-7802-a0b6-b446d8779a01",
+      "label": "bd-43",
+      "creator_name": "com.superlogical.terminal",
+      "flavor": "com.superlogical.terminal.shell",
+      "host_id": "b3eb2262-082b-487d-9e8c-acb189ff08fc",
+      "placement": "placed",
+      "window_id": "window:01a20c2b-ed20-7756-a9e5-cd4d5707a1de"
+    },
+    {
+      "block_id": "block:01a20c2b-ed5d-7ae1-9ad2-5735b1a57c13",
+      "label": "bd-44",
+      "creator_name": "com.superlogical.terminal",
+      "flavor": "com.superlogical.terminal.shell",
+      "host_id": "b3eb2262-082b-487d-9e8c-acb189ff08fc",
+      "placement": "placed",
+      "window_id": "window:01a20c2b-ed20-7756-a9e5-cd4d5707a1de"
+    }
+  ]
+}

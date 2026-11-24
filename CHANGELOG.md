@@ -8,6 +8,15 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Terminal workspace (optional), first class: `m` brings an item's terminal to the front and `W`
+  opens a terminal running the new `agent_command` setting (an argv with `{task_id}` and `{title}`,
+  each word one argument, never a shell) from a task, run or lease, each behind the usual plan,
+  confirm, single-use and audit gate with its own exact argv allowlist (nothing is typed into any
+  terminal). A terminal named for an item shows the end of its output in the detail pane (bounded,
+  sanitized). Live updates replace session polling while the workspace's change feed is connected.
+  `abacus rex layout [--new NAME]` opens the Board, Tasks, Leases and Queues tabs, and
+  `abacus tui --tab NAME` opens a tab first. Status and doctor JSON gain a typed `workspace` state
+  (additive); the supported Rex API window is now 10 to 14.
 - Open-source readiness: `SECURITY.md` (private GitHub advisories), `CONTRIBUTING.md`,
   `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue and pull request templates, `CODEOWNERS`,
   Dependabot config, `.editorconfig`, `docs/README.md` (index), `make help` and `make cover`.

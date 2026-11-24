@@ -9,8 +9,8 @@ import (
 // Every settable key can be read back, search_history reads "on" unless it is "off", and an
 // unknown key is an error rather than an empty value.
 func TestConfigGetReadsEveryKnownKey(t *testing.T) {
-	c := core.Config{Actor: "a", TrackerDir: "/t", LambeConfig: "/l.yaml", BoardURL: "https://b.example"}
-	want := map[string]string{"actor": "a", "tracker_dir": "/t", "lambe_config": "/l.yaml", "board_url": "https://b.example", "search_history": "on"}
+	c := core.Config{Actor: "a", TrackerDir: "/t", LambeConfig: "/l.yaml", BoardURL: "https://b.example", AgentCommand: []string{"a", "{title}"}}
+	want := map[string]string{"actor": "a", "tracker_dir": "/t", "lambe_config": "/l.yaml", "board_url": "https://b.example", "search_history": "on", "agent_command": `["a","{title}"]`}
 	if len(want) != len(core.ConfigKeys) {
 		t.Fatalf("ConfigKeys has %v; update this test with the new key", core.ConfigKeys)
 	}

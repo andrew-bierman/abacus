@@ -20,16 +20,42 @@ func cleanSession(id, label string) session {
 	return session{ID: core.ClipRunes(core.Sanitize(id), core.MaxIDRunes), Label: core.ClipRunes(text, core.MaxLabelRunes), text: text}
 }
 
-// place finds where an item lives among a host's sessions. One claimant is a placement; two or
-// more is an ambiguity with every candidate, never a silent pick; none is neither.
-func place(it core.WorkspaceItem, sessions []session, conventions []string) (*core.Placement, *core.Ambiguity) {
+// block is one terminal pane with its label made safe, like a session.
+type block struct {
+	ID   string
+	text string
+}
+
+// maxBlockSessions bounds how many sessions of one host have their panes read, and maxBlocks how
+// many panes of one session are looked at.
+const (
+	maxBlockSessions = 24
+	maxBlocks        = 200
+)
+
+// place finds where an item lives among a host's sessions: a session named for it, or a pane named
+// for it (a pane opened for the item carries its id as its label). A pane is the more exact claim,
+// so a session that holds one is reported with that pane and its own name is not a second claim.
+// One claimant is a placement; two or more is an ambiguity with every candidate, never a silent
+// pick; none is neither.
+func place(it core.WorkspaceItem, sessions []session, blocks map[string][]block, conventions []string) (*core.Placement, *core.Ambiguity) {
 	var cands []core.Placement
 	for _, s := range sessions {
-		m, ok := core.MatchSessionLabel(s.text, it.ID, conventions)
-		if !ok {
+		found := false
+		for _, b := range blocks[s.ID] {
+			m, ok := core.MatchSessionLabel(b.text, it.ID, conventions)
+			if !ok {
+				continue
+			}
+			found = true
+			cands = append(cands, core.Placement{ID: core.PlacementID(it, it.Host, s.ID+"/"+b.ID), Item: it, Host: it.Host, Session: s.ID, Label: s.Label, Block: b.ID, Match: m})
+		}
+		if found {
 			continue
 		}
-		cands = append(cands, core.Placement{ID: core.PlacementID(it, it.Host, s.ID), Item: it, Host: it.Host, Session: s.ID, Label: s.Label, Match: m})
+		if m, ok := core.MatchSessionLabel(s.text, it.ID, conventions); ok {
+			cands = append(cands, core.Placement{ID: core.PlacementID(it, it.Host, s.ID), Item: it, Host: it.Host, Session: s.ID, Label: s.Label, Match: m})
+		}
 	}
 	switch len(cands) {
 	case 0:
