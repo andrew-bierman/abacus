@@ -26,7 +26,12 @@ may change behavior, and patch versions are fixes and small additions.
   additive) says for every state how it was learned (`source`); a state inferred from files is marked
   `~` in the TUI. Native feeds read the process list and session-file tails (bounded, read only) and
   tmux pane ids; an optional built-in live monitor adds context, rate limits, ports and subagents. See
-  `docs/agents.md`. New dependency: `gopsutil` (BSD-3-Clause) and its transitive modules.
+  `docs/agents.md`. New dependency: `gopsutil` (BSD-3-Clause) and its transitive modules, with its
+  license shipped verbatim.
+- abtop 0.5.5 (MIT) is built in as an optional fifth tool: pinned and sha256-verified per platform like
+  the others, its license shipped verbatim, run with one argv (`--json`), a deadline, an output cap and
+  a scrubbed environment (`ABACUS_ABTOP_BIN` overrides it). The bundle scripts now read `.tar.xz`
+  assets and `{triple}` asset names. Without it the Agents tab still works from processes and files.
 
 - Open-source readiness: `SECURITY.md` (private GitHub advisories), `CONTRIBUTING.md`,
   `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue and pull request templates, `CODEOWNERS`,
