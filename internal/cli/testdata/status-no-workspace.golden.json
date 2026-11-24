@@ -78,6 +78,12 @@
           "machine": "mbp"
         }
       ]
+    },
+    "agents": {
+      "domain": "agents",
+      "title": "Agents",
+      "state": "not-connected",
+      "agents": []
     }
   }
 }

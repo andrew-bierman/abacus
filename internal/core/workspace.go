@@ -25,12 +25,14 @@ const (
 	WorkspaceLease WorkspaceKind = "lease"
 	WorkspaceTask  WorkspaceKind = "task"
 	WorkspaceQueue WorkspaceKind = "queue"
+	// WorkspaceAgent is a running coding agent, named by its worktree or repository.
+	WorkspaceAgent WorkspaceKind = "agent"
 )
 
 // Known reports whether the kind is one this build recognizes.
 func (k WorkspaceKind) Known() bool {
 	switch k {
-	case WorkspaceRun, WorkspaceLease, WorkspaceTask, WorkspaceQueue:
+	case WorkspaceRun, WorkspaceLease, WorkspaceTask, WorkspaceQueue, WorkspaceAgent:
 		return true
 	}
 	return false

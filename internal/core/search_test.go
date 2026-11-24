@@ -55,6 +55,7 @@ func searchFixtures() []core.SearchFeed {
 		{Domain: core.DomainBoard, Docs: board, ReadAt: searchNow},
 		{Domain: core.DomainLeases, Docs: leases, ReadAt: searchNow},
 		{Domain: core.DomainQueues, Docs: queues, ReadAt: searchNow},
+		{Domain: core.DomainAgents, ReadAt: searchNow}, // searched, nothing running
 	}
 }
 

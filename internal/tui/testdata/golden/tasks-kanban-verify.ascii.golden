@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ╭─ ▸ Checking the current state… ──────╮
 │ reading ac-01 before the confirm     │
 │ screen                               │
@@ -12,7 +12,7 @@
 
 esc back · q quit · ? help …
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
 ╭─ ▸ Checking the current state… ──────╮
 │ reading ac-01 before the confirm     │
@@ -43,7 +43,7 @@ esc back · q quit · ? help …
 
 esc back · q quit · ? help …
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ╭─ ▸ Checking the current state… ──────────────────────────────────────────────╮
 │ reading ac-01 before the confirm screen                                      │
 │                                                                              │
@@ -56,7 +56,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 esc back · q quit · ? help · tab/→ next tab
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Checking the current state… ──────────────────────────────────────────────╮
 │ reading ac-01 before the confirm screen                                      │
@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 esc back · q quit · ? help · tab/→ next tab
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Checking the current state… ──────────────────────────────────────────────────────────────────────────────────────╮
 │ reading ac-01 before the confirm screen                                                                              │
 │                                                                                                                      │
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 
 esc back · q quit · ? help · tab/→ next tab
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Checking the current state… ──────────────────────────────────────────────────────────────────────────────────────╮
 │ reading ac-01 before the confirm screen                                                                              │
@@ -131,7 +131,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 
 esc back · q quit · ? help · tab/→ next tab
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Checking the current state… ──────────────────────────╮
 │ reading ac-01 before the confirm screen                  │
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 
 esc back · q quit · ? help · tab/→ next tab
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Checking the current state… ──────────────────────────────────────────────────────────────────╮
 │ reading ac-01 before the confirm screen                                                          │

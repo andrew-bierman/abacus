@@ -10,12 +10,14 @@ nothing is installed.
 | [Lambe](https://github.com/andrew-bierman/lambe) | 0.10.1 | GPL-3.0 | the upstream release executable |
 | [beads-lease](https://github.com/andrew-bierman/beads-lease) | 0.1.0 | MIT | the release executable |
 | Vercel Board CLI, [`@vercel/board`](https://github.com/vercel/board) | 0.54.0 | Apache-2.0 | compiled with bun from the npm package at a pinned integrity |
+| [abtop](https://github.com/graykode/abtop) (optional: the Agents tab works without it) | 0.5.5 | MIT | the upstream release executable (`.tar.xz` archive; the pins come from the upstream release) |
 
 Linked into the binary as a Go library, not run as a program:
 
 | Library | Version | License |
 | --- | --- | --- |
 | bv, [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (`pkg/analysis` and dependencies) | 0.27.0 | MIT (with an additional AI-provider clause); license text shipped unmodified |
+| [gopsutil](https://github.com/shirou/gopsutil) (`process`, for the Agents process list) | 4.26.10 | BSD-3-Clause; license text shipped unmodified |
 
 The tools stay separate programs run as subprocesses, unmodified; abacus imports none of their
 code. bv is different: the `abacus` binary statically links parts of its Go packages for the graph

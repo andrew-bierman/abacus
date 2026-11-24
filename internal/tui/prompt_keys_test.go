@@ -104,7 +104,7 @@ func TestShellKeysNeverCollideWithAnySectionKey(t *testing.T) {
 			shell[k] = name
 		}
 	}
-	setups := map[string][]string{"board": {"1"}, "tasks": {"2"}, "tasks flat": {"2", "T"}, "graph": {"2", "g"}, "kanban": {"2", "v"}, "kanban detail": {"2", "v", "enter"}, "kanban group": {"2", "v", "s"}, "insights": {"2", "V"}, "filtered": {"2", "/", "a", "enter"}, "leases": {"3"}, "queues": {"4"}, "doctor": {"5"}}
+	setups := map[string][]string{"board": {"1"}, "tasks": {"2"}, "tasks flat": {"2", "T"}, "graph": {"2", "g"}, "kanban": {"2", "v"}, "kanban detail": {"2", "v", "enter"}, "kanban group": {"2", "v", "s"}, "insights": {"2", "V"}, "filtered": {"2", "/", "a", "enter"}, "leases": {"3"}, "queues": {"4"}, "doctor": {"6"}, "agents": {"5"}}
 	for name, keys := range setups {
 		for _, w := range []int{60, 120} {
 			m := sized(m0, w, 32)
@@ -145,7 +145,7 @@ func TestShellKeysNeverCollideWithAnySectionKey(t *testing.T) {
 func TestHelpOverlayListsThePromptCommands(t *testing.T) {
 	m := press(pm(t, 100, 40), "?")
 	out := strings.Join(lines(m), "\n")
-	for _, want := range []string{"Commands", "tasks board leases queues doctor", "list tree kanban graph insights", "search TEXT", "filter QUERY", "ctx NAME", "help", ": ", "command"} {
+	for _, want := range []string{"Commands", "tasks board leases queues agents doctor", "list tree kanban graph insights", "search TEXT", "filter QUERY", "ctx NAME", "help", ": ", "command"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("help lacks %q:\n%s", want, out)
 		}

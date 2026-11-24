@@ -173,6 +173,49 @@
         }
       },
       "license_sha256": "2bb477965038ed36b0bcb8316ff12428cdd5b4ee7d513147bb6f37bdef0b372c"
+    },
+    {
+      "name": "abtop",
+      "repo": "graykode/abtop",
+      "license": "MIT",
+      "version": "0.5.5",
+      "tag_template": "v{version}",
+      "asset_template": "abtop-{triple}.tar.xz",
+      "checksums_asset": "sha256.sum",
+      "member": "abtop-{triple}/abtop",
+      "triples": {
+        "darwin-amd64": "x86_64-apple-darwin",
+        "darwin-arm64": "aarch64-apple-darwin",
+        "linux-amd64": "x86_64-unknown-linux-gnu",
+        "linux-arm64": "aarch64-unknown-linux-gnu"
+      },
+      "license_source": {
+        "from": "archive",
+        "member": "abtop-{triple}/LICENSE"
+      },
+      "assets": {
+        "darwin-amd64": {
+          "asset": "abtop-x86_64-apple-darwin.tar.xz",
+          "sha256": "d44923a88b3ec214b496e72a16fdb426e2f7aadc0324515c4c2fbb8e93c68a7b",
+          "member": "abtop-x86_64-apple-darwin/abtop"
+        },
+        "darwin-arm64": {
+          "asset": "abtop-aarch64-apple-darwin.tar.xz",
+          "sha256": "9d0b4554d1efcde099d86197edec48d6dc19e2eea3df133a960ad2ecdfe18703",
+          "member": "abtop-aarch64-apple-darwin/abtop"
+        },
+        "linux-amd64": {
+          "asset": "abtop-x86_64-unknown-linux-gnu.tar.xz",
+          "sha256": "ae2f264561c11751748b4a6fb254a1648d5951fb541cf6d8e074f2cf75bdedf8",
+          "member": "abtop-x86_64-unknown-linux-gnu/abtop"
+        },
+        "linux-arm64": {
+          "asset": "abtop-aarch64-unknown-linux-gnu.tar.xz",
+          "sha256": "4820294003933717ec5e906d9bbc475f2f751c03ed079d25eda1ebcd9e2ab58c",
+          "member": "abtop-aarch64-unknown-linux-gnu/abtop"
+        }
+      },
+      "license_sha256": "6f87cf882047eb8206d6fedee3d8427244c9e2fd976b5414bffa3e038194b287"
     }
   ],
   "linked_licenses": [
@@ -184,6 +227,15 @@
       "license_path": "LICENSE",
       "license_sha256": "32a82e0a5754e72e51fae44b65a936c831c07376f21c90f5fb9e76897fcc3509",
       "linked_what": "pkg/analysis and the packages it depends on, for the in-process graph engine"
+    },
+    {
+      "name": "gopsutil",
+      "module": "github.com/shirou/gopsutil/v4",
+      "version": "v4.26.10",
+      "license": "BSD-3-Clause (shipped verbatim, with the notice for one file derived from Go's encoding/binary)",
+      "license_path": "LICENSE",
+      "license_sha256": "ad1e64b82c04fb2ee6bfe521bff01266971ffaa70500024d4ac767c6033aafb9",
+      "linked_what": "its process package, for the Agents domain's process list"
     }
   ]
 }

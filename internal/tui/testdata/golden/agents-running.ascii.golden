@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Agents]  5/6
+state:error  sort:attention  ~ guessed …
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────╮
+│ ▸ ✕ error~  Claude Code  attic@chor… │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  5/6
+────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent …
+state:error  sort:attention  ~ guessed …
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────╮
+│ ▸ ✕ error~  Claude Code  attic@chor… │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+state:error  sort:attention  ~ guessed from files
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────────────╮
+│ ▸ ✕ error~  Claude Code  attic@chor…  Bump the lo…  3m  ···· ?    ~transcri… │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+state:error  sort:attention  ~ guessed from files
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────────────╮
+│ ▸ ✕ error~  Claude Code  attic@chor…  Bump the lo…  3m  ···· ?    ~transcri… │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+state:error  sort:attention  ~ guessed from files
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ ✕ error~  Claude Code  attic@chore/de…  Bump the lo…  3m  ···· ?   │ │ Claude Code (error)                         │
+│                                                                      │ │ state guessed from transcript, not reporte… │
+│                                                                      │ │                                             │
+│                                                                      │ │ task       Bump the lockfile                │
+│                                                                      │ │ where      attic@chore/deps                 │
+│                                                                      │ │ directory  /work/attic                      │
+│                                                                      │ │   ↕ +4 more                                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+state:error  sort:attention  ~ guessed from files
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ ✕ error~  Claude Code  attic@chore/de…  Bump the lo…  3m  ···· ?   │ │ Claude Code (error)                         │
+│                                                                      │ │ state guessed from transcript, not reporte… │
+│                                                                      │ │                                             │
+│                                                                      │ │ task       Bump the lockfile                │
+│                                                                      │ │ where      attic@chore/deps                 │
+│                                                                      │ │ directory  /work/attic                      │
+│                                                                      │ │ agent      claude-demo-1                    │
+│                                                                      │ │ last seen  3m ago                           │
+│                                                                      │ │ context    ············ ?                   │
+│                                                                      │ │ seen by    transcript                       │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────
+state:error  sort:attention  ~ guessed from files
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────╮
+│ ▸ ✕ error~  Claude Code  attic@chore/…  Bump the lo…  3m │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+state:error  sort:attention  ~ guessed from files
+╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
+│ ▸ ✕ error~  Claude Code  attic@chore/…  Bump the lo…  3m │ │ Claude Code (error)                 │
+│                                                          │ │ state guessed from transcript, not… │
+│                                                          │ │                                     │
+│                                                          │ │ task       Bump the lockfile        │
+│                                                          │ │ where      attic@chore/deps         │
+│                                                          │ │ directory  /work/attic              │
+│                                                          │ │ agent      claude-demo-1            │
+│                                                          │ │ last seen  3m ago                   │
+│                                                          │ │ context    ············ ?           │
+│                                                          │ │ seen by    transcript               │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness…

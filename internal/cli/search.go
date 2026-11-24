@@ -23,7 +23,7 @@ func (l *domainList) Set(v string) error {
 	for _, p := range strings.Split(v, ",") {
 		d := core.DomainID(strings.ToLower(strings.TrimSpace(p)))
 		if !validSearchDomain(d) {
-			return fmt.Errorf("unknown domain %q (tasks, board, leases, queues)", p)
+			return fmt.Errorf("unknown domain %q (tasks, board, leases, queues, agents)", p)
 		}
 		*l = append(*l, d)
 	}
@@ -58,7 +58,7 @@ func runSearch(rest []string, d Deps) int {
 	var doms domainList
 	limit := core.DefaultSearchLimit
 	fs.BoolVar(&asJSON, "json", false, "print JSON")
-	fs.Var(&doms, "domain", "search only these domains (tasks, board, leases, queues); repeat or comma-separate")
+	fs.Var(&doms, "domain", "search only these domains (tasks, board, leases, queues, agents); repeat or comma-separate")
 	fs.IntVar(&limit, "limit", core.DefaultSearchLimit, fmt.Sprintf("results per domain (1 to %d)", core.MaxSearchLimit))
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
 	fs.BoolVar(&o.Demo, "demo", false, "search fixtures instead of the real domains")
@@ -214,6 +214,9 @@ func readSearchFeed(ctx context.Context, entries []core.Entry, now time.Time, id
 	case core.DomainQueues:
 		f.State, f.Reason = feedState(dom.Queues.Header), dom.Queues.Reason
 		f.Docs = core.QueuesSearchDocs(dom.Queues)
+	case core.DomainAgents:
+		f.State, f.Reason = feedState(dom.Agents.Header), dom.Agents.Reason
+		f.Docs = core.AgentsSearchDocs(dom.Agents)
 	}
 	if f.State == core.SearchNotConnected || (f.State == core.SearchDegraded && id != core.DomainTasks) {
 		f.Docs = nil

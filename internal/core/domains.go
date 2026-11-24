@@ -16,10 +16,11 @@ const (
 	DomainTasks  DomainID = "tasks"
 	DomainLeases DomainID = "leases"
 	DomainQueues DomainID = "queues"
+	DomainAgents DomainID = "agents"
 )
 
 // DomainOrder is the navigation order.
-var DomainOrder = []DomainID{DomainBoard, DomainTasks, DomainLeases, DomainQueues}
+var DomainOrder = []DomainID{DomainBoard, DomainTasks, DomainLeases, DomainQueues, DomainAgents}
 
 // Title is the user-facing name of a domain.
 func (d DomainID) Title() string {
@@ -32,6 +33,8 @@ func (d DomainID) Title() string {
 		return "Leases"
 	case DomainQueues:
 		return "Queues"
+	case DomainAgents:
+		return "Agents"
 	}
 	return string(d)
 }
@@ -323,6 +326,8 @@ type DomainsReport struct {
 	Tasks  TasksReport  `json:"tasks"`
 	Leases LeasesReport `json:"leases"`
 	Queues QueuesReport `json:"queues"`
+	// Agents is the running coding agents, merged from every feed. Additive.
+	Agents AgentsReport `json:"agents"`
 	// Workspace is where items live as terminal sessions, from the optional workspace
 	// provider. Additive: omitted when there is no provider or nothing to report.
 	Workspace *WorkspaceReport `json:"workspace,omitempty"`
@@ -601,6 +606,8 @@ func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport
 		r.readLeases(ctx, entries)
 	case DomainQueues:
 		r.readQueues(ctx, entries)
+	case DomainAgents:
+		r.Agents = ReadAgents(ctx, entries)
 	}
 	return r
 }
@@ -612,6 +619,7 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	r.readTasks(ctx, entries)
 	r.readLeases(ctx, entries)
 	r.readQueues(ctx, entries)
+	r.Agents = ReadAgents(ctx, entries)
 	waitWorkspace := startWorkspaceRead(ctx, entries, WorkspaceItems(r)) // overlaps the reads below
 	r.readBoard(ctx, entries)
 	ins := readInsightsFor(ctx, entries, r.Tasks)

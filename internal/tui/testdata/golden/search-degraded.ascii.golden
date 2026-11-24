@@ -1,5 +1,5 @@
 === 40x12 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ╭─ ▸ Search ───────────────────────────╮
 │ search ac-▏                  14 hits │
 │ Tasks (14)                           │
@@ -8,11 +8,11 @@
 │   ac-30  saved fil…  open · P3       │
 │   ac-25  doctor: s…  blocked · P2 ·… │
 │   ac-20  split gra…  in progress · … │
-│   ↕ +13 more                         │
+│   ↕ +14 more                         │
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
 === 40x30 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────╮
 │ search ac-▏                  14 hits │
@@ -33,9 +33,9 @@ esc close · enter jump · ↑/↓ move …
 │   ac-36  verify to…  deferred · P3 … │
 │                                      │
 │ Board and Queues are not connected.  │
+│ Agents is still loading…             │
 │ Leases could not be read just now:   │
 │ could not reach the hub.             │
-│                                      │
 │                                      │
 │                                      │
 │                                      │
@@ -43,7 +43,7 @@ esc close · enter jump · ↑/↓ move …
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
 === 80x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                          14 hits │
 │ Tasks (14)                                                                   │
@@ -52,11 +52,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │   ac-30  saved filters                                open · P3              │
 │   ac-25  doctor: stale export warning                 blocked · P2 · ada     │
 │   ac-20  split graph source from export               in progress · P1 · ada │
-│   ↕ +12 more                                                                 │
+│   ↕ +13 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 80x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                          14 hits │
@@ -77,8 +77,8 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │   ac-36  verify tool flags against help               deferred · P3 · mei    │
 │                                                                              │
 │ Board and Queues are not connected.                                          │
+│ Agents is still loading…                                                     │
 │ Leases could not be read just now: could not reach the hub.                  │
-│                                                                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -87,7 +87,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                                                                  14 hits │
 │ Tasks (14)                                                                                                           │
@@ -96,11 +96,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 │   ac-30  saved filters                                                                        open · P3              │
 │   ac-25  doctor: stale export warning                                                         blocked · P2 · ada     │
 │   ac-20  split graph source from export                                                       in progress · P1 · ada │
-│   ↕ +12 more                                                                                                         │
+│   ↕ +13 more                                                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                                                                  14 hits │
@@ -121,8 +121,8 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 │   ac-36  verify tool flags against help                                                       deferred · P3 · mei    │
 │                                                                                                                      │
 │ Board and Queues are not connected.                                                                                  │
+│ Agents is still loading…                                                                                             │
 │ Leases could not be read just now: could not reach the hub.                                                          │
-│                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
@@ -131,7 +131,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 60x24 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────╮
 │ search ac-▏                                      14 hits │
@@ -152,11 +152,11 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │   ac-36  verify tool flags agai…  deferred · P3 · mei    │
 │                                                          │
 │ Board and Queues are not connected.                      │
-│   ↕ +2 more                                              │
+│   ↕ +3 more                                              │
 ╰──────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group …
 === 100x32 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
 │ search ac-▏                                                                              14 hits │
@@ -177,8 +177,8 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet 
 │   ac-36  verify tool flags against help                                   deferred · P3 · mei    │
 │                                                                                                  │
 │ Board and Queues are not connected.                                                              │
+│ Agents is still loading…                                                                         │
 │ Leases could not be read just now: could not reach the hub.                                      │
-│                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │

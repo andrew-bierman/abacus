@@ -39,7 +39,7 @@ const (
 )
 
 // SearchOrder is the order of the groups in a report.
-var SearchOrder = []DomainID{DomainTasks, DomainBoard, DomainLeases, DomainQueues}
+var SearchOrder = []DomainID{DomainTasks, DomainBoard, DomainLeases, DomainQueues, DomainAgents}
 
 // SearchKind is what a document is.
 type SearchKind string
@@ -54,6 +54,7 @@ const (
 	KindQueued    SearchKind = "queued"
 	KindAttention SearchKind = "attention"
 	KindHistory   SearchKind = "history"
+	KindAgent     SearchKind = "agent"
 )
 
 // searchFields is the set of grammar fields each kind has (the field table in the plan). A
@@ -76,6 +77,7 @@ var searchFields = func() map[SearchKind]map[string]bool {
 		KindQueued:    set("status"),
 		KindAttention: set(),
 		KindHistory:   set("status", "updated"),
+		KindAgent:     set("status", "who", "updated"),
 	}
 }()
 
@@ -704,6 +706,26 @@ func QueuesSearchDocs(r QueuesReport) []SearchDoc {
 	for _, x := range r.History {
 		out = append(out, SearchDoc{Domain: DomainQueues, Kind: KindHistory, ID: x.Issue, Ref: x.Issue, Title: x.Title, Status: x.Outcome,
 			Updated: parseWhen(x.UpdatedAt), Meta: joinMeta("history", x.Outcome)})
+	}
+	return out
+}
+
+// AgentsSearchDocs are the agents of an agents read. Status is the state, Who the harness; the
+// repository, branch and directory are searchable text.
+func AgentsSearchDocs(r AgentsReport) []SearchDoc {
+	out := make([]SearchDoc, 0, len(r.Agents))
+	for _, a := range r.Agents {
+		title := a.Task
+		if title == "" {
+			title = a.Title()
+		}
+		where := a.Repo
+		if a.Branch != "" {
+			where += "@" + a.Branch
+		}
+		out = append(out, SearchDoc{Domain: DomainAgents, Kind: KindAgent, ID: a.ID, Ref: a.ID, Title: title,
+			Body: strings.Join([]string{a.Title(), a.Repo, a.Branch, a.Cwd, a.Model}, " "), Status: string(a.State), Who: a.Title(),
+			Updated: parseWhen(a.LastActivity), Meta: joinMeta(a.Title(), string(a.State), where)})
 	}
 	return out
 }

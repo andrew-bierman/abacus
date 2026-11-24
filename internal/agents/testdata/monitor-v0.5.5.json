@@ -1,0 +1,38 @@
+{
+  "generated_at_ms": 1795501634000,
+  "host": {"cpu_pct": 12.0, "mem_pct": 30.0, "load1": 0.5},
+  "aggregate": {"mem_mb": 400, "avg_ctx_pct": 40.0, "active_count": 2},
+  "token_rate": 600.0,
+  "interval_ms": 2000,
+  "sessions": [
+    {
+      "agent_cli": "claude", "launch_surface": "Cli", "pid": 4101, "session_id": "sess-claude-3",
+      "project_name": "orchard", "cwd": "/work/orchard", "config_root": "~/.claude", "status": "Executing",
+      "model": "claude-demo-1", "effort": "", "version": "9.9.9", "context_percent": 72.0, "context_window": 200000,
+      "total_tokens": 150000, "input_tokens": 1, "output_tokens": 1, "cache_read_tokens": 1, "cache_create_tokens": 1,
+      "turn_count": 12, "mem_mb": 300, "git_branch": "feat/pears", "git_added": 1, "git_modified": 2,
+      "started_at_ms": 1795500000000, "elapsed_secs": 1634, "summary": "Pear counter",
+      "current_task": "Edit report.go",
+      "children": [
+        {"pid": 4201, "command": "go build ./...", "mem_kb": 120000, "port": null},
+        {"pid": 4202, "command": "node dev-server.js", "mem_kb": 80000, "port": 5173}
+      ],
+      "compaction_count": 0, "token_history": [1, 2],
+      "subagents": [{"name": "Survey the orchard", "status": "working", "tokens": 900}],
+      "tool_calls": [], "chat_messages": []
+    },
+    {
+      "agent_cli": "codex", "pid": 4102, "session_id": "sess-codex-1", "cwd": "/work/mill", "status": "Waiting",
+      "model": "codex-demo-1", "context_percent": 0.0, "context_window": 0, "total_tokens": 4321,
+      "git_branch": "main", "summary": "", "current_task": null, "children": [], "subagents": []
+    },
+    {"agent_cli": "claude", "pid": 4103, "status": "SomethingNew", "cwd": "/work/barn"},
+    {"status": "Waiting"}
+  ],
+  "rate_limits": [
+    {"source": "claude", "five_hour_pct": 35.0, "five_hour_resets_at": 1795512444, "seven_day_pct": 12.0, "seven_day_resets_at": 1795933644, "updated_at": 1795501634},
+    {"source": "codex", "five_hour_pct": 9.0}
+  ],
+  "orphan_ports": [{"port": 4000, "pid": 4999, "command": "node old-server.js", "project_name": "attic"}],
+  "mcp_servers": []
+}

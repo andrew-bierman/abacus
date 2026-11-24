@@ -1,5 +1,5 @@
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                              gr · 37 tasks · 5 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                      gr · 37 tasks · 5 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                                    37 tasks · 5 ready
 focus gr-syt · depth 2 · blocking links
@@ -32,7 +32,7 @@ focus gr-syt · depth 2 · blocking links
 ╰────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth · ↑/↓ move …
 === 80x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                37 tasks · 5 ready
 focus gr-syt · depth 2 · blocking links
@@ -57,7 +57,7 @@ focus gr-syt · depth 2 · blocking links
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights            37 tasks · 5 ready
 focus gr-syt · depth 2 · blocking links

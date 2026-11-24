@@ -94,8 +94,8 @@ func TestOverviewNotesAVersionThatDiffersFromTheBuiltInOneWithoutBlocking(t *tes
 func TestOverviewHeadlineCountsOptionalThingsToSetUp(t *testing.T) {
 	bd := tasksMod{Fake: &modtest.Fake{IDStr: "bd"}, rep: core.TasksReport{Header: core.Header{Source: core.SourceLive}, Counts: core.TaskCounts{Total: 1}}}
 	o := core.BuildOverview(context.Background(), []core.Entry{{Module: bd, Detection: core.Detection{State: core.Ready}}})
-	// Board, Leases and Queues have no provider here: three optional things, Tasks is fine.
-	if o.Headline != "Ready — 3 optional things to set up" {
+	// Board, Leases, Queues and Agents have no provider here: four optional things, Tasks is fine.
+	if o.Headline != "Ready — 4 optional things to set up" {
 		t.Fatalf("%q", o.Headline)
 	}
 }

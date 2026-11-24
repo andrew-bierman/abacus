@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 
+	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -39,7 +42,16 @@ func env(t *testing.T, vars map[string]string) Env {
 	cwd, _ := os.Getwd()
 	root := t.TempDir()
 	return Env{Getenv: func(k string) string { return vars[k] }, Cwd: cwd,
-		Config: core.ConfigStore{Path: filepath.Join(root, "c", "config.json")}, Workspace: filepath.Join(root, "ws")}
+		Config: core.ConfigStore{Path: filepath.Join(root, "c", "config.json")}, Workspace: filepath.Join(root, "ws"), Agents: hermeticAgents(),
+		Monitor: &agents.MonitorOptions{LookPath: func(string) (string, error) { return "", errors.New("no monitor on PATH in tests") }}}
+}
+
+// hermeticAgents is the Agents domain's sources with nothing in them: no processes, no session files,
+// no terminals. A test never reads the real machine.
+func hermeticAgents() *agents.Options {
+	return &agents.Options{FS: fstest.MapFS{}, Home: "/nonexistent",
+		Procs: func(context.Context) ([]agents.Proc, error) { return nil, nil },
+		Panes: func(context.Context) ([]agents.Pane, error) { return nil, nil }}
 }
 
 func detect(t *testing.T, e Env) map[string]core.Detection {
@@ -290,5 +302,21 @@ func TestDemoRegistryProvidesEveryDomain(t *testing.T) {
 	}
 	if p.BoardWriter != nil {
 		t.Fatal("a demo board cannot post")
+	}
+}
+
+// A monitor on PATH is never run by a test: the hermetic Env finds none.
+func TestNoRealMonitorIsRunFromPathInTests(t *testing.T) {
+	dir := t.TempDir()
+	marker := filepath.Join(dir, "ran")
+	if err := os.WriteFile(filepath.Join(dir, "abtop"), []byte("#!/bin/sh\ntouch "+marker+"\necho '{\"sessions\":[]}'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+"/usr/bin:/bin")
+	t.Cleanup(core.SetEmbeddedForTest(nil))
+	e := env(t, nil)
+	core.ReadAgents(context.Background(), Build(cli.Options{}, e).Detect(context.Background()))
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("a test ran a monitor found on PATH")
 	}
 }

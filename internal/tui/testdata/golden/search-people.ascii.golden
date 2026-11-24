@@ -1,5 +1,5 @@
 === 40x12 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ╭─ ▸ Search ───────────────────────────╮
 │ search who:ada▏               6 hits │
 │   ac-12  wire the …  in progress · … │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
 === 40x30 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────╮
 │ search who:ada▏               6 hits │
@@ -43,7 +43,7 @@ esc close · enter jump · ↑/↓ move …
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
 === 80x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                       6 hits │
 │   ac-12  wire the lease heartbeat                  in progress · P0 · ada    │
@@ -56,7 +56,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 80x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                       6 hits │
@@ -87,7 +87,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                                               6 hits │
 │   ac-12  wire the lease heartbeat                                                          in progress · P0 · ada    │
@@ -100,7 +100,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                                               6 hits │
@@ -131,7 +131,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 60x24 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────╮
 │ search who:ada▏                                   6 hits │
@@ -156,7 +156,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group …
 === 100x32 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
 │ search who:ada▏                                                                           6 hits │

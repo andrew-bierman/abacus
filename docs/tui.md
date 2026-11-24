@@ -1,7 +1,7 @@
 # abacus TUI
 
 The TUI renders core's typed domain reports and holds no logic of its own. It is the fleet
-cockpit: one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. Tasks is abacus's own work
+cockpit: one tab per domain (Board, Tasks, Leases, Queues, Agents) plus Doctor. Tasks is abacus's own work
 browser: every task listed, sorted and filtered, with a detail pane (see "Tasks" below); the
 tree of epics and children is the default list when a tracker has parent-child links, the kanban
 board is the Kanban view and the dependency graph is the Graph view (both below).
@@ -24,7 +24,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | Key | Action |
 | --- | --- |
 | `tab`, `right` / `shift+tab`, `left` | next / previous domain |
-| `1`-`5` | jump to Board, Tasks, Leases, Queues, Doctor |
+| `1`-`6` | jump to Board, Tasks, Leases, Queues, Agents, Doctor |
 | `j` `k`, `down` `up` | move the cursor (scroll elsewhere); on the Board it selects the next thread or task; on a Tasks detail they scroll it |
 | `n` `e` `x` | Tasks: new task, edit, close the selected task. Each opens a form (`enter` next field and, on the last, review; `tab`/`shift+tab` move; `esc` cancels) and then a confirm screen showing the exact change and command: `y` applies, `n` or `esc` cancels |
 | `t` `u` `a` `p` `b` `B` `c` | Tasks (List view): on the selected task, add a label, remove a label, assign (blank unassigns), set the priority, add a blocker, remove a blocker, add a comment. Each opens a one-field form (`enter` reviews, `esc` cancels) and then the same confirm screen: `y` applies, `n` or `esc` cancels. From another Tasks view they say `switch to the List view (v)` |
@@ -51,6 +51,33 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 
 While a form, the confirm screen or the filter is open, every key (including `q`, digits and `?`)
 goes to it. Nothing writes except `y` on the confirm screen.
+
+## Agents
+
+Every running coding agent, from one merged read (see `docs/agents.md`). The list sits beside the
+detail from 100 columns; below that `enter` opens the detail and `esc` returns. The tab reads when
+shown and then about every 10 seconds while visible, one read at a time.
+
+```
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%          rate limits, when known
+1 port(s) still open after their agent ended: 4000      orphaned ports, when known
+sort:attention  ~ guessed from files                    active filters and sort
+╭─ ▸ Agents 6 · 310 tok/s ──────────────╮ ╭─ Agent ─────────────╮
+│ ▸ ◐ waiting   Codex  mill@main  ...   │ │ detail of the agent │
+```
+
+- **State and evidence.** `●` running, `◐` waiting for a person, `○` idle, `✕` error, `?` unknown,
+  `·` stopped. A `~` after the state means it was inferred from files, not reported by the agent; from
+  120 columns the evidence (`monitor`, `~transcript`, `~process`) has its own column.
+- **Sort and filter.** `s` cycles attention (default: what needs a person first), recent, harness and
+  repo; `f` cycles the states that exist; `H` cycles the harnesses that exist; `/` filters by words
+  in the task, repo, branch, harness or directory. `esc` peels the detail, then the query, state and
+  harness filters, one at a time. The selected agent stays selected through a refresh.
+- **Detail.** Task, where (repo, branch, worktree), directory, model and pid, last seen, tokens and
+  cost when known, a context gauge, which sources saw it, the terminal and the line to copy to get
+  there (abacus never runs it), subagents as a tree, ports and child processes. `J` `K` scroll it.
+- Unknown values are `?` or `-`, never zero. A source that could not be read is a one-line note
+  under the filters; the other sources still show.
 
 ## Tasks
 

@@ -37,7 +37,7 @@ func doctorView(t *testing.T, es []core.Entry, w int) string {
 func TestDoctorLeadsWithWhatFailedAndTheOneFixNotAMissingTool(t *testing.T) {
 	t.Cleanup(core.SetEmbeddedForTest(embedtest.Standard().FS))
 	v := doctorView(t, bundledEntries(core.Detection{State: core.Absent, Detail: "lambe is not available (bundled copy ignored: could not write into /x: permission denied)"}), 260)
-	for _, want := range []string{"Needs attention", "Built-in tools: 3 of 4 ready; 1 unusable (lambe)", "(unavailable)", "The built-in lambe could not be set up: could not write into /x: permission denied", "ABACUS_TOOLS_DIR"} {
+	for _, want := range []string{"Needs attention", "Built-in tools: 4 of 5 ready; 1 unusable (lambe)", "(unavailable)", "The built-in lambe could not be set up: could not write into /x: permission denied", "ABACUS_TOOLS_DIR"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("missing %q:\n%s", want, v)
 		}
@@ -52,7 +52,7 @@ func TestDoctorLeadsWithWhatFailedAndTheOneFixNotAMissingTool(t *testing.T) {
 func TestDoctorShowsTheBuiltInLineWhenAllAreReady(t *testing.T) {
 	t.Cleanup(core.SetEmbeddedForTest(embedtest.Standard().FS))
 	v := doctorView(t, bundledEntries(core.Detection{State: core.Ready, Version: "1.0.0", Source: core.SourceEmbedded}), 100)
-	if !strings.Contains(v, "Built-in tools: 4 of 4 ready") || strings.Contains(v, "unavailable") || !strings.Contains(v, "built in") {
+	if !strings.Contains(v, "Built-in tools: 5 of 5 ready") || strings.Contains(v, "unavailable") || !strings.Contains(v, "built in") {
 		t.Errorf("%s", v)
 	}
 }

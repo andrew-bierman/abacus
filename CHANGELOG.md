@@ -17,6 +17,26 @@ may change behavior, and patch versions are fixes and small additions.
   `abacus rex layout [--new NAME]` opens the Board, Tasks, Leases and Queues tabs, and
   `abacus tui --tab NAME` opens a tab first. Status and doctor JSON gain a typed `workspace` state
   (additive); the supported Rex API window is now 10 to 14.
+
+- Agents: a fifth domain, one dashboard of every running coding agent (Claude Code and Codex first;
+  OpenCode, Gemini CLI and Aider as processes). `abacus agents [--json] [--harness] [--state] [--repo]`,
+  an Agents tab (list and detail, sort and filter, context and rate-limit gauges, ports, children,
+  subagent tree, the line to copy to reach an agent's terminal), search coverage, `:agents`, a status
+  line and Doctor rows, and demo data with invented agents. The typed `AgentsReport` (schema_version 1,
+  additive) says for every state how it was learned (`source`); a state inferred from files is marked
+  `~` in the TUI. Native feeds read the process list and session-file tails (bounded, read only) and
+  tmux pane ids; an optional built-in live monitor adds context, rate limits, ports and subagents. See
+  `docs/agents.md`. New dependency: `gopsutil` (BSD-3-Clause) and its transitive modules, with its
+  license shipped verbatim.
+- Agents hardening: every string from outside is sanitized at the core boundary (rate limits and orphan
+  ports included), secrets are masked more widely (flags, `NAME=VALUE`, URL passwords), non-regular
+  files (FIFOs) are never opened, only the current user's agents are listed (`--all` for the rest), and a
+  shared session id no longer merges two live processes.
+- abtop 0.5.5 (MIT) is built in as an optional fifth tool: pinned and sha256-verified per platform like
+  the others, its license shipped verbatim, run with one argv (`--json`), a deadline, an output cap and
+  a scrubbed environment (`ABACUS_ABTOP_BIN` overrides it). The bundle scripts now read `.tar.xz`
+  assets and `{triple}` asset names. Without it the Agents tab still works from processes and files.
+
 - Open-source readiness: `SECURITY.md` (private GitHub advisories), `CONTRIBUTING.md`,
   `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue and pull request templates, `CODEOWNERS`,
   Dependabot config, `.editorconfig`, `docs/README.md` (index), `make help` and `make cover`.
@@ -32,6 +52,7 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- The Doctor tab moves from key `5` to `6` (Agents is `5`); `:agents` jumps to the new tab.
 - The internal planning notes moved from `docs/plans/` to `docs/design/` (history kept).
 - Demo and fixture data no longer carries real-looking host, user and task names (invented ones
   instead); no behavior change.

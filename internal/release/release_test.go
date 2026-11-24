@@ -242,7 +242,7 @@ func TestPackageUntouchedArchivePasses(t *testing.T) {
 		}
 	}
 	sort.Strings(members)
-	if got := strings.Join(members, " "); got != "LICENSE THIRD_PARTY_NOTICES.md abacus third_party/bd/LICENSE third_party/bv/LICENSE" {
+	if got := strings.Join(members, " "); got != "LICENSE THIRD_PARTY_NOTICES.md abacus third_party/bd/LICENSE third_party/bv/LICENSE third_party/gopsutil/LICENSE" {
 		t.Fatalf("archive files: %s", got)
 	}
 	fi, _ := os.Stat(filepath.Join(base, "abacus"))
@@ -572,5 +572,99 @@ func TestUpdateRepinsALinkedLicenseFromTheModuleCache(t *testing.T) {
 	must(t, json.Unmarshal(b, &m))
 	if m.Linked[0].SHA != pin {
 		t.Fatalf("re-pinned to %s, want the module's license %s", m.Linked[0].SHA, pin)
+	}
+}
+
+// gopsutil is linked (the Agents process list), so its license ships verbatim, and the notices say so.
+func TestPackageShipsGopsutilLicenseVerbatim(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go is not installed")
+	}
+	base := newRig(t, nil).unpack()
+	got, err := os.ReadFile(filepath.Join(base, "third_party", "gopsutil", "LICENSE"))
+	must(t, err)
+	out, err := exec.Command("go", "mod", "download", "-json", "github.com/shirou/gopsutil/v4@"+goModVersion(t, "github.com/shirou/gopsutil/v4")).Output()
+	must(t, err)
+	var dl struct{ Dir string }
+	must(t, json.Unmarshal(out, &dl))
+	want, err := os.ReadFile(filepath.Join(dl.Dir, "LICENSE"))
+	must(t, err)
+	if !bytes.Equal(got, want) {
+		t.Fatal("third_party/gopsutil/LICENSE is not the module's LICENSE byte for byte")
+	}
+	notices, _ := os.ReadFile(filepath.Join(base, "THIRD_PARTY_NOTICES.md"))
+	if !strings.Contains(string(notices), "gopsutil") || !strings.Contains(string(notices), "third_party/gopsutil/LICENSE") {
+		t.Fatal("the notices do not name gopsutil and its license file")
+	}
+}
+
+// goModVersion is the version go.mod requires of module.
+func goModVersion(t *testing.T, module string) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("..", "..", "go.mod"))
+	must(t, err)
+	for _, l := range strings.Split(string(b), "\n") {
+		if f := strings.Fields(l); len(f) >= 2 && f[0] == module {
+			return f[1]
+		}
+		if f := strings.Fields(l); len(f) >= 3 && f[0] == "require" && f[1] == module {
+			return f[2]
+		}
+	}
+	t.Fatalf("go.mod does not require %s", module)
+	return ""
+}
+
+// linkedModules are the modules compiled into the binary for a shipped platform, as the notices
+// script derives them (go list -deps, cgo off).
+func linkedModules(t *testing.T, goos, goarch string) map[string][2]string {
+	t.Helper()
+	cmd := exec.Command("go", "list", "-deps", "-f", `{{with .Module}}{{if not .Main}}{{.Path}}{{"\t"}}{{.Version}}{{"\t"}}{{.Dir}}{{end}}{{end}}`, "./cmd/abacus")
+	cmd.Dir = filepath.Join("..", "..")
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS="+goos, "GOARCH="+goarch)
+	out, err := cmd.Output()
+	must(t, err)
+	mods := map[string][2]string{}
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if f := strings.Split(l, "\t"); len(f) == 3 {
+			mods[f[0]] = [2]string{f[1], f[2]}
+		}
+	}
+	return mods
+}
+
+// Every module linked into a shipped binary has an entry in the notices, and its license is one
+// abacus can redistribute (permissive, so compatible with the GPL-3.0 tools carried beside it). A new
+// dependency with a license this list does not know fails here until someone reads it.
+func TestEveryLinkedModuleHasANoticeAndAPermissiveLicense(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go is not installed")
+	}
+	permissive := []string{"Apache License", "Permission is hereby granted", "Redistribution and use in source and binary forms", "MIT License", "BSD 3-Clause", "BSD 2-Clause", "ISC License", "distributed under BSD license"}
+	notices, err := os.ReadFile(filepath.Join(newRig(t, nil).unpack(), "THIRD_PARTY_NOTICES.md"))
+	must(t, err)
+	for _, p := range [][2]string{{"linux", "amd64"}, {"linux", "arm64"}, {"darwin", "amd64"}, {"darwin", "arm64"}} {
+		for path, vd := range linkedModules(t, p[0], p[1]) {
+			files, _ := filepath.Glob(filepath.Join(vd[1], "LICEN[SC]E*"))
+			if len(files) == 0 {
+				t.Errorf("%s/%s: %s has no license file", p[0], p[1], path)
+				continue
+			}
+			var text string
+			for _, f := range files {
+				b, _ := os.ReadFile(f)
+				text += string(b)
+			}
+			ok := false
+			for _, s := range permissive {
+				ok = ok || strings.Contains(text, s)
+			}
+			if !ok {
+				t.Errorf("%s/%s: %s has a license this test does not recognize as permissive", p[0], p[1], path)
+			}
+			if p[0] == "linux" && p[1] == "amd64" && !strings.Contains(string(notices), "### "+path+" "+vd[0]) {
+				t.Errorf("the notices have no entry for %s %s", path, vd[0])
+			}
+		}
 	}
 }

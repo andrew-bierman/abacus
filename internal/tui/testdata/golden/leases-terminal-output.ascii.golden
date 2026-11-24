@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  Tasks  [Leases]  Queues  Doctor
+ [Leases]  3/6
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─╮
 │ ▸ (held)  bd-43  alice             ? │
 │   (free)  bd-77                      │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  Tasks  [Leases]  Queues  Doctor
+ [Leases]  3/6
 ────────────────────────────────────────
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─╮
 │ ▸ (held)  bd-43  alice             ? │
@@ -43,7 +43,7 @@
 
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─────────────────────────────────────────╮
 │ ▸ (held)  bd-43  alice                                                     ? │
 │   (free)  bd-77                                                              │
@@ -56,7 +56,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 80x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─────────────────────────────────────────╮
 │ ▸ (held)  bd-43  alice                                                     ? │
@@ -87,7 +87,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)  bd-43  alice                                             ? │ │ bd-43 (held)                                │
 │   (free)  bd-77                                                      │ │                                             │
@@ -100,7 +100,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · m show terminal · W work on this
 === 120x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)  bd-43  alice                                             ? │ │ bd-43 (held)                                │
@@ -131,7 +131,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · m show terminal · W work on this
 === 60x24 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─────────────────────╮
 │ ▸ (held)  bd-43  alice                                 ? │
@@ -156,7 +156,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move …
 === 140x32 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 1 held, 0 stale, 1 free ─────────────────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────────────╮
 │ ▸ (held)  bd-43  alice                                                ?  General │ │ bd-43 (held)                                        │

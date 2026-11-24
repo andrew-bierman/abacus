@@ -54,7 +54,7 @@ func idx(id string) int {
 func TestAnEmbeddedBuildShowsEveryToolAsBuiltIn(t *testing.T) {
 	asBuild(t, true)
 	o := core.BuildOverview(context.Background(), builtIn(core.SourceEmbedded))
-	if !o.Ready || o.Bundled.Line != "Built-in tools: 4 of 4 ready" || !o.Bundled.Embedded {
+	if !o.Ready || o.Bundled.Line != "Built-in tools: 5 of 5 ready" || !o.Bundled.Embedded {
 		t.Fatalf("%+v", o.Bundled)
 	}
 	for _, tl := range o.Tools {
@@ -73,7 +73,7 @@ func TestAFailedBuiltInToolSaysWhatFailedAndTheOneFix(t *testing.T) {
 	if o.Ready || o.Headline != "Needs attention: "+want {
 		t.Fatalf("%q", o.Headline)
 	}
-	if o.Bundled.Line != "Built-in tools: 3 of 4 ready; 1 unusable (lambe)" {
+	if o.Bundled.Line != "Built-in tools: 4 of 5 ready; 1 unusable (lambe)" {
 		t.Fatalf("%q", o.Bundled.Line)
 	}
 	for _, a := range o.Attention {
@@ -159,16 +159,16 @@ func TestBuiltInSummaryCountsReadyCopiesAndSaysWhatIsWrong(t *testing.T) {
 		}
 		return core.SummarizeBundled(mods)
 	}
-	if b := sum(builtIn(core.SourceEmbedded)); b.Line != "Built-in tools: 4 of 4 ready" || !b.Complete() || b.Verified != 4 {
+	if b := sum(builtIn(core.SourceEmbedded)); b.Line != "Built-in tools: 5 of 5 ready" || !b.Complete() || b.Verified != 5 {
 		t.Fatalf("%+v", b)
 	}
 	es := builtIn(core.SourceEmbedded)
 	es[idx("lambe")] = readyEntry("lambe", core.SourceOverride)
-	if b := sum(es); b.Line != "Built-in tools: 3 of 4 ready; 1 using your own copy (lambe)" || !b.Complete() {
+	if b := sum(es); b.Line != "Built-in tools: 4 of 5 ready; 1 using your own copy (lambe)" || !b.Complete() {
 		t.Fatalf("%+v", b)
 	}
 	es[idx("beads-lease")] = absentEntry("beads-lease", "x")
-	if b := sum(es); b.Complete() || b.Line != "Built-in tools: 2 of 4 ready; 1 using your own copy (lambe); 1 unusable (beads-lease)" {
+	if b := sum(es); b.Complete() || b.Line != "Built-in tools: 3 of 5 ready; 1 using your own copy (lambe); 1 unusable (beads-lease)" {
 		t.Fatalf("%+v", b)
 	}
 	if b := sum(builtIn(core.SourceDemo)); b.Line != "Built-in tools: demo data, nothing to check" || !b.Complete() {
@@ -210,7 +210,7 @@ func TestTheVersionJSONCarriesTheBuiltInSummaryWithoutBumpingTheSchema(t *testin
 		t.Fatal(err)
 	}
 	bundled, _ := m["bundled"].(map[string]any)
-	if m["schema_version"] != float64(1) || bundled["line"] != "Built-in tools: 4 of 4 ready" || bundled["verified"] != float64(4) || bundled["embedded"] != true {
+	if m["schema_version"] != float64(1) || bundled["line"] != "Built-in tools: 5 of 5 ready" || bundled["verified"] != float64(5) || bundled["embedded"] != true {
 		t.Fatalf("%v", m)
 	}
 }

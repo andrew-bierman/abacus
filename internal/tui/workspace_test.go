@@ -231,7 +231,7 @@ func TestDemoSessionJumpKeysOnlyShowTheCommand(t *testing.T) {
 func TestWorkspaceKeyIsUnboundElsewhere(t *testing.T) {
 	rec := &wsRecorder{}
 	m := demoWorkspaceModel(t, asciiTheme(), rec, 100, 32)
-	for _, tab := range []string{"1", "4", "5"} { // Board, Queues (o, not w), Doctor
+	for _, tab := range []string{"1", "4", "6"} { // Board, Queues (o, not w), Doctor
 		m = press(m, tab)
 		before := m.View()
 		if after := press(m, "w").View(); after != before {

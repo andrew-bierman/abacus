@@ -48,9 +48,10 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 | Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; graph insights (next pick, blockers, critical path, cycles) in a second view | create, update, close (with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
+| Agents | every running coding agent (Claude Code, Codex, ...): state, repo and branch, task, context, rate limits, ports, subagents; where its state came from is always shown | read only (see [docs/agents.md](docs/agents.md)) |
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
-`abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders, and
+`abacus tasks|leases|queues|board|agents [--json]` print the same typed reports the TUI renders, and
 `abacus tasks list|show|board|graph|history` print the task list, one task in full, the kanban columns and the dependency graph (`--query`, `--sort`, `--json`) and a task's history, and
 `abacus search "QUERY"` (or `ctrl+k` in the TUI) searches every domain at once. In the TUI, `:` opens a k9s-style command prompt (`:tasks`, `:graph`, `:filter label:ui`, `:search foo`, `:help`) that only navigates, and `d` and `y` describe the selected task or show it as JSON.
 
@@ -82,8 +83,8 @@ analysis fails on a tracker that has tasks, the tab says so in one plain line an
 
 ## Built in
 
-abacus is one self-contained binary: `bd`, Lambe, beads-lease and the Vercel Board CLI are inside
-it, pinned and sha256-verified at build time, and unpacked on first use into a private per-user
+abacus is one self-contained binary: `bd`, Lambe, beads-lease, the Vercel Board CLI and the live
+agent monitor abtop are inside it, pinned and sha256-verified at build time, and unpacked on first use into a private per-user
 folder. Nothing is fetched at run time. Graph analysis comes from
 [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer)'s analysis package, linked in.
 `abacus licenses` prints every notice and license text. How it works, the threat model and how the
@@ -95,14 +96,16 @@ binary is built: [docs/built-in-tools.md](docs/built-in-tools.md).
 | [Lambe](https://github.com/andrew-bierman/lambe) | 0.10.1 | GPL-3.0 |
 | [beads-lease](https://github.com/andrew-bierman/beads-lease) | 0.1.0 | MIT |
 | Vercel Board CLI ([`@vercel/board`](https://github.com/vercel/board)) | 0.54.0 | Apache-2.0 |
+| [abtop](https://github.com/graykode/abtop) (optional, Agents) | 0.5.5 | MIT |
 | [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (linked library) | 0.27.0 | MIT, see its LICENSE |
+| [gopsutil](https://github.com/shirou/gopsutil) (linked library) | 4.26.10 | BSD-3-Clause |
 
 Doctor shows each tool as `built in` with its version. If the tools folder cannot be used it says
 which folder and the one fix; set `ABACUS_TOOLS_DIR` to a writable folder.
 
 ## Architecture
 
-`internal/core` holds all the real logic: the domain reports (Board, Tasks, Leases, Queues),
+`internal/core` holds all the real logic: the domain reports (Board, Tasks, Leases, Queues, Agents),
 provider interfaces and the registry that maps detected providers to domains, the write gate,
 detection, doctor and status aggregation, the typed report JSON (`schema_version`), sanitizing and the exit-code rules.
 Adapters (`internal/lambe`, `internal/beadslease`, `internal/bd`, `internal/rex`) compose the
@@ -127,6 +130,10 @@ or error messages that help you fix one.
   not a graph), computed in this process with bv's analysis package over the tracker's
   `.beads/issues.jsonl`. It is not a tool and has no switch: there is no bv program to bundle,
   find or run.
+- **Agents** (`internal/agents`): native, in this process. It reads the process list and the session
+  files Claude Code and Codex already write (bounded tails, read only), plus tmux pane ids, and merges
+  them with the optional built-in live monitor's snapshot (one argv, `--json`) by pid or session id.
+  See `docs/agents.md`.
 - **b9s**: an optional extra for its full tree and graph view: press `o` on Tasks to open it in the
   tracker directory (probes for it first). abacus's own Tasks list and detail do not need it: without
   it `o` says that b9s is an optional separate program abacus did not find.
@@ -217,14 +224,14 @@ single-use and audit gate. Leases and Queues writes are blocked upstream: see `d
 
 ### TUI
 
-`abacus tui` has one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. A tab whose tool
+`abacus tui` has one tab per domain (Board, Tasks, Leases, Queues, Agents) plus Doctor. A tab whose tool
 needs one-time setup shows a single prompt (see First run) instead of an error. In Queues, Leases and Board, below
 100 columns the list fills the screen and Enter drills into the detail; at 100 and wider the detail
 sits beside the list. This is the 80-column Tasks render with colors off (`NO_COLOR`), from the golden test,
 using data from fixture providers:
 
 ```
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
@@ -255,3 +262,12 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 ```
+
+## Credits
+
+- [abtop](https://github.com/graykode/abtop) by graykode (MIT): the live agent monitor behind the Agents
+  tab's richer detail, and the model for its panels. abacus runs it as a subprocess and imports none of
+  its code.
+- [gopsutil](https://github.com/shirou/gopsutil) (BSD-3-Clause): the process list.
+- [agent-deck](https://github.com/asheshgoplani/agent-deck) and [agentsview](https://github.com/wesm/agentsview)
+  (MIT): read as references for telling what an agent is doing from its files; no code was used.

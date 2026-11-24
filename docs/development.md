@@ -6,6 +6,9 @@
   tool tests run is `bd`, against temp projects with an isolated `HOME`, and they skip when absent.
   Sidecar tests use fake binaries in temp dirs.
 - Use a private `GOCACHE` for builds.
+- The Agents domain reads the process list and the session folders of Claude Code and Codex. Tests never do:
+  `app.Env.Agents` is nil unless `DefaultEnv` sets it, every source is injected, and the `internal/agents`
+  tests make reaching for the real ones panic.
 - Building needs Go 1.26.11 or newer (`go.mod` names it, because the in-process graph
   engine links bv's analysis package). Go's default `GOTOOLCHAIN=auto` downloads that
   toolchain for you the first time you build (it needs network access); offline, or with

@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ╭─ ▸ Task ac-12 ───────────────────────╮
 │ ac-12  bug                           │
 │ wire the lease heartbeat             │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 esc close · ↑/↓ scroll
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
 ╭─ ▸ Task ac-12 ───────────────────────╮
 │ ac-12  bug                           │
@@ -43,7 +43,7 @@ esc close · ↑/↓ scroll
 ╰──────────────────────────────────────╯
 esc close · ↑/↓ scroll
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────╮
 │ ac-12  bug                                                                   │
 │ wire the lease heartbeat                                                     │
@@ -56,7 +56,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · ↑/↓ scroll
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────╮
 │ ac-12  bug                                                                   │
@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · ↑/↓ scroll
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ac-12  bug                                                                                                           │
 │ wire the lease heartbeat                                                                                             │
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · ↑/↓ scroll
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ac-12  bug                                                                                                           │
@@ -131,7 +131,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · ↑/↓ scroll
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Task ac-12 ───────────────────────────────────────────╮
 │ ac-12  bug                                               │
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────╯
 esc close · ↑/↓ scroll
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Task ac-12 ───────────────────────────────────────────────────────────────────────────────────╮
 │ ac-12  bug                                                                                       │

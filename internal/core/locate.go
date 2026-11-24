@@ -24,7 +24,7 @@ const (
 )
 
 // KnownTools are the tools abacus bundles and composes, by the name it looks them up under.
-var KnownTools = []string{"bd", "lambe", "beads-lease", "board"}
+var KnownTools = []string{"bd", "lambe", "beads-lease", "board", "abtop"}
 
 // SidecarDirs lists where bundled tools are looked for, in order. It is a variable so tests
 // can point it at temp dirs; the default follows the running executable.

@@ -76,7 +76,7 @@ func (s *Set) Write() {
 // Standard is a set of the four built-in tools, as scripts.
 func Standard() *Set {
 	var ts []Tool
-	for _, n := range []string{"bd", "lambe", "beads-lease", "board"} {
+	for _, n := range []string{"bd", "lambe", "beads-lease", "board", "abtop"} {
 		ts = append(ts, Tool{Name: n, Version: "1.0.0", Body: Script(n)})
 	}
 	return New("# notices\n", map[string]string{"bd": "BD LICENSE\n", "bv": "BV LICENSE\n"}, ts...)

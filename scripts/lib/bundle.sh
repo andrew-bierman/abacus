@@ -13,7 +13,10 @@
 #   tools[].repo               hand    GitHub owner/repo the release assets come from
 #   tools[].license            hand    license name shown in THIRD_PARTY_NOTICES.md
 #   tools[].tag_template       hand    release tag, {version} is replaced (for example v{version})
-#   tools[].asset_template     hand    asset name; {version}, {os}, {arch} are replaced
+#   tools[].asset_template     hand    asset name; {version}, {os}, {arch} (and {triple}) are replaced;
+#                                      a .tar.xz asset is read as xz, anything else as gzip
+#   tools[].triples            hand    optional platform (os-arch) -> upstream target name, for {triple}
+#                                      in asset_template, member and license_source.member
 #   tools[].checksums_asset    hand    the upstream checksum file next to the assets
 #   tools[].member             hand    the one executable inside the asset (same placeholders)
 #   tools[].license_source     hand    {from: archive, member} or {from: tag, path}
@@ -60,6 +63,12 @@ sha_stdin() { if command -v sha256sum >/dev/null; then sha256sum | cut -d' ' -f1
 # expand TEMPLATE VERSION OS ARCH
 expand() {
   local s="$1"; s="${s//\{version\}/$2}"; s="${s//\{os\}/$3}"; echo "${s//\{arch\}/$4}"
+}
+
+# expand_tool TOOL TEMPLATE VERSION OS ARCH: expand, plus {triple} from the tool's `triples` map.
+expand_tool() {
+  local s; s="$(expand "$2" "$3" "$4" "$5")"
+  echo "${s//\{triple\}/$(tool_field "$1" ".triples[\"$4-$5\"] // empty")}"
 }
 
 # tool_field TOOL JQ_EXPR  (the expression is applied to that tool's object)
@@ -140,7 +149,8 @@ fetch_license() {
 # Refuses an archive that has any link, absolute or `..` member, then writes exactly one regular
 # file from it to DEST (through stdout, so nothing is ever extracted to a path the archive picks).
 extract_member() {
-  local archive="$1" want="${2#./}" dest="$3" listed="" ty n
+  local archive="$1" want="${2#./}" dest="$3" listed="" ty n z=z
+  case "$archive" in *.tar.xz) z=J ;; esac # the format follows the asset's extension (needs xz)
   while IFS=$'\t' read -r ty n; do
     case "$n" in /*|..|../*|*/../*|*/..) die "unsafe member '$n' in $(basename "$archive")" ;; esac
     case "$ty" in l|h) die "link member '$n' in $(basename "$archive")" ;; esac
@@ -148,9 +158,9 @@ extract_member() {
       [ "$ty" = "-" ] || die "$want is not a regular file in $(basename "$archive")"
       listed="$n"
     fi
-  done < <(paste -d$'\t' <(tar -tvzf "$archive" | cut -c1) <(tar -tzf "$archive"))
+  done < <(paste -d$'\t' <(tar -tv"$z"f "$archive" | cut -c1) <(tar -t"$z"f "$archive"))
   [ -n "$listed" ] || die "no member '$want' in $(basename "$archive")"
-  tar -xzOf "$archive" "$listed" >"$dest" || die "cannot read $want from $(basename "$archive")"
+  tar -x"$z"Of "$archive" "$listed" >"$dest" || die "cannot read $want from $(basename "$archive")"
 }
 
 # fetch TOOL PLATFORM -> prints the path of the verified asset in $cache (download with gh when it
@@ -190,7 +200,7 @@ install_tool() {
   chmod 0755 "$bindir/$tool"
   lic="$licdir/$tool/LICENSE"
   if [ "$(tool_field "$tool" .license_source.from)" = archive ]; then
-    extract_member "$asset_path" "$(tool_field "$tool" .license_source.member)" "$lic"
+    extract_member "$asset_path" "$(expand_tool "$tool" "$(tool_field "$tool" .license_source.member)" "$(tool_field "$tool" .version)" "${p%-*}" "${p#*-}")" "$lic"
   else
     fetch_license "$tool" "$(tool_field "$tool" .version)" "$lic"
   fi

@@ -156,6 +156,9 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 	}
 	for _, d := range core.DomainOrder {
 		sec := domainSection(d, prov, handoff, cfg)
+		if d == core.DomainAgents {
+			sec = newAgentsSection(func(ctx context.Context) core.AgentsReport { return core.ReadAgents(ctx, entries) })
+		}
 		if h, ok := sec.(wsHost); ok { // the optional workspace layer; never runs without a key
 			l := newWsLayer(string(d), prov.Workspace, isDemo(entries), handoff)
 			l.attach(prov, cfg.audit, cfg.agent, cfg.cwd)

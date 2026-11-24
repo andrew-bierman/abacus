@@ -153,6 +153,7 @@ func renderDomains(w io.Writer, d core.DomainsReport) {
 	renderTasks(w, d.Tasks)
 	renderLeases(w, d.Leases)
 	renderQueues(w, d.Queues)
+	head(w, d.Agents.Header) // the list is `abacus agents`: a status line is a summary
 }
 
 // runDomain handles `board|tasks|leases|queues [--json]` and `tasks create|update|close`.

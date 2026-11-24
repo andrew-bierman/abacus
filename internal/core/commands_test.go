@@ -129,7 +129,7 @@ func TestCompleteCommandTable(t *testing.T) {
 		in   string
 		want []string
 	}{
-		{"", []string{"tasks", "board", "leases", "queues", "doctor", "list", "tree", "kanban", "graph", "insights", "search ", "filter ", "ctx ", "help", "q"}},
+		{"", []string{"tasks", "board", "leases", "queues", "agents", "doctor", "list", "tree", "kanban", "graph", "insights", "search ", "filter ", "ctx ", "help", "q"}},
 		{"ta", []string{"tasks", "task"}},
 		{"tas", []string{"tasks", "task"}},
 		{"tasks", []string{"tasks"}},
@@ -148,7 +148,7 @@ func TestCompleteCommandTable(t *testing.T) {
 		{"filter is:b", []string{"filter is:blocked"}},
 		{"filter !is:r", []string{"filter !is:ready"}},
 		{"filter -pri", []string{"filter -priority:"}},
-		{"search in:", []string{"search in:tasks", "search in:board", "search in:leases", "search in:queues"}},
+		{"search in:", []string{"search in:tasks", "search in:board", "search in:leases", "search in:queues", "search in:agents"}},
 		{"filter label:ui st", []string{"filter label:ui status:"}},
 		{"filter ar", nil}, // "parent" contains "ar" but does not start with it
 		{"ctx ", nil},
@@ -202,9 +202,9 @@ func TestRegistryGuardRefuses(t *testing.T) {
 		"a tool in the name":   func(c []Command) []Command { c[0].Name = "bd"; return c },
 		"a tool in an alias":   func(c []Command) []Command { c[0].Aliases = []string{"beads-lease"}; return c },
 		"a tool in the text":   func(c []Command) []Command { c[0].Desc = "go to Tasks (bd)"; return c },
-		"a tool in an arg":     func(c []Command) []Command { c[10].Arg.Name = "lambe"; return c },
+		"a tool in an arg":     func(c []Command) []Command { c[idx(c, "search")].Arg.Name = "lambe"; return c },
 		"a tab with no title":  func(c []Command) []Command { c[0].Tab = ""; return c },
-		"a view with no name":  func(c []Command) []Command { c[5].View = ""; return c },
+		"a view with no name":  func(c []Command) []Command { c[idx(c, "list")].View = ""; return c },
 		"no description":       func(c []Command) []Command { c[0].Desc = ""; return c },
 		"an alias of a name":   func(c []Command) []Command { c[0].Aliases = []string{c[1].Name}; return c },
 		"a required empty arg": func(c []Command) []Command { c[0].Arg = ArgSpec{Required: true}; return c },
@@ -271,4 +271,14 @@ func TestContextLine(t *testing.T) {
 	if (ContextLine{}).String() != "" {
 		t.Error("empty context has text")
 	}
+}
+
+// idx is the position of the command called name, so a mutation does not depend on table order.
+func idx(c []Command, name string) int {
+	for i := range c {
+		if c[i].Name == name {
+			return i
+		}
+	}
+	panic("no command " + name)
 }

@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
  List [Kanban] Graph  Insights
 group: status · / to filter       0 of 0
 ╭─ ▸ Kanban ───────────────────────────╮
@@ -12,7 +12,7 @@ group: status · / to filter       0 of 0
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
  List [Kanban] Graph  Insights
 group: status · / to filter       0 of 0
@@ -43,7 +43,7 @@ group: status · / to filter       0 of 0
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
  List [Kanban] Graph  Insights                                 0 tasks · 0 ready
 group: status · / to filter                                               0 of 0
 ╭─ ▸ Kanban ───────────────────────────────────────────────────────────────────╮
@@ -56,7 +56,7 @@ group: status · / to filter                                               0 of 
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · H/L move card · h/l column …
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
  List [Kanban] Graph  Insights                                 0 tasks · 0 ready
 group: status · / to filter                                               0 of 0
@@ -87,7 +87,7 @@ group: status · / to filter                                               0 of 
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · H/L move card · h/l column …
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                                fleet · 0 tasks · 0 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                        fleet · 0 tasks · 0 ready
  List [Kanban] Graph  Insights                                                                         0 tasks · 0 ready
 group: status · / to filter                                                                                       0 of 0
 ╭─ ▸ Kanban ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -100,7 +100,7 @@ group: status · / to filter                                                    
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · H/L move card · h/l column · ↑/↓ move · enter details · s group …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                                fleet · 0 tasks · 0 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                        fleet · 0 tasks · 0 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  List [Kanban] Graph  Insights                                                                         0 tasks · 0 ready
 group: status · / to filter                                                                                       0 of 0
@@ -131,7 +131,7 @@ group: status · / to filter                                                    
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · H/L move card · h/l column · ↑/↓ move · enter details · s group …
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
  List [Kanban] Graph  Insights             0 tasks · 0 ready
 group: status · / to filter                           0 of 0
@@ -156,7 +156,7 @@ group: status · / to filter                           0 of 0
 ╰──────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · H/L move car…
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                            fleet · 0 tasks · 0 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                    fleet · 0 tasks · 0 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List [Kanban] Graph  Insights                                                     0 tasks · 0 ready
 group: status · / to filter                                                                   0 of 0

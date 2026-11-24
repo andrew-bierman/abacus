@@ -140,6 +140,14 @@
       "state": "degraded",
       "reason": "the read failed",
       "docs": 0
+    },
+    {
+      "domain": "agents",
+      "title": "Agents",
+      "state": "searched",
+      "docs": 0,
+      "read_at": "2026-11-23T12:00:00Z",
+      "age": "just now"
     }
   ]
 }

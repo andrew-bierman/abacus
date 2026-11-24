@@ -20,14 +20,16 @@ func chrome(m tea.Model) []string {
 	return []string{ls[0], ls[1], ls[len(ls)-1]}
 }
 
-func domainNames() []string { return []string{"Board", "Tasks", "Leases", "Queues", "Doctor"} }
+func domainNames() []string {
+	return []string{"Board", "Tasks", "Leases", "Queues", "Agents", "Doctor"}
+}
 
 // Domain language only: no nav, header or footer text names a tool, on any tab, at any width,
 // whether the providers are connected or not.
 func TestNavHeaderAndFooterNeverNameATool(t *testing.T) {
 	for _, sc := range append(scenarios(), scenario{name: "none", tab: "Board", build: func(*testing.T, Theme) tea.Model { return New(nil, WithTheme(asciiTheme())) }}) {
 		for _, w := range []int{40, 60, 80, 120} {
-			for _, k := range []string{"1", "2", "3", "4", "5"} {
+			for _, k := range []string{"1", "2", "3", "4", "5", "6"} {
 				m := sized(sc.build(t, asciiTheme()), w, 30)
 				m = press(m, k)
 				for _, l := range chrome(m) {

@@ -50,7 +50,7 @@ func TestDoctorInAnEmbeddedBuildSaysWhatFailedAndTheOneFix(t *testing.T) {
 	out := runBuild(t, true, builtInRegistry(), "doctor")
 	for _, want := range []string{
 		"Needs attention: The built-in lambe could not be set up: could not write into /x: permission denied. Choose a folder you can write to with ABACUS_TOOLS_DIR=<folder>, then press r.",
-		"Built-in tools: 3 of 4 ready; 1 unusable (lambe)",
+		"Built-in tools: 4 of 5 ready; 1 unusable (lambe)",
 		"lambe        unavailable",
 		"bd           built in",
 	} {
@@ -75,7 +75,7 @@ func TestDoctorInADevelopmentBuildSaysToolsAreNotBuiltInOnce(t *testing.T) {
 
 func TestVersionSaysTheBuiltInToolsLine(t *testing.T) {
 	out := runBuild(t, true, builtInRegistry(), "version")
-	if !strings.Contains(out, "Built-in tools: 3 of 4 ready; 1 unusable (lambe)") || !strings.Contains(out, "lambe      unavailable") || strings.Contains(out, "bundled copy ignored") {
+	if !strings.Contains(out, "Built-in tools: 4 of 5 ready; 1 unusable (lambe)") || !strings.Contains(out, "lambe      unavailable") || strings.Contains(out, "bundled copy ignored") {
 		t.Errorf("%s", out)
 	}
 	js := runBuild(t, true, builtInRegistry(), "version", "--json")
@@ -87,7 +87,7 @@ func TestVersionSaysTheBuiltInToolsLine(t *testing.T) {
 			Embedded        bool
 		}
 	}
-	if err := json.Unmarshal([]byte(js), &d); err != nil || d.SchemaVersion != 1 || d.Bundled.Total != 4 || d.Bundled.Verified != 3 || len(d.Bundled.Unusable) != 1 || !d.Bundled.Embedded {
+	if err := json.Unmarshal([]byte(js), &d); err != nil || d.SchemaVersion != 1 || d.Bundled.Total != 5 || d.Bundled.Verified != 4 || len(d.Bundled.Unusable) != 1 || !d.Bundled.Embedded {
 		t.Errorf("%v %+v\n%s", err, d, js)
 	}
 }

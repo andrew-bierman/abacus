@@ -1,0 +1,4 @@
+{"type":"user","sessionId":"sess-claude-3","cwd":"/work/orchard","message":{"role":"user","content":"Fix the sorting bug"}}
+{"type":"assistant","sessionId":"sess-claude-3","cwd":"/work/orchard","message":{"role":"assistant","model":"claude-demo-1","content":[{"type":"tool_use","id":"t9","name":"Bash","input":{}}]}}
+{"type":"user","sessionId":"sess-claude-3","cwd":"/work/orchard","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t9","content":"ok"}]}}
+{"not json at all

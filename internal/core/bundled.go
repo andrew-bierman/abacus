@@ -25,6 +25,7 @@ var bundledDomain = map[string]DomainID{"bd": DomainTasks, "beads-lease": Domain
 
 // optionalAdds names what a tool that nothing else needs adds, by module ID.
 var optionalAdds = map[string]string{
+	"abtop": "optional: adds richer live detail to the Agents tab (context use, rate limits, ports, subagents); everything else works without it",
 	"board": "optional: adds the Board tab (channels, threads and tasks); everything else works without it",
 }
 

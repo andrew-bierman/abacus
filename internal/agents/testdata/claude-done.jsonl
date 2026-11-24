@@ -1,0 +1,3 @@
+{"type":"user","sessionId":"sess-claude-2","cwd":"/work/cellar","message":{"role":"user","content":[{"type":"text","text":"Rename the barrel type; token sk-demo1234567890abcdef must never show"}]}}
+{"type":"user","sessionId":"sess-claude-2","cwd":"/work/cellar","isMeta":true,"message":{"role":"user","content":"<command-name>/clear</command-name>"}}
+{"type":"assistant","sessionId":"sess-claude-2","cwd":"/work/cellar","message":{"role":"assistant","model":"claude-demo-1","content":[{"type":"text","text":"Done."}]}}
