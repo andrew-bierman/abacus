@@ -1,6 +1,6 @@
 # Agents domain: a sessions tab for local AI coding agents
 
-Status: phase 2 underway (`internal/agents` has the opencode and claude readers; codex, pi, git and
+Status: phase 2 underway (`internal/agents` has the opencode, claude and codex readers; pi, git and
 quota readers, the core wiring and the tab are open).
 
 ## Goal
@@ -176,6 +176,52 @@ ids:
 - `PathFor` picks the newest transcript in the encoded directory and falls back by mtime;
 - the context limit crosses to 1M only after the observed high-water mark passes 200k.
 
+### `codex.go`
+
+`CodexStore` reads Codex's rollouts under
+`~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-*.jsonl`, incremental by offset with the same
+cursor, shared read budget, 10 MB line cap and reset rules as `ClaudeStore`. `Rollout(path)`
+takes the path it is given; tying a live process to its rollout needs the process's open files,
+which is the core wiring's join, exactly like the Claude PID note above.
+
+Per line, by `type`:
+
+| Line | Fact |
+| --- | --- |
+| `session_meta` | `payload.id`, `payload.cwd` |
+| `turn_context` | `payload.model`, and the window when it records one |
+| `event_msg` `task_started`, `user_message`; `item_completed` `UserMessage` | opens a turn; the first prompt is the title fallback |
+| `event_msg` `token_count` | cumulative totals, last-turn fill, window limit, one history point |
+| `event_msg` `task_complete`, `turn_aborted`; `item_completed` `AgentMessage` with `phase: final_answer` | closes the turn |
+| `response_item` `function_call`, `custom_tool_call` | a tool is running; its `*_output` closes it |
+
+Facts are derived the way abtop derives them, with the corrections this machine's rollouts force:
+
+1. **Totals are levels, not sums.** `total_token_usage` already covers the whole session, so each
+   `token_count` replaces the previous totals instead of adding to them. `input_tokens` *includes*
+   `cached_input_tokens` (measured: 22,488 total with 12,416 cached), so
+   `Input = input_tokens - cached_input_tokens` and the cache read is counted apart, which keeps
+   `Tokens.Total()` from double-counting it. `cache_write_input_tokens` is zero in every rollout
+   here and is ignored rather than guessed into a field that might double-count it.
+2. **Context is the last turn's prompt**: `last_token_usage.input_tokens`, which includes the
+   cached part. The window is recorded (`model_context_window`: 475k and 258k on this machine), so
+   no inference is needed and `Context.Limit` is zero only when the rollout omits it.
+3. **State follows the open turn.** A user prompt opens it (`thinking`); a tool call no output has
+   closed makes it `executing`; a completion event closes it (`waiting`). `item_completed` items
+   are already finished when they land, so they only keep the turn open. `discover.go`'s CPU delta
+   still wins in the join.
+
+Tests in `codex_test.go`, synthetic rollouts only, built line by line with invented ids:
+
+- one session's meta, model and recorded context window survive a read;
+- repeated `token_count` events grow history but replace totals, and `Input` excludes the cached part;
+- a prompt then a tool call reads `thinking` then `executing`, and the output reads `thinking`;
+  `task_complete` and `final_answer` read `waiting`;
+- the first prompt becomes the title and a later prompt does not replace it;
+- a line appended between reads adds only that line; a partial trailing line is counted exactly once;
+- a truncated or replaced file resets totals instead of carrying them forward;
+- an over-cap line is skipped without stalling the next read.
+
 ## Cost model
 
 Chosen to stay cheap on a machine with large histories (this one has 233M of Codex JSONL and a
@@ -195,7 +241,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `discover.go`: sessions, child trees, ports, orphans, executing/waiting
 - [x] `opencode.go`: opencode v2 SQLite reader (tokens, model, title, parent, state)
 - [x] `claude.go`: Claude Code JSONL reader, incremental by offset
-- [ ] `codex.go`: Codex JSONL rollout reader, incremental by offset
+- [x] `codex.go`: Codex JSONL rollout reader, incremental by offset
 - [ ] `pi.go`: Pi JSONL reader, incremental by offset
 - [ ] `git.go`: branch and dirty counts per session cwd
 - [ ] `quota.go`: Claude and Codex quota gauges
@@ -251,6 +297,25 @@ while building, never a run-time dependency.
 - Depending on an abtop binary at run time. The sidecar pattern stays a development oracle: it
   would break abacus's one-self-contained-file promise and hand upstream's churn to us.
 
+## Open questions
+
+Found while building the readers; none blocks the tab, and each names the item that owns it.
+
+- **Shared read budget is first-come.** Within one store, the first file in the caller's order
+  can take the whole 8 MB of a tick while every later file advances one line, so a large backlog
+  on one session makes the others stale. Core wiring should rotate the session order or split
+  the budget per file; the reader cannot see the caller's ordering.
+- **Unterminated trailing record is reread.** Allocation is capped at 10 MB, but a malformed
+  newline-free file is rescanned from the previous offset on every tick. A bounded tail buffer
+  in `jsonlCursor` would fix it; the current rule is the one the Claude reader shipped with.
+- **Subagent rollouts have no title.** Those threads record their prompt only as a
+  `response_item` message with role `user`, which this reader ignores (abtop does too). Whether
+  the tab shows those threads, and how it filters their injected `<environment_context>` and
+  `AGENTS.md` records, belongs to the core wiring's process-to-rollout join.
+- **In-place growth is not detected.** A rollout rewritten to the same path with a larger size
+  keeps its accumulator and seeks past the new prefix; only an inode change or a shorter file
+  resets. Both readers share this pre-existing rule.
+
 ## Pass log
 
 One line per completed item: what it did and how it was verified.
@@ -260,3 +325,7 @@ One line per completed item: what it did and how it was verified.
 - claude JSONL reader — `go build ./...`, `go test ./...`; totals match a deduped real transcript
   (24/25,800/982,726/100,576 tokens, context 111,283), and synthetic tests pin offset resume,
   partial lines, in-place and inode replacement, symlinks, the three-counter context sum and trim.
+- codex rollout reader — `go build ./...`, `go test ./...`; token math matches an independent
+  read of a real rollout (537,649 input / 18,028 output / 14,713,344 cached, context 245,001,
+  104 history points), and mutation checks pin offset resume, fork identity, in-place truncation,
+  the empty-call and nil-payload guards, and both tool-call vocabularies.

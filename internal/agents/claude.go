@@ -1,36 +1,18 @@
 package agents
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
 
-const (
-	// maxClaudeLine bounds one transcript record. Attachments can embed large payloads, and a
-	// malformed writer must not make the tab allocate without bound.
-	maxClaudeLine = 10 << 20
-	// maxClaudeFiles bounds the per-path accumulations. A monitor runs for days across many
-	// short sessions, so the oldest state is dropped rather than kept forever; a dropped file
-	// is simply reparsed from the start if it is read again.
-	maxClaudeFiles = 256
-	// maxClaudeBytesPerRead bounds how much one tick parses across every transcript, so the
-	// first sight of long histories cannot stall the tab. The offset is the resume point, so
-	// the totals are the same either way.
-	maxClaudeBytesPerRead = 8 << 20
-	// claudeBudgetWindow is the tick it assumes: a caller reading many transcripts back to
-	// back shares one budget until this much wall time has passed.
-	claudeBudgetWindow = 200 * time.Millisecond
-	// claudePathMissTTL keeps a cwd with no transcript from re-walking every project directory
-	// on every tick.
-	claudePathMissTTL = 2 * time.Second
-)
+// claudePathMissTTL keeps a cwd with no transcript from re-walking every project directory on
+// every tick.
+const claudePathMissTTL = 2 * time.Second
 
 // ClaudeStore reads Claude Code's JSONL transcripts.
 //
@@ -42,11 +24,9 @@ const (
 type ClaudeStore struct {
 	// Root is the projects directory, normally ClaudeProjectsPath(home). Transcript only needs
 	// a path; Root is used by PathFor.
-	Root   string
-	files  map[string]*claudeFile
-	paths  map[string]claudePath
-	budget int64
-	window time.Time
+	Root string
+	jsonlFiles
+	paths map[string]claudePath
 }
 
 // ClaudeProjectsPath is the default directory of Claude Code transcripts for a home.
@@ -57,71 +37,13 @@ func ClaudeProjectsPath(home string) string {
 	return strings.TrimSuffix(home, "/") + "/.claude/projects"
 }
 
+var errClaudePathEmpty = errors.New("agents: claude transcript path is empty")
+
 // Transcript returns the accumulated facts for the transcript at path, reading only the bytes
 // appended since the previous call. A vanished or unreadable file returns an error; a corrupt
 // record inside it is skipped.
 func (s *ClaudeStore) Transcript(path string) (StoredSession, error) {
-	if path == "" {
-		return StoredSession{}, errors.New("agents: claude transcript path is empty")
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			delete(s.files, path)
-		}
-		return StoredSession{}, err
-	}
-	// A caught-up transcript needs no descriptor: the size check alone decides there is
-	// nothing to read, and this is the common case on every tick.
-	if st, ok := s.files[path]; ok && !st.replaced(info) && info.Size() <= st.offset {
-		return st.session(), nil
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		return StoredSession{}, err
-	}
-	defer f.Close()
-	if info, err = f.Stat(); err != nil {
-		return StoredSession{}, err
-	}
-
-	if s.files == nil {
-		s.files = make(map[string]*claudeFile)
-	}
-	st, ok := s.files[path]
-	if !ok || st.replaced(info) {
-		st = &claudeFile{}
-		s.files[path] = st
-	}
-	err = st.read(f, info, s.readBudget())
-	s.trim()
-	return st.session(), err
-}
-
-// readBudget hands out the bytes this tick may parse. A caller that reads one transcript per
-// live session shares the same budget instead of paying the cap for each of them.
-func (s *ClaudeStore) readBudget() *int64 {
-	if time.Since(s.window) > claudeBudgetWindow {
-		s.budget, s.window = maxClaudeBytesPerRead, time.Now()
-	}
-	return &s.budget
-}
-
-// trim drops the least recently written state once the map is full. Re-reading a dropped file
-// reparses it from the start, which is correct and rare.
-func (s *ClaudeStore) trim() {
-	if len(s.files) <= maxClaudeFiles {
-		return
-	}
-	var oldestPath string
-	var oldest time.Time
-	for path, st := range s.files {
-		mod := st.modTime()
-		if oldestPath == "" || mod.Before(oldest) {
-			oldestPath, oldest = path, mod
-		}
-	}
-	delete(s.files, oldestPath)
+	return s.load(path, errClaudePathEmpty, func() jsonlAccumulator { return &claudeFile{} })
 }
 
 // PathFor returns the transcript a session working in cwd is writing.
@@ -244,9 +166,7 @@ func encodeClaudePath(cwd string) string {
 // claudeFile is the accumulation for one transcript. It survives between reads so only new
 // bytes are parsed; it is replaced wholesale when the file behind a path changes.
 type claudeFile struct {
-	info   os.FileInfo
-	offset int64
-	reader *bufio.Reader
+	jsonlCursor
 
 	id      string
 	dir     string
@@ -266,81 +186,6 @@ type claudeFile struct {
 
 	hasTool  bool
 	openTurn bool
-}
-
-func (c *claudeFile) modTime() time.Time {
-	if c.info == nil {
-		return time.Time{}
-	}
-	return c.info.ModTime()
-}
-
-func (c *claudeFile) replaced(info os.FileInfo) bool {
-	if c.info == nil {
-		return true
-	}
-	return !os.SameFile(c.info, info) || info.Size() < c.offset
-}
-
-func (c *claudeFile) read(f *os.File, info os.FileInfo, budget *int64) error {
-	c.info = info
-	if info.Size() <= c.offset {
-		return nil
-	}
-	if _, err := f.Seek(c.offset, io.SeekStart); err != nil {
-		return err
-	}
-	if c.reader == nil {
-		c.reader = bufio.NewReaderSize(f, 64<<10)
-	} else {
-		c.reader.Reset(f)
-	}
-	for {
-		line, n, ok, err := readClaudeLine(c.reader, maxClaudeLine)
-		if !ok {
-			if errors.Is(err, io.EOF) {
-				return nil
-			}
-			return err
-		}
-		c.offset += int64(n)
-		*budget -= int64(n)
-		if len(line) > 0 {
-			c.add(line)
-		}
-		if *budget <= 0 {
-			return nil
-		}
-	}
-}
-
-func readClaudeLine(r *bufio.Reader, limit int) ([]byte, int, bool, error) {
-	chunk, err := r.ReadSlice('\n')
-	if err == nil && len(chunk) <= limit {
-		return trimClaudeEOL(chunk), len(chunk), true, nil
-	}
-	var (
-		line []byte
-		read int
-	)
-	for {
-		read += len(chunk)
-		if room := limit - len(line); room > 0 {
-			line = append(line, chunk[:min(room, len(chunk))]...)
-		}
-		if err == nil {
-			return trimClaudeEOL(line), read, true, nil
-		}
-		if !errors.Is(err, bufio.ErrBufferFull) {
-			return nil, 0, false, err
-		}
-		chunk, err = r.ReadSlice('\n')
-	}
-}
-
-func trimClaudeEOL(line []byte) []byte {
-	line = bytes.TrimSuffix(line, []byte("\n"))
-	return bytes.TrimSuffix(line, []byte("\r"))
 }
 
 func (c *claudeFile) add(line []byte) {
@@ -424,10 +269,7 @@ func (c *claudeFile) assistant(e claudeEntry) {
 	if used > c.maxContext {
 		c.maxContext = used
 	}
-	c.history = append(c.history, t.Input+t.Output+t.CacheRead+t.CacheCreate)
-	if len(c.history) > maxTokenHistory {
-		c.history = c.history[len(c.history)-maxTokenHistory:]
-	}
+	c.history = appendHistoryPoint(c.history, t.Input+t.Output+t.CacheRead+t.CacheCreate)
 }
 
 func (c *claudeFile) user(e claudeEntry) {
@@ -456,7 +298,7 @@ func (c *claudeFile) user(e claudeEntry) {
 	c.openTurn = true
 	c.hasTool = false
 	if c.prompt == "" {
-		c.prompt = claudePrompt(text)
+		c.prompt = promptTitle(text)
 	}
 }
 
@@ -471,7 +313,7 @@ func (c *claudeFile) session() StoredSession {
 		Title:        title,
 		Model:        c.model,
 		Tokens:       c.tokens,
-		TokenHistory: append([]int64(nil), c.history...),
+		TokenHistory: slices.Clone(c.history),
 		Updated:      c.modTime(),
 		State:        StateWaiting,
 	}
@@ -595,45 +437,4 @@ func claudeLocalCommand(text string) bool {
 		}
 	}
 	return false
-}
-
-// claudePrompt turns the first real prompt into a session title, dropping the markdown and
-// image markers a pasted prompt carries.
-func claudePrompt(text string) string {
-	var parts []string
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "```") {
-			continue
-		}
-		parts = append(parts, line)
-	}
-	clean := strings.TrimSpace(claudeDropImages(strings.Join(parts, " ")))
-	return truncateRunes(clean, 50)
-}
-
-func claudeDropImages(s string) string {
-	for {
-		start := strings.Index(s, "[Image")
-		if start < 0 {
-			return s
-		}
-		rest := s[start:]
-		end := strings.IndexByte(rest, ']')
-		if end < 0 {
-			return s[:start]
-		}
-		s = strings.TrimLeft(s[:start]+rest[end+1:], " ")
-	}
-}
-
-func truncateRunes(s string, max int) string {
-	if max <= 0 {
-		return ""
-	}
-	r := []rune(s)
-	if len(r) <= max {
-		return s
-	}
-	return string(r[:max])
 }

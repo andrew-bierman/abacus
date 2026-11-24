@@ -404,7 +404,7 @@ func TestClaudeTranscriptSkipsAnOverlongLine(t *testing.T) {
 	dir := t.TempDir()
 	// The oversized record is a valid prompt. If the reader kept it whole, it would parse and
 	// own the title; truncating it at the cap makes the JSON invalid, so it is skipped.
-	huge := claudeUserLine(t, "ses_a", strings.Repeat("x", maxClaudeLine), nil)
+	huge := claudeUserLine(t, "ses_a", strings.Repeat("x", maxJSONLLine), nil)
 	path := writeClaudeTranscript(t, dir,
 		huge,
 		claudeUserLine(t, "ses_a", "Real prompt", nil),
@@ -485,8 +485,8 @@ func TestClaudePromptCleansAPastedPrompt(t *testing.T) {
 		{"first line\nsecond line", "first line second line"},
 	}
 	for _, c := range cases {
-		if got := claudePrompt(c.in); got != c.want {
-			t.Errorf("claudePrompt(%q) = %q, want %q", c.in, got, c.want)
+		if got := promptTitle(c.in); got != c.want {
+			t.Errorf("promptTitle(%q) = %q, want %q", c.in, got, c.want)
 		}
 	}
 }
@@ -513,8 +513,8 @@ func TestClaudeStoreDropsTheOldestAccumulation(t *testing.T) {
 	dir := t.TempDir()
 	store := &ClaudeStore{}
 	base := time.Now().Add(-time.Hour)
-	paths := make([]string, 0, maxClaudeFiles+1)
-	for i := 0; i <= maxClaudeFiles; i++ {
+	paths := make([]string, 0, maxJSONLFiles+1)
+	for i := 0; i <= maxJSONLFiles; i++ {
 		path := filepath.Join(dir, fmt.Sprintf("ses_%03d.jsonl", i))
 		if err := os.WriteFile(path, []byte(claudeUserLine(t, "ses_a", "Read me", nil)+"\n"), 0o600); err != nil {
 			t.Fatal(err)
@@ -527,8 +527,8 @@ func TestClaudeStoreDropsTheOldestAccumulation(t *testing.T) {
 		paths = append(paths, path)
 	}
 
-	if len(store.files) != maxClaudeFiles {
-		t.Fatalf("tracked files = %d, want %d", len(store.files), maxClaudeFiles)
+	if len(store.files) != maxJSONLFiles {
+		t.Fatalf("tracked files = %d, want %d", len(store.files), maxJSONLFiles)
 	}
 	if _, ok := store.files[paths[0]]; ok {
 		t.Error("the oldest accumulation was kept")

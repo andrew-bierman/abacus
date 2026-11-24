@@ -85,6 +85,16 @@ func (c Context) Percent() float64 {
 // maxTokenHistory is what a sparkline draws.
 const maxTokenHistory = 200
 
+// appendHistoryPoint adds one per-turn point, dropping the oldest once the sparkline's budget
+// is full, so a long session cannot grow the series without bound.
+func appendHistoryPoint(points []int64, point int64) []int64 {
+	points = append(points, point)
+	if len(points) > maxTokenHistory {
+		points = points[len(points)-maxTokenHistory:]
+	}
+	return points
+}
+
 // StoredSession is one session as its harness recorded it, independent of whether a process
 // is running right now. A store is the session list for harnesses that have one; the process
 // table only says which of them are live.
