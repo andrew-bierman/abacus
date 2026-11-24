@@ -1,6 +1,6 @@
 === 40x12 ===
  [Agents]  5/6
-/orchard  sort:attention  ~ guessed fro…
+/orchard  sort: attention  ~ guessed fr…
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────╮
 │ ▸ ● running   orchard@feat/pear-cou… │
 │   · stopped~  orchard@docs           │
@@ -16,8 +16,8 @@
 ────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent …
-/orchard  sort:attention  ~ guessed fro…
+1 port still open after their agent end…
+/orchard  sort: attention  ~ guessed fr…
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────╮
 │ ▸ ● running   orchard@feat/pear-cou… │
 │   · stopped~  orchard@docs           │
@@ -44,7 +44,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
-/orchard  sort:attention  ~ guessed from files
+/orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────────────╮
 │ ▸ ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
 │   · stopped~  Codex        orchard@docs          Write the p…  12m  ···· ?   │
@@ -60,8 +60,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-/orchard  sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+/orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────────────╮
 │ ▸ ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
 │   · stopped~  Codex        orchard@docs          Write the p…  12m  ···· ?   │
@@ -88,7 +88,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
-/orchard  sort:attention  ~ guessed from files
+/orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ ▸ ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Claude Code (running)                       │
 │   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │                                             │
@@ -104,8 +104,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-/orchard  sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+/orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ ▸ ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Claude Code (running)                       │
 │   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │                                             │
@@ -133,7 +133,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 === 60x24 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────
-/orchard  sort:attention  ~ guessed from files
+/orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────╮
 │ ▸ ● running   Claude Code  orchard@f…  Add a pear …   4s │
 │   · stopped~  Codex        orchard@d…  Write the p…  12m │
@@ -160,8 +160,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-/orchard  sort:attention  ~ guessed from files
+1 port still open after their agent ended: 4000
+/orchard  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
 │ ▸ ● running   Claude Code  orchard@f…  Add a pear …   4s │ │ Claude Code (running)               │
 │   · stopped~  Codex        orchard@d…  Write the p…  12m │ │                                     │
@@ -187,4 +187,4 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%
 │                                                          │ │ Child processes                     │
 │                                                          │ │   ↕ +2 more                         │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness…
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state …

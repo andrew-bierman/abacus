@@ -1,6 +1,6 @@
 === 40x12 ===
  [Agents]  5/6
-sort:recent  ~ guessed from files
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────╮
 │   ● running   orchard@feat/pear-cou… │
 │ ▸ ◐ waiting   mill@main              │
@@ -16,8 +16,8 @@ sort:recent  ~ guessed from files
 ────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent …
-sort:recent  ~ guessed from files
+1 port still open after their agent end…
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────╮
 │   ● running   orchard@feat/pear-cou… │
 │ ▸ ◐ waiting   mill@main              │
@@ -44,7 +44,7 @@ sort:recent  ~ guessed from files
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
-sort:recent  ~ guessed from files
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────────────╮
 │   ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
 │ ▸ ◐ waiting   Codex        mill@main             Package the…   1m  ▰▱▱▱ 18% │
@@ -60,8 +60,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-sort:recent  ~ guessed from files
+1 port still open after their agent ended: 4000
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────────────╮
 │   ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
 │ ▸ ◐ waiting   Codex        mill@main             Package the…   1m  ▰▱▱▱ 18% │
@@ -88,7 +88,7 @@ sort:recent  ~ guessed from files
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
-sort:recent  ~ guessed from files
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │   ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Codex (waiting)                             │
 │ ▸ ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │                                             │
@@ -104,8 +104,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-sort:recent  ~ guessed from files
+1 port still open after their agent ended: 4000
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │   ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Codex (waiting)                             │
 │ ▸ ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │                                             │
@@ -133,7 +133,7 @@ sort:recent  ~ guessed from files
 === 60x24 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────
-sort:recent  ~ guessed from files
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────╮
 │   ● running   Claude Code  orchard@f…  Add a pear …   4s │
 │ ▸ ◐ waiting   Codex        mill@main   Package the…   1m │
@@ -160,8 +160,8 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
 Codex  5h ▰▰▰▰▰▰▰▱ 88%
-1 port(s) still open after their agent ended: 4000
-sort:recent  ~ guessed from files
+1 port still open after their agent ended: 4000
+sort: recent  ~ guessed from files
 ╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
 │   ● running   Claude Code  orchard@f…  Add a pear …   4s │ │ Codex (waiting)                     │
 │ ▸ ◐ waiting   Codex        mill@main   Package the…   1m │ │                                     │

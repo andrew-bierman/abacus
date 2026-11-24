@@ -4,7 +4,7 @@ Keys
 
   tab/→         next tab
   shift+tab/←   prev tab
-  1-9           jump to tab
+  1-6           jump to tab
   ctrl+k        search everything
   :             command
   ?             help
@@ -17,7 +17,7 @@ Keys
 ╭─ ▸ Keys ─────────────────────────────╮
 │ tab/→         next tab               │
 │ shift+tab/←   prev tab               │
-│ 1-9           jump to tab            │
+│ 1-6           jump to tab            │
 │ ctrl+k        search everything      │
 │ :             command                │
 │ ?             help                   │
@@ -48,7 +48,7 @@ Keys
 
   tab/→         next tab
   shift+tab/←   prev tab
-  1-9           jump to tab
+  1-6           jump to tab
   ctrl+k        search everything
   :             command
   ?             help
@@ -61,7 +61,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Keys ─────────────────────────────────────────────────────────────────────╮
 │ tab/→         next tab                                                       │
 │ shift+tab/←   prev tab                                                       │
-│ 1-9           jump to tab                                                    │
+│ 1-6           jump to tab                                                    │
 │ ctrl+k        search everything                                              │
 │ :             command                                                        │
 │ ?             help                                                           │
@@ -92,7 +92,7 @@ Keys
 
   tab/→         next tab
   shift+tab/←   prev tab
-  1-9           jump to tab
+  1-6           jump to tab
   ctrl+k        search everything
   :             command
   ?             help
@@ -105,7 +105,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 ╭─ ▸ Keys ─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ tab/→         next tab                                                                                               │
 │ shift+tab/←   prev tab                                                                                               │
-│ 1-9           jump to tab                                                                                            │
+│ 1-6           jump to tab                                                                                            │
 │ ctrl+k        search everything                                                                                      │
 │ :             command                                                                                                │
 │ ?             help                                                                                                   │

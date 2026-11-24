@@ -642,8 +642,7 @@ func (m *Model) View() string {
 	if m.h > 0 { // known height: clip to what is left, even when that is nothing
 		body = body[:min(len(body), bh)]
 	}
-	m.help.Width = w
-	foot := m.help.ShortHelpView(m.ShortHelp())
+	foot := shortHelp(m.help, m.ShortHelp(), w)
 	if m.note != "" {
 		foot = m.th.Text(KindWarn, san(m.note))
 	}
@@ -719,4 +718,28 @@ func configPath() string {
 // nothing to open, and the real tool on PATH is never probed or run.
 func demoFullView(string) tea.Cmd {
 	return func() tea.Msg { return fullViewDoneMsg{err: errors.New("demo data: there is no tracker to open")} }
+}
+
+// shortHelp renders the footer hints within w cells: whole hints only, then " …" when some were
+// dropped. (bubbles' own Width handling adds an overflowing hint when the ellipsis does not fit, and
+// the shell would then cut it mid-word.)
+func shortHelp(h help.Model, bs []key.Binding, w int) string {
+	h.Width = 0
+	var on []key.Binding
+	for _, b := range bs {
+		if b.Enabled() {
+			on = append(on, b)
+		}
+	}
+	tail := " " + h.Styles.Ellipsis.Inline(true).Render(h.Ellipsis)
+	for n := len(on); n >= 0; n-- {
+		s := h.ShortHelpView(on[:n])
+		switch {
+		case n == len(on) && lipgloss.Width(s) <= w:
+			return s
+		case n < len(on) && lipgloss.Width(s)+lipgloss.Width(tail) <= w:
+			return s + tail
+		}
+	}
+	return ""
 }

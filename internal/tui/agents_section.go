@@ -407,7 +407,7 @@ func (s *agentsSection) strip(w int) []string {
 		}
 	}
 	if n := len(r.OrphanPorts); n > 0 {
-		out = append(out, trunc(s.th.Text(KindWarn, fmt.Sprintf("%d port(s) still open after their agent ended: %s", n, orphanList(r.OrphanPorts))), w))
+		out = append(out, trunc(s.th.Text(KindWarn, fmt.Sprintf("%s still open after their agent ended: %s", core.Plural(n, "port"), orphanList(r.OrphanPorts))), w))
 	}
 	return out
 }
@@ -448,7 +448,7 @@ func (s *agentsSection) filterLine() string {
 		}
 		parts = append(parts, "/"+san(s.query)+caret)
 	}
-	parts = append(parts, "sort:"+agentSorts[s.sortKey], "~ guessed from files")
+	parts = append(parts, "sort: "+agentSorts[s.sortKey], "~ guessed from files")
 	return s.th.Text(KindMuted, strings.Join(parts, "  "))
 }
 

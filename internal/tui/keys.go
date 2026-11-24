@@ -8,7 +8,7 @@ var (
 	keyQuit = key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit"))
 	keyNext = key.NewBinding(key.WithKeys("tab", "right"), key.WithHelp("tab/→", "next tab"))
 	keyPrev = key.NewBinding(key.WithKeys("shift+tab", "left"), key.WithHelp("shift+tab/←", "prev tab"))
-	keyJump = key.NewBinding(key.WithKeys("1", "2", "3", "4", "5", "6", "7", "8", "9"), key.WithHelp("1-9", "jump to tab"))
+	keyJump = key.NewBinding(key.WithKeys("1", "2", "3", "4", "5", "6"), key.WithHelp("1-6", "jump to tab"))
 	keyHelp = key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help"))
 	keyBack = key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "back"))
 )

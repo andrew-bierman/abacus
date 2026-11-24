@@ -5,7 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -111,5 +114,29 @@ func TestStackBarCellCountsAreTheLargestRemainderSplit(t *testing.T) {
 	}
 	if bar != "aaaaabbbccddee" {
 		t.Errorf("shares are drawn in order, side by side: %q", bar)
+	}
+}
+
+// A footer that does not fit drops whole hints and says so with " …"; it never leaves a hint cut mid-word.
+func TestFooterDropsWholeHintsNeverCutsOne(t *testing.T) {
+	h := help.New()
+	h.ShortSeparator = " · "
+	bs := []key.Binding{keyHelp, keyQuit, keyNext, keyPrompt, key.NewBinding(key.WithKeys("H"), key.WithHelp("H/L", "move card")), keyEnter}
+	full := ansi.Strip(shortHelp(h, bs, 200))
+	if !strings.HasSuffix(full, "enter details") {
+		t.Fatalf("wide footer lost a hint: %q", full)
+	}
+	for w := 1; w <= 80; w++ {
+		got := ansi.Strip(shortHelp(h, bs, w))
+		if lipgloss.Width(got) > w {
+			t.Errorf("w=%d: %d wide: %q", w, lipgloss.Width(got), got)
+		}
+		if got == "" || got == full {
+			continue
+		}
+		trimmed := strings.TrimSuffix(got, " …")
+		if !strings.HasSuffix(got, " …") || !strings.HasPrefix(full, trimmed) || (trimmed != "" && !strings.HasPrefix(full[len(trimmed):], " · ")) {
+			t.Errorf("w=%d: cut mid-hint: %q", w, got)
+		}
 	}
 }

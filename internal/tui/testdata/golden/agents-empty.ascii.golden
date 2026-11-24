@@ -1,6 +1,6 @@
 === 40x12 ===
  [Agents]  5/6
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────╮
 │ no agents running                    │
 │                                      │
@@ -14,7 +14,7 @@ sort:attention  ~ guessed from files
 === 40x30 ===
  [Agents]  5/6
 ────────────────────────────────────────
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────╮
 │ no agents running                    │
 │                                      │
@@ -44,7 +44,7 @@ sort:attention  ~ guessed from files
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────────────╮
 │ no agents running                                                            │
 │                                                                              │
@@ -58,7 +58,7 @@ sort:attention  ~ guessed from files
 === 80x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────────────╮
 │ no agents running                                                            │
 │                                                                              │
@@ -88,7 +88,7 @@ sort:attention  ~ guessed from files
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state …
 === 120x12 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ no agents running                                                    │ │ select an agent                             │
 │                                                                      │ │                                             │
@@ -102,7 +102,7 @@ sort:attention  ~ guessed from files
 === 120x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
 │ no agents running                                                    │ │ select an agent                             │
 │                                                                      │ │                                             │
@@ -133,7 +133,7 @@ sort:attention  ~ guessed from files
 === 60x24 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────╮
 │ no agents running                                        │
 │                                                          │
@@ -158,7 +158,7 @@ sort:attention  ~ guessed from files
 === 100x32 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-sort:attention  ~ guessed from files
+sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
 │ no agents running                                        │ │ select an agent                     │
 │                                                          │ │                                     │
