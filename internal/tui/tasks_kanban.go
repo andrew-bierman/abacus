@@ -525,6 +525,20 @@ func opVerb(op core.TaskOp) string {
 		return "closed"
 	case core.TaskReopen:
 		return "reopened"
+	case core.TaskLabelAdd:
+		return "labeled"
+	case core.TaskLabelRemove:
+		return "unlabeled"
+	case core.TaskPriority:
+		return "reprioritized"
+	case core.TaskAssign:
+		return "assigned"
+	case core.TaskDepAdd:
+		return "linked"
+	case core.TaskDepRemove:
+		return "unlinked"
+	case core.TaskAddComment:
+		return "commented on"
 	}
 	return string(op) + "d"
 }

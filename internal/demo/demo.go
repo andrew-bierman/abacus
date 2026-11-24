@@ -6,6 +6,7 @@ package demo
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -110,6 +111,18 @@ func (Tasks) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 	if ch.Status != "" {
 		a = append(a, "--status="+ch.Status)
 	}
+	if ch.Label != "" {
+		a = append(a, "--label="+ch.Label)
+	}
+	if ch.Assignee != nil {
+		a = append(a, "--assignee="+*ch.Assignee)
+	}
+	if ch.Blocker != "" {
+		a = append(a, ch.Blocker)
+	}
+	if ch.Text != "" {
+		a = append(a, "--", ch.Text)
+	}
 	return a, nil
 }
 
@@ -122,10 +135,17 @@ func (Tasks) TrackerDir() string { return "" }
 
 // ReadTask re-reads a fixture task, so a confirm screen can check it has not changed.
 func (Tasks) ReadTask(_ context.Context, id string) (core.Task, error) {
-	for _, t := range TasksReport().Recent {
-		if t.ID == id {
-			return t, nil
+	for _, i := range TaskSnapshot(time.Now()).Issues {
+		if i.ID != id {
+			continue
 		}
+		t := core.Task{ID: i.ID, Title: i.Title, Status: i.Status, Priority: i.Priority, Type: i.Type, Assignee: i.Assignee, Labels: i.Labels}
+		for _, d := range i.Deps {
+			if d.Type == "blocks" {
+				t.DependsOn = append(t.DependsOn, d.DependsOn)
+			}
+		}
+		return t, nil
 	}
 	return core.Task{}, fmt.Errorf("no such issue %s", id)
 }

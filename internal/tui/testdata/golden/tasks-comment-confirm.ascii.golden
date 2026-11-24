@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm this change ──────────────╮
+│   add a comment to task ac-12        │
+│   title: "wire the lease heartbeat"  │
+│   comment: "-x looks fine"           │
+│                                      │
+│ exact command:                       │
+│   bd comment ac-12 -- "-x looks      │
+│   fine"                              │
+╰──────────────────────────────────────╯
+
+y apply · n/esc cancel · q quit · ? hel…
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────╮
+│   add a comment to task ac-12        │
+│   title: "wire the lease heartbeat"  │
+│   comment: "-x looks fine"           │
+│                                      │
+│ exact command:                       │
+│   bd comment ac-12 -- "-x looks      │
+│   fine"                              │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? hel…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   add a comment to task ac-12                                                │
+│   title: "wire the lease heartbeat"                                          │
+│   comment: "-x looks fine"                                                   │
+│                                                                              │
+│ exact command:                                                               │
+│   bd comment ac-12 -- "-x looks fine"                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────╮
+│   add a comment to task ac-12                                                │
+│   title: "wire the lease heartbeat"                                          │
+│   comment: "-x looks fine"                                                   │
+│                                                                              │
+│ exact command:                                                               │
+│   bd comment ac-12 -- "-x looks fine"                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   add a comment to task ac-12                                                                                        │
+│   title: "wire the lease heartbeat"                                                                                  │
+│   comment: "-x looks fine"                                                                                           │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd comment ac-12 -- "-x looks fine"                                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│   add a comment to task ac-12                                                                                        │
+│   title: "wire the lease heartbeat"                                                                                  │
+│   comment: "-x looks fine"                                                                                           │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   bd comment ac-12 -- "-x looks fine"                                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────╮
+│   add a comment to task ac-12                            │
+│   title: "wire the lease heartbeat"                      │
+│   comment: "-x looks fine"                               │
+│                                                          │
+│ exact command:                                           │
+│   bd comment ac-12 -- "-x looks fine"                    │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this change ──────────────────────────────────────────────────────────────────────────╮
+│   add a comment to task ac-12                                                                    │
+│   title: "wire the lease heartbeat"                                                              │
+│   comment: "-x looks fine"                                                                       │
+│                                                                                                  │
+│ exact command:                                                                                   │
+│   bd comment ac-12 -- "-x looks fine"                                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
