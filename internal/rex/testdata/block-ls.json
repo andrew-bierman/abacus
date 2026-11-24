@@ -1,0 +1,13 @@
+{
+  "blocks": [
+    {
+      "block_id": "block:00000000-0000-7000-8000-00000000000b",
+      "label": "shell",
+      "creator_name": "com.superlogical.terminal",
+      "flavor": "com.superlogical.terminal.shell",
+      "host_id": "00000000-0000-4000-8000-000000000001",
+      "placement": "placed",
+      "window_id": "window:00000000-0000-7000-8000-00000000000c"
+    }
+  ]
+}

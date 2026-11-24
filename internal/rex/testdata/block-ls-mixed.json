@@ -1,0 +1,8 @@
+{
+  "blocks": [
+    {"block_id": "block:00000000-0000-7000-8000-000000000b01", "label": "shell", "creator_name": "com.superlogical.terminal", "flavor": "com.superlogical.terminal.shell", "placement": "placed", "window_id": "window:00000000-0000-7000-8000-00000000000c"},
+    {"block_id": "block:00000000-0000-7000-8000-000000000b02", "label": "tunnel", "creator_name": "com.superlogical.tunnel", "flavor": "com.superlogical.tunnel.dial", "placement": "placed", "window_id": "window:00000000-0000-7000-8000-00000000000c"},
+    {"block_id": "block:00000000-0000-7000-8000-000000000b03", "label": "hello", "creator_name": "com.superlogical.onboarding", "flavor": "com.superlogical.onboarding", "placement": "placed", "window_id": "window:00000000-0000-7000-8000-00000000000c", "owner": {"pid": 1, "name": "x"}},
+    {"block_id": "block:00000000-0000-7000-8000-000000000b04", "label": "second shell", "creator_name": "com.superlogical.terminal", "flavor": "com.superlogical.terminal.shell", "placement": "placed", "window_id": "window:00000000-0000-7000-8000-00000000000c"}
+  ]
+}

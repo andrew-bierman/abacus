@@ -1,0 +1,1 @@
+{"last_exit":null,"child":{"pid":1001,"user_id":1000,"user":"user","name":"sleep","path":"/usr/bin/sleep","invoked_path":"/usr/bin/sleep","argv0":"sleep","cwd":"/home/user/work/abacus"},"foreground":{"pid":1001,"user_id":1000,"user":"user","name":"sleep","path":"/usr/bin/sleep","invoked_path":"/usr/bin/sleep","argv0":"sleep","cwd":"/home/user/work/abacus"},"home":"/home/user"}
