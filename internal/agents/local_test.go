@@ -32,6 +32,7 @@ func newLocal(fsys fstest.MapFS, procs []Proc, perr error, panes []Pane) *Local 
 		FS: fsys, Home: "/home/u", Now: func() time.Time { return now }, RecentWindow: 15 * time.Minute,
 		Procs: func(context.Context) ([]Proc, error) { return procs, perr },
 		Panes: func(context.Context) ([]Pane, error) { return panes, nil },
+		Dirty: func(context.Context, string) (core.AgentGit, bool) { return core.AgentGit{}, false },
 	})
 }
 

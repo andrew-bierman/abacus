@@ -36,6 +36,7 @@ var harnessRules = []harnessRule{
 	{core.HarnessCodex, []string{"codex"}, []string{"@openai/codex"}},
 	{core.HarnessGemini, []string{"gemini"}, []string{"@google/gemini-cli"}},
 	{core.HarnessOpenCode, []string{"opencode"}, []string{"opencode-ai"}},
+	{core.HarnessPi, []string{"pi"}, []string{"@mariozechner/pi-coding-agent"}},
 	{core.HarnessAider, []string{"aider"}, []string{"aider/main", "aider-chat"}},
 }
 

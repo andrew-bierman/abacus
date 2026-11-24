@@ -43,6 +43,25 @@ type session struct {
 	Tokens                       *int64
 	End                          endKind
 	ModTime                      time.Time
+	// Context is what the last model call read in, and Window the model's limit when the file says
+	// it; Turns is one point per model response in the part of the file that was read (cache reads
+	// left out); Quota is the account rate limit the file recorded last. All are nil/empty when the
+	// harness does not write them.
+	Context, Window *int64
+	Turns           []int64
+	Quota           *quotaRead
+	Cost            *float64
+}
+
+// maxTurns bounds what one read keeps of the per-turn series (core keeps the newest 120 anyway).
+const maxTurns = 200
+
+// push appends one per-turn point, dropping the oldest past the bound.
+func (s *session) push(v int64) {
+	s.Turns = append(s.Turns, v)
+	if len(s.Turns) > maxTurns {
+		s.Turns = s.Turns[len(s.Turns)-maxTurns:]
+	}
 }
 
 // reader is a file the scan can read the head and tail of.
@@ -140,8 +159,15 @@ type claudeLine struct {
 	IsMeta      bool   `json:"isMeta"`
 	IsAPIError  bool   `json:"isApiErrorMessage"`
 	Message     struct {
+		ID      string          `json:"id"`
 		Model   string          `json:"model"`
 		Content json.RawMessage `json:"content"`
+		Usage   *struct {
+			Input       int64 `json:"input_tokens"`
+			Output      int64 `json:"output_tokens"`
+			CacheRead   int64 `json:"cache_read_input_tokens"`
+			CacheCreate int64 `json:"cache_creation_input_tokens"`
+		} `json:"usage"`
 	} `json:"message"`
 }
 
@@ -169,6 +195,7 @@ func systemish(s string) bool {
 
 func parseClaude(lines [][]byte) session {
 	var s session
+	lastMsg := "" // Claude writes one line per content block of a response, each repeating its usage
 	for _, raw := range lines {
 		if len(bytes.TrimSpace(raw)) == 0 {
 			continue
@@ -214,6 +241,17 @@ func parseClaude(lines [][]byte) session {
 			if m := l.Message.Model; m != "" && !strings.HasPrefix(m, "<") {
 				s.Model = m
 			}
+			if u := l.Message.Usage; u != nil && u.Input+u.Output+u.CacheRead+u.CacheCreate > 0 {
+				ctx := u.Input + u.CacheRead + u.CacheCreate
+				s.Context = &ctx
+				pt := u.Input + u.Output + u.CacheCreate
+				if l.Message.ID != "" && l.Message.ID == lastMsg && len(s.Turns) > 0 {
+					s.Turns[len(s.Turns)-1] = pt
+				} else {
+					s.push(pt)
+				}
+				lastMsg = l.Message.ID
+			}
 			switch {
 			case l.IsAPIError:
 				s.End = endError
@@ -230,8 +268,9 @@ func parseClaude(lines [][]byte) session {
 // ---- Codex ----
 
 type codexLine struct {
-	Type    string `json:"type"`
-	Payload struct {
+	Type      string `json:"type"`
+	Timestamp string `json:"timestamp"`
+	Payload   struct {
 		Type    string `json:"type"`
 		ID      string `json:"id"`
 		Cwd     string `json:"cwd"`
@@ -245,12 +284,20 @@ type codexLine struct {
 			Total struct {
 				Total *int64 `json:"total_tokens"`
 			} `json:"total_token_usage"`
+			Last struct {
+				Input  int64 `json:"input_tokens"`
+				Cached int64 `json:"cached_input_tokens"`
+				Output int64 `json:"output_tokens"`
+			} `json:"last_token_usage"`
+			Window int64 `json:"model_context_window"`
 		} `json:"info"`
+		RateLimits *codexLimits `json:"rate_limits"`
 	} `json:"payload"`
 }
 
 func parseCodex(head []byte, lines [][]byte) session {
 	var s session
+	var prevTotal *int64 // Codex repeats a token_count; only a changed total is a new response
 	apply := func(raw []byte) {
 		var l codexLine
 		if len(bytes.TrimSpace(raw)) == 0 || json.Unmarshal(raw, &l) != nil {
@@ -281,8 +328,26 @@ func parseCodex(head []byte, lines [][]byte) session {
 			case "error":
 				s.End = endError
 			case "token_count":
-				if t := p.Info.Total.Total; t != nil {
+				t := p.Info.Total.Total
+				if t != nil {
 					s.Tokens = t
+				}
+				if w := p.Info.Window; w > 0 {
+					s.Window = &w
+				}
+				// Compaction writes a token_count whose last usage is zero: a marker, not a response.
+				if u := p.Info.Last; u.Input+u.Output > 0 {
+					ctx := u.Input
+					s.Context = &ctx
+					if t == nil || prevTotal == nil || *t != *prevTotal {
+						s.push(max(0, u.Input-u.Cached) + u.Output)
+					}
+				}
+				if t != nil {
+					prevTotal = t
+				}
+				if q, ok := p.RateLimits.read(l.Timestamp); ok {
+					s.Quota = &q
 				}
 			}
 		case "response_item":

@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -36,31 +37,54 @@ type Options struct {
 	// AllUsers includes agents run by other users; by default only the current user's are listed.
 	AllUsers   bool
 	CurrentUID func() int
+	// OpenCodeDB is the path of OpenCode's session database ("" = its default place under Home or
+	// XDG_DATA_HOME); OpenCode reads it. Dirty counts a repository's uncommitted files.
+	OpenCodeDB string
+	OpenCode   openCodeReader
+	Dirty      func(ctx context.Context, dir string) (core.AgentGit, bool)
 }
 
 // Local is the native feed: processes, session files and terminal panes, all read-only.
 type Local struct {
-	o    Options
-	mu   sync.Mutex
-	last scan // what the last read saw, for Doctor
+	o     Options
+	mu    sync.Mutex
+	last  scan                  // what the last read saw, for Doctor
+	dirty map[string]dirtyEntry // by directory
 }
 
 type scan struct {
 	procs, agents, sessionFiles int
 	procErr                     string
 	dirs                        []string
+	notes                       []string // a source that exists but could not be read
 }
 
 // The real sources, as variables so this package's tests can make reaching for them fail loudly.
 var (
-	realProcs = scanProcesses
-	realPanes = tmuxPanes
+	realProcs    = scanProcesses
+	realPanes    = tmuxPanes
+	realOpenCode = readOpenCodeDB
+	realDirty    = gitDirty
 )
 
 // NewLocal returns the native feed. Zero fields of o use the real machine.
 func NewLocal(o Options) *Local {
-	if o.Home == "" {
+	realHome := o.Home == ""
+	if realHome {
 		o.Home, _ = os.UserHomeDir()
+	}
+	if o.OpenCodeDB == "" {
+		data := path.Join(o.Home, ".local", "share")
+		if x := os.Getenv("XDG_DATA_HOME"); realHome && path.IsAbs(x) {
+			data = x
+		}
+		o.OpenCodeDB = path.Join(data, "opencode", "opencode.db")
+	}
+	if o.OpenCode == nil {
+		o.OpenCode = realOpenCode
+	}
+	if o.Dirty == nil {
+		o.Dirty = realDirty
 	}
 	if o.FS == nil && o.Home != "" {
 		o.FS = defaultFS()
@@ -106,7 +130,7 @@ func (l *Local) Doctor(context.Context) []core.Check {
 	}
 	files := core.Check{Name: "agent session files", Status: core.StatusOK, Detail: fmt.Sprintf("%d read (%s)", s.sessionFiles, strings.Join(s.dirs, ", "))}
 	if len(s.dirs) == 0 {
-		files = core.Check{Name: "agent session files", Status: core.StatusSkip, Detail: "no Claude Code or Codex session folder found"}
+		files = core.Check{Name: "agent session files", Status: core.StatusSkip, Detail: "no agent session folder found"}
 	}
 	return []core.Check{procs, files}
 }
@@ -115,6 +139,7 @@ func rel(p string) string { return strings.TrimPrefix(path.Clean(p), "/") }
 
 func (l *Local) claudeProjects() string { return rel(path.Join(l.o.Home, ".claude", "projects")) }
 func (l *Local) codexSessions() string  { return rel(path.Join(l.o.Home, ".codex", "sessions")) }
+func (l *Local) piSessions() string     { return rel(path.Join(l.o.Home, ".pi", "agent", "sessions")) }
 func iso(t time.Time) string {
 	if t.IsZero() {
 		return ""
@@ -153,18 +178,24 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 		byPID[p.PID] = p
 	}
 	bud := &budget{left: scanBudget}
-	claude, codex := l.claudeSessions(ctx, sc, aps, bud, now), l.codexSessionsFor(ctx, sc, aps, bud, now)
+	pools := map[string]map[string][]session{
+		core.HarnessClaude:   l.claudeSessions(ctx, sc, aps, bud, now),
+		core.HarnessCodex:    l.codexSessionsFor(ctx, sc, aps, bud, now),
+		core.HarnessPi:       l.piSessionsFor(ctx, sc, aps, bud),
+		core.HarnessOpenCode: l.openCodeSessionsFor(ctx, sc, now),
+	}
+	var extra core.AgentsExtra
+	extra.RateLimits = l.rateLimits(pools)
+	for i := range extra.RateLimits {
+		extra.RateLimits[i].Stale = core.RateLimitStale(extra.RateLimits[i].UpdatedAt, now)
+	}
 	used := map[string]bool{}
 	var out []core.Agent
 	// newest process first, so the newest process gets the newest session of its directory
 	sort.SliceStable(aps, func(i, j int) bool { return aps[i].StartUnix > aps[j].StartUnix })
 	for _, p := range aps {
 		a := core.Agent{Harness: p.Harness, PID: p.PID, Cwd: p.Cwd, State: core.AgentUnknown, Source: core.EvidenceProcess}
-		pool := claude
-		if p.Harness == core.HarnessCodex {
-			pool = codex
-		}
-		if p.Harness == core.HarnessClaude || p.Harness == core.HarnessCodex {
+		if pool := pools[p.Harness]; pool != nil {
 			var s session
 			var ok bool
 			if id := resumeID(p.Args); id != "" && p.Harness == core.HarnessClaude {
@@ -182,16 +213,13 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 		out = append(out, a)
 	}
 	// sessions that ended a moment ago, or whose process could not be matched
-	for _, h := range []struct {
-		pool map[string][]session
-		id   string
-	}{{claude, core.HarnessClaude}, {codex, core.HarnessCodex}} {
-		for _, ss := range h.pool {
+	for _, h := range []string{core.HarnessClaude, core.HarnessCodex, core.HarnessPi, core.HarnessOpenCode} {
+		for _, ss := range pools[h] {
 			for _, s := range ss {
 				if used[s.ID] || now.Sub(s.ModTime) > l.o.RecentWindow {
 					continue
 				}
-				a := withSession(core.Agent{Harness: h.id, Cwd: s.Cwd}, s, now)
+				a := withSession(core.Agent{Harness: h, Cwd: s.Cwd}, s, now)
 				if perr == nil { // the process list was read and has no such process
 					a.State = core.AgentStopped
 				}
@@ -200,13 +228,18 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 			}
 		}
 	}
+	l.fillDirty(ctx, out)
 	for i := range out {
 		out[i].ID = core.AgentID(out[i])
 	}
+	var errs []error
 	if perr != nil {
-		perr = fmt.Errorf("the process list could not be read: %w", perr)
+		errs = append(errs, fmt.Errorf("the process list could not be read: %w", perr))
 	}
-	return out, core.AgentsExtra{}, perr
+	for _, n := range sc.notes {
+		errs = append(errs, errors.New(n))
+	}
+	return out, extra, errors.Join(errs...)
 }
 
 func takeSession(ss []session, used map[string]bool, notBefore time.Time) (session, bool) {
@@ -221,6 +254,7 @@ func takeSession(ss []session, used map[string]bool, notBefore time.Time) (sessi
 
 func withSession(a core.Agent, s session, now time.Time) core.Agent {
 	a.SessionID, a.Model, a.Task, a.Tokens = s.ID, s.Model, s.Task, s.Tokens
+	a.ContextTokens, a.ContextWindow, a.TurnTokens, a.CostUSD = s.Context, s.Window, s.Turns, s.Cost
 	a.State, a.Source, a.LastActivity = inferState(s, now), core.EvidenceTranscript, iso(s.ModTime)
 	a.Branch = s.Branch
 	if a.Cwd == "" {
@@ -388,4 +422,152 @@ func termOf(pid int, procs map[int]Proc, panes []Pane) *core.TermRef {
 		cur = procs[cur].PPID
 	}
 	return nil
+}
+
+// piSessionsFor reads, for each directory a pi process runs in, the newest session files of that
+// directory's folder.
+func (l *Local) piSessionsFor(ctx context.Context, sc *scan, aps []agentProc, b *budget) map[string][]session {
+	out := map[string][]session{}
+	if l.o.FS == nil {
+		return out
+	}
+	root := l.piSessions()
+	if _, err := fs.Stat(l.o.FS, root); err != nil {
+		return out
+	}
+	sc.dirs = append(sc.dirs, "pi")
+	for _, p := range aps {
+		if p.Harness != core.HarnessPi || p.Cwd == "" || out[p.Cwd] != nil {
+			continue
+		}
+		out[p.Cwd] = []session{}
+		for _, f := range newest(l.o.FS, path.Join(root, encodePiDir(p.Cwd)), 4) {
+			if sc.sessionFiles >= maxFilesParsed || ctx.Err() != nil {
+				break
+			}
+			sc.sessionFiles++
+			if s, ok := readPi(l.o.FS, f, b); ok {
+				s.Cwd = p.Cwd
+				out[p.Cwd] = append(out[p.Cwd], s)
+			}
+		}
+	}
+	return out
+}
+
+// openCodeWindow is how far back the session database is asked for rows.
+const openCodeWindow = 7 * 24 * time.Hour
+
+// openCodeSessionsFor reads OpenCode's session database when there is one: a regular file only,
+// opened read-only, bounded to the newest rows. A subagent's own session (one with a parent) is not an
+// agent of its own. A database this build cannot read is a note, not a failure.
+func (l *Local) openCodeSessionsFor(ctx context.Context, sc *scan, now time.Time) map[string][]session {
+	out := map[string][]session{}
+	if l.o.FS == nil {
+		return out
+	}
+	name := rel(l.o.OpenCodeDB)
+	if fi, err := fs.Stat(l.o.FS, name); err != nil || !fi.Mode().IsRegular() {
+		return out
+	}
+	sc.dirs = append(sc.dirs, "OpenCode")
+	rows, err := l.o.OpenCode(ctx, l.o.OpenCodeDB, now.Add(-openCodeWindow), 50)
+	if err != nil {
+		if !errors.Is(err, errNoOpenCodeSessions) {
+			sc.notes = append(sc.notes, "the OpenCode session database could not be read: "+core.CleanAgentText(err.Error(), 120))
+		}
+		return out
+	}
+	for _, r := range rows {
+		if r.ParentID != "" || r.Dir == "" {
+			continue
+		}
+		sc.sessionFiles++
+		s := r.asSession()
+		out[s.Cwd] = append(out[s.Cwd], s)
+	}
+	return out
+}
+
+// rateLimits is each harness account's limits as the files recorded them: Codex's from the newest
+// event that carried them, Claude's from the status-line file when one exists.
+func (l *Local) rateLimits(pools map[string]map[string][]session) []core.RateLimit {
+	var out []core.RateLimit
+	var best *quotaRead
+	for _, ss := range pools[core.HarnessCodex] {
+		for _, s := range ss {
+			if s.Quota != nil && (best == nil || s.Quota.Updated.After(best.Updated)) {
+				best = s.Quota
+			}
+		}
+	}
+	if best != nil {
+		out = append(out, best.limit(core.HarnessCodex))
+	}
+	if l.o.FS != nil {
+		if q, ok := readClaudeQuota(l.o.FS, rel(path.Join(l.o.Home, ".claude"))); ok {
+			out = append(out, q.limit(core.HarnessClaude))
+		}
+	}
+	return out
+}
+
+// dirtyTTL is how long a directory's uncommitted-file count is reused: a status read is the one
+// expensive thing a refresh does.
+const (
+	dirtyTTL     = 15 * time.Second
+	dirtyWorkers = 4
+	maxDirty     = 24 // directories asked about in one read
+)
+
+type dirtyEntry struct {
+	git core.AgentGit
+	ok  bool
+	at  time.Time
+}
+
+// fillDirty sets Git on every agent that runs inside a repository, from at most maxDirty distinct
+// directories, a few at a time, reusing a recent answer. A directory that could not be read leaves the
+// agent's counts unknown.
+func (l *Local) fillDirty(ctx context.Context, list []core.Agent) {
+	now := l.o.Now()
+	var todo []string
+	seen := map[string]bool{}
+	l.mu.Lock()
+	for _, a := range list {
+		d := a.Cwd
+		if a.Repo == "" || !path.IsAbs(d) || seen[d] || len(seen) >= maxDirty {
+			continue
+		}
+		seen[d] = true
+		if e, ok := l.dirty[d]; !ok || now.Sub(e.at) > dirtyTTL {
+			todo = append(todo, d)
+		}
+	}
+	l.mu.Unlock()
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, dirtyWorkers)
+	for _, d := range todo {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func() {
+			defer func() { <-sem; wg.Done() }()
+			g, ok := l.o.Dirty(ctx, d)
+			l.mu.Lock()
+			if l.dirty == nil {
+				l.dirty = map[string]dirtyEntry{}
+			}
+			l.dirty[d] = dirtyEntry{g, ok, now}
+			l.mu.Unlock()
+		}()
+	}
+	wg.Wait()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for i := range list {
+		if e, ok := l.dirty[list[i].Cwd]; ok && e.ok && seen[list[i].Cwd] {
+			g := e.git
+			list[i].Git = &g
+		}
+	}
 }
