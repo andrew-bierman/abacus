@@ -359,3 +359,33 @@ Each unit is one commit-sized reviewable step in this order. Test files are name
   `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`; README Rex bullet.
 - Rex docs: `~/.cache/rex-docs/llms-full.txt` (program status spec around lines 2625 to 2945; block methods around
   10425).
+
+## Addendum: what the build taught (2026-11-24)
+
+Written after the build and its review. The code and tests below pin each point; this records why.
+
+- **The read-only guarantee is pinned in layers.** `argv.go` matcher with literal method names and an id grammar
+  (`argv_agents_test.go`: exact shapes, refused neighbours through `readOnly.Run` with `ran == false`,
+  `TestTheMethodPinIsWhatRefusesWrite`), then the sweep only builds argv through helpers, then a refused argv
+  never reaches the runner. Breaking one layer alone must fail a test; loosening the method pin is the one that
+  matters, because `block call` with `write` types into a pane.
+- **Local refusals are not host failures.** The first sweep counted every Runner error toward the per-host
+  breaker, and the allowlist refusing an odd id is a Runner error. Three such ids would have reported "host
+  stopped answering" for a healthy host. Validate ids first, count drift, never touch `fails`
+  (`TestANonConformingIdIsDriftAndNeverTripsTheBreaker`).
+- **A budget expiring is not an error.** `sweep()` returned empty on the 4 s `agentBudget`, dropping the local
+  machine's good panes because one remote was slow. Keep what each host answered and name the hosts that did not
+  finish; only a cancelled caller context is an error (`TestASlowHostDoesNotThrowAwayTheLocalPanes`).
+- **Ordinary pane states are not drift.** An exited keep-open pane answers `process` with `{last_exit, home}`;
+  treating that as unrecognized turned a normal pane into "this version does not recognize" for the whole report.
+  Drift is only a non-object. Found by running against a live Rex, not by fixtures; `process-exited.json` is a
+  hand-scrubbed approximation (the exact `last_exit` fields are not recorded). Lesson: record fixtures for every
+  pane state (idle, running, exited, no shell) before writing the parser.
+- **Untrusted pane text.** Every text field of `AgentPane` goes through `core.Sanitize` then `core.ClipRunes` in
+  one place (`CleanAgentPane`), and `program-status-hostile.json` and `-oversized.json` carry escapes, bidi
+  overrides, line breaks and 10 KB strings. Matching and layout only ever see cleaned text.
+- **Review catches worth remembering:** an editing pass truncated the README tail (Credits, Development, License)
+  and added a stray fence, so check `git diff origin/main...HEAD -- README.md` for removed lines; the README
+  sample needs a closing fence for `TestReadmeSampleMatchesTheGolden`; the README TUI sentence contradicted the new
+  Agents tab.
+- **Goldens and `TMPDIR`:** see `docs/development.md`.

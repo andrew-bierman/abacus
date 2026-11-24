@@ -315,7 +315,10 @@ session, no other host, no window was touched), with OSC 7501 emitted by `printf
 - `block call -s S -b B program_status` prints `{"records":[{id?,state,kind?,app?,effective_app?,
   title?,msg?,progress?,updated_at,owner?}]}`; `msg` and `title` come back already decoded;
   `effective_app` inherits from the root record. `process` prints `{last_exit, child, foreground,
-  ancestors?, home}`; Rex never returns an argv beyond argv0.
+  ancestors?, home}`; Rex never returns an argv beyond argv0. A pane whose shell has exited
+  (a keep-open pane) prints only `{last_exit, home}`: that is "no process", not schema drift. A session or
+  block id that does not match the id grammar is drift too and is skipped before any call, so it never
+  counts toward a host's breaker.
 - Global flags before the subcommand work (`rex --autostart=false block ls ...`).
 - An unknown session or block exits 3 ("not found"). Here any non-zero exit means "this pane is
   gone, skip it"; the meaning 3 has for `ls` (more than one server) is not reused.

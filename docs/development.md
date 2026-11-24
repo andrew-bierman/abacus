@@ -34,3 +34,9 @@ through the real extraction path and logs its timings.
 
 Note: the two `signalZero` bodies under `internal/lambe` are kept separate on purpose; they port
 Lambe's own process-liveness logic per platform, and merging them would drift from it.
+
+## Running the TUI goldens with a custom TMPDIR
+
+Some goldens (seen once: `tasks-switch-pick`) print a path that comes from `TMPDIR`. With `TMPDIR` under
+`~/.cache` the output differs from the committed file and the test fails, with no code defect. Run
+`go test ./internal/tui` with `TMPDIR` unset or under `/var/tmp` before regenerating anything with `-update`.
