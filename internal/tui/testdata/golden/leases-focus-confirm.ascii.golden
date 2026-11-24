@@ -4,10 +4,10 @@
 │ bring the terminal for bd-43 to the  │
 │ front                                │
 │ session: General                     │
+│ server: this machine's workspace     │
 │                                      │
 │ command: rex --autostart=false focu… │
-│ -s session:01a20c1b-ae95-745d-ba13-  │
-│ ↕ +4 more: enlarge the terminal to   │
+│ ↕ +5 more: enlarge the terminal to   │
 │ review                               │
 ╰──────────────────────────────────────╯
 y apply · n/esc cancel
@@ -18,6 +18,7 @@ y apply · n/esc cancel
 │ bring the terminal for bd-43 to the  │
 │ front                                │
 │ session: General                     │
+│ server: this machine's workspace     │
 │                                      │
 │ command: rex --autostart=false focu… │
 │ -s session:01a20c1b-ae95-745d-ba13-  │
@@ -40,20 +41,19 @@ y apply · n/esc cancel
 
 
 
-
 y apply · n/esc cancel
 === 80x12 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                    │
 │ session: General                                                             │
+│ server: this machine's workspace                                             │
 │                                                                              │
 │ command: rex --autostart=false focus -s session:01a20c1b-ae95-745d-ba13-     │
 │ 9eaee76983fa block:01a20c2b-ed0a-7802-a0b6-b446d8779a01                      │
 │                                                                              │
 │ y runs it · n cancels                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
 y apply · n/esc cancel
 === 80x30 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
@@ -61,13 +61,13 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                    │
 │ session: General                                                             │
+│ server: this machine's workspace                                             │
 │                                                                              │
 │ command: rex --autostart=false focus -s session:01a20c1b-ae95-745d-ba13-     │
 │ 9eaee76983fa block:01a20c2b-ed0a-7802-a0b6-b446d8779a01                      │
 │                                                                              │
 │ y runs it · n cancels                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
@@ -91,13 +91,13 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                                                            │
 │ session: General                                                                                                     │
+│ server: this machine's workspace                                                                                     │
 │                                                                                                                      │
 │ command: rex --autostart=false focus -s session:01a20c1b-ae95-745d-ba13-9eaee76983fa block:01a20c2b-ed0a-7802-a0b6-  │
 │ b446d8779a01                                                                                                         │
 │                                                                                                                      │
 │ y runs it · n cancels                                                                                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 y apply · n/esc cancel
 === 120x30 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
@@ -105,13 +105,13 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                                                            │
 │ session: General                                                                                                     │
+│ server: this machine's workspace                                                                                     │
 │                                                                                                                      │
 │ command: rex --autostart=false focus -s session:01a20c1b-ae95-745d-ba13-9eaee76983fa block:01a20c2b-ed0a-7802-a0b6-  │
 │ b446d8779a01                                                                                                         │
 │                                                                                                                      │
 │ y runs it · n cancels                                                                                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
@@ -136,6 +136,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                │
 │ session: General                                         │
+│ server: this machine's workspace                         │
 │                                                          │
 │ command: rex --autostart=false focus -s                  │
 │ session:01a20c1b-ae95-745d-ba13-9eaee76983fa             │
@@ -153,7 +154,6 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-
 y apply · n/esc cancel
 === 140x32 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
@@ -161,12 +161,12 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ bring the terminal for bd-43 to the front                                                                                                │
 │ session: General                                                                                                                         │
+│ server: this machine's workspace                                                                                                         │
 │                                                                                                                                          │
 │ command: rex --autostart=false focus -s session:01a20c1b-ae95-745d-ba13-9eaee76983fa block:01a20c2b-ed0a-7802-a0b6-b446d8779a01          │
 │                                                                                                                                          │
 │ y runs it · n cancels                                                                                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 

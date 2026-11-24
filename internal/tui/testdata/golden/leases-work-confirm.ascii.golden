@@ -6,8 +6,8 @@
 │ ba13-9eaee76983fa                    │
 │ it runs: claude -p "Work on bd-43:   │
 │ bd-43"                               │
-│ in folder: /work/proj                │
-│ ↕ +10 more: enlarge the terminal to  │
+│ server: this machine's workspace     │
+│ ↕ +11 more: enlarge the terminal to  │
 │ review                               │
 ╰──────────────────────────────────────╯
 y apply · n/esc cancel · s tab/split
@@ -20,6 +20,7 @@ y apply · n/esc cancel · s tab/split
 │ ba13-9eaee76983fa                    │
 │ it runs: claude -p "Work on bd-43:   │
 │ bd-43"                               │
+│ server: this machine's workspace     │
 │ in folder: /work/proj                │
 │ nothing is typed into any existing   │
 │ terminal                             │
@@ -40,7 +41,6 @@ y apply · n/esc cancel · s tab/split
 
 
 
-
 y apply · n/esc cancel · s tab/split
 === 80x12 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
@@ -48,11 +48,11 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 │ open a new tab named bd-43 in session session:01a20c1b-ae95-745d-ba13-       │
 │ 9eaee76983fa                                                                 │
 │ it runs: claude -p "Work on bd-43: bd-43"                                    │
+│ server: this machine's workspace                                             │
 │ in folder: /work/proj                                                        │
 │ nothing is typed into any existing terminal                                  │
 │                                                                              │
-│ command: rex --autostart=false run -s session:01a20c1b-ae95-745d-ba13-       │
-│ ↕ +4 more: enlarge the terminal to review                                    │
+│ ↕ +5 more: enlarge the terminal to review                                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 y apply · n/esc cancel · s tab/split
 === 80x30 ===
@@ -62,6 +62,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 │ open a new tab named bd-43 in session session:01a20c1b-ae95-745d-ba13-       │
 │ 9eaee76983fa                                                                 │
 │ it runs: claude -p "Work on bd-43: bd-43"                                    │
+│ server: this machine's workspace                                             │
 │ in folder: /work/proj                                                        │
 │ nothing is typed into any existing terminal                                  │
 │                                                                              │
@@ -84,19 +85,18 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-
 y apply · n/esc cancel · s tab/split
 === 120x12 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ open a new tab named bd-43 in session session:01a20c1b-ae95-745d-ba13-9eaee76983fa                                   │
 │ it runs: claude -p "Work on bd-43: bd-43"                                                                            │
+│ server: this machine's workspace                                                                                     │
 │ in folder: /work/proj                                                                                                │
 │ nothing is typed into any existing terminal                                                                          │
 │                                                                                                                      │
 │ command: rex --autostart=false run -s session:01a20c1b-ae95-745d-ba13-9eaee76983fa --label bd-43 -c /work/proj --    │
-│ keep-open --json -- claude -p "Work on bd-43: bd-43"                                                                 │
-│ ↕ +2 more: enlarge the terminal to review                                                                            │
+│ ↕ +3 more: enlarge the terminal to review                                                                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 y apply · n/esc cancel · s tab/split
 === 120x30 ===
@@ -105,6 +105,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ open a new tab named bd-43 in session session:01a20c1b-ae95-745d-ba13-9eaee76983fa                                   │
 │ it runs: claude -p "Work on bd-43: bd-43"                                                                            │
+│ server: this machine's workspace                                                                                     │
 │ in folder: /work/proj                                                                                                │
 │ nothing is typed into any existing terminal                                                                          │
 │                                                                                                                      │
@@ -128,7 +129,6 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-
 y apply · n/esc cancel · s tab/split
 === 60x24 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
@@ -137,6 +137,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 │ open a new tab named bd-43 in session session:01a20c1b-  │
 │ ae95-745d-ba13-9eaee76983fa                              │
 │ it runs: claude -p "Work on bd-43: bd-43"                │
+│ server: this machine's workspace                         │
 │ in folder: /work/proj                                    │
 │ nothing is typed into any existing terminal              │
 │                                                          │
@@ -153,7 +154,6 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-
 y apply · n/esc cancel · s tab/split
 === 140x32 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
@@ -161,6 +161,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ open a new tab named bd-43 in session session:01a20c1b-ae95-745d-ba13-9eaee76983fa                                                       │
 │ it runs: claude -p "Work on bd-43: bd-43"                                                                                                │
+│ server: this machine's workspace                                                                                                         │
 │ in folder: /work/proj                                                                                                                    │
 │ nothing is typed into any existing terminal                                                                                              │
 │                                                                                                                                          │
@@ -169,7 +170,6 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 │                                                                                                                                          │
 │ y runs it · n cancels · s switches tab or split                                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
