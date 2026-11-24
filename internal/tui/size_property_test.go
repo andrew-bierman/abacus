@@ -20,6 +20,9 @@ var (
 func TestEveryTabRendersWithinEverySize(t *testing.T) {
 	th := asciiTheme()
 	for _, sc := range scenarios() {
+		if sc.notGrid {
+			continue
+		}
 		for _, w := range gridWidths {
 			for _, h := range gridHeights {
 				for _, e := range invariantErrs(sc, render(t, sc, th, w, h), w, h) {

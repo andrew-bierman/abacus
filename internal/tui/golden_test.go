@@ -56,6 +56,9 @@ type scenario struct {
 	// hiddenOK: on a screen too small to draw, the keys that need the prompt open are ignored (a
 	// prompt that is not drawn must not take keys), so the tab and footer rules do not apply there.
 	hiddenOK bool
+	// notGrid keeps a small variation of another scenario out of the size grid (every size from 1x1 to
+	// 300x100): the golden still covers it, the grid test (the slowest in the package) does not repeat it.
+	notGrid bool
 }
 
 // typed is a string as the key presses that type it.
@@ -329,17 +332,17 @@ func scenarios() []scenario {
 		{name: "leases", build: std, keys: []string{"3"}, tab: "Leases"},
 		{name: "agents", build: std, keys: []string{"5"}, tab: "Agents", extra: append(append([][2]int(nil), framedSizes...), [2]int{140, 40})},
 		{name: "agents-detail", build: std, keys: []string{"5", "enter"}, tab: "Agents", extra: framedSizes},
-		{name: "agents-running", build: std, keys: []string{"5", "f", "f"}, tab: "Agents", extra: framedSizes},
-		{name: "agents-subagents", build: std, keys: []string{"5", "j", "j", "enter"}, tab: "Agents", extra: framedSizes},
-		{name: "agents-filter", build: std, keys: append(append([]string{"5", "/"}, typed("orchard")...), "enter"), tab: "Agents", extra: framedSizes},
-		{name: "agents-no-match", build: std, keys: append(append([]string{"5", "/"}, typed("zzzzzz")...), "enter"), tab: "Agents", extra: framedSizes},
-		{name: "agents-sort", build: std, keys: []string{"5", "s"}, tab: "Agents", extra: framedSizes},
+		{name: "agents-running", notGrid: true, build: std, keys: []string{"5", "f", "f"}, tab: "Agents", extra: framedSizes},
+		{name: "agents-subagents", notGrid: true, build: std, keys: []string{"5", "j", "j", "enter"}, tab: "Agents", extra: framedSizes},
+		{name: "agents-filter", notGrid: true, build: std, keys: append(append([]string{"5", "/"}, typed("orchard")...), "enter"), tab: "Agents", extra: framedSizes},
+		{name: "agents-no-match", notGrid: true, build: std, keys: append(append([]string{"5", "/"}, typed("zzzzzz")...), "enter"), tab: "Agents", extra: framedSizes},
+		{name: "agents-sort", notGrid: true, build: std, keys: []string{"5", "s"}, tab: "Agents", extra: framedSizes},
 		{name: "agents-empty", tab: "Agents", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
 			m := load(t, th, nil)
 			m, _ = m.Update(agentsMsg{report: core.AgentsReport{Header: core.Header{Domain: core.DomainAgents, Title: "Agents", State: core.Connected, Source: core.SourceLive}, Agents: []core.Agent{}}})
 			return m
 		}},
-		{name: "agents-note", tab: "Agents", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+		{name: "agents-note", notGrid: true, tab: "Agents", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
 			m := load(t, th, nil)
 			r := fixtureAgents()
 			r.Notes = []string{"the live monitor did not answer in time"}

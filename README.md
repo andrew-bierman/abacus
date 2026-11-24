@@ -231,7 +231,7 @@ sits beside the list. This is the 80-column Tasks render with colors off (`NO_CO
 using data from fixture providers:
 
 ```
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑

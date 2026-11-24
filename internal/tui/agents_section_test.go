@@ -99,3 +99,18 @@ func TestAgentsNeverPollsWhileHiddenOrTwiceAtOnce(t *testing.T) {
 		t.Fatal("a tick from an earlier visit is dropped")
 	}
 }
+
+func TestAgentWhereIsTheRepoOrTheDirectoryName(t *testing.T) {
+	for _, c := range []struct {
+		a    core.Agent
+		want string
+	}{
+		{core.Agent{Repo: "orchard", Branch: "main", Cwd: "/work/x"}, "orchard@main"},
+		{core.Agent{Cwd: "/Users/someone/projects/barn"}, "barn"},
+		{core.Agent{}, ""},
+	} {
+		if got := agentWhere(c.a); got != c.want {
+			t.Errorf("%+v: %q, want %q", c.a, got, c.want)
+		}
+	}
+}

@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 	"time"
 
@@ -305,8 +306,8 @@ func agentWhere(a core.Agent) string {
 	if a.Branch != "" {
 		w += "@" + a.Branch
 	}
-	if w == "" {
-		w = a.Cwd
+	if w == "" && a.Cwd != "" { // no repository: the directory's own name, not a path that fills the column
+		w = path.Base(a.Cwd)
 	}
 	return w
 }
@@ -458,7 +459,7 @@ func (s *agentsSection) detailLines(iw int) []string {
 	if a.PID > 0 {
 		ident += "  pid " + fmt.Sprint(a.PID)
 	}
-	out = append(out, field("agent", ident))
+	out = append(out, field("agent", strings.TrimSpace(ident)))
 	act := agoText(a.Age(now))
 	if a.Tokens != nil {
 		act += fmt.Sprintf("  %d tokens", *a.Tokens)
