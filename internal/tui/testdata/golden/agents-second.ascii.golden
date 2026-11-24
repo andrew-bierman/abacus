@@ -1,0 +1,223 @@
+=== 40x12 ===
+ [Agents]  6/6
+╭─ ▸ Agents · 9 agents · 2 blocked ·… ─╮
+│   (blocked)  ac-zoj               4m │
+│   (blocked)  ac-00h               9m │
+│   (error)    T-1 @operat…        ~2m │
+│ ▸ done       review T-3 …         6m │
+│   (working)  ac-1k2        25m stale │
+│   (working)  ac-09               now │
+│   (working)  ambiguous           now │
+│   ↕ +2 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  6/6
+────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked ·… ─╮
+│   (blocked)  ac-zoj               4m │
+│   (blocked)  ac-00h               9m │
+│   (error)    T-1 @operat…        ~2m │
+│ ▸ done       review T-3 …         6m │
+│   (working)  ac-1k2        25m stale │
+│   (working)  ac-09               now │
+│   (working)  ambiguous           now │
+│   (idle)     scratch              3h │
+│   quiet      ac-1k2                - │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────────────╮
+│   (blocked)  ac-zoj                4m  claude-code  permission  Approve edi… │
+│   (blocked)  ac-00h                9m  codex        question    Which track… │
+│   (error)    T-1 @operato…        ~2m  claude-code  -           go test fai… │
+│ ▸ done       review T-3 n…         6m  claude-code  -           Review note… │
+│   (working)  ac-1k2         25m stale  claude-code  -           Indexing th… │
+│   (working)  ac-09                now  claude-code  -           Writing gol… │
+│   (working)  ambiguous            now  codex        -           Comparing t… │
+│   ↕ +2 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────────────╮
+│   (blocked)  ac-zoj                4m  claude-code  permission  Approve edi… │
+│   (blocked)  ac-00h                9m  codex        question    Which track… │
+│   (error)    T-1 @operato…        ~2m  claude-code  -           go test fai… │
+│ ▸ done       review T-3 n…         6m  claude-code  -           Review note… │
+│   (working)  ac-1k2         25m stale  claude-code  -           Indexing th… │
+│   (working)  ac-09                now  claude-code  -           Writing gol… │
+│   (working)  ambiguous            now  codex        -           Comparing t… │
+│   (idle)     scratch               3h  aider        -           Ready        │
+│   quiet      ac-1k2                 -  claude       -           -            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│   (blocked)  ac-zoj                    4m  claude-code  Approve edi… │ │ claude-code (done)                          │
+│   (blocked)  ac-00h                    9m  codex        Which track… │ │                                             │
+│   (error)    T-1 @operators-m…        ~2m  claude-code  go test fai… │ │ message    Review notes written to          │
+│ ▸ done       review T-3 notes          6m  claude-code  Review note… │ │            docs/notes.md                    │
+│   (working)  ac-1k2             25m stale  claude-code  Indexing th… │ │ since      6m                               │
+│   (working)  ac-09                    now  claude-code  Writing gol… │ │                                             │
+│   (working)  ambiguous                now  codex        Comparing t… │ │ task       none named                       │
+│   ↕ +2 more                                                          │ │ process    claude                           │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│   (blocked)  ac-zoj                    4m  claude-code  Approve edi… │ │ claude-code (done)                          │
+│   (blocked)  ac-00h                    9m  codex        Which track… │ │                                             │
+│   (error)    T-1 @operators-m…        ~2m  claude-code  go test fai… │ │ message    Review notes written to          │
+│ ▸ done       review T-3 notes          6m  claude-code  Review note… │ │            docs/notes.md                    │
+│   (working)  ac-1k2             25m stale  claude-code  Indexing th… │ │ since      6m                               │
+│   (working)  ac-09                    now  claude-code  Writing gol… │ │                                             │
+│   (working)  ambiguous                now  codex        Comparing t… │ │ task       none named                       │
+│   (idle)     scratch                   3h  aider        Ready        │ │ process    claude                           │
+│   quiet      ac-1k2                     -  claude       -            │ │ directory  /work/docs                       │
+│                                                                      │ │ repo       docs                             │
+│                                                                      │ │ branch     review/t-3                       │
+│                                                                      │ │ session    review T-3 notes                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────╮
+│   (blocked)  ac-zoj                     4m  claude-code  │
+│   (blocked)  ac-00h                     9m  codex        │
+│   (error)    T-1 @operators-mac        ~2m  claude-code  │
+│ ▸ done       review T-3 notes           6m  claude-code  │
+│   (working)  ac-1k2              25m stale  claude-code  │
+│   (working)  ac-09                     now  claude-code  │
+│   (working)  ambiguous                 now  codex        │
+│   (idle)     scratch                    3h  aider        │
+│   quiet      ac-1k2                      -  claude       │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                     14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────╮ ╭─ Agent ─────────────────────────────╮
+│   (blocked)  ac-zoj                     4m  claude-code  │ │ claude-code (done)                  │
+│   (blocked)  ac-00h                     9m  codex        │ │                                     │
+│   (error)    T-1 @operators-mac        ~2m  claude-code  │ │ message    Review notes written to  │
+│ ▸ done       review T-3 notes           6m  claude-code  │ │            docs/notes.md            │
+│   (working)  ac-1k2              25m stale  claude-code  │ │ since      6m                       │
+│   (working)  ac-09                     now  claude-code  │ │                                     │
+│   (working)  ambiguous                 now  codex        │ │ task       none named               │
+│   (idle)     scratch                    3h  aider        │ │ process    claude                   │
+│   quiet      ac-1k2                      -  claude       │ │ directory  /work/docs               │
+│                                                          │ │ repo       docs                     │
+│                                                          │ │ branch     review/t-3               │
+│                                                          │ │ session    review T-3 notes         │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 140x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                                             14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────────────╮
+│   (blocked)  ac-zoj               4m  claude-code  permission    -  Approve edi… │ │ claude-code (done)                                  │
+│   (blocked)  ac-00h               9m  codex        question      -  Which track… │ │                                                     │
+│   (error)    T-1 @operat…        ~2m  claude-code  -             -  go test fai… │ │ message    Review notes written to docs/notes.md    │
+│ ▸ done       review T-3 …         6m  claude-code  -             -  Review note… │ │ since      6m                                       │
+│   (working)  ac-1k2        25m stale  claude-code  -           15%  Indexing th… │ │                                                     │
+│   (working)  ac-09               now  claude-code  -           60%  Writing gol… │ │ task       none named                               │
+│   (working)  ambiguous           now  codex        -             -  Comparing t… │ │ process    claude                                   │
+│   (idle)     scratch              3h  aider        -             -  Ready        │ │ directory  /work/docs                               │
+│   quiet      ac-1k2                -  claude       -             -  -            │ │ repo       docs                                     │
+│                                                                                  │ │ branch     review/t-3                               │
+│                                                                                  │ │ session    review T-3 notes                         │
+╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace

@@ -83,6 +83,9 @@ func (p *Poller) SetHidden(hidden bool) {
 	p.hidden = hidden
 }
 
+// Expedite makes a check due at once (a person asked for one), without touching the wait.
+func (p *Poller) Expedite() { p.next = time.Time{} }
+
 // Defer pushes the next check to at least until, without touching the wait (a read is already on
 // its way, or the user just asked for one).
 func (p *Poller) Defer(until time.Time) {

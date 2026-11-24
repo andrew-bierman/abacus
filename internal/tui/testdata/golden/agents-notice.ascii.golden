@@ -1,0 +1,223 @@
+=== 40x12 ===
+ [Agents]  6/6
+╭─ ▸ Workspace ────────────────────────╮
+│ Demo data: nothing is opened.        │
+│ copy: rex                            │
+│                                      │
+│ any key closes                       │
+╰──────────────────────────────────────╯
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  6/6
+────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────╮
+│ Demo data: nothing is opened.        │
+│ copy: rex                            │
+│                                      │
+│ any key closes                       │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                │
+│ copy: rex                                                                    │
+│                                                                              │
+│ any key closes                                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                │
+│ copy: rex                                                                    │
+│                                                                              │
+│ any key closes                                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                                                        │
+│ copy: rex                                                                                                            │
+│                                                                                                                      │
+│ any key closes                                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                                                        │
+│ copy: rex                                                                                                            │
+│                                                                                                                      │
+│ any key closes                                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                            │
+│ copy: rex                                                │
+│                                                          │
+│ any key closes                                           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                     14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                                    │
+│ copy: rex                                                                                        │
+│                                                                                                  │
+│ any key closes                                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 140x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                                             14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Workspace ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Demo data: nothing is opened.                                                                                                            │
+│ copy: rex                                                                                                                                │
+│                                                                                                                                          │
+│ any key closes                                                                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace

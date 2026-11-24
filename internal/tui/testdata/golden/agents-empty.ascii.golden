@@ -1,0 +1,223 @@
+=== 40x12 ===
+ [Agents]  6/6
+╭─ ▸ Agents ───────────────────────────╮
+│ no agents are reporting status       │
+│ 14 terminals looked at               │
+│                                      │
+│ A program shows up here when it      │
+│ publishes status to its terminal     │
+│ pane (the status escape sequence,    │
+│ OSC 7501, which an agent tool can    │
+│   ↕ +3 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  6/6
+────────────────────────────────────────
+╭─ ▸ Agents ───────────────────────────╮
+│ no agents are reporting status       │
+│ 14 terminals looked at               │
+│                                      │
+│ A program shows up here when it      │
+│ publishes status to its terminal     │
+│ pane (the status escape sequence,    │
+│ OSC 7501, which an agent tool can    │
+│ send from a hook) or when a known    │
+│ agent is the pane's foreground       │
+│ program.                             │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+╭─ ▸ Agents ───────────────────────────────────────────────────────────────────╮
+│ no agents are reporting status                                               │
+│ 14 terminals looked at                                                       │
+│                                                                              │
+│ A program shows up here when it publishes status to its terminal pane (the   │
+│ status escape sequence, OSC 7501, which an agent tool can send from a hook)  │
+│ or when a known agent is the pane's foreground program.                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents ───────────────────────────────────────────────────────────────────╮
+│ no agents are reporting status                                               │
+│ 14 terminals looked at                                                       │
+│                                                                              │
+│ A program shows up here when it publishes status to its terminal pane (the   │
+│ status escape sequence, OSC 7501, which an agent tool can send from a hook)  │
+│ or when a known agent is the pane's foreground program.                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+╭─ ▸ Agents ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ no agents are reporting status                                                                                       │
+│ 14 terminals looked at                                                                                               │
+│                                                                                                                      │
+│ A program shows up here when it publishes status to its terminal pane (the status escape sequence, OSC 7501, which   │
+│ an agent tool can send from a hook) or when a known agent is the pane's foreground program.                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ no agents are reporting status                                                                                       │
+│ 14 terminals looked at                                                                                               │
+│                                                                                                                      │
+│ A program shows up here when it publishes status to its terminal pane (the status escape sequence, OSC 7501, which   │
+│ an agent tool can send from a hook) or when a known agent is the pane's foreground program.                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────
+╭─ ▸ Agents ───────────────────────────────────────────────╮
+│ no agents are reporting status                           │
+│ 14 terminals looked at                                   │
+│                                                          │
+│ A program shows up here when it publishes status to its  │
+│ terminal pane (the status escape sequence, OSC 7501,     │
+│ which an agent tool can send from a hook) or when a      │
+│ known agent is the pane's foreground program.            │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                     14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents ───────────────────────────────────────────────────────────────────────────────────────╮
+│ no agents are reporting status                                                                   │
+│ 14 terminals looked at                                                                           │
+│                                                                                                  │
+│ A program shows up here when it publishes status to its terminal pane (the status escape         │
+│ sequence, OSC 7501, which an agent tool can send from a hook) or when a known agent is the       │
+│ pane's foreground program.                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+=== 140x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                                             14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ no agents are reporting status                                                                                                           │
+│ 14 terminals looked at                                                                                                                   │
+│                                                                                                                                          │
+│ A program shows up here when it publishes status to its terminal pane (the status escape sequence, OSC 7501, which an agent tool can     │
+│ send from a hook) or when a known agent is the pane's foreground program.                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh

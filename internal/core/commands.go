@@ -59,6 +59,7 @@ var commands = []Command{
 	{Name: "leases", Aliases: []string{"lease"}, Group: "tabs", Kind: ActGoTab, Tab: "Leases", Desc: "go to the Leases tab"},
 	{Name: "queues", Aliases: []string{"queue"}, Group: "tabs", Kind: ActGoTab, Tab: "Queues", Desc: "go to the Queues tab"},
 	{Name: "doctor", Group: "tabs", Kind: ActGoTab, Tab: "Doctor", Desc: "go to the Doctor tab"},
+	{Name: "agents", Aliases: []string{"agent"}, Group: "tabs", Kind: ActGoTab, Tab: "Agents", Desc: "go to the Agents tab (when a terminal workspace is connected)"},
 	{Name: "list", Aliases: []string{"ls"}, Group: "views", Kind: ActGoView, Tab: "Tasks", View: "list", Desc: "Tasks: the flat list"},
 	{Name: "tree", Group: "views", Kind: ActGoView, Tab: "Tasks", View: "tree", Desc: "Tasks: epics and their children"},
 	{Name: "kanban", Group: "views", Kind: ActGoView, Tab: "Tasks", View: "kanban", Desc: "Tasks: columns by status"},

@@ -461,6 +461,8 @@ func TestPromptSourcesNameNoWriter(t *testing.T) {
 
 func TestEveryCommandResolvesToARealTargetAndNamesNoTool(t *testing.T) {
 	m := pm(t, 100, 32).(*Model)
+	// Agents is the one optional tab: it exists only with a workspace provider, so the demo has it.
+	demoTabs := demoWorkspaceModel(t, asciiTheme(), &wsRecorder{}, 100, 32).(*Model).tabs
 	views := map[string]bool{"tree": true}
 	for _, v := range taskViews {
 		views[strings.ToLower(v.name)] = true
@@ -471,6 +473,9 @@ func TestEveryCommandResolvesToARealTargetAndNamesNoTool(t *testing.T) {
 			found := false
 			for _, tb := range m.tabs {
 				found = found || tb.name == c.Tab
+			}
+			for _, tb := range demoTabs {
+				found = found || tb.name == agentsTitle && c.Tab == agentsTitle
 			}
 			if !found {
 				t.Errorf("%s targets the tab %q, which does not exist", c.Name, c.Tab)

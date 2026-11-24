@@ -1,0 +1,223 @@
+=== 40x12 ===
+ [Agents]  6/6
+╭─ ▸ Agents · 9 agents · 2 blocked ·… ─╮
+│ ▸ blocked    ac-zoj               4m │
+│   (blocked)  ac-00h               9m │
+│   (error)    T-1 @operat…        ~2m │
+│   (done)     review T-3 …         6m │
+│   (working)  ac-1k2        25m stale │
+│   (working)  ac-09               now │
+│   (working)  ambiguous           now │
+│   ↕ +2 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  6/6
+────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked ·… ─╮
+│ ▸ blocked    ac-zoj               4m │
+│   (blocked)  ac-00h               9m │
+│   (error)    T-1 @operat…        ~2m │
+│   (done)     review T-3 …         6m │
+│   (working)  ac-1k2        25m stale │
+│   (working)  ac-09               now │
+│   (working)  ambiguous           now │
+│   (idle)     scratch              3h │
+│   quiet      ac-1k2                - │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────────────╮
+│ ▸ blocked    ac-zoj                4m  claude-code  permission  Approve edi… │
+│   (blocked)  ac-00h                9m  codex        question    Which track… │
+│   (error)    T-1 @operato…        ~2m  claude-code  -           go test fai… │
+│   (done)     review T-3 n…         6m  claude-code  -           Review note… │
+│   (working)  ac-1k2         25m stale  claude-code  -           Indexing th… │
+│   (working)  ac-09                now  claude-code  -           Writing gol… │
+│   (working)  ambiguous            now  codex        -           Comparing t… │
+│   ↕ +2 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────────────╮
+│ ▸ blocked    ac-zoj                4m  claude-code  permission  Approve edi… │
+│   (blocked)  ac-00h                9m  codex        question    Which track… │
+│   (error)    T-1 @operato…        ~2m  claude-code  -           go test fai… │
+│   (done)     review T-3 n…         6m  claude-code  -           Review note… │
+│   (working)  ac-1k2         25m stale  claude-code  -           Indexing th… │
+│   (working)  ac-09                now  claude-code  -           Writing gol… │
+│   (working)  ambiguous            now  codex        -           Comparing t… │
+│   (idle)     scratch               3h  aider        -           Ready        │
+│   quiet      ac-1k2                 -  claude       -           -            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ blocked    ac-zoj                    4m  claude-code  Approve edi… │ │ claude-code (blocked)                       │
+│   (blocked)  ac-00h                    9m  codex        Which track… │ │                                             │
+│   (error)    T-1 @operators-m…        ~2m  claude-code  go test fai… │ │ needs      permission                       │
+│   (done)     review T-3 notes          6m  claude-code  Review note… │ │ message    Approve edit to                  │
+│   (working)  ac-1k2             25m stale  claude-code  Indexing th… │ │            internal/core/agents.go?         │
+│   (working)  ac-09                    now  claude-code  Writing gol… │ │ record     (2 records)                      │
+│   (working)  ambiguous                now  codex        Comparing t… │ │ since      4m                               │
+│   ↕ +2 more                                                          │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ blocked    ac-zoj                    4m  claude-code  Approve edi… │ │ claude-code (blocked)                       │
+│   (blocked)  ac-00h                    9m  codex        Which track… │ │                                             │
+│   (error)    T-1 @operators-m…        ~2m  claude-code  go test fai… │ │ needs      permission                       │
+│   (done)     review T-3 notes          6m  claude-code  Review note… │ │ message    Approve edit to                  │
+│   (working)  ac-1k2             25m stale  claude-code  Indexing th… │ │            internal/core/agents.go?         │
+│   (working)  ac-09                    now  claude-code  Writing gol… │ │ record     (2 records)                      │
+│   (working)  ambiguous                now  codex        Comparing t… │ │ since      4m                               │
+│   (idle)     scratch                   3h  aider        Ready        │ │                                             │
+│   quiet      ac-1k2                     -  claude       -            │ │ task       ac-zoj lease                     │
+│                                                                      │ │ match      exact                            │
+│                                                                      │ │ process    claude                           │
+│                                                                      │ │ directory  /work/abacus-worktrees/ac-zoj    │
+│                                                                      │ │ repo       abacus                           │
+│                                                                      │ │ branch     feat/agents-view                 │
+│                                                                      │ │ session    Lambe · ac-zoj                   │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────╮
+│ ▸ blocked    ac-zoj                     4m  claude-code  │
+│   (blocked)  ac-00h                     9m  codex        │
+│   (error)    T-1 @operators-mac        ~2m  claude-code  │
+│   (done)     review T-3 notes           6m  claude-code  │
+│   (working)  ac-1k2              25m stale  claude-code  │
+│   (working)  ac-09                     now  claude-code  │
+│   (working)  ambiguous                 now  codex        │
+│   (idle)     scratch                    3h  aider        │
+│   quiet      ac-1k2                      -  claude       │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                     14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────╮ ╭─ Agent ─────────────────────────────╮
+│ ▸ blocked    ac-zoj                     4m  claude-code  │ │ claude-code (blocked)               │
+│   (blocked)  ac-00h                     9m  codex        │ │                                     │
+│   (error)    T-1 @operators-mac        ~2m  claude-code  │ │ needs      permission               │
+│   (done)     review T-3 notes           6m  claude-code  │ │ message    Approve edit to          │
+│   (working)  ac-1k2              25m stale  claude-code  │ │            internal/core/agents.go? │
+│   (working)  ac-09                     now  claude-code  │ │ record     (2 records)              │
+│   (working)  ambiguous                 now  codex        │ │ since      4m                       │
+│   (idle)     scratch                    3h  aider        │ │                                     │
+│   quiet      ac-1k2                      -  claude       │ │ task       ac-zoj lease             │
+│                                                          │ │ match      exact                    │
+│                                                          │ │ process    claude                   │
+│                                                          │ │ directory  /work/abacus-worktrees/… │
+│                                                          │ │ repo       abacus                   │
+│                                                          │ │ branch     feat/agents-view         │
+│                                                          │ │ session    Lambe · ac-zoj           │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 140x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                                             14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 9 agents · 2 blocked · 1 error ──────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────────────╮
+│ ▸ blocked    ac-zoj               4m  claude-code  permission    -  Approve edi… │ │ claude-code (blocked)                               │
+│   (blocked)  ac-00h               9m  codex        question      -  Which track… │ │                                                     │
+│   (error)    T-1 @operat…        ~2m  claude-code  -             -  go test fai… │ │ needs      permission                               │
+│   (done)     review T-3 …         6m  claude-code  -             -  Review note… │ │ message    Approve edit to internal/core/agents.go? │
+│   (working)  ac-1k2        25m stale  claude-code  -           15%  Indexing th… │ │ record     (2 records)                              │
+│   (working)  ac-09               now  claude-code  -           60%  Writing gol… │ │ since      4m                                       │
+│   (working)  ambiguous           now  codex        -             -  Comparing t… │ │                                                     │
+│   (idle)     scratch              3h  aider        -             -  Ready        │ │ task       ac-zoj lease                             │
+│   quiet      ac-1k2                -  claude       -             -  -            │ │ match      exact                                    │
+│                                                                                  │ │ process    claude                                   │
+│                                                                                  │ │ directory  /work/abacus-worktrees/ac-zoj            │
+│                                                                                  │ │ repo       abacus                                   │
+│                                                                                  │ │ branch     feat/agents-view                         │
+│                                                                                  │ │ session    Lambe · ac-zoj                           │
+╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace

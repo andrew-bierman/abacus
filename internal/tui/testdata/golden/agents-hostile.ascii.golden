@@ -1,0 +1,223 @@
+=== 40x12 ===
+ [Agents]  6/6
+╭─ ▸ Agents · 1 agent · 1 blocked ─────╮
+│ ▸ blocked    ]0;pwned[2J[…  1h stale │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  6/6
+────────────────────────────────────────
+╭─ ▸ Agents · 1 agent · 1 blocked ─────╮
+│ ▸ blocked    ]0;pwned[2J[…  1h stale │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+╭─ ▸ Agents · 1 agent · 1 blocked ─────────────────────────────────────────────╮
+│ ▸ blocked    ]0;pwned[2J[3…  1h stale  ]0;pwned[2…  permission  ]0;pwned[2J… │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 1 agent · 1 blocked ─────────────────────────────────────────────╮
+│ ▸ blocked    ]0;pwned[2J[3…  1h stale  ]0;pwned[2…  permission  ]0;pwned[2J… │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+╭─ ▸ Agents · 1 agent · 1 blocked ─────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ blocked    ]0;pwned[2J[31mre…  1h stale  ]0;pwned[2…  ]0;pwned[2J… │ │ ]0;pwned[2J[31mred  second line  (blocked)  │
+│                                                                      │ │                                             │
+│                                                                      │ │ needs      permission                       │
+│                                                                      │ │ message    ]0;pwned[2J[31mred  second line  │
+│                                                                      │ │            tab wide-wide-wide-wide-wide-    │
+│                                                                      │ │            wide-wide-wide-wide-wide-wide-   │
+│                                                                      │ │            wide-wide-wide-wide-wide         │
+│                                                                      │ │ title      ]0;pwned[2J[31mred  second line… │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                         14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 1 agent · 1 blocked ─────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ blocked    ]0;pwned[2J[31mre…  1h stale  ]0;pwned[2…  ]0;pwned[2J… │ │ ]0;pwned[2J[31mred  second line  (blocked)  │
+│                                                                      │ │                                             │
+│                                                                      │ │ needs      permission                       │
+│                                                                      │ │ message    ]0;pwned[2J[31mred  second line  │
+│                                                                      │ │            tab wide-wide-wide-wide-wide-    │
+│                                                                      │ │            wide-wide-wide-wide-wide-wide-   │
+│                                                                      │ │            wide-wide-wide-wide-wide         │
+│                                                                      │ │ title      ]0;pwned[2J[31mred  second line… │
+│                                                                      │ │ progress   100%                             │
+│                                                                      │ │ record     ]0;pwned[2J[31mred  second line… │
+│                                                                      │ │ since      1h stale                         │
+│                                                                      │ │ no newer report: this may no longer be true │
+│                                                                      │ │                                             │
+│                                                                      │ │ task       none named                       │
+│                                                                      │ │ process    ]0;pwned[2J[31mred  second line  │
+│                                                                      │ │ directory  ]0;pwned[2J[31mred  second line… │
+│                                                                      │ │ repo       ]0;pwned[2J[31mred  second line… │
+│                                                                      │ │ branch     ]0;pwned[2J[31mred  second line… │
+│                                                                      │ │ session    ]0;pwned[2J[31mred  second line… │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]
+────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 1 agent · 1 blocked ─────────────────────────╮
+│ ▸ blocked    ]0;pwned[2J[31mred …  1h stale  ]0;pwned[2… │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                     14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 1 agent · 1 blocked ─────────────────────────╮ ╭─ Agent ─────────────────────────────╮
+│ ▸ blocked    ]0;pwned[2J[31mred …  1h stale  ]0;pwned[2… │ │ ]0;pwned[2J[31mred  second line  (… │
+│                                                          │ │                                     │
+│                                                          │ │ needs      permission               │
+│                                                          │ │ message    ]0;pwned[2J[31mred       │
+│                                                          │ │            second line tab wide-    │
+│                                                          │ │            wide-wide-wide-wide-     │
+│                                                          │ │            wide-wide-wide-wide-     │
+│                                                          │ │            wide-wide-wide-wide-     │
+│                                                          │ │            wide-wide-wide           │
+│                                                          │ │ title      ]0;pwned[2J[31mred  sec… │
+│                                                          │ │ progress   100%                     │
+│                                                          │ │ record     ]0;pwned[2J[31mred  sec… │
+│                                                          │ │ since      1h stale                 │
+│                                                          │ │ no newer report: this may no longe… │
+│                                                          │ │                                     │
+│                                                          │ │ task       none named               │
+│                                                          │ │ process    ]0;pwned[2J[31mred  sec… │
+│                                                          │ │ directory  ]0;pwned[2J[31mred  sec… │
+│                                                          │ │ repo       ]0;pwned[2J[31mred  sec… │
+│                                                          │ │ branch     ]0;pwned[2J[31mred  sec… │
+│                                                          │ │ session    ]0;pwned[2J[31mred  sec… │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace
+=== 140x32 ===
+abacus   Board  Tasks  Leases  Queues  Doctor  [Agents]                                                                             14 tasks
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Agents · 1 agent · 1 blocked ─────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────────────╮
+│ ▸ blocked    ]0;pwned[2J[…  1h stale  ]0;pwned[2…  permission  10…  ]0;pwned[2J… │ │ ]0;pwned[2J[31mred  second line  (blocked)          │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │ needs      permission                               │
+│                                                                                  │ │ message    ]0;pwned[2J[31mred  second line tab      │
+│                                                                                  │ │            wide-wide-wide-wide-wide-wide-wide-wide- │
+│                                                                                  │ │            wide-wide-wide-wide-wide-wide-wide-wide  │
+│                                                                                  │ │ title      ]0;pwned[2J[31mred  second line tab wid… │
+│                                                                                  │ │ progress   100%                                     │
+│                                                                                  │ │ record     ]0;pwned[2J[31mred  second line tab wid… │
+│                                                                                  │ │ since      1h stale                                 │
+│                                                                                  │ │ no newer report: this may no longer be true         │
+│                                                                                  │ │                                                     │
+│                                                                                  │ │ task       none named                               │
+│                                                                                  │ │ process    ]0;pwned[2J[31mred  second line          │
+│                                                                                  │ │ directory  ]0;pwned[2J[31mred  second line tab wid… │
+│                                                                                  │ │ repo       ]0;pwned[2J[31mred  second line tab wid… │
+│                                                                                  │ │ branch     ]0;pwned[2J[31mred  second line tab wid… │
+│                                                                                  │ │ session    ]0;pwned[2J[31mred  second line tab wid… │
+╰──────────────────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · w open workspace

@@ -317,6 +317,13 @@ func (w *wsLayer) jump(it core.WorkspaceItem, ok bool) tea.Cmd {
 		}
 		return nil
 	}
+	return w.openPlacement(p)
+}
+
+// openPlacement runs the first step of a placement's plan, only when it is the interactive handoff
+// runnable allows (and this is not a demo); every other outcome is a notice with the command to
+// copy. Nothing here ever tries a second step.
+func (w *wsLayer) openPlacement(p *core.Placement) tea.Cmd {
 	plan := p.Open
 	if plan == nil {
 		plan = &core.OpenPlan{}

@@ -47,7 +47,7 @@ func pct(n int) *int { return &n }
 func AgentsReport(now time.Time, items []core.WorkspaceItem) core.AgentReport {
 	panes := []core.AgentPane{
 		{Session: "demo:s4", SessionLabel: "Lambe · ac-zoj", Block: "demo:b1", Agent: "claude-code", State: core.AgentBlocked, Kind: core.AgentKindPermission,
-			Msg: "Approve edit to internal/rex/argv.go?", NRecords: 2, UpdatedAt: ago(now, 4*time.Minute), Reported: true,
+			Msg: "Approve edit to internal/core/agents.go?", NRecords: 2, UpdatedAt: ago(now, 4*time.Minute), Reported: true,
 			Process: "claude", Cwd: "/work/abacus-worktrees/ac-zoj", Repo: "abacus", Branch: "feat/agents-view"},
 		{Session: "demo:s5", SessionLabel: "ac-00h", Block: "demo:b2", Agent: "codex", State: core.AgentBlocked, Kind: core.AgentKindQuestion,
 			Msg: "Which tracker should the export target?", NRecords: 1, UpdatedAt: ago(now, 9*time.Minute), Reported: true,

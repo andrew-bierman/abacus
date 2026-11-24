@@ -21,6 +21,8 @@ func TestParseCommandTable(t *testing.T) {
 		{"queues", Action{Kind: ActGoTab, Tab: "Queues"}},
 		{"queue", Action{Kind: ActGoTab, Tab: "Queues"}},
 		{"doctor", Action{Kind: ActGoTab, Tab: "Doctor"}},
+		{"agents", Action{Kind: ActGoTab, Tab: "Agents"}},
+		{"agent", Action{Kind: ActGoTab, Tab: "Agents"}},
 		{"list", Action{Kind: ActGoView, Tab: "Tasks", View: "list"}},
 		{"ls", Action{Kind: ActGoView, Tab: "Tasks", View: "list"}},
 		{"tree", Action{Kind: ActGoView, Tab: "Tasks", View: "tree"}},
@@ -129,7 +131,7 @@ func TestCompleteCommandTable(t *testing.T) {
 		in   string
 		want []string
 	}{
-		{"", []string{"tasks", "board", "leases", "queues", "doctor", "list", "tree", "kanban", "graph", "insights", "search ", "filter ", "ctx ", "help", "q"}},
+		{"", []string{"tasks", "board", "leases", "queues", "doctor", "agents", "list", "tree", "kanban", "graph", "insights", "search ", "filter ", "ctx ", "help", "q"}},
 		{"ta", []string{"tasks", "task"}},
 		{"tas", []string{"tasks", "task"}},
 		{"tasks", []string{"tasks"}},
@@ -202,9 +204,9 @@ func TestRegistryGuardRefuses(t *testing.T) {
 		"a tool in the name":   func(c []Command) []Command { c[0].Name = "bd"; return c },
 		"a tool in an alias":   func(c []Command) []Command { c[0].Aliases = []string{"beads-lease"}; return c },
 		"a tool in the text":   func(c []Command) []Command { c[0].Desc = "go to Tasks (bd)"; return c },
-		"a tool in an arg":     func(c []Command) []Command { c[10].Arg.Name = "lambe"; return c },
+		"a tool in an arg":     func(c []Command) []Command { c[11].Arg.Name = "lambe"; return c },
 		"a tab with no title":  func(c []Command) []Command { c[0].Tab = ""; return c },
-		"a view with no name":  func(c []Command) []Command { c[5].View = ""; return c },
+		"a view with no name":  func(c []Command) []Command { c[6].View = ""; return c },
 		"no description":       func(c []Command) []Command { c[0].Desc = ""; return c },
 		"an alias of a name":   func(c []Command) []Command { c[0].Aliases = []string{c[1].Name}; return c },
 		"a required empty arg": func(c []Command) []Command { c[0].Arg = ArgSpec{Required: true}; return c },

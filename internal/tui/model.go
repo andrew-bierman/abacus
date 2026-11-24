@@ -149,6 +149,10 @@ func NewWithHandoff(entries []core.Entry, handoff func(argv []string) tea.Cmd, o
 		m.tabs = append(m.tabs, tab{name: d.Title(), sec: sec})
 	}
 	m.tabs = append(m.tabs, tab{name: "Doctor", sec: newDoctorSection(present)})
+	if prov.Agents != nil { // the optional Agents view: after Doctor, so the digit jumps 1 to 5 never move
+		m.tabs = append(m.tabs, tab{name: agentsTitle, sec: newAgentsSection(prov.Agents, agentItems(func() []tab { return m.tabs }),
+			newWsLayer(agentsTitle, prov.Workspace, isDemo(entries), handoff))})
+	}
 	for _, t := range m.tabs {
 		t.sec.SetTheme(m.th)
 	}

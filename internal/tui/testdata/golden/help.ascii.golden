@@ -72,7 +72,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ r             refresh                                                        │
 │                                                                              │
 │ Commands (after :, tab completes)                                            │
-│ Go to a tab   tasks board leases queues doctor                               │
+│ Go to a tab   tasks board leases queues doctor agents                        │
 │ Tasks views   list tree kanban graph insights                                │
 │ search TEXT   search every tab, optionally for TEXT                          │
 │ filter QUERY  filter the Tasks list (no query clears it)                     │
@@ -115,7 +115,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 │ r             refresh                                                                                                │
 │                                                                                                                      │
 │ Commands (after :, tab completes)                                                                                    │
-│ Go to a tab   tasks board leases queues doctor                                                                       │
+│ Go to a tab   tasks board leases queues doctor agents                                                                │
 │ Tasks views   list tree kanban graph insights                                                                        │
 │ search TEXT   search every tab, optionally for TEXT                                                                  │
 │ filter QUERY  filter the Tasks list (no query clears it)                                                             │

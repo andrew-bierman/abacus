@@ -326,3 +326,29 @@ func (fakeAgentModule) Name() string                     { return "Fake agents" 
 func (fakeAgentModule) Detect(context.Context) Detection { return Detection{State: Ready} }
 func (fakeAgentModule) Doctor(context.Context) []Check   { return nil }
 func (fakeAgentModule) Status(context.Context) Status    { return Status{} }
+
+func TestNamedItemsMatchesOnceByIDAndNeverPicksBetweenTwo(t *testing.T) {
+	task := WorkspaceItem{Kind: WorkspaceTask, ID: "ac-1"}
+	lease := WorkspaceItem{Kind: WorkspaceLease, ID: "ac-1"}
+	other := WorkspaceItem{Kind: WorkspaceTask, ID: "ac-2"}
+	remote := WorkspaceItem{Kind: WorkspaceRun, ID: "T-9", Host: "mbp"}
+	items := []WorkspaceItem{task, lease, other, remote}
+	it, cands, m := NamedItems([]string{"work", "Lambe · ac-1"}, items, "", "me", nil)
+	if it == nil || *it != task || cands != nil || m != MatchExact {
+		t.Fatalf("one id, first item of that id, exact: %v %v %v", it, cands, m)
+	}
+	it, cands, m = NamedItems([]string{"ac-1 and ac-2 pair"}, items, "", "me", nil)
+	if it != nil || len(cands) != 2 || cands[0].ID != "ac-1" || cands[1].ID != "ac-2" || m != MatchLabel {
+		t.Fatalf("two ids: candidates, no pick: %v %v %v", it, cands, m)
+	}
+	if it, cands, _ := NamedItems([]string{"nothing here"}, items, "", "me", nil); it != nil || cands != nil {
+		t.Fatal("none")
+	}
+	// an item that lives on another machine only matches a pane there
+	if it, _, _ := NamedItems([]string{"T-9"}, items, "", "me", nil); it != nil {
+		t.Fatalf("a local pane must not claim a run on mbp: %v", it)
+	}
+	if it, _, _ := NamedItems([]string{"T-9"}, items, "MBP", "me", nil); it == nil || it.ID != "T-9" {
+		t.Fatal("the pane on mbp names it")
+	}
+}
