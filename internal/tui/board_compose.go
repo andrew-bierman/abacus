@@ -2,6 +2,8 @@ package tui
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -55,8 +57,10 @@ type boardDraft struct {
 	to      string // reply: the message answered
 	toLine  string // reply: who and what, from the report
 	text    string
-	fi      int // post: 0 is the channel, 1 the text
-	pick    int // the highlighted channel suggestion, -1 none
+	nonce   string   // names this draft: its idempotency key follows the draft, not the clock
+	fi      int      // post: 0 is the channel, 1 the text
+	pick    int      // the highlighted channel suggestion, -1 none
+	picks   []string // the suggestions as they were when the name was last typed: a refresh cannot change what enter takes
 	err     string
 }
 
@@ -82,6 +86,15 @@ func (s *boardSection) withWriter(w core.BoardWriter, a core.Audit) *boardSectio
 	return s
 }
 
+// newNonce is a random name for a draft, made when it is opened.
+var newNonce = func() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil { // never fall back to something guessable or shared
+		panic(err)
+	}
+	return hex.EncodeToString(b)
+}
+
 func (s *boardSection) canWrite() bool { return s.writer != nil && s.loaded && s.err == nil }
 
 // startPost opens an empty new-thread form.
@@ -90,7 +103,8 @@ func (s *boardSection) startPost() {
 		s.notice = "posting is not available here: no board that can be written to"
 		return
 	}
-	s.draft, s.mode = boardDraft{op: core.BoardPost, pick: -1}, bmForm
+	s.draft, s.mode = boardDraft{op: core.BoardPost, nonce: newNonce(), pick: -1}, bmForm
+	s.snapPicks()
 }
 
 // startReply opens a reply form for the thread or task under the cursor.
@@ -103,7 +117,7 @@ func (s *boardSection) startReply() {
 		s.notice = "no thread selected to reply to"
 	default:
 		r := rows[s.cursor]
-		s.draft, s.mode = boardDraft{op: core.BoardReply, to: r.msgID, toLine: r.desc, pick: -1, fi: 1}, bmForm
+		s.draft, s.mode = boardDraft{op: core.BoardReply, to: r.msgID, toLine: r.desc, nonce: newNonce(), pick: -1, fi: 1}, bmForm
 	}
 }
 
@@ -194,6 +208,14 @@ func (s *boardSection) appendText(have, add string) string {
 	return have + add
 }
 
+// snapPicks takes the suggestions for the name as typed now.
+func (s *boardSection) snapPicks() {
+	s.draft.picks = nil
+	for _, c := range s.matches() {
+		s.draft.picks = append(s.draft.picks, c.Path)
+	}
+}
+
 // matches are the channels the typed name could mean: those starting with it, then those
 // containing it, newest activity first.
 func (s *boardSection) matches() []core.BoardChannel {
@@ -213,8 +235,9 @@ func (s *boardSection) matches() []core.BoardChannel {
 
 func (s *boardSection) acceptPick() {
 	d := &s.draft
-	if m := s.matches(); d.pick >= 0 && d.pick < len(m) {
-		d.channel, d.pick = m[d.pick].Path, -1
+	if d.pick >= 0 && d.pick < len(d.picks) {
+		d.channel, d.pick = d.picks[d.pick], -1
+		s.snapPicks()
 	}
 }
 
@@ -224,16 +247,18 @@ func (s *boardSection) channelKey(k tea.KeyMsg) {
 	case tea.KeyUp:
 		d.pick = max(d.pick-1, -1)
 	case tea.KeyDown:
-		d.pick = min(d.pick+1, min(len(s.matches()), boardPicks)-1)
+		d.pick = min(d.pick+1, min(len(d.picks), boardPicks)-1)
 	case tea.KeyEnter:
 		s.acceptPick()
 		d.fi = 1
 	case tea.KeyBackspace:
 		if r := []rune(d.channel); len(r) > 0 {
 			d.channel, d.pick = string(r[:len(r)-1]), -1
+			s.snapPicks()
 		}
 	case tea.KeyCtrlU:
 		d.channel, d.pick = "", -1
+		s.snapPicks()
 	case tea.KeyRunes:
 		for _, r := range k.Runes {
 			if len([]rune(d.channel)) < boardMaxChannel && channelRune(r) {
@@ -241,6 +266,7 @@ func (s *boardSection) channelKey(k tea.KeyMsg) {
 			}
 		}
 		d.pick = -1
+		s.snapPicks()
 	}
 }
 
@@ -253,7 +279,7 @@ func channelRune(r rune) bool {
 // screen. A draft core refuses stays in the form with the reason.
 func (s *boardSection) review() tea.Cmd {
 	d := &s.draft
-	ch := core.BoardChange{Op: d.op, Channel: strings.TrimSpace(d.channel), ID: d.to, Text: strings.TrimRight(d.text, " \t\n")}
+	ch := core.BoardChange{Op: d.op, Channel: strings.TrimSpace(d.channel), ID: d.to, Text: strings.TrimRight(d.text, " \t\n"), Nonce: d.nonce}
 	if d.op == core.BoardPost && ch.Channel == "" {
 		d.err = "choose a channel, or type a new one"
 		return nil
@@ -267,7 +293,7 @@ func (s *boardSection) review() tea.Cmd {
 	s.seq++
 	seq, w := s.seq, s.writer
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), boardReadBudget)
 		defer cancel()
 		return boardDescribedMsg{seq, w.Describe(ctx, ch)}
 	}
@@ -402,7 +428,7 @@ func (s *boardSection) composeView() []string {
 	body = append(body, "")
 	body = append(body, wrap("abacus did not retry and will not guess. Refresh the board and look for your message before posting again.", inner)...)
 	body = append(body, "")
-	body = append(body, wrap(th.Text(KindMuted, fmt.Sprintf("Posting the same text to the same place within %d minutes reuses the same key, so the board takes it at most once.", int(core.BoardKeyWindow.Minutes()))), inner)...)
+	body = append(body, wrap(th.Text(KindMuted, "Editing this draft again and sending it unchanged reuses the same key, so the board takes it at most once, at any time. If you change the text, the channel or the message, it is a new post: look for the first one before sending it."), inner)...)
 	body = append(body, "")
 	body = append(body, wrap(th.Key("enter")+" refresh and look · "+th.Key("e")+" edit again · "+th.Key("esc")+" back", inner)...)
 	return box(th, "Result unknown", body, w, s.h)
@@ -502,7 +528,7 @@ func textTail(th Theme, text string, caret bool, width, rows int) []string {
 // pickRows are the channel suggestions under the Channel field.
 func (s *boardSection) pickRows(inner int) []string {
 	th, d := s.th, s.draft
-	ms := s.matches()
+	ms := d.picks
 	var out []string
 	if len(s.report.Channels) == 0 {
 		return []string{th.Text(KindMuted, "    no channels yet: the first post makes one")}
@@ -510,10 +536,12 @@ func (s *boardSection) pickRows(inner int) []string {
 	if len(ms) == 0 {
 		return []string{th.Text(KindMuted, "    no channel has that name: posting creates it")}
 	}
-	for i, c := range ms[:min(len(ms), boardPicks)] {
-		line := san(c.Path)
-		if c.Threads > 0 {
-			line += th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads))
+	for i, name := range ms[:min(len(ms), boardPicks)] {
+		line := san(name)
+		for _, c := range s.report.Channels {
+			if c.Path == name && c.Threads > 0 {
+				line += th.Text(KindMuted, fmt.Sprintf(" (%d)", c.Threads))
+			}
 		}
 		if i == d.pick {
 			out = append(out, "  ▸ "+th.Selected.Render(line))

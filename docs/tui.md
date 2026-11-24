@@ -395,7 +395,7 @@ field suggests existing channels as you type (`down`, `enter` to pick) and says 
 confirm screen shows the plan, what the board says about the target, the idempotency key and the exact
 command; it scrolls, and `y` works only after the end has been shown (a resize asks again). `esc`/`n`
 goes back to the draft. A refused post returns to the draft; a post that may or may not have landed
-shows "Result unknown" (`enter` refreshes, `e` edits the same text again, which reuses the same key).
+shows "Result unknown" (`enter` refreshes, `e` goes back to the draft: sending it unchanged reuses the same key at any time, while changing the text, channel or message makes a new post).
 Messages longer than 4000 characters are cut when read and say so.
 
 ## Layout

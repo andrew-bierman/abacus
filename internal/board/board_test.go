@@ -339,12 +339,14 @@ func TestReadAllowlist(t *testing.T) {
 		{"channels", "list", "--json", "--limit", "5", "--url", "ftp://x"},      // a bad url is not stripped
 		{"channels", "list", "--json", "--limit", "5", "--url", "http://u:p@h"}, // credentials in the url
 		{"channels", "list", "--json", "--limit", "5", "--scope", "team"},
-		{"channels", "list", "--json", "--limit", "5", "--after", "-x"},                                                   // a cursor is never an option
-		{"channels", "list", "--json", "--limit", "5", "--after", "a b"},                                                  // nor has whitespace
-		{"channels", "list", "--json", "--limit", "5", "--after", ""},                                                     // nor is empty
-		{"channels", "list", "--json", "--limit", "0", "--after", "team/ch05"},                                            // the limit rules still apply
-		{"channels", "list", "--json", "--after", "team/ch05", "--limit", "5"},                                            // order is part of the match
-		{"read", "dev", "--json", "--limit", "5", "--after", "team/ch05"},                                                 // paging is for the channel list only
+		{"channels", "list", "--json", "--limit", "5", "--after", "-x"},        // a cursor is never an option
+		{"channels", "list", "--json", "--limit", "5", "--after", "a b"},       // nor has whitespace
+		{"channels", "list", "--json", "--limit", "5", "--after", ""},          // nor is empty
+		{"channels", "list", "--json", "--limit", "0", "--after", "team/ch05"}, // the limit rules still apply
+		{"channels", "list", "--json", "--after", "team/ch05", "--limit", "5"}, // order is part of the match
+		{"read", "dev", "--json", "--limit", "5", "--after", "team/ch05"},      // paging is for the channel list only
+		{"read", "a//b", "--json", "--limit", "5"}, {"read", "a/../b", "--json", "--limit", "5"}, {"read", "/a", "--json", "--limit", "5"}, {"read", "a/", "--json", "--limit", "5"},
+		{"channels", "list", "--json", "--limit", "5", "--after", "a//b"}, {"channels", "list", "--json", "--limit", "5", "--after", "a/../b"}, {"channels", "list", "--json", "--limit", "5", "--after", "a/"},
 		{"read", "-x", "--json", "--limit", "5"}, {"read", "dev;rm", "--json", "--limit", "5"}, {"read", "dev", "--json"}, // a channel read needs --limit
 		{"tasks", "--json"}, {"tasks", "--json", "--limit", "20", "--state", "all"}, {"tasks", "--json", "--limit", "500"},
 		{"read", "dev", "--json", "--limit", "500"},
@@ -1051,5 +1053,27 @@ func TestAnOwnDeadlineIsATimeoutInOnePlainLineAndAParentCancelStaysACancel(t *te
 	cancel()
 	if _, err := m.Board(ctx); !errors.Is(err, core.ErrCanceled) || errors.Is(err, core.ErrTimedOut) {
 		t.Fatalf("a cancel from above is not a timeout: %v", err)
+	}
+}
+
+func TestACallersExpiredDeadlineIsATimeoutAndAPartialChannelListSaysItRanOutOfTime(t *testing.T) {
+	f := helpRuns(t)
+	f.err["channels"] = fmt.Errorf("%w: %w", core.ErrCanceled, context.DeadlineExceeded)
+	m := readyModule(t, f, Options{Timeout: time.Minute})
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancel()
+	if _, err := m.Board(ctx); !errors.Is(err, core.ErrTimedOut) || err.Error() != "the board did not answer in time" {
+		t.Fatalf("the TUI's own deadline is a timeout, not a cancel: %v", err)
+	}
+	// page 2 runs out of time: the first page stays, and the note says why
+	g := pagedRuns(t)
+	k := pagedKey + " --after team/ch05"
+	g.err[k] = core.ErrTimedOut
+	for _, c := range []string{"team/ch05", "team/ch04", "team/ch03"} {
+		g.out["read "+c+" --json --limit 5"] = `{"threads":[]}`
+	}
+	r, err := readyModule(t, g, Options{}).Board(context.Background())
+	if err != nil || len(r.Channels) != 5 || !strings.Contains(r.Truncated, "next page ran out of time") {
+		t.Fatalf("%d %q %v", len(r.Channels), r.Truncated, err)
 	}
 }

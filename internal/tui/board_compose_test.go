@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -137,7 +138,7 @@ func TestPostFlowShowsTheExactCommandTheKeyAndTheUnknownOutcomeWordingThenApplie
 	for _, want := range []string{
 		"Confirm this post", "post a new thread to channel dev", "second line",
 		"existing channel dev",
-		"idempotency key: abacus-", "posts once",
+		"idempotency key: abacus-", "retry of this same draft reuses it",
 		"exact command:", "board post dev --json --idempotency-key abacus-",
 		`never "not applied"`,
 	} {
@@ -382,7 +383,7 @@ func TestAnUnknownResultIsNeverCalledNotApplied(t *testing.T) {
 	toConfirm(t, s, "dev", "maybe posted")
 	bsend(s, "y")
 	v := s.View()
-	if s.mode != bmOutcome || !strings.Contains(v, "Result unknown") || strings.Contains(strings.ToLower(v), "not applied") || !strings.Contains(v, "will not guess") || !strings.Contains(v, "at most once") {
+	if s.mode != bmOutcome || !strings.Contains(v, "Result unknown") || strings.Contains(strings.ToLower(v), "not applied") || !strings.Contains(v, "will not guess") || !strings.Contains(v, "at any time") {
 		t.Fatalf("mode %d\n%s", s.mode, v)
 	}
 	if !s.Capturing() {
@@ -718,5 +719,52 @@ func TestAnswersOfAnAbandonedCheckOrWriteAreDropped(t *testing.T) {
 	s.Update(boardAppliedMsg{seq: s.seq, res: core.BoardResult{ID: "5"}})
 	if s.mode != bmForm || s.notice != "" || len(f.ran) != 0 {
 		t.Fatalf("an applied answer nobody asked for changes nothing: mode %d %q", s.mode, s.notice)
+	}
+}
+
+func TestRetryKeyFollowsTheDraftNotTheClockAndEditingMakesANewOne(t *testing.T) {
+	n := 0
+	defer func(old func() string) { newNonce = old }(newNonce)
+	newNonce = func() string { n++; return fmt.Sprint("draft", n) }
+	now := goldenNow.Add(9*time.Minute + 59*time.Second) // two seconds before a ten-minute boundary
+	defer core.SetBoardClockForTest(func() time.Time { return now })()
+	s, f, _ := composeRig(t, 100, 40)
+	f.err = core.UnknownOutcome("the board did not answer (timed out); it may have been posted. Refresh the Board before trying again")
+	toConfirm(t, s, "dev", "maybe posted")
+	bsend(s, "y")
+	if s.mode != bmOutcome {
+		t.Fatalf("mode %d", s.mode)
+	}
+	first := f.ran[0][5]
+	now = now.Add(3 * time.Second) // across the boundary
+	bsend(s, "e", "ctrl+s", "y")
+	if len(f.ran) != 2 || f.ran[1][5] != first {
+		t.Fatalf("an unchanged retry across a clock boundary reuses the key: %v", f.ran)
+	}
+	bsend(s, "e")
+	btype(s, "!") // an edit
+	bsend(s, "ctrl+s", "y")
+	if len(f.ran) != 3 || f.ran[2][5] == first {
+		t.Fatalf("an edited draft is a new post with a new key: %v", f.ran)
+	}
+	// another draft of the very same text is another post
+	s.mode = bmList
+	toConfirm(t, s, "dev", "maybe posted")
+	bsend(s, "y")
+	if len(f.ran) != 4 || f.ran[3][5] == first {
+		t.Fatalf("a new draft has its own nonce: %v", f.ran)
+	}
+}
+
+func TestAPollDuringThePickerCannotChangeWhatEnterTakes(t *testing.T) {
+	s, _, _ := composeRig(t, 100, 40)
+	bsend(s, "n", "down", "down") // the second suggestion
+	want := s.draft.picks[1]
+	r := fixtureBoard()
+	r.Channels = []core.BoardChannel{{Path: "zz/new", Threads: 9}, {Path: "yy/newer"}, {Path: "xx/other"}}
+	s.Update(boardMsg{report: r}) // a poll replaces the channel list under the highlight
+	bsend(s, "enter")
+	if s.draft.channel != want {
+		t.Fatalf("enter took %q, the highlighted suggestion was %q", s.draft.channel, want)
 	}
 }

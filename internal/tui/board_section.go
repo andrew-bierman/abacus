@@ -23,6 +23,11 @@ const hash = "\u0023"
 
 const boardPollEvery = 30 * time.Second
 
+// boardReadBudget is the whole of one Board read, which is up to four channel pages, three channel
+// reads and the tasks (each call has its own shorter limit in the provider): enough that legitimate
+// paging is not cut off, and what runs out is reported as a partial read.
+const boardReadBudget = 4 * fetchTimeout
+
 type boardMsg struct {
 	report core.BoardReport
 	err    error
@@ -113,7 +118,7 @@ func (s *boardSection) fetch() tea.Cmd {
 	s.busy = true
 	s.fetches++
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*fetchTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), boardReadBudget)
 		defer cancel()
 		r, err := s.p.Board(ctx)
 		return boardMsg{r, err}

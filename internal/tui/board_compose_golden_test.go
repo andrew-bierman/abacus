@@ -11,7 +11,10 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-func init() { core.SetBoardClockForTest(func() time.Time { return goldenNow }) } // a stable idempotency key
+func init() { // stable idempotency keys
+	core.SetBoardClockForTest(func() time.Time { return goldenNow })
+	newNonce = func() string { return "golden" }
+}
 
 // boardScenarios are the goldens of the Board's writing screens and states, over the demo board and
 // a fake writer (nothing here runs a CLI or touches a board).

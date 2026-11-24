@@ -29,7 +29,11 @@ may change behavior, and patch versions are fixes and small additions.
   page by page (up to 200, the rest counted), long messages are cut at 4000 characters and marked
   (`cut` in the JSON, additive), threads that changed since you looked get a dot, and the list shows
   how long ago each thread was active. `pgup`/`pgdn` scroll a long message. The post plan gains a
-  `Key` and an idempotency-key line (additive).
+  `Key` and an idempotency-key line (additive). In the TUI the idempotency key follows the draft (a
+  random nonce made when it is opened), so an unchanged retry after an unknown outcome reuses it at any
+  time and an edit is a new post; the command line keeps its ten-minute bucket and says it is best effort.
+  Channel names and cursors that the board reads as paths (`//`, `..`, leading or trailing `/`) are refused.
+
 - Terminal workspace (optional), first class: `m` brings an item's terminal to the front and `W`
   opens a terminal running the new `agent_command` setting (an argv with `{task_id}` and `{title}`,
   each word one argument, never a shell) from a task, run or lease, each behind the usual plan,

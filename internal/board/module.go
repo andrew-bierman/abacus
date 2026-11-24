@@ -346,7 +346,7 @@ func (m *Module) call(ctx context.Context, argv []string, ok func([]string) bool
 	defer cancel()
 	out, errOut, exit, err = m.o.Runner.RunSplit(ctx, m.Bin(), argv...)
 	// The runner sees this deadline as its parent's, so it calls our own timeout a cancel.
-	if errors.Is(err, core.ErrCanceled) && parent.Err() == nil {
+	if errors.Is(err, core.ErrCanceled) && !errors.Is(parent.Err(), context.Canceled) { // our deadline, or the caller's: only a cancel is a cancel
 		err = fmt.Errorf("%w after %s", core.ErrTimedOut, m.o.Timeout)
 	}
 	return out, errOut, exit, err
@@ -604,7 +604,11 @@ func (m *Module) listChannels(ctx context.Context) (chans []channelJSON, more st
 			if page == 0 {
 				return nil, "", err
 			}
-			return chans, fmt.Sprintf("only the first %d channels are listed: the next page could not be read", len(chans)), nil
+			why := "could not be read"
+			if errors.Is(err, core.ErrTimedOut) {
+				why = "ran out of time"
+			}
+			return chans, fmt.Sprintf("only the first %d channels are listed: the next page %s", len(chans), why), nil
 		}
 		for _, c := range *cd.Channels { // a page the board repeats adds nothing
 			if !have[c.Path] {

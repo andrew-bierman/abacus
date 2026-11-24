@@ -158,6 +158,11 @@ type BoardChange struct {
 	Channel string // post only
 	ID      string // reply only: a message in the thread
 	Text    string
+	// Nonce names one draft (the TUI makes a random one when a draft is opened and keeps it while it is
+	// edited). With it the idempotency key depends on the draft, not on the clock: the same draft
+	// retried after an unknown outcome reuses the key at any time, and a change of text, channel or
+	// target is a new key. Without it (the command line) the key is bucketed by the clock.
+	Nonce string
 }
 
 // BoardMaxText bounds a message, in runes: what a post may hold, and the most of a message the
@@ -166,10 +171,26 @@ const BoardMaxText = 4000
 
 // BoardCursorRE is the paging cursor a channel list ends a page with (a channel path on the
 // local board, an opaque token elsewhere). It never starts with "-", so it cannot be read as an option.
-var BoardCursorRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/=+-]{0,159}$`)
+var BoardCursorRE = boardPath{regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/=+-]*$`), 160}
+
+// boardPath is a pattern for a name the Board CLI reads as a path (a channel, or a cursor that is
+// one): beyond the character set it never has an empty segment ("//", a leading or trailing "/") or
+// a ".." in it. Checked against the local board (0.54.0): "a//b", "a/../b", "/a", "a/", "./a",
+// "a..b" and "a/-b" are all refused as "invalid channel path".
+type boardPath struct {
+	re  *regexp.Regexp
+	max int // most bytes
+}
+
+func (p boardPath) MatchString(s string) bool {
+	return len(s) <= p.max && p.re.MatchString(s) && !strings.Contains(s, "..") && !strings.Contains(s, "//") && !strings.HasSuffix(s, "/")
+}
 
 var (
-	BoardChannelRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$`)
+	// BoardChannelRE is a channel path: segments of letters, digits, "." "_" "-" that start and end
+	// with a letter or digit (a segment may end in "_" or "-"), joined by single "/". The local board
+	// itself takes only lower-case letters, digits, "_" and "-"; a name it refuses is "not applied".
+	BoardChannelRE = boardPath{regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?(?:/[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?)*$`), 128}
 	// BoardIDRE is a message id as the board prints it: a number, or msg_ from Vercel's API.
 	BoardIDRE = regexp.MustCompile(`^(?:[0-9]{1,18}|msg_[A-Za-z0-9_.-]{1,120})$`)
 )
@@ -250,22 +271,25 @@ func SetBoardClockForTest(f func() time.Time) (restore func()) {
 	return func() { boardClockMu.Lock(); boardClock = old; boardClockMu.Unlock() }
 }
 
-// BoardKeyWindow is the bucket an idempotency key is stable for. A retry of a write whose outcome
-// was unknown re-plans the same change and gets the same key, so the board posts it at most once.
-// The same text to the same place within a window is therefore treated as that retry.
+// BoardKeyWindow is the clock bucket of a key made without a Nonce (the command line, which keeps no
+// draft between runs). It is best effort: a retry that falls in the next bucket is a new post.
 const BoardKeyWindow = 10 * time.Minute
 
-// boardKey derives the idempotency key from (target, op, channel or id, text, time bucket): the
-// simplest way to make a retry reuse it without persisting anything.
+// boardKey derives the idempotency key from (target, op, channel or id, text) and either the draft's
+// Nonce or, without one, the clock bucket: nothing is persisted.
 func boardKey(target string, ch BoardChange) string {
-	boardClockMu.Lock()
-	now := boardClock()
-	boardClockMu.Unlock()
 	dest := ch.Channel
 	if ch.Op == BoardReply {
 		dest = ch.ID
 	}
-	sum := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%d", target, ch.Op, dest, ch.Text, now.Unix()/int64(BoardKeyWindow/time.Second))))
+	salt := ch.Nonce
+	if salt == "" {
+		boardClockMu.Lock()
+		now := boardClock()
+		boardClockMu.Unlock()
+		salt = fmt.Sprint(now.Unix() / int64(BoardKeyWindow/time.Second))
+	}
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%s", target, ch.Op, dest, ch.Text, salt)))
 	return "abacus-" + hex.EncodeToString(sum[:8])
 }
 
@@ -283,8 +307,12 @@ func PlanBoardChange(w BoardWriter, ch BoardChange) (BoardPlan, error) {
 	if ch.Op == BoardReply {
 		lines = []string{"reply in the thread of message " + ch.ID}
 	}
+	why := "a retry of this same draft reuses it, so the board takes it at most once"
+	if ch.Nonce == "" {
+		why = "a retry of the same text a moment later usually reuses it, but not across a ten-minute clock boundary"
+	}
 	lines = append(lines, fmt.Sprintf("text: %q", ch.Text), "board: "+w.Target()+" ("+w.TargetSource()+")",
-		fmt.Sprintf("idempotency key: %s (the same text to the same place within %d minutes posts once)", key, int(BoardKeyWindow/time.Minute)))
+		fmt.Sprintf("idempotency key: %s (%s)", key, why))
 	return BoardPlan{id: planSeq.Add(1), Change: ch, Argv: argv, Key: key, Lines: lines}, nil
 }
 

@@ -8,7 +8,7 @@
 │ again                                │
 │                                      │
 │ abacus did not retry and will not    │
-│   ↕ +11 more                         │
+│   ↕ +14 more                         │
 ╰──────────────────────────────────────╯
 r refresh · esc back · q quit · ? help …
 === 40x30 ===
@@ -26,17 +26,17 @@ r refresh · esc back · q quit · ? help …
 │ for your message before posting      │
 │ again.                               │
 │                                      │
-│ Posting the same text to the same    │
-│ place within 10 minutes reuses the   │
-│ same key, so the board takes it at   │
-│ most once.                           │
+│ Editing this draft again and sending │
+│ it unchanged reuses the same key, so │
+│ the board takes it at most once, at  │
+│ any time. If you change the text,    │
+│ the channel or the message, it is a  │
+│ new post: look for the first one     │
+│ before sending it.                   │
 │                                      │
 │ enter refresh and look · e edit      │
 │ again · esc back                     │
 ╰──────────────────────────────────────╯
-
-
-
 
 
 
@@ -51,8 +51,8 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ abacus did not retry and will not guess. Refresh the board and look for your │
 │ message before posting again.                                                │
 │                                                                              │
-│ Posting the same text to the same place within 10 minutes reuses the same    │
-│   ↕ +3 more                                                                  │
+│ Editing this draft again and sending it unchanged reuses the same key, so    │
+│   ↕ +5 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 r refresh · esc back · q quit · ? help · tab/→ next tab
 === 80x30 ===
@@ -65,13 +65,13 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ abacus did not retry and will not guess. Refresh the board and look for your │
 │ message before posting again.                                                │
 │                                                                              │
-│ Posting the same text to the same place within 10 minutes reuses the same    │
-│ key, so the board takes it at most once.                                     │
+│ Editing this draft again and sending it unchanged reuses the same key, so    │
+│ the board takes it at most once, at any time. If you change the text, the    │
+│ channel or the message, it is a new post: look for the first one before      │
+│ sending it.                                                                  │
 │                                                                              │
 │ enter refresh and look · e edit again · esc back                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-
-
 
 
 
@@ -94,9 +94,9 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │                                                                                                                      │
 │ abacus did not retry and will not guess. Refresh the board and look for your message before posting again.           │
 │                                                                                                                      │
-│ Posting the same text to the same place within 10 minutes reuses the same key, so the board takes it at most once.   │
-│                                                                                                                      │
-│ enter refresh and look · e edit again · esc back                                                                     │
+│ Editing this draft again and sending it unchanged reuses the same key, so the board takes it at most once, at any    │
+│ time. If you change the text, the channel or the message, it is a new post: look for the first one before sending    │
+│   ↕ +3 more                                                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 r refresh · esc back · q quit · ? help · tab/→ next tab
 === 120x30 ===
@@ -108,12 +108,12 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │                                                                                                                      │
 │ abacus did not retry and will not guess. Refresh the board and look for your message before posting again.           │
 │                                                                                                                      │
-│ Posting the same text to the same place within 10 minutes reuses the same key, so the board takes it at most once.   │
+│ Editing this draft again and sending it unchanged reuses the same key, so the board takes it at most once, at any    │
+│ time. If you change the text, the channel or the message, it is a new post: look for the first one before sending    │
+│ it.                                                                                                                  │
 │                                                                                                                      │
 │ enter refresh and look · e edit again · esc back                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-
 
 
 
@@ -141,14 +141,14 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ abacus did not retry and will not guess. Refresh the     │
 │ board and look for your message before posting again.    │
 │                                                          │
-│ Posting the same text to the same place within 10        │
-│ minutes reuses the same key, so the board takes it at    │
-│ most once.                                               │
+│ Editing this draft again and sending it unchanged reuses │
+│ the same key, so the board takes it at most once, at any │
+│ time. If you change the text, the channel or the         │
+│ message, it is a new post: look for the first one before │
+│ sending it.                                              │
 │                                                          │
 │ enter refresh and look · e edit again · esc back         │
 ╰──────────────────────────────────────────────────────────╯
-
-
 
 
 
@@ -165,12 +165,12 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.
 │ abacus did not retry and will not guess. Refresh the board and look for your message before      │
 │ posting again.                                                                                   │
 │                                                                                                  │
-│ Posting the same text to the same place within 10 minutes reuses the same key, so the board      │
-│ takes it at most once.                                                                           │
+│ Editing this draft again and sending it unchanged reuses the same key, so the board takes it at  │
+│ most once, at any time. If you change the text, the channel or the message, it is a new post:    │
+│ look for the first one before sending it.                                                        │
 │                                                                                                  │
 │ enter refresh and look · e edit again · esc back                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
