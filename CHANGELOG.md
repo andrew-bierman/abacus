@@ -34,6 +34,16 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- Review fixes to the client contract: an empty or malformed `--expect-digest` is a usage error, never "no
+  check"; `schema --out` never overwrites a file that is not an abacus schema (without `--force`) or follows a
+  symbolic link, and writes atomically; a command-line board post's idempotency key has no clock in it (the
+  digest no longer depends on the ten-minute bucket) and repeats are refused from the audit log unless
+  `--again`; the setup digest covers blocked steps and an unreviewed step is not run under `--expect-digest`;
+  a provider answer that cannot be matched to the write is "result unknown" (code `unknown_outcome`), not
+  "not applied"; `tasks reopen` refuses an id the tracker resolved to another; `--json` is read with the
+  command's real flag semantics; `setup --repair --json` failures carry an `error` object; a stale contract
+  golden fails the run (and `-update-golden` removes it).
+
 - A command that fails with `--json` now prints the error document on stdout (it used to print nothing
   there); stderr and the exit code are as before. A failing command that already printed its own document
   (`doctor` with a failing check, a `tasks bulk` where some tasks did not apply, `setup`) keeps it.
