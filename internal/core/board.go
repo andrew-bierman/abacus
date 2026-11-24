@@ -160,8 +160,13 @@ type BoardChange struct {
 	Text    string
 }
 
-// BoardMaxText bounds a message, in runes.
+// BoardMaxText bounds a message, in runes: what a post may hold, and the most of a message the
+// Board shows (a longer one read from the board is cut and marked BoardMessage.Cut).
 const BoardMaxText = 4000
+
+// BoardCursorRE is the paging cursor a channel list ends a page with (a channel path on the
+// local board, an opaque token elsewhere). It never starts with "-", so it cannot be read as an option.
+var BoardCursorRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/=+-]{0,159}$`)
 
 var (
 	BoardChannelRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$`)
@@ -196,6 +201,7 @@ type BoardPlan struct {
 	id        uint64
 	Change    BoardChange
 	Argv      []string
+	Key       string // the idempotency key in Argv: a retry of the same change gets the same one
 	Lines     []string
 	confirmed bool
 }
@@ -268,7 +274,8 @@ func PlanBoardChange(w BoardWriter, ch BoardChange) (BoardPlan, error) {
 	if err := validateBoard(ch); err != nil {
 		return BoardPlan{}, err
 	}
-	argv, err := w.BuildBoardArgv(ch, boardKey(w.Target(), ch))
+	key := boardKey(w.Target(), ch)
+	argv, err := w.BuildBoardArgv(ch, key)
 	if err != nil {
 		return BoardPlan{}, err
 	}
@@ -276,8 +283,9 @@ func PlanBoardChange(w BoardWriter, ch BoardChange) (BoardPlan, error) {
 	if ch.Op == BoardReply {
 		lines = []string{"reply in the thread of message " + ch.ID}
 	}
-	lines = append(lines, fmt.Sprintf("text: %q", ch.Text), "board: "+w.Target()+" ("+w.TargetSource()+")")
-	return BoardPlan{id: planSeq.Add(1), Change: ch, Argv: argv, Lines: lines}, nil
+	lines = append(lines, fmt.Sprintf("text: %q", ch.Text), "board: "+w.Target()+" ("+w.TargetSource()+")",
+		fmt.Sprintf("idempotency key: %s (the same text to the same place within %d minutes posts once)", key, int(BoardKeyWindow/time.Minute)))
+	return BoardPlan{id: planSeq.Add(1), Change: ch, Argv: argv, Key: key, Lines: lines}, nil
 }
 
 // BoardApplier is the one door to a Board write: the confirm step, then the shared gate

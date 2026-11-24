@@ -1,0 +1,1 @@
+{"status":"error","reason":"login_required","message":"You're not logged in to Vercel.","next":[{"command":"vercel login","argv":["vercel","login"],"when":"Log in"}],"data":{"error":{"code":"not_logged_in","message":"You're not logged in to Vercel.","status":401,"hint":"Run vercel login."}}}
