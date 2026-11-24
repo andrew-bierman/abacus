@@ -372,8 +372,25 @@ func TestDirtyArgvIsReadOnlyAndDisablesRepositoryPrograms(t *testing.T) {
 	if !slices.Equal(argv, want) {
 		t.Fatalf("%v", argv)
 	}
-	if _, ok := gitDirty(context.Background(), "."); ok { // inside a repository when run from a checkout, so only the guard says no
+}
+
+func TestGitDirtyNeverGetsARelativeDirectory(t *testing.T) {
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("no git in this environment")
+	}
+	repo := t.TempDir()
+	c := exec.Command(git, "-C", repo, "init", "-q")
+	c.Env = []string{"HOME=" + t.TempDir(), "PATH=" + os.Getenv("PATH")}
+	if out, err := c.CombinedOutput(); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	t.Chdir(repo) // "." is a real repository here, so only the guard can say no
+	if _, ok := gitDirty(context.Background(), "."); ok {
 		t.Fatal("a directory that is not absolute is never passed to git")
+	}
+	if _, ok := gitDirty(context.Background(), repo); !ok {
+		t.Fatal("the same directory, absolute, is read")
 	}
 }
 
@@ -474,5 +491,55 @@ func TestMonitorLimitsAreMarkedStaleAgainstItsClock(t *testing.T) {
 		if err != nil || len(x.RateLimits) != 2 || x.RateLimits[0].Stale != c.claude || x.RateLimits[1].Stale != c.cdx {
 			t.Fatalf("%v %+v", err, x.RateLimits)
 		}
+	}
+}
+
+func dirDigest(t *testing.T, dir string) string {
+	t.Helper()
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var b strings.Builder
+	for _, e := range ents {
+		raw, _ := os.ReadFile(filepath.Join(dir, e.Name()))
+		fi, _ := e.Info()
+		b.WriteString(e.Name() + ":" + itoa(int64(len(raw))) + ":" + fi.ModTime().String() + ":" + string(raw) + "\n")
+	}
+	return b.String()
+}
+
+// OpenCode keeps its database in write-ahead mode while it runs. Reading it must neither create nor
+// change any file beside it, and the price (rows still in the log are not seen) is the documented lag.
+func TestOpenCodeReaderLeavesALiveWriteAheadDatabaseUntouched(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "opencode.db")
+	w, err := sql.Open("sqlite", p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer w.Close()
+	w.SetMaxOpenConns(1)
+	ms := itoa(now.UnixMilli())
+	for _, q := range []string{`PRAGMA journal_mode=WAL`, `PRAGMA wal_autocheckpoint=0`, ocDDL, `PRAGMA wal_checkpoint(TRUNCATE)`,
+		`INSERT INTO session_v2 (id, directory, time_updated) VALUES ('checkpointed','/work/a',` + ms + `)`, `PRAGMA wal_checkpoint(TRUNCATE)`,
+		`INSERT INTO session_v2 (id, directory, time_updated) VALUES ('in-the-log','/work/b',` + ms + `)`} {
+		if _, err := w.Exec(q); err != nil {
+			t.Fatal(err, q)
+		}
+	}
+	dir := filepath.Dir(p)
+	before := dirDigest(t, dir)
+	if !strings.Contains(before, "opencode.db-wal") {
+		t.Fatal("the fixture has no write-ahead log, so it proves nothing")
+	}
+	rows, err := readOpenCodeDB(context.Background(), p, now.Add(-time.Hour), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after := dirDigest(t, dir); after != before {
+		t.Fatal("reading changed or created a file next to the database")
+	}
+	if len(rows) != 1 || rows[0].ID != "checkpointed" {
+		t.Fatalf("rows still in the log are not seen (the documented lag): %+v", rows)
 	}
 }
