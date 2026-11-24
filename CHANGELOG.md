@@ -6,6 +6,12 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Docs
+
+- `docs/design/2026-11-24-plan-native-clients.md`: a proposal for a native SwiftUI macOS client over the
+  typed `schema_version` 1 JSON (contract inventory, write-gate over the CLI and a serve mode, fixtures and
+  drift tests, bundling, security, signing steps, phased roadmap). Docs only; nothing is built.
+
 ## [0.5.0] - 2026-11-24
 
 ### Added
