@@ -1,5 +1,5 @@
 === 40x12 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ╭─ ▸ Board ────────────────────────────╮
 │                                      │
 │ Recent threads                       │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────╮
 │ 4 channels, 2 recent threads, 2 open │
@@ -43,7 +43,7 @@
 
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
 │                                                                              │
 │ Recent threads                                                               │
@@ -56,7 +56,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 80x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
 │ 4 channels, 2 recent threads, 2 open tasks                                   │
@@ -87,7 +87,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
 │                                                                      │ │ task #16 in work: claimed                   │
 │ Recent threads                                                       │ │ held by codex via ada until Nov 22 21:09    │
@@ -100,7 +100,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
 │ 4 channels, 2 recent threads, 2 open tasks                           │ │ task #16 in work: claimed                   │

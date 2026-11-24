@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  Tasks  Leases  Queues  [Doctor]
+ [Doctor]  6/6
 running doctor…
 
 (Needs attention) 2 to set up, see below
@@ -12,7 +12,7 @@ running doctor…
   ↕ +36 more
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  Tasks  Leases  Queues  [Doctor]
+ [Doctor]  6/6
 ────────────────────────────────────────
 running doctor…
 
@@ -43,7 +43,7 @@ running doctor…
   ↕ +19 more
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  Tasks  Leases  Queues  [Doctor]
+abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]
 running doctor…
 
 (Needs attention) 2 to set up, see below
@@ -56,7 +56,7 @@ running doctor…
   ↕ +29 more
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 80x30 ===
-abacus   Board  Tasks  Leases  Queues  [Doctor]
+abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]
 ────────────────────────────────────────────────────────────────────────────────
 running doctor…
 
@@ -87,7 +87,7 @@ running doctor…
   ↕ +12 more
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 120x12 ===
-abacus   Board  Tasks  Leases  Queues  [Doctor]                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]                                       fleet · 14 tasks · 3 ready
 running doctor…
 
 (Needs attention) 2 to set up, see below
@@ -100,7 +100,7 @@ running doctor…
   ↕ +24 more
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 120x30 ===
-abacus   Board  Tasks  Leases  Queues  [Doctor]                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 running doctor…
 

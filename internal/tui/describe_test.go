@@ -106,7 +106,7 @@ func TestDescribeSaysWhyThereIsNothing(t *testing.T) {
 		"insights":      {[]string{"2", "V", "y"}, "nothing to describe"},
 		"empty list":    {[]string{"2", "T", "/", "z", "z", "z", "z", "z", "z", "enter", "d"}, "no task selected"},
 		"queues":        {[]string{"4", "y"}, ""},
-		"doctor":        {[]string{"5", "d"}, ""},
+		"doctor":        {[]string{"6", "d"}, ""},
 		"help is shown": {[]string{"2", "?", "d"}, ""},
 	} {
 		m := pm(t, 100, 32)

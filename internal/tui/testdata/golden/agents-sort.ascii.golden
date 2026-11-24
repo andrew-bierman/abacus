@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Agents]  5/6
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────╮
+│   ● running   orchard@feat/pear-cou… │
+│ ▸ ◐ waiting   mill@main              │
+│   ✕ error~    attic@chore/deps       │
+│   ○ idle~     cellar@fix/barrel-ren… │
+│   · stopped~  orchard@docs           │
+│   ? unknown~  barn@main              │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  5/6
+────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent …
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────╮
+│   ● running   orchard@feat/pear-cou… │
+│ ▸ ◐ waiting   mill@main              │
+│   ✕ error~    attic@chore/deps       │
+│   ○ idle~     cellar@fix/barrel-ren… │
+│   · stopped~  orchard@docs           │
+│   ? unknown~  barn@main              │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────────────╮
+│   ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
+│ ▸ ◐ waiting   Codex        mill@main             Package the…   1m  ▰▱▱▱ 18% │
+│   ✕ error~    Claude Code  attic@chore/deps      Bump the lo…   3m  ···· ?   │
+│   ○ idle~     Claude Code  cellar@fix/barrel-r…  Rename the …   7m  ···· ?   │
+│   · stopped~  Codex        orchard@docs          Write the p…  12m  ···· ?   │
+│   ? unknown~  OpenCode     barn@main             -               -  ···· ?   │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────────────╮
+│   ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
+│ ▸ ◐ waiting   Codex        mill@main             Package the…   1m  ▰▱▱▱ 18% │
+│   ✕ error~    Claude Code  attic@chore/deps      Bump the lo…   3m  ···· ?   │
+│   ○ idle~     Claude Code  cellar@fix/barrel-r…  Rename the …   7m  ···· ?   │
+│   · stopped~  Codex        orchard@docs          Write the p…  12m  ···· ?   │
+│   ? unknown~  OpenCode     barn@main             -               -  ···· ?   │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│   ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Codex (waiting)                             │
+│ ▸ ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │                                             │
+│   ✕ error~    Claude Code  attic@chore…  Bump the lo…   3m  ···· ?   │ │ task       Package the wheat module         │
+│   ○ idle~     Claude Code  cellar@fix/…  Rename the …   7m  ···· ?   │ │ where      mill@main                        │
+│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │ directory  /work/mill                       │
+│   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ agent      codex-demo-1  pid 41310          │
+│                                                                      │ │   ↕ +5 more                                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│   ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Codex (waiting)                             │
+│ ▸ ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │                                             │
+│   ✕ error~    Claude Code  attic@chore…  Bump the lo…   3m  ···· ?   │ │ task       Package the wheat module         │
+│   ○ idle~     Claude Code  cellar@fix/…  Rename the …   7m  ···· ?   │ │ where      mill@main                        │
+│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │ directory  /work/mill                       │
+│   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ agent      codex-demo-1  pid 41310          │
+│                                                                      │ │ last seen  1m ago  4321 tokens              │
+│                                                                      │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%                 │
+│                                                                      │ │ seen by    monitor                          │
+│                                                                      │ │ tmux pane  work:2.1                         │
+│                                                                      │ │ go there   tmux switch-client -t %5         │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────╮
+│   ● running   Claude Code  orchard@f…  Add a pear …   4s │
+│ ▸ ◐ waiting   Codex        mill@main   Package the…   1m │
+│   ✕ error~    Claude Code  attic@cho…  Bump the lo…   3m │
+│   ○ idle~     Claude Code  cellar@fi…  Rename the …   7m │
+│   · stopped~  Codex        orchard@d…  Write the p…  12m │
+│   ? unknown~  OpenCode     barn@main   -               - │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+sort:recent  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
+│   ● running   Claude Code  orchard@f…  Add a pear …   4s │ │ Codex (waiting)                     │
+│ ▸ ◐ waiting   Codex        mill@main   Package the…   1m │ │                                     │
+│   ✕ error~    Claude Code  attic@cho…  Bump the lo…   3m │ │ task       Package the wheat module │
+│   ○ idle~     Claude Code  cellar@fi…  Rename the …   7m │ │ where      mill@main                │
+│   · stopped~  Codex        orchard@d…  Write the p…  12m │ │ directory  /work/mill               │
+│   ? unknown~  OpenCode     barn@main   -               - │ │ agent      codex-demo-1  pid 41310  │
+│                                                          │ │ last seen  1m ago  4321 tokens      │
+│                                                          │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%         │
+│                                                          │ │ seen by    monitor                  │
+│                                                          │ │ tmux pane  work:2.1                 │
+│                                                          │ │ go there   tmux switch-client -t %5 │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort …

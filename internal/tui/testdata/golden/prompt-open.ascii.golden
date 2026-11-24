@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 [List] Kanban  Graph  Insights
 [open] / to… 12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 :▏   tab complete · enter go · esc close
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
 [List] Kanban  Graph  Insights
 [open] / to… 12 of 14 · sort: priority ↑
@@ -43,7 +43,7 @@
 ╰──────────────────────────────────────╯
 :▏   tab complete · enter go · esc close
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 [List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
@@ -56,7 +56,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 :▏                                           tab complete · enter go · esc close
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                14 tasks · 3 ready
 [open] / to filter                                   12 of 14 · sort: priority ↑
@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 :▏                                           tab complete · enter go · esc close
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ ac-12 ─────────────────────────────────────╮
@@ -98,9 +98,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 │   ac-09 ├── queue attention digest          ○  P2 ⊘1   feat  12d -   │ │ labels  core, leases                        │
 │   ↕ +8 more                                                          │ │   ↕ +31 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-:▏                 tasks board leases queues doctor list tree kanban graph insights search filter ctx help q · esc close
+:▏          tasks board leases queues agents doctor list tree kanban graph insights search filter ctx help q · esc close
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] / to filter                                                                           12 of 14 · sort: priority ↑
@@ -129,9 +129,9 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 │ ⊘N held by N · →N holds N · ⊘↑ held by parent                        │ │                                             │
 │ ○ open ◐ active ● blocked ✓ closed ◇ deferred                        │ │   ↕ +14 more                                │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-:▏                 tasks board leases queues doctor list tree kanban graph insights search filter ctx help q · esc close
+:▏          tasks board leases queues agents doctor list tree kanban graph insights search filter ctx help q · esc close
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights            14 tasks · 3 ready
 [open] / to filter               12 of 14 · sort: priority ↑
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────╯
 :▏                       tab complete · enter go · esc close
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                    14 tasks · 3 ready
 [open] / to filter                                                       12 of 14 · sort: priority ↑

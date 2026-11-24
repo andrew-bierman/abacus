@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Agents]  5/6
+/orchard  sort:attention  ~ guessed fro…
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────╮
+│ ▸ ● running   orchard@feat/pear-cou… │
+│   · stopped~  orchard@docs           │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  5/6
+────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent …
+/orchard  sort:attention  ~ guessed fro…
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────╮
+│ ▸ ● running   orchard@feat/pear-cou… │
+│   · stopped~  orchard@docs           │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+/orchard  sort:attention  ~ guessed from files
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────────────╮
+│ ▸ ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
+│   · stopped~  Codex        orchard@docs          Write the p…  12m  ···· ?   │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+/orchard  sort:attention  ~ guessed from files
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────────────╮
+│ ▸ ● running   Claude Code  orchard@feat/pear-c…  Add a pear …   4s  ▰▰▰▱ 72% │
+│   · stopped~  Codex        orchard@docs          Write the p…  12m  ···· ?   │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+/orchard  sort:attention  ~ guessed from files
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Claude Code (running)                       │
+│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │                                             │
+│                                                                      │ │ task       Add a pear counter to the        │
+│                                                                      │ │            orchard report                   │
+│                                                                      │ │ where      orchard@feat/pear-counter        │
+│                                                                      │ │ directory  /work/orchard                    │
+│                                                                      │ │   ↕ +17 more                                │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+/orchard  sort:attention  ~ guessed from files
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ ▸ ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ Claude Code (running)                       │
+│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │                                             │
+│                                                                      │ │ task       Add a pear counter to the        │
+│                                                                      │ │            orchard report                   │
+│                                                                      │ │ where      orchard@feat/pear-counter        │
+│                                                                      │ │ directory  /work/orchard                    │
+│                                                                      │ │ agent      claude-demo-1  pid 41022         │
+│                                                                      │ │ last seen  4s ago  152300 tokens            │
+│                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                 │
+│                                                                      │ │ seen by    monitor                          │
+│                                                                      │ │ tmux pane  work:1.0                         │
+│                                                                      │ │ go there   tmux switch-client -t %3         │
+│                                                                      │ │                                             │
+│                                                                      │ │ Subagents                                   │
+│                                                                      │ │  ├─ Survey the orchard  done  12400 tok     │
+│                                                                      │ │  └─ Check the harvest tests  working  8200… │
+│                                                                      │ │                                             │
+│                                                                      │ │ Ports                                       │
+│                                                                      │ │   5173  node dev-server.js                  │
+│                                                                      │ │                                             │
+│                                                                      │ │   ↕ +3 more                                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────
+/orchard  sort:attention  ~ guessed from files
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────╮
+│ ▸ ● running   Claude Code  orchard@f…  Add a pear …   4s │
+│   · stopped~  Codex        orchard@d…  Write the p…  12m │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+/orchard  sort:attention  ~ guessed from files
+╭─ ▸ Agents 2/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
+│ ▸ ● running   Claude Code  orchard@f…  Add a pear …   4s │ │ Claude Code (running)               │
+│   · stopped~  Codex        orchard@d…  Write the p…  12m │ │                                     │
+│                                                          │ │ task       Add a pear counter to    │
+│                                                          │ │            the orchard report       │
+│                                                          │ │ where      orchard@feat/pear-count… │
+│                                                          │ │ directory  /work/orchard            │
+│                                                          │ │ agent      claude-demo-1  pid 41022 │
+│                                                          │ │ last seen  4s ago  152300 tokens    │
+│                                                          │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%         │
+│                                                          │ │ seen by    monitor                  │
+│                                                          │ │ tmux pane  work:1.0                 │
+│                                                          │ │ go there   tmux switch-client -t %3 │
+│                                                          │ │                                     │
+│                                                          │ │ Subagents                           │
+│                                                          │ │  ├─ Survey the orchard  done  1240… │
+│                                                          │ │  └─ Check the harvest tests  worki… │
+│                                                          │ │                                     │
+│                                                          │ │ Ports                               │
+│                                                          │ │   5173  node dev-server.js          │
+│                                                          │ │                                     │
+│                                                          │ │ Child processes                     │
+│                                                          │ │   go build ./...  117 MB            │
+│                                                          │ │   node dev-server.js  78 MB         │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness…

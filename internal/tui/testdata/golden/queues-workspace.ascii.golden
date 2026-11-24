@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  Tasks  Leases  [Queues]  Doctor
+ [Queues]  4/6
 ╭─ ▸ Runs 3 · demo data ───────────────╮
 │ ▸ T-1  ● running                     │
 │   T-2  ◐ deferred                    │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  Tasks  Leases  [Queues]  Doctor
+ [Queues]  4/6
 ────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────╮
 │ ▸ T-1  ● running                     │
@@ -43,7 +43,7 @@
 
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Agents  Doctor
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s          │
 │   T-2  ◐ deferred             deferred  operators-mac  -        n/a          │
@@ -56,7 +56,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 80x30 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s          │
@@ -87,7 +87,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor                                                                 14 tasks
+abacus   Board  Tasks  Leases  [Queues]  Agents  Doctor                                                         14 tasks
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
 │   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │                                             │
@@ -100,7 +100,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · o open session
 === 120x30 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor                                                                 14 tasks
+abacus   Board  Tasks  Leases  [Queues]  Agents  Doctor                                                         14 tasks
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
@@ -131,7 +131,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor                                 
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · o open session
 === 60x24 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac    │
@@ -156,7 +156,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move …
 === 140x32 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor                                                                                     14 tasks
+abacus   Board  Tasks  Leases  [Queues]  Agents  Doctor                                                                             14 tasks
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  Lambe · T-1 │ │ T-1 (running)                                       │

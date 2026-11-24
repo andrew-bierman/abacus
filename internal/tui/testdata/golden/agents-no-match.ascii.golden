@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Agents]  5/6
+/zzzzzz  sort:attention  ~ guessed from…
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────╮
+│ no agent matches the filters (esc c… │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  5/6
+────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent …
+/zzzzzz  sort:attention  ~ guessed from…
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────╮
+│ no agent matches the filters (esc c… │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+/zzzzzz  sort:attention  ~ guessed from files
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────────────────────────╮
+│ no agent matches the filters (esc clears them)                               │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+/zzzzzz  sort:attention  ~ guessed from files
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────────────────────────╮
+│ no agent matches the filters (esc clears them)                               │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+/zzzzzz  sort:attention  ~ guessed from files
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ no agent matches the filters (esc clears them)                       │ │ select an agent                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+/zzzzzz  sort:attention  ~ guessed from files
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│ no agent matches the filters (esc clears them)                       │ │ select an agent                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+│                                                                      │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness · s sort …
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────
+/zzzzzz  sort:attention  ~ guessed from files
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────╮
+│ no agent matches the filters (esc clears them)           │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+/zzzzzz  sort:attention  ~ guessed from files
+╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
+│ no agent matches the filters (esc clears them)           │ │ select an agent                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+│                                                          │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter · f state · H harness…

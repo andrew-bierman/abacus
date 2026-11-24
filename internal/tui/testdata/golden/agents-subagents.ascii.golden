@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Agents]  5/6
+sort:attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────╮
+│ Claude Code (running)                │
+│                                      │
+│ task       Add a pear counter to the │
+│            orchard report            │
+│ where      orchard@feat/pear-counter │
+│ directory  /work/orchard             │
+│   ↕ +17 more                         │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Agents]  5/6
+────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent …
+sort:attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────╮
+│ Claude Code (running)                │
+│                                      │
+│ task       Add a pear counter to the │
+│            orchard report            │
+│ where      orchard@feat/pear-counter │
+│ directory  /work/orchard             │
+│ agent      claude-demo-1  pid 41022  │
+│ last seen  4s ago  152300 tokens     │
+│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%          │
+│ seen by    monitor                   │
+│ tmux pane  work:1.0                  │
+│ go there   tmux switch-client -t %3  │
+│                                      │
+│ Subagents                            │
+│  ├─ Survey the orchard  done  12400… │
+│  └─ Check the harvest tests  workin… │
+│                                      │
+│ Ports                                │
+│   5173  node dev-server.js           │
+│                                      │
+│   ↕ +3 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+sort:attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────────────────────────────────────────────╮
+│ Claude Code (running)                                                        │
+│                                                                              │
+│ task       Add a pear counter to the orchard report                          │
+│ where      orchard@feat/pear-counter                                         │
+│ directory  /work/orchard                                                     │
+│ agent      claude-demo-1  pid 41022                                          │
+│   ↕ +16 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
+=== 80x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+sort:attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────────────────────────────────────────────╮
+│ Claude Code (running)                                                        │
+│                                                                              │
+│ task       Add a pear counter to the orchard report                          │
+│ where      orchard@feat/pear-counter                                         │
+│ directory  /work/orchard                                                     │
+│ agent      claude-demo-1  pid 41022                                          │
+│ last seen  4s ago  152300 tokens                                             │
+│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                                                  │
+│ seen by    monitor                                                           │
+│ tmux pane  work:1.0                                                          │
+│ go there   tmux switch-client -t %3                                          │
+│                                                                              │
+│ Subagents                                                                    │
+│  ├─ Survey the orchard  done  12400 tok                                      │
+│  └─ Check the harvest tests  working  8200 tok                               │
+│                                                                              │
+│ Ports                                                                        │
+│   5173  node dev-server.js                                                   │
+│                                                                              │
+│ Child processes                                                              │
+│   ↕ +2 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
+=== 120x12 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+sort:attention  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│   ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │ Claude Code (running)                       │
+│   ✕ error~    Claude Code  attic@chore…  Bump the lo…   3m  ···· ?   │ │                                             │
+│ ▸ ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ task       Add a pear counter to the        │
+│   ○ idle~     Claude Code  cellar@fix/…  Rename the …   7m  ···· ?   │ │            orchard report                   │
+│   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ where      orchard@feat/pear-counter        │
+│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │ directory  /work/orchard                    │
+│                                                                      │ │   ↕ +17 more                                │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
+=== 120x30 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+sort:attention  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
+│   ◐ waiting   Codex        mill@main     Package the…   1m  ▰▱▱▱ 18% │ │ Claude Code (running)                       │
+│   ✕ error~    Claude Code  attic@chore…  Bump the lo…   3m  ···· ?   │ │                                             │
+│ ▸ ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ task       Add a pear counter to the        │
+│   ○ idle~     Claude Code  cellar@fix/…  Rename the …   7m  ···· ?   │ │            orchard report                   │
+│   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ where      orchard@feat/pear-counter        │
+│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │ directory  /work/orchard                    │
+│                                                                      │ │ agent      claude-demo-1  pid 41022         │
+│                                                                      │ │ last seen  4s ago  152300 tokens            │
+│                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                 │
+│                                                                      │ │ seen by    monitor                          │
+│                                                                      │ │ tmux pane  work:1.0                         │
+│                                                                      │ │ go there   tmux switch-client -t %3         │
+│                                                                      │ │                                             │
+│                                                                      │ │ Subagents                                   │
+│                                                                      │ │  ├─ Survey the orchard  done  12400 tok     │
+│                                                                      │ │  └─ Check the harvest tests  working  8200… │
+│                                                                      │ │                                             │
+│                                                                      │ │ Ports                                       │
+│                                                                      │ │   5173  node dev-server.js                  │
+│                                                                      │ │                                             │
+│                                                                      │ │   ↕ +3 more                                 │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
+=== 60x24 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
+────────────────────────────────────────────────────────────
+sort:attention  ~ guessed from files
+╭─ ▸ Agent ────────────────────────────────────────────────╮
+│ Claude Code (running)                                    │
+│                                                          │
+│ task       Add a pear counter to the orchard report      │
+│ where      orchard@feat/pear-counter                     │
+│ directory  /work/orchard                                 │
+│ agent      claude-demo-1  pid 41022                      │
+│ last seen  4s ago  152300 tokens                         │
+│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%                              │
+│ seen by    monitor                                       │
+│ tmux pane  work:1.0                                      │
+│ go there   tmux switch-client -t %3                      │
+│                                                          │
+│ Subagents                                                │
+│  ├─ Survey the orchard  done  12400 tok                  │
+│  └─ Check the harvest tests  working  8200 tok           │
+│                                                          │
+│ Ports                                                    │
+│   ↕ +5 more                                              │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move …
+=== 100x32 ===
+abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
+Codex  5h ▰▰▰▰▰▰▰▱ 88%
+1 port(s) still open after their agent ended: 4000
+sort:attention  ~ guessed from files
+╭─ ▸ Agents 6 · 310 tok/s ─────────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
+│   ◐ waiting   Codex        mill@main   Package the…   1m │ │ Claude Code (running)               │
+│   ✕ error~    Claude Code  attic@cho…  Bump the lo…   3m │ │                                     │
+│ ▸ ● running   Claude Code  orchard@f…  Add a pear …   4s │ │ task       Add a pear counter to    │
+│   ○ idle~     Claude Code  cellar@fi…  Rename the …   7m │ │            the orchard report       │
+│   ? unknown~  OpenCode     barn@main   -               - │ │ where      orchard@feat/pear-count… │
+│   · stopped~  Codex        orchard@d…  Write the p…  12m │ │ directory  /work/orchard            │
+│                                                          │ │ agent      claude-demo-1  pid 41022 │
+│                                                          │ │ last seen  4s ago  152300 tokens    │
+│                                                          │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%         │
+│                                                          │ │ seen by    monitor                  │
+│                                                          │ │ tmux pane  work:1.0                 │
+│                                                          │ │ go there   tmux switch-client -t %3 │
+│                                                          │ │                                     │
+│                                                          │ │ Subagents                           │
+│                                                          │ │  ├─ Survey the orchard  done  1240… │
+│                                                          │ │  └─ Check the harvest tests  worki… │
+│                                                          │ │                                     │
+│                                                          │ │ Ports                               │
+│                                                          │ │   5173  node dev-server.js          │
+│                                                          │ │                                     │
+│                                                          │ │ Child processes                     │
+│                                                          │ │   go build ./...  117 MB            │
+│                                                          │ │   node dev-server.js  78 MB         │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort …

@@ -237,6 +237,7 @@ func load(t *testing.T, th Theme, view func(lambe.View) lambe.View) tea.Model {
 	m, _ = m.Update(tasksMsg{report: fixtureTasks()})
 	m, _ = m.Update(taskSnapshotMsg{snap: fixtureSnapshot()})
 	m, _ = m.Update(insightsMsg{report: fixtureInsights()})
+	m, _ = m.Update(agentsMsg{report: fixtureAgents()})
 	m, _ = m.Update(doctorMsg{report: core.DoctorReport(context.Background(), "", en)})
 	return m
 }
@@ -326,6 +327,30 @@ func scenarios() []scenario {
 			return m
 		}},
 		{name: "leases", build: std, keys: []string{"3"}, tab: "Leases"},
+		{name: "agents", build: std, keys: []string{"5"}, tab: "Agents", extra: append(append([][2]int(nil), framedSizes...), [2]int{140, 40})},
+		{name: "agents-detail", build: std, keys: []string{"5", "enter"}, tab: "Agents", extra: framedSizes},
+		{name: "agents-running", build: std, keys: []string{"5", "f", "f"}, tab: "Agents", extra: framedSizes},
+		{name: "agents-subagents", build: std, keys: []string{"5", "j", "j", "enter"}, tab: "Agents", extra: framedSizes},
+		{name: "agents-filter", build: std, keys: append(append([]string{"5", "/"}, typed("orchard")...), "enter"), tab: "Agents", extra: framedSizes},
+		{name: "agents-no-match", build: std, keys: append(append([]string{"5", "/"}, typed("zzzzzz")...), "enter"), tab: "Agents", extra: framedSizes},
+		{name: "agents-sort", build: std, keys: []string{"5", "s"}, tab: "Agents", extra: framedSizes},
+		{name: "agents-empty", tab: "Agents", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+			m := load(t, th, nil)
+			m, _ = m.Update(agentsMsg{report: core.AgentsReport{Header: core.Header{Domain: core.DomainAgents, Title: "Agents", State: core.Connected, Source: core.SourceLive}, Agents: []core.Agent{}}})
+			return m
+		}},
+		{name: "agents-note", tab: "Agents", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+			m := load(t, th, nil)
+			r := fixtureAgents()
+			r.Notes = []string{"the live monitor did not answer in time"}
+			m, _ = m.Update(agentsMsg{report: r})
+			return m
+		}},
+		{name: "agents-absent", tab: "Agents", extra: framedSizes, keys: []string{"5"}, build: func(t *testing.T, th Theme) tea.Model {
+			var m tea.Model = New(nil, WithTheme(th), WithFullView(noFullView))
+			m, _ = m.Update(agentsMsg{report: core.ReadAgents(context.Background(), nil)})
+			return m
+		}},
 		{name: "board", build: std, tab: "Board"},
 		{name: "board-detail", build: std, keys: []string{"down"}, tab: "Board"},
 		{name: "board-drilled", build: std, keys: []string{"1", "enter"}, tab: "Board"},
@@ -356,7 +381,7 @@ func scenarios() []scenario {
 		{name: "leases-terminal-output", build: wsActionsStd, tab: "Leases", extra: workspaceSizes},
 		{name: "leases-focus-confirm", build: wsActionsStd, keys: []string{"m"}, tab: "Leases", footHas: []string{"y apply", "n/esc cancel"}, extra: workspaceSizes},
 		{name: "leases-work-confirm", build: wsActionsStd, keys: []string{"W"}, tab: "Leases", footHas: []string{"y apply", "n/esc cancel"}, extra: workspaceSizes},
-		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
+		{name: "doctor", build: std, keys: []string{"6"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board", overlay: true},
 		{name: "none", build: func(*testing.T, Theme) tea.Model { return New(nil, WithFullView(noFullView)) }, keys: []string{"2"}, tab: "Tasks", extra: framedSizes},
 	}, append(append(append(append(searchScenarios(), treeScenarios()...), promptScenarios()...), liveScenarios()...), editScenarios()...)...)
@@ -565,4 +590,17 @@ func TestReadmeSampleMatchesTheGolden(t *testing.T) {
 		return
 	}
 	t.Fatalf("README sample differs from the 80x30 golden (go test ./internal/tui -update rewrites it):\n--- readme\n%s\n--- golden\n%s", got, want)
+}
+
+// agentsFeed is a fixture Agents feed: the demo agents at the fixed golden time.
+type agentsFeed struct{ named }
+
+func (agentsFeed) Agents(context.Context) ([]core.Agent, core.AgentsExtra, error) {
+	return demo.AgentsAt(goldenNow)
+}
+
+// fixtureAgents is the merged demo Agents report as the tab receives it.
+func fixtureAgents() core.AgentsReport {
+	f := agentsFeed{named{&modtest.Fake{IDStr: "agents", Det: core.Detection{State: core.Ready}}, "agents"}}
+	return core.ReadAgents(context.Background(), []core.Entry{{Module: f, Detection: f.Det}})
 }

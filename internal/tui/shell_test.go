@@ -127,7 +127,7 @@ func TestDoctorTabLoadsOnFirstSelectionFromTheTypedReport(t *testing.T) {
 	a.Checks = []core.Check{{Name: "bin", Status: core.StatusOK, Detail: "found"}, {Name: "hub", Status: core.StatusFail, Detail: "down", Fix: "restart it"}}
 	var m tea.Model = New(entriesFor(a, fake("b", core.Broken)), WithTheme(asciiTheme()))
 	m = sized(m, 100, 60)
-	m, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("5")}) // Doctor
+	m, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("6")}) // Doctor
 	m = run(t, m, cmd)
 	v := m.View()
 	for _, want := range []string{"Fake a", "(ok)", "bin", "(fail)", "hub", "restart it", "(broken)", "Fake b"} {

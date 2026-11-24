@@ -1,21 +1,21 @@
 === 40x12 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ╭─ ▸ Search ───────────────────────────╮
-│ search e▏                    30 hits │
+│ search e▏                    36 hits │
 │ Tasks (15)                           │
 │ ▸ ac-[2Jx   evil [31m…  open · P0    │
 │   ac-33     help over…  in progress… │
 │   ac-27     board thr…  blocked · P3 │
 │   ac-30     saved fil…  open · P3    │
 │   ac-25     doctor: s…  blocked · P… │
-│   ↕ +31 more                         │
+│   ↕ +39 more                         │
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
 === 40x30 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────╮
-│ search e▏                    30 hits │
+│ search e▏                    36 hits │
 │ Tasks (15)                           │
 │ ▸ ac-[2Jx   evil [31m…  open · P0    │
 │   ac-33     help over…  in progress… │
@@ -39,27 +39,27 @@ esc close · enter jump · ↑/↓ move …
 │   #2        deploys a…  dev · ada    │
 │   #16       fix CVE-1…  task · clai… │
 │   #6        review th…  task · read… │
-│   ↕ +14 more                         │
+│   ↕ +22 more                         │
 ╰──────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move …
 === 80x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
-│ search e▏                                                            30 hits │
+│ search e▏                                                            36 hits │
 │ Tasks (15)                                                                   │
 │ ▸ ac-[2Jx         evil [31mred[0m  rtl be…  open · P0                        │
 │   ac-33           help overlay per view     in progress · P3 · mei           │
 │   ac-27           board thread digest       blocked · P3                     │
 │   ac-30           saved filters             open · P3                        │
 │   ac-25           doctor: stale export wa…  blocked · P2 · ada               │
-│   ↕ +31 more                                                                 │
+│   ↕ +39 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 80x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────╮
-│ search e▏                                                            30 hits │
+│ search e▏                                                            36 hits │
 │ Tasks (15)                                                                   │
 │ ▸ ac-[2Jx         evil [31mred[0m  rtl be…  open · P0                        │
 │   ac-33           help overlay per view     in progress · P3 · mei           │
@@ -83,27 +83,27 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │   #2              deploys are green again   dev · ada                        │
 │   #16             fix CVE-123 in acme/web   task · claimed · codex via ada … │
 │   #6              review the fix            task · ready · work              │
-│   ↕ +14 more                                                                 │
+│   ↕ +22 more                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 15 tasks · 4 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 15 tasks · 4 ready
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ search e▏                                                                                                    30 hits │
+│ search e▏                                                                                                    36 hits │
 │ Tasks (15)                                                                                                           │
 │ ▸ ac-[2Jx         evil [31mred[0m  rtl bell 界界界界界界界界界界界界界界界界界界…   open · P0                        │
 │   ac-33           help overlay per view                                             in progress · P3 · mei           │
 │   ac-27           board thread digest                                               blocked · P3                     │
 │   ac-30           saved filters                                                     open · P3                        │
 │   ac-25           doctor: stale export warning                                      blocked · P2 · ada               │
-│   ↕ +31 more                                                                                                         │
+│   ↕ +39 more                                                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 15 tasks · 4 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 15 tasks · 4 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ search e▏                                                                                                    30 hits │
+│ search e▏                                                                                                    36 hits │
 │ Tasks (15)                                                                                                           │
 │ ▸ ac-[2Jx         evil [31mred[0m  rtl bell 界界界界界界界界界界界界界界界界界界…   open · P0                        │
 │   ac-33           help overlay per view                                             in progress · P3 · mei           │
@@ -127,14 +127,14 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 │   #2              deploys are green again                                           dev · ada                        │
 │   #16             fix CVE-123 in acme/web                                           task · claimed · codex via ada … │
 │   #6              review the fix                                                    task · ready · work              │
-│   ↕ +14 more                                                                                                         │
+│   ↕ +22 more                                                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history
 === 60x24 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────╮
-│ search e▏                                        30 hits │
+│ search e▏                                        36 hits │
 │ Tasks (15)                                               │
 │ ▸ ac-[2Jx         evil [31m…  open · P0                  │
 │   ac-33           help over…  in progress · P3 · mei     │
@@ -152,14 +152,14 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │   ac-01           Fleet wor…  open · P1 · mei            │
 │   ac-36           verify to…  deferred · P3 · mei        │
 │                                                          │
-│   ↕ +20 more                                             │
+│   ↕ +28 more                                             │
 ╰──────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group …
 === 100x32 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet · 15 tasks · 4 ready
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                   fleet · 15 tasks · 4 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Search ───────────────────────────────────────────────────────────────────────────────────────╮
-│ search e▏                                                                                30 hits │
+│ search e▏                                                                                36 hits │
 │ Tasks (15)                                                                                       │
 │ ▸ ac-[2Jx         evil [31mred[0m  rtl bell 界界界界界界界界…   open · P0                        │
 │   ac-33           help overlay per view                         in progress · P3 · mei           │
@@ -185,6 +185,6 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                           fleet 
 │   #6              review the fix                                task · ready · work              │
 │   #9]0;x          evil [31mred[0m  rtl bell 界界界界界界界界…   evil [31mred[0m  rtl bell 界界…  │
 │                                                                                                  │
-│   ↕ +12 more                                                                                     │
+│   ↕ +20 more                                                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 esc close · enter jump · ↑/↓ move · tab next group · ctrl+p/n history

@@ -36,7 +36,7 @@ func TestHeaderContextAppearsFromOneHundredColumnsAndNeverMovesTheTabs(t *testin
 
 func TestHeaderContextIsRightAlignedAndTheSameOnEveryTab(t *testing.T) {
 	var ctx []string
-	for _, k := range []string{"1", "2", "3", "4", "5"} {
+	for _, k := range []string{"1", "2", "3", "4", "5", "6"} {
 		h := head(press(pm(t, 120, 32), k))
 		i := strings.Index(h, "fleet")
 		if i < 0 {
