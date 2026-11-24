@@ -29,7 +29,6 @@ const (
 	terminalFlavor = "com.superlogical.terminal.shell"
 
 	agentConcurrency    = 8
-	agentBudget         = 4 * time.Second
 	maxBlocksPerSession = 64
 	maxPanesPerHost     = 256
 	maxStatusRecords    = 256 // what the protocol keeps per pane
@@ -43,6 +42,9 @@ const (
 	maxGitWalk   = 12
 	maxGitFile   = 4096
 )
+
+// agentBudget is the hard bound on one sweep; a variable only so a test can shorten it.
+var agentBudget = 4 * time.Second
 
 // knownAgentProcesses name programs that are agents even when they report no status. It is data:
 // extending it is a one-line change. The real process names of these tools are UNTESTED against a
@@ -157,7 +159,8 @@ func parseProcess(out []byte) (proc, error) {
 		Foreground *procInfo `json:"foreground"`
 		Child      *procInfo `json:"child"`
 	}
-	if json.Unmarshal(out, &top) != nil {
+	var obj map[string]json.RawMessage
+	if json.Unmarshal(out, &obj) != nil || obj == nil || json.Unmarshal(out, &top) != nil {
 		return proc{}, errNotAgents
 	}
 	p := top.Foreground
@@ -165,7 +168,7 @@ func parseProcess(out []byte) (proc, error) {
 		p = top.Child
 	}
 	if p == nil {
-		return proc{}, errNotAgents
+		return proc{}, nil // an object with no process: a shell that exited (last_exit set), seen live
 	}
 	for _, n := range []string{p.Script, p.Argv0, p.Name} {
 		if n != "" {
@@ -207,6 +210,7 @@ type hostSweep struct {
 	replay    bool
 	err       error // the host's session list failed
 	tripped   bool
+	cut       bool // the budget ran out before the host was fully read
 }
 
 // noteDrift counts a pane whose output was not in a known shape.
@@ -264,9 +268,13 @@ func (m *Module) Agents(ctx context.Context, items []core.WorkspaceItem) (core.A
 		m.mu.Unlock()
 		close(f.done)
 	}()
+	parent := ctx
 	ctx, cancel := context.WithTimeout(ctx, agentBudget)
 	defer cancel()
 	f.rep, f.err = m.sweep(ctx, items)
+	if err := parent.Err(); err != nil { // the caller gave up: that is an error; the budget running out is not
+		f.rep, f.err = core.AgentReport{}, err
+	}
 	return f.rep, f.err
 }
 
@@ -289,14 +297,17 @@ func (m *Module) sweep(ctx context.Context, items []core.WorkspaceItem) (core.Ag
 		}()
 	}
 	wg.Wait()
-	if err := ctx.Err(); err != nil {
-		return core.AgentReport{}, err
-	}
+	// The budget running out is not a failure: what each host answered is kept and the hosts that
+	// did not finish are named, so one slow remote never throws away the local machine's panes.
+	timedOut := ctx.Err() != nil
 	rep := core.AgentReport{State: core.NotConnected, Reason: noWorkspace, HowToConnect: HowToConnect}
 	var problems []string
 	for _, h := range sweeps {
 		switch {
 		case errors.Is(h.err, errNoServer):
+			continue
+		case h.err != nil && timedOut:
+			problems = append(problems, hostName(h.host)+" did not answer in time, some panes were not read")
 			continue
 		case h.err != nil:
 			problems = append(problems, hostName(h.host)+": "+h.err.Error())
@@ -307,7 +318,10 @@ func (m *Module) sweep(ctx context.Context, items []core.WorkspaceItem) (core.Ag
 		rep.Truncated = rep.Truncated || h.truncated
 		rep.Terminals += h.terminals
 		rep.Panes = append(rep.Panes, h.panes...)
-		if h.tripped {
+		if h.cut {
+				problems = append(problems, hostName(h.host)+" did not answer in time, some panes were not read")
+			}
+			if h.tripped {
 			problems = append(problems, hostName(h.host)+" stopped answering, so some panes were not read")
 		}
 		if h.drift > 0 {
@@ -348,9 +362,14 @@ func (m *Module) sweepHost(ctx context.Context, h *hostSweep, items []core.Works
 	}
 	wg.Wait()
 	h.tripped = h.fails.Load() >= breakerAfter
+	h.cut = ctx.Err() != nil
 }
 
 func (m *Module) sweepSession(ctx context.Context, h *hostSweep, s session, items []core.WorkspaceItem, sem chan struct{}) {
+	if !validID("session", s.ID) { // an id shape this build does not know is drift, not a host failure
+		h.noteDrift()
+		return
+	}
 	out, ok := m.call(ctx, h, sem, blockLsArgv(h.host, s.ID))
 	if !ok {
 		return
@@ -375,6 +394,10 @@ func (m *Module) sweepSession(ctx context.Context, h *hostSweep, s session, item
 }
 
 func (m *Module) sweepBlock(ctx context.Context, h *hostSweep, s session, b block, items []core.WorkspaceItem, sem chan struct{}) {
+	if !validID("block", b.ID) {
+		h.noteDrift()
+		return
+	}
 	var recs []core.AgentRecord
 	var statusErr, statusOK bool
 	var pr proc

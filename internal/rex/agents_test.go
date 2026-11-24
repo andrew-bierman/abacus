@@ -655,3 +655,51 @@ func TestTheRepoAndBranchComeFromTheLocalPanesDirectory(t *testing.T) {
 		t.Fatalf("%+v", p)
 	}
 }
+
+func TestASlowHostDoesNotThrowAwayTheLocalPanes(t *testing.T) {
+	old := agentBudget
+	agentBudget = 150 * time.Millisecond
+	defer func() { agentBudget = old }()
+	good := agentFake(t, "work")
+	r := &runFn{f: func(ctx context.Context, args []string) ([]byte, int, error) {
+		if len(args) > 1 && args[0] == "-S" && args[1] == "slow" {
+			<-ctx.Done()
+			return nil, -1, fmt.Errorf("%w: %w", core.ErrCanceled, ctx.Err())
+		}
+		return good.Run(ctx, "rex", args...)
+	}}
+	m := modWith(t, r, []string{"slow"}, nil)
+	rep := agents(t, m)
+	if rep.State != core.Degraded || len(rep.Panes) != 1 || !strings.Contains(rep.Reason, "slow did not answer in time") {
+		t.Fatalf("%+v", rep)
+	}
+}
+
+func TestAnExitedPaneKeepsTheReportConnected(t *testing.T) {
+	f := agentFake(t, "work")
+	f.resp[key(blockCallArgv("", s1, bb, "process"))] = resp{out: fixture(t, "process-exited.json")}
+	rep := agents(t, modWith(t, f, nil, nil))
+	if rep.State != core.Connected || rep.Reason != "" || len(rep.Panes) != 1 {
+		t.Fatalf("%+v", rep)
+	}
+}
+
+func TestANonConformingIdIsDriftAndNeverTripsTheBreaker(t *testing.T) {
+	r := &runFn{f: func(ctx context.Context, args []string) ([]byte, int, error) {
+		if !strings.Contains(key(args), "block") {
+			var parts []string
+			for i := 0; i < 5; i++ {
+				parts = append(parts, fmt.Sprintf(`{"session_id":"session:ABC%d","label":"s"}`, i))
+			}
+			return []byte(`{"sessions":[` + strings.Join(parts, ",") + `]}`), 0, nil
+		}
+		return nil, -1, fmt.Errorf("unexpected call %v", args)
+	}}
+	rep := agents(t, modWith(t, r, nil, nil))
+	if rep.State != core.Degraded || strings.Contains(rep.Reason, "stopped answering") || !strings.Contains(rep.Reason, "5 panes") {
+		t.Fatalf("%+v", rep)
+	}
+	if n := r.count("--autostart=false block"); n != 0 {
+		t.Fatalf("%d block calls for refused ids", n)
+	}
+}

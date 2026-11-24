@@ -30,6 +30,8 @@ Recorded, scrubbed:
 - `program-status.json` is `rex block call -s SESSION -b BLOCK program_status` after a script
   printed three OSC 7501 reports: a blocked permission request, a working child with progress 40,
   and an error. `msg` and `title` come back already decoded.
+- `process-exited.json` is the reply for a keep-open pane whose shell has exited (`last_exit` set, no
+  `foreground`, no `child`), seen on a live Rex and scrubbed; the exact `last_exit` fields are approximated.
 - `process.json` is `rex block call -s SESSION -b BLOCK process` for a pane running `sleep`.
 
 Hand-written:
@@ -40,7 +42,7 @@ Hand-written:
   range progress in every text field; `-oversized.json` has 10 KB titles and messages;
   `-unknown.json` has a state and a kind this build does not know and an unparsable time.
 - `program-status-drift.json` and `-drift-types.json` are output that is not the documented shape
-  (a missing or mistyped `records`); `process-drift.json` and `block-ls-drift.json` likewise.
+  (a missing or mistyped `records`); `process-drift.json` (not an object) and `block-ls-drift.json` likewise.
 - `process-agent.json` is what a node script agent would plausibly report (`script` set). It is a
   guess at the real shape of a codex process, not a recording. `process-child-only.json` has no
   `foreground` and an argv0 with a leading dash, as a login shell has.
