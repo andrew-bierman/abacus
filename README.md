@@ -216,7 +216,7 @@ single-use and audit gate. Leases and Queues writes are blocked upstream: see `d
 
 ### TUI
 
-`abacus tui` has one tab per domain (Board, Tasks, Leases, Queues) plus Doctor. A tab whose tool
+`abacus tui` has one tab per domain (Board, Tasks, Leases, Queues) plus Doctor, and an Agents tab only when a terminal workspace is present. A tab whose tool
 needs one-time setup shows a single prompt (see First run) instead of an error. In Queues, Leases and Board, below
 100 columns the list fills the screen and Enter drills into the detail; at 100 and wider the detail
 sits beside the list. This is the 80-column Tasks render with colors off (`NO_COLOR`), from the golden test,
@@ -254,3 +254,21 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 ```
+
+## Credits
+
+- [Beads](https://github.com/steveyegge/beads) is the tracker everything sits on.
+- [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) by Jeffrey Emanuel supplies the
+  graph analysis. Its license ships unmodified in the archive as `third_party/bv/LICENSE`.
+- [Vercel Board](https://github.com/vercel/board) (Apache-2.0) is the message board the Board
+  domain reads and posts to; abacus only runs its CLI as a subprocess.
+- [b9s](https://github.com/vanderheijden86/b9s) (MIT) is the full tree and graph view abacus can hand off to.
+- [k9s](https://k9scli.io) inspired the keyboard-first feel.
+
+## Development
+
+See [docs/development.md](docs/development.md) to build from source and run the checks.
+
+## License
+
+GPL-3.0-or-later. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
