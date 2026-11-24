@@ -209,6 +209,9 @@ func analyze(ctx context.Context, issues []Issue) (core.InsightsReport, error) {
 	for _, b := range ins.Bottlenecks {
 		r.Bottlenecks = append(r.Bottlenecks, core.Ranked{ID: core.Sanitize(b.ID), Value: b.Value})
 	}
+	for _, k := range ins.Influencers {
+		r.Influencers = append(r.Influencers, core.Ranked{ID: core.Sanitize(k.ID), Value: k.Value})
+	}
 	for _, c := range ins.Cycles {
 		cyc := make([]string, 0, len(c))
 		for _, id := range c {

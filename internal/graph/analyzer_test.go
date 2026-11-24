@@ -131,6 +131,24 @@ func TestIdsInTheRankedSectionsAreSanitized(t *testing.T) {
 	}
 }
 
+// The influence ranking (eigenvector centrality) is carried too, with sanitized ids.
+func TestInfluencersAreCarriedAndSanitized(t *testing.T) {
+	a, b, c := "a\x1b[2J", "b\u202e", "c\x07"
+	r := analyze(t, []graph.Issue{
+		{ID: a, Title: "T", Status: graph.StatusOpen, Priority: 1, Type: "task"},
+		{ID: b, Title: "T", Status: graph.StatusOpen, Priority: 2, Type: "task", DependsOn: []graph.Dependency{{ID: a, Type: graph.DepBlocks}}},
+		{ID: c, Title: "T", Status: graph.StatusOpen, Priority: 2, Type: "task", DependsOn: []graph.Dependency{{ID: b, Type: graph.DepBlocks}}},
+	})
+	if len(r.Influencers) == 0 {
+		t.Fatalf("a chain has an influence ranking: %+v", r)
+	}
+	for _, k := range r.Influencers {
+		if strings.ContainsAny(k.ID, "\x1b\x07\u202e") || k.ID == "" {
+			t.Errorf("unsanitized or empty id %q", k.ID)
+		}
+	}
+}
+
 func TestCyclesAreFoundAndSkipTheCriticalPath(t *testing.T) {
 	r := analyze(t, load(t, "cycle"))
 	if len(r.Cycles) != 1 || len(r.Cycles[0]) != 3 || r.Cycles[0][0] != r.Cycles[0][2] {
