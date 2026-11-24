@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -30,6 +29,7 @@ func runTaskView(verb string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks "+verb, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, true)
 	var asJSON, reverse, tree, closed bool
 	var q, sortKey, preset, group string
 	jsonVar(d, fs, &asJSON, "print JSON")
@@ -96,7 +96,10 @@ func runTaskView(verb string, rest []string, d Deps) int {
 			}
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	src := core.ResolveProviders(d.Build(o).Detect(ctx)).Source
 	if src == nil {

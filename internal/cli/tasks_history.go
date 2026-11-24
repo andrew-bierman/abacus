@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -22,6 +21,7 @@ func runTaskHistory(rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks history", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, true)
 	var asJSON bool
 	limit := core.HistoryDefaultLimit
 	jsonVar(d, fs, &asJSON, "print JSON")
@@ -41,7 +41,10 @@ func runTaskHistory(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "tasks history: --limit must be 1 to %d\n", core.HistoryMaxLimit)
 		return core.ExitUsage
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	src := core.ResolveProviders(d.Build(o).Detect(ctx)).History
 	if src == nil {

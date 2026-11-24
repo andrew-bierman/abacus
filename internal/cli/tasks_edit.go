@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"strconv"
@@ -34,6 +33,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks "+verb, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, true)
 	var yes, dry, asJSON, unassign bool
 	var blocks, blockedBy, text string
 	expectRaw := expectFlag(fs)
@@ -55,6 +55,9 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	if fs.NArg() > 0 {
 		fmt.Fprintf(d.Err, "tasks %s: unexpected argument %q (quote values that contain spaces)\n", verb, fs.Arg(0))
 		return core.ExitUsage
+	}
+	if code, ok := o.resolve(d); !ok {
+		return code
 	}
 	bad := func(format string, a ...any) int {
 		fmt.Fprintf(d.Err, "tasks %s: %s\nusage: %s\n", verb, fmt.Sprintf(format, a...), usage)
@@ -123,7 +126,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 		}
 		ch.Op, ch.ID, ch.Text = core.TaskAddComment, pos[0], text
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	entries := d.Build(o).Detect(ctx)
 	pr := core.ResolveProviders(entries)

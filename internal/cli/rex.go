@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -44,7 +43,7 @@ func runRex(args []string, d Deps) int {
 		return core.ExitFail
 	}
 	cwd, _ := os.Getwd()
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	w := core.ResolveProviders(d.Build(Options{}).Detect(ctx)).Placer
 	if w == nil {

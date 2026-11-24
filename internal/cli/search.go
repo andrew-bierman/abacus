@@ -61,7 +61,7 @@ func runSearch(rest []string, d Deps) int {
 	fs.Var(&doms, "domain", "search only these domains (tasks, board, leases, queues, agents); repeat or comma-separate")
 	fs.IntVar(&limit, "limit", core.DefaultSearchLimit, fmt.Sprintf("results per domain (1 to %d)", core.MaxSearchLimit))
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
-	fs.BoolVar(&o.Demo, "demo", false, "search fixtures instead of the real domains")
+	o.bind(fs, true)
 	var words []string
 	for len(rest) > 0 { // flags and words may be mixed: the flag package stops at the first word
 		if fs.Parse(rest) != nil {
@@ -91,11 +91,14 @@ func runSearch(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "search: bad query: %v\n", err)
 		return core.ExitUsage
 	}
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
 	now := time.Now()
 	if d.Now != nil {
 		now = d.Now()
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	feeds := readSearchFeeds(ctx, d.Build(o).Detect(ctx), now, doms)
 	rep, err := core.NewSearchIndex(feeds...).Search(text, core.SearchOptions{Now: now, Limit: limit, Domains: doms})

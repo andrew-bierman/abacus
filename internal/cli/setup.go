@@ -20,6 +20,9 @@ func setupFor(d Deps, entries []core.Entry) *core.Setup {
 	}
 	o := core.DefaultSetupOptions()
 	o.Audit = d.Audit
+	if demoRun(d) {
+		o.Audit = demoAudit{}
+	}
 	return core.NewSetup(entries, o)
 }
 
@@ -39,6 +42,7 @@ func runSetup(rest []string, d Deps) int {
 	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.BoolVar(&repair, "repair", false, "repair a half-created workspace: show the plan, set the unfinished files aside (nothing is deleted) and create it again")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the queues daemon")
+	o.bind(fs, false)
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
 	}
@@ -46,11 +50,18 @@ func runSetup(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "setup: unexpected argument %q\n", fs.Arg(0))
 		return core.ExitUsage
 	}
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
+	// in demo mode setup is only ever a report or a --dry-run plan
+	if code, refused := refuseDemoWrite(d, "setup", dry || !(yes || repair)); refused {
+		return code
+	}
 	expect, okDigest := parseExpect(d, "setup", expectRaw)
 	if !okDigest {
 		return core.ExitUsage
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	entries := d.Build(o).Detect(ctx)
 	s := setupFor(d, entries)
@@ -66,7 +77,7 @@ func runSetup(rest []string, d Deps) int {
 	var results []setupResult
 	failed, changedStep := false, false
 	// Applying needs an explicit yes: --yes, or a y at the prompt (which needs input and text mode).
-	canAsk := !asJSON && d.In != nil && interactive(d.In)
+	canAsk := !asJSON && !demoRun(d) && d.In != nil && interactive(d.In)
 	if !dry && (yes || canAsk) {
 		in := bufio.NewReader(orEmpty(d.In))
 		for _, st := range steps {
@@ -107,7 +118,7 @@ func runSetup(rest []string, d Deps) int {
 					continue
 				}
 			}
-			msg, err := s.Apply(ctx, p.Confirm())
+			msg, err := trapped(d, func() applyOut { m, e := s.Apply(ctx, p.Confirm()); return applyOut{m, e} }).unpack()
 			if err != nil {
 				failed = true
 				results = append(results, setupResult{Step: st.Step, Error: core.DescribeWriteError(err)})
@@ -263,7 +274,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 			return finishWith(core.ExitFail, core.CodeRefused)
 		}
 	}
-	msg, err := s.Apply(ctx, p.Confirm())
+	msg, err := trapped(d, func() applyOut { m, e := s.Apply(ctx, p.Confirm()); return applyOut{m, e} }).unpack()
 	if err != nil {
 		res.Error = core.DescribeWriteError(err)
 		if !asJSON {
@@ -277,3 +288,11 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 	}
 	return finish(core.ExitOK)
 }
+
+// applyOut is one setup step's answer, carried out of trapped.
+type applyOut struct {
+	msg string
+	err error
+}
+
+func (a applyOut) unpack() (string, error) { return a.msg, a.err }

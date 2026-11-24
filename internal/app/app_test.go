@@ -300,8 +300,12 @@ func TestDemoRegistryProvidesEveryDomain(t *testing.T) {
 			t.Fatalf("a demo must offer no first-run setup, %s offers %+v", d, guide)
 		}
 	}
-	if p.BoardWriter != nil {
-		t.Fatal("a demo board cannot post")
+	// the demo board can plan a post (--dry-run, the TUI confirm) and "applies" it to nothing
+	if p.BoardWriter == nil {
+		t.Fatal("a demo board can plan a post")
+	}
+	if res, err := p.BoardWriter.RunBoard(context.Background(), nil, core.BoardChange{Op: core.BoardPost, Text: "x"}); err != nil || res.ID != "demo-1" {
+		t.Fatalf("a demo post is applied to nothing: %+v %v", res, err)
 	}
 }
 
@@ -318,5 +322,28 @@ func TestNoRealMonitorIsRunFromPathInTests(t *testing.T) {
 	core.ReadAgents(context.Background(), Build(cli.Options{}, e).Detect(context.Background()))
 	if _, err := os.Stat(marker); err == nil {
 		t.Fatal("a test ran a monitor found on PATH")
+	}
+}
+
+// --tracker wins over ABACUS_BD_DIR, a saved tracker_dir and the working directory; without it nothing changes.
+func TestTrackerFlagWinsOverEnvAndConfig(t *testing.T) {
+	e := env(t, map[string]string{"ABACUS_BD_DIR": "/from/env"})
+	if err := e.Config.Update(func(c *core.Config) error { return c.Set("tracker_dir", "/from/config") }); err != nil {
+		t.Fatal(err)
+	}
+	dirOf := func(o cli.Options) string {
+		for _, en := range Build(o, e).Detect(context.Background()) {
+			if td, ok := en.Module.(interface{ TrackerDir() string }); ok && en.Module.ID() == "bd" {
+				return td.TrackerDir()
+			}
+		}
+		t.Fatal("no bd module")
+		return ""
+	}
+	if got := dirOf(cli.Options{}); got != "/from/env" {
+		t.Errorf("without the flag: %q", got)
+	}
+	if got := dirOf(cli.Options{Tracker: "/from/flag"}); got != "/from/flag" {
+		t.Errorf("--tracker must win, got %q", got)
 	}
 }

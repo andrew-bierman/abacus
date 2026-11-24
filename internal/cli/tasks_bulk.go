@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"strconv"
@@ -25,6 +24,7 @@ func runTaskBulk(rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks bulk", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, true)
 	var yes, dry, asJSON, clear bool
 	var ids, op, value string
 	expectRaw := expectFlag(fs)
@@ -37,6 +37,9 @@ func runTaskBulk(rest []string, d Deps) int {
 	fs.StringVar(&value, "value", "", "the status, priority, label or assignee")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
+	}
+	if code, ok := o.resolve(d); !ok {
+		return code
 	}
 	bad := func(format string, a ...any) int {
 		fmt.Fprintf(d.Err, "tasks bulk: %s\nusage: %s\n", fmt.Sprintf(format, a...), bulkUsage)
@@ -97,7 +100,7 @@ func runTaskBulk(rest []string, d Deps) int {
 			return bad("invalid issue id %q", id)
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout) // planning only: the batch gets its own time after the confirm
+	ctx, cancel := d.withTimeout(cliTimeout) // planning only: the batch gets its own time after the confirm
 	defer cancel()
 	pr := core.ResolveProviders(d.Build(o).Detect(ctx))
 	w, r := pr.Writer, pr.Reader
@@ -144,6 +147,9 @@ func runTaskBulk(rest []string, d Deps) int {
 			fmt.Fprintf(d.Out, "  left out: %s (%s)\n", core.Sanitize(s.ID), core.Sanitize(s.Reason))
 		}
 	}
+	if code, refused := refuseDemoWrite(d, "tasks bulk", dry); refused {
+		return code
+	}
 	if dry {
 		return core.ExitOK
 	}
@@ -154,13 +160,15 @@ func runTaskBulk(rest []string, d Deps) int {
 			return failf(d, core.CodeRefused, "not applied: the change was not confirmed\n")
 		}
 	}
-	au := d.Audit
-	if au == nil {
-		au = core.DefaultAudit()
-	}
-	actx, acancel := context.WithTimeout(context.Background(), core.BulkTotalTimeout)
+	au := auditFor(d)
+	actx, acancel := d.withTimeout(core.BulkTotalTimeout)
 	defer acancel()
-	rep, err := core.NewApplier(w, au).ApplyBulk(actx, plan.Confirm(), r)
+	type batch struct {
+		rep core.BulkReport
+		err error
+	}
+	got := trapped(d, func() batch { r2, e := core.NewApplier(w, au).ApplyBulk(actx, plan.Confirm(), r); return batch{r2, e} })
+	rep, err := got.rep, got.err
 	if err != nil {
 		return failf(d, core.CodeFor(err), "tasks bulk: %s\n", core.DescribeWriteError(err))
 	}

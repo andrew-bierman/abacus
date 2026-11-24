@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -22,6 +21,7 @@ func runTaskGraph(rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks graph", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, true)
 	var asJSON, whole bool
 	var depth int
 	jsonVar(d, fs, &asJSON, "print JSON")
@@ -34,7 +34,10 @@ func runTaskGraph(rest []string, d Deps) int {
 		fmt.Fprintln(d.Err, "usage: abacus tasks graph [ID | --whole] [--depth 1-6] [--json]")
 		return core.ExitUsage
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	prov := core.ResolveProviders(d.Build(o).Detect(ctx))
 	src := prov.Source

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -25,7 +24,7 @@ func runAgents(rest []string, d Deps) int {
 	fs.StringVar(&f.Harness, "harness", "", "only this harness (claude-code, codex, ...)")
 	fs.StringVar(&state, "state", "", "only this state: "+statesList())
 	fs.StringVar(&f.Repo, "repo", "", "only this repository")
-	fs.BoolVar(&o.Demo, "demo", false, "render from fixtures")
+	o.bind(fs, false)
 	fs.BoolVar(&o.AllUsers, "all", false, "include agents run by other users (default: only yours)")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -37,8 +36,11 @@ func runAgents(rest []string, d Deps) int {
 			return core.ExitUsage
 		}
 	}
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
 	f.Query = strings.Join(fs.Args(), " ")
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	r := core.ReadDomain(ctx, d.Build(o).Detect(ctx), core.DomainAgents).Agents
 	r.Agents = core.FilterAgents(r.Agents, f)
