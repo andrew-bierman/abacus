@@ -28,7 +28,7 @@ sort: attention  ~ guessed from files
 │ agent      claude-demo-1  pid 41022  │
 │ last seen  4s ago  152300 tokens     │
 │ changes    2 added  5 modified       │
-│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k o… │
+│ context    ▰▰▰▰▰▰▰▱▱▱ 72%  144k/200k │
 │ turns      █▅▃▆▅  last 12k  peak 21k │
 │ seen by    monitor                   │
 │ terminal lookup skipped: another ag… │
@@ -71,7 +71,7 @@ sort: attention  ~ guessed from files
 │ agent      claude-demo-1  pid 41022                                          │
 │ last seen  4s ago  152300 tokens                                             │
 │ changes    2 added  5 modified                                               │
-│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k of 200k                                    │
+│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k/200k                                       │
 │ turns      ▂▃▂▄▃▅▃▆▄▃▅▇▄█▅▃▆▅  last 12k  peak 21k                            │
 │ seen by    monitor                                                           │
 │ terminal lookup skipped: another agent shares this name                      │
@@ -116,7 +116,7 @@ sort: attention  ~ guessed from files
 │                                                                      │ │ agent      claude-demo-1  pid 41022         │
 │                                                                      │ │ last seen  4s ago  152300 tokens            │
 │                                                                      │ │ changes    2 added  5 modified              │
-│                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k of 200k   │
+│                                                                      │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k/200k      │
 │                                                                      │ │ turns      ▃▆▄▃▅▇▄█▅▃▆▅  last 12k  peak 21k │
 │                                                                      │ │ seen by    monitor                          │
 │                                                                      │ │ terminal lookup skipped: another agent sha… │
@@ -143,7 +143,7 @@ sort: attention  ~ guessed from files
 │ agent      claude-demo-1  pid 41022                      │
 │ last seen  4s ago  152300 tokens                         │
 │ changes    2 added  5 modified                           │
-│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k of 200k                │
+│ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k/200k                   │
 │ turns      ▂▃▂▄▃▅▃▆▄▃▅▇▄█▅▃▆▅  last 12k  peak 21k        │
 │ seen by    monitor                                       │
 │ terminal lookup skipped: another agent shares this name  │
@@ -172,7 +172,7 @@ sort: attention  ~ guessed from files
 │                                                          │ │ agent      claude-demo-1  pid 41022 │
 │                                                          │ │ last seen  4s ago  152300 tokens    │
 │                                                          │ │ changes    2 added  5 modified      │
-│                                                          │ │ context    ▰▰▰▰▰▰▰▰▰▱▱▱ 72%  144k … │
+│                                                          │ │ context    ▰▰▰▰▰▰▱▱▱ 72%  144k/200k │
 │                                                          │ │ turns      ▆▄█▆  last 12k  peak 21k │
 │                                                          │ │ seen by    monitor                  │
 │                                                          │ │ terminal lookup skipped: another a… │

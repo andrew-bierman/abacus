@@ -609,21 +609,22 @@ func (s *agentsSection) detailLines(iw int) []string {
 		}
 		out = append(out, field("changes", changes))
 	}
-	ctx := th.Label.Render(padTo("context", 11)) + s.gauge(a.ContextPct, 12) + " " + pctText(a.ContextPct)
+	// the gauge gives way to the numbers when the detail is narrow
+	tail := " " + pctText(a.ContextPct)
 	switch {
 	case a.ContextTokens != nil && a.ContextWindow != nil:
-		ctx += "  " + tokenText(*a.ContextTokens) + " of " + tokenText(*a.ContextWindow)
+		tail += "  " + tokenText(*a.ContextTokens) + "/" + tokenText(*a.ContextWindow)
 	case a.ContextTokens != nil:
-		ctx += "  " + tokenText(*a.ContextTokens) + " tokens, window not recorded"
+		tail += "  " + tokenText(*a.ContextTokens) + " tokens" // the window is not recorded
 	}
-	out = append(out, trunc(ctx, iw))
+	out = append(out, trunc(th.Label.Render(padTo("context", 11))+s.gauge(a.ContextPct, max(4, min(12, iw-11-len(tail))))+tail, iw))
 	if n := len(a.TurnTokens); n >= 2 {
 		peak := int64(0)
 		for _, v := range a.TurnTokens {
 			peak = max(peak, v)
 		}
-		sw := max(4, min(24, iw-11-20))
-		out = append(out, trunc(th.Label.Render(padTo("turns", 11))+th.Text(KindAccent, spark(a.TurnTokens, sw))+th.Text(KindMuted, fmt.Sprintf("  last %s  peak %s", tokenText(a.TurnTokens[n-1]), tokenText(peak))), iw))
+		note := fmt.Sprintf("  last %s  peak %s", tokenText(a.TurnTokens[n-1]), tokenText(peak))
+		out = append(out, trunc(th.Label.Render(padTo("turns", 11))+th.Text(KindAccent, spark(a.TurnTokens, max(4, min(24, iw-11-len(note)))))+th.Text(KindMuted, note), iw))
 	}
 	srcs := make([]string, 0, len(a.Sources))
 	for _, e := range a.Sources {

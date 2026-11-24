@@ -160,7 +160,7 @@ func TestAgentsDetailShowsContextTurnsChangesAndStaleLimits(t *testing.T) {
 	}
 	m := press(press(v, "j"), "j") // the running agent
 	d := press(m, "enter").View()
-	if !strings.Contains(d, "144k of 200k") || !strings.Contains(d, "turns") || !strings.Contains(d, "peak 21k") || !strings.Contains(d, "2 added  5 modified") {
+	if !strings.Contains(d, "144k/200k") || !strings.Contains(d, "turns") || !strings.Contains(d, "peak 21k") || !strings.Contains(d, "2 added  5 modified") {
 		t.Fatalf("detail:\n%s", d)
 	}
 }

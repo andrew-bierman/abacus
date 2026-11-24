@@ -115,7 +115,7 @@ sort: recent  ~ guessed from files
 │   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ agent      codex-demo-1  pid 41310          │
 │                                                                      │ │ last seen  1m ago  4321 tokens              │
 │                                                                      │ │ changes    clean                            │
-│                                                                      │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%  36k of 200k    │
+│                                                                      │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%  36k/200k       │
 │                                                                      │ │ turns      ▄▆█  last 1.9k  peak 1.9k        │
 │                                                                      │ │ seen by    monitor                          │
 │                                                                      │ │ tmux pane  work:2.1                         │
@@ -171,7 +171,7 @@ sort: recent  ~ guessed from files
 │   ? unknown~  OpenCode     barn@main   -               - │ │ agent      codex-demo-1  pid 41310  │
 │                                                          │ │ last seen  1m ago  4321 tokens      │
 │                                                          │ │ changes    clean                    │
-│                                                          │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%  36k o… │
+│                                                          │ │ context    ▰▰▱▱▱▱▱▱▱▱ 18%  36k/200k │
 │                                                          │ │ turns      ▄▆█  last 1.9k  peak 1.… │
 │                                                          │ │ seen by    monitor                  │
 │                                                          │ │ tmux pane  work:2.1                 │
