@@ -278,3 +278,24 @@ func TestReadTaskCarriesLabelsAndBlockingDependenciesOnly(t *testing.T) {
 		t.Fatalf("%+v %v", got, err)
 	}
 }
+
+// bd exited 0 but its answer is not the issue that was asked for: the write may have landed, so it is
+// "result unknown" (refresh before retrying), never "not applied".
+func TestAnAnswerThatCannotBeVerifiedIsAnUnknownOutcome(t *testing.T) {
+	const add = "update tt-1 --json --add-label=ui"
+	for name, out := range map[string]string{
+		"no issue":      `[]`,
+		"another issue": `[{"id":"tt-9","title":"t","labels":["ui"]}]`,
+	} {
+		_, err := edit(fakeFor(add, out, 0), strings.Fields(add)...)
+		msg := core.DescribeWriteError(err)
+		if !errors.Is(err, core.ErrOutcomeUnknown) || strings.Contains(msg, "not applied") || !strings.Contains(msg, "refresh before retrying") || core.CodeFor(err) != core.CodeUnknownOutcome {
+			t.Errorf("%s: %v / %q", name, err, msg)
+		}
+	}
+	const c = "comment tt-1 --json -- hi"
+	_, err := edit(fakeFor(c, `not json`, 0), strings.Fields(c)...)
+	if !errors.Is(err, core.ErrOutcomeUnknown) {
+		t.Errorf("comment answer: %v", err)
+	}
+}

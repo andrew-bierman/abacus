@@ -25,7 +25,7 @@ func runRex(args []string, d Deps) int {
 	var name string
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the plan and the commands; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.StringVar(&name, "new", "", "create a session with this name for the tabs (default: add them to the current session)")
 	if fs.Parse(args[1:]) != nil {
 		return core.ExitUsage

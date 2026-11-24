@@ -21,7 +21,7 @@ func runSchema(rest []string, d Deps) int {
 	fs.SetOutput(d.Err)
 	var asJSON bool
 	var out string
-	fs.BoolVar(&asJSON, "json", false, "print the list as JSON")
+	jsonVar(d, fs, &asJSON, "print the list as JSON")
 	fs.StringVar(&out, "out", "", "write every schema into this folder as NAME.json")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage

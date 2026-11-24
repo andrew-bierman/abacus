@@ -30,7 +30,7 @@ func runTaskBulk(rest []string, d Deps) int {
 	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the plan and every command; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.BoolVar(&clear, "clear", false, "with --op assign: unassign")
 	fs.StringVar(&ids, "ids", "", fmt.Sprintf("comma-separated task ids (at most %d)", core.MaxBulk))
 	fs.StringVar(&op, "op", "", "close, status, priority, label-add, label-remove or assign")
@@ -48,7 +48,7 @@ func runTaskBulk(rest []string, d Deps) int {
 	if asJSON && !yes && !dry {
 		return bad("--json needs --yes or --dry-run (it cannot prompt)")
 	}
-	expect, okDigest := parseExpect(d, "tasks bulk", *expectRaw)
+	expect, okDigest := parseExpect(d, "tasks bulk", expectRaw)
 	if !okDigest {
 		return core.ExitUsage
 	}

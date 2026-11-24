@@ -24,7 +24,7 @@ func runTaskHistory(rest []string, d Deps) int {
 	var o Options
 	var asJSON bool
 	limit := core.HistoryDefaultLimit
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.IntVar(&limit, "limit", core.HistoryDefaultLimit, fmt.Sprintf("most events to show (1-%d)", core.HistoryMaxLimit))
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage

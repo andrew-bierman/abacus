@@ -22,7 +22,7 @@ func configStore(d Deps) (core.ConfigStore, error) {
 func runConfig(rest []string, d Deps) int {
 	fs := flag.NewFlagSet("config", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
-	asJSON := fs.Bool("json", false, "print JSON (show)")
+	asJSON := jsonBool(d, fs, "print JSON (show)")
 	if len(rest) == 0 || strings.HasPrefix(rest[0], "-") {
 		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path\nkeys: "+strings.Join(core.ConfigKeys, ", "))
 		return core.ExitUsage

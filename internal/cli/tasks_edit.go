@@ -39,7 +39,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	switch verb {
 	case "assign":
 		fs.BoolVar(&unassign, "clear", false, "unassign the task")
@@ -64,7 +64,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "tasks %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
 		return core.ExitUsage
 	}
-	expect, okDigest := parseExpect(d, "tasks "+verb, *expectRaw)
+	expect, okDigest := parseExpect(d, "tasks "+verb, expectRaw)
 	if !okDigest {
 		return core.ExitUsage
 	}

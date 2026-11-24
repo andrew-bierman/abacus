@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -63,5 +64,22 @@ func TestTasksReopenNeedsAReaderAndAWholeID(t *testing.T) {
 	}
 	if code, _, _, _ := runIn(t, "", []core.Module{closedMod()}, "tasks", "reopen", "t 1", "--yes"); code != 2 {
 		t.Errorf("bad id: %d", code)
+	}
+}
+
+// the tracker answered for another issue (a prefix or alias resolved): nothing is reopened
+type aliasMod struct{ *editMod }
+
+func (a aliasMod) ReadTask(ctx context.Context, id string) (core.Task, error) {
+	t, err := a.editMod.ReadTask(ctx, id)
+	t.ID = id + "-full"
+	return t, err
+}
+
+func TestTasksReopenRefusesAnIdTheTrackerResolvedToAnother(t *testing.T) {
+	m := aliasMod{closedMod()}
+	code, _, errOut, au := runIn(t, "", []core.Module{m}, "tasks", "reopen", "t-1", "--yes")
+	if code != 2 || len(m.ran) != 0 || au.n != 0 || !strings.Contains(errOut, "whole task id") {
+		t.Fatalf("code=%d ran=%v err=%s", code, m.ran, errOut)
 	}
 }

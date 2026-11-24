@@ -32,7 +32,7 @@ func runTaskView(verb string, rest []string, d Deps) int {
 	var o Options
 	var asJSON, reverse, tree, closed bool
 	var q, sortKey, preset, group string
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	if verb == "board" {
 		fs.StringVar(&q, "query", "", "narrow the cards, for example: label:ui !assignee:none (also -q)")
 		fs.StringVar(&q, "q", "", "short for --query")

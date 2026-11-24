@@ -53,6 +53,9 @@ func checkContract(t *testing.T, name, out string) {
 	if err := json.Unmarshal([]byte(out), &m); err != nil || string(m["schema_version"]) != "1" {
 		t.Fatalf("%s: not a schema_version 1 object (%v):\n%s", name, err, out)
 	}
+	usedMu.Lock()
+	usedGolden[name] = true
+	usedMu.Unlock()
 	path := filepath.Join("testdata", "contract", name+".golden.json")
 	if *updateGolden {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

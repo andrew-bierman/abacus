@@ -1,5 +1,26 @@
 {
   "$defs": {
+    "ErrorBody": {
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "unknown_outcome": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
     "SetupResult": {
       "properties": {
         "applied": {
@@ -25,6 +46,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The --json output of: setup --repair",
   "properties": {
+    "error": {
+      "$ref": "#/$defs/ErrorBody"
+    },
     "plan_digest": {
       "type": "string"
     },

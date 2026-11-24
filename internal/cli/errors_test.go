@@ -144,3 +144,26 @@ func TestErrorCodesAreDocumented(t *testing.T) {
 		t.Errorf("only %d code rows", got)
 	}
 }
+
+// --json is read the way the command's own flags read it: any boolean spelling, not after `--` or as a flag's value.
+func TestErrorDocumentFollowsTheRealJSONFlag(t *testing.T) {
+	for _, c := range []struct {
+		args []string
+		doc  bool
+	}{
+		{[]string{"tasks", "list", "--json=T"}, true},
+		{[]string{"tasks", "list", "--json=TRUE"}, true},
+		{[]string{"tasks", "list", "-json=t"}, true},
+		{[]string{"tasks", "list", "--json=false"}, false},
+		{[]string{"tasks", "list", "--json=0"}, false},
+		{[]string{"tasks", "comment", "t-1", "--text", "--json", "--yes"}, false}, // --json is the text
+		{[]string{"tasks", "close", "t-1", "--yes", "--reason", "--json"}, false},
+		{[]string{"frobnicate", "--json=T"}, true},
+		{[]string{"frobnicate", "--", "--json"}, false},
+	} {
+		_, out, _, _ := runIn(t, "", nil, c.args...)
+		if got := errorCode(out) != ""; got != c.doc {
+			t.Errorf("%v: error document=%v, want %v (stdout %q)", c.args, got, c.doc, out)
+		}
+	}
+}

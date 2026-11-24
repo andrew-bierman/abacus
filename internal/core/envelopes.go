@@ -74,6 +74,8 @@ type SetupReport struct {
 type SetupRepairReport struct {
 	Results    []SetupResult `json:"results"`
 	PlanDigest string        `json:"plan_digest,omitempty"`
+	// Error is set when the repair failed: the same object as the error document of any failing command.
+	Error *ErrorBody `json:"error,omitempty"`
 }
 
 // SchemaIndex is `schema --json`: the schemas `abacus schema` can print, and the file each one has with --out.

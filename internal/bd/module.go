@@ -398,10 +398,10 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 		if v, _ := stripDir(argv[1:], m.TrackerDir()); len(v) > 0 && v[0] == "reopen" && strings.Contains(strings.ToLower(string(out)+string(errOut)), "already open") {
 			return core.TaskResult{}, errors.New("already open: nothing to do")
 		}
-		return core.TaskResult{}, errors.New("bd wrote but returned no issue: check the tracker")
+		return core.TaskResult{}, core.UnknownOutcome("bd wrote but returned no issue: check the tracker; refresh before retrying")
 	}
 	if want := requestedID(argv[1:], m.TrackerDir()); want != "" && issue.ID != want {
-		return core.TaskResult{}, fmt.Errorf("bd returned an unexpected issue (%s, wanted %s): check the tracker", core.Sanitize(issue.ID), want)
+		return core.TaskResult{}, core.UnknownOutcome(fmt.Sprintf("bd returned an unexpected issue (%s, wanted %s): check the tracker; refresh before retrying", core.Sanitize(issue.ID), want))
 	}
 	// A status change counts only when the answer carries the status that was asked for, and a re-read
 	// of the task agrees (a read that cannot be made does not undo a write bd itself confirmed).
@@ -459,7 +459,7 @@ func edgeOrCommentResult(a []string, out []byte) (core.TaskResult, error) {
 		DependsOn string `json:"depends_on_id"`
 		Status    string `json:"status"`
 	}
-	bad := errors.New("bd wrote but returned an unexpected answer: check the task")
+	bad := core.UnknownOutcome("bd wrote but returned an unexpected answer: check the task; refresh before retrying")
 	if json.Unmarshal(out, &o) != nil {
 		return core.TaskResult{}, bad
 	}

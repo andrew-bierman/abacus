@@ -172,3 +172,24 @@ func TestBulkDigestFollowsTheValueInTheArgv(t *testing.T) {
 		t.Fatal("two batches that run different commands share a digest")
 	}
 }
+
+// An empty --expect-digest (an unset shell variable) must never mean "no check": every write verb refuses.
+func TestAnEmptyOrMalformedExpectDigestIsAUsageErrorOnEveryWrite(t *testing.T) {
+	verbs := [][]string{
+		{"tasks", "create", "--title", "x"}, {"tasks", "update", "t-1", "--priority", "1"}, {"tasks", "close", "t-1"},
+		{"tasks", "reopen", "t-1"}, {"tasks", "label", "add", "t-1", "bug"}, {"tasks", "assign", "t-1", "ada"},
+		{"tasks", "priority", "t-1", "0"}, {"tasks", "dep", "add", "t-3", "--blocked-by", "t-2"}, {"tasks", "comment", "t-1", "hi"},
+		{"tasks", "bulk", "--ids", "t-1", "--op", "close"}, {"board", "post", "dev", "hi"}, {"board", "reply", "15", "hi"},
+		{"setup"}, {"setup", "--repair"},
+	}
+	for _, v := range verbs {
+		for _, form := range [][]string{{"--expect-digest="}, {"--expect-digest", ""}, {"--expect-digest=xyz"}} {
+			m, b := closedMod(), newBoardMod()
+			args := append(append(append([]string{}, v...), "--yes", "--json"), form...)
+			code, out, _, au := runIn(t, "", []core.Module{m, b}, args...)
+			if code != 2 || errorCode(out) != "usage" || len(m.ran) != 0 || len(b.ran) != 0 || au.n != 0 {
+				t.Errorf("%v: code=%d out=%s ran=%v/%v audit=%d", args, code, out, m.ran, b.ran, au.n)
+			}
+		}
+	}
+}

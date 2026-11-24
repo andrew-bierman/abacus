@@ -24,7 +24,7 @@ func runTaskGraph(rest []string, d Deps) int {
 	var o Options
 	var asJSON, whole bool
 	var depth int
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.BoolVar(&whole, "whole", false, "every linked task in topological layers, not one task's neighborhood")
 	fs.IntVar(&depth, "depth", 2, "neighborhood depth, 1 to 6")
 	if fs.Parse(rest) != nil {

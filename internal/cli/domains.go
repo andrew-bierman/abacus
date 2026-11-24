@@ -182,7 +182,7 @@ func runDomain(cmd string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
-	asJSON := fs.Bool("json", false, "print JSON")
+	asJSON := jsonBool(d, fs, "print JSON")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -252,7 +252,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.StringVar(&title, "title", "", "title")
 	fs.StringVar(&desc, "description", "", "description")
 	fs.StringVar(&prio, "priority", "", "priority 0-4")
@@ -276,7 +276,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "tasks %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
 		return core.ExitUsage
 	}
-	expect, okDigest := parseExpect(d, "tasks "+verb, *expectRaw)
+	expect, okDigest := parseExpect(d, "tasks "+verb, expectRaw)
 	if !okDigest {
 		return core.ExitUsage
 	}
@@ -329,6 +329,10 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		if err != nil {
 			return failf(d, core.CodeFor(err), "tasks reopen: could not read %s first: %s\n", core.Sanitize(ch.ID), core.Sanitize(err.Error()))
 		}
+		if cur.ID != ch.ID { // the tracker resolved a prefix or alias: only a whole id is reopened
+			fmt.Fprintf(d.Err, "tasks reopen: %s is not a whole task id (it resolves to %s): use the full id\n", core.Sanitize(ch.ID), core.Sanitize(cur.ID))
+			return core.ExitUsage
+		}
 		if cur.Status != "closed" {
 			code := core.CodeRefused
 			if expect != "" {
@@ -349,7 +353,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 				if err != nil {
 					return core.TaskResult{}, "", fmt.Errorf("%w (%s)", core.ErrCannotVerify, core.Sanitize(err.Error()))
 				}
-				if cur.Status != ch.Expect {
+				if cur.ID != ch.ID || cur.Status != ch.Expect {
 					return core.TaskResult{}, "", core.Stale(fmt.Sprintf("%s is now %s (it was %s)", ch.ID, cur.Status, ch.Expect))
 				}
 			}
@@ -457,7 +461,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.StringVar(&text, "text", text, "the message text (use it when the text starts with -)")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -470,7 +474,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "board %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
 		return core.ExitUsage
 	}
-	expect, okDigest := parseExpect(d, "board "+verb, *expectRaw)
+	expect, okDigest := parseExpect(d, "board "+verb, expectRaw)
 	if !okDigest {
 		return core.ExitUsage
 	}

@@ -141,7 +141,7 @@ func dispatch(args []string, d Deps) int {
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
-	asJSON := fs.Bool("json", false, "print JSON")
+	asJSON := jsonBool(d, fs, "print JSON")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the daemon")
 	fs.BoolVar(&o.Demo, "demo", false, "render from fixtures (tui)")
 	tab := fs.String("tab", "", "tab to open first: board, tasks, leases, queues or doctor (tui)")

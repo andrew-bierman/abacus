@@ -35,7 +35,7 @@ func runSetup(rest []string, d Deps) int {
 	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "apply every step that is needed without asking")
 	fs.BoolVar(&dry, "dry-run", false, "report only; change nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.BoolVar(&repair, "repair", false, "repair a half-created workspace: show the plan, set the unfinished files aside (nothing is deleted) and create it again")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the queues daemon")
 	if fs.Parse(rest) != nil {
@@ -45,7 +45,7 @@ func runSetup(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "setup: unexpected argument %q\n", fs.Arg(0))
 		return core.ExitUsage
 	}
-	expect, okDigest := parseExpect(d, "setup", *expectRaw)
+	expect, okDigest := parseExpect(d, "setup", expectRaw)
 	if !okDigest {
 		return core.ExitUsage
 	}
@@ -182,9 +182,19 @@ func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPr
 func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool, expect string) int {
 	res := setupResult{Step: core.StepRepair}
 	digest := ""
-	finish := func(code int) int {
+	var finishWith func(code int, ec core.ErrorCode) int
+	finish := func(code int) int { return finishWith(code, "") }
+	finishWith = func(code int, ec core.ErrorCode) int {
 		if asJSON {
-			jsonOut(d.Out, core.SetupRepairReport{Results: []setupResult{res}, PlanDigest: digest})
+			rep := core.SetupRepairReport{Results: []setupResult{res}, PlanDigest: digest}
+			if code != core.ExitOK { // the same error object every failing command prints, inside this document
+				if ec == "" {
+					ec = core.CodeFailed
+				}
+				b := core.NewErrorDoc(ec, res.Error).Error
+				rep.Error = &b
+			}
+			jsonOut(d.Out, rep)
 		}
 		return code
 	}
@@ -194,7 +204,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 		if !asJSON {
 			fmt.Fprintf(d.Err, "repair: %s\n", res.Error)
 		}
-		return finish(core.ExitFail)
+		return finishWith(core.ExitFail, core.CodeRefused)
 	}
 	digest = p.Digest()
 	if expect != "" && expect != digest {
@@ -218,7 +228,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 			if !asJSON {
 				fmt.Fprintln(d.Err, res.Error)
 			}
-			return finish(core.ExitFail)
+			return finishWith(core.ExitFail, core.CodeRefused)
 		}
 		fmt.Fprint(d.Out, "Apply this repair? [y/N] ")
 		line, _ := bufio.NewReader(d.In).ReadString('\n')
@@ -227,7 +237,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 			if !asJSON {
 				fmt.Fprintln(d.Out, res.Error)
 			}
-			return finish(core.ExitFail)
+			return finishWith(core.ExitFail, core.CodeRefused)
 		}
 	}
 	msg, err := s.Apply(ctx, p.Confirm())
@@ -236,7 +246,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 		if !asJSON {
 			fmt.Fprintf(d.Err, "repair: %s\n", res.Error)
 		}
-		return finish(core.ExitFail)
+		return finishWith(core.ExitFail, core.CodeFor(err))
 	}
 	res.Applied, res.Message = true, msg
 	if !asJSON {

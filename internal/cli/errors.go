@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -22,6 +23,8 @@ type sink struct {
 	buf  bytes.Buffer // the first part of what was written: its first line is the default message
 	code core.ErrorCode
 	msg  string
+	// json is the value of --json as the command's own flag parsing read it, when it got that far.
+	json, registered bool
 }
 
 func (s *sink) Write(p []byte) (int, error) {
@@ -60,12 +63,62 @@ func firstLine(s string) string {
 	return ""
 }
 
-// wantsJSON is whether the command line asks for --json (the flag, bare or with =true).
+// jsonVar registers --json on a command's flag set, so the error document follows the command's own
+// parsing (a value after a flag, a --json after `--`, --json=T and --json=false mean what they mean there).
+func jsonVar(d Deps, fs *flag.FlagSet, p *bool, usage string) {
+	s, _ := d.Err.(*sink)
+	if s != nil {
+		s.registered = true
+	}
+	fs.Var(&jsonFlag{p: p, s: s}, "json", usage)
+}
+
+func jsonBool(d Deps, fs *flag.FlagSet, usage string) *bool {
+	p := new(bool)
+	jsonVar(d, fs, p, usage)
+	return p
+}
+
+type jsonFlag struct {
+	p *bool
+	s *sink
+}
+
+func (f *jsonFlag) String() string {
+	if f == nil || f.p == nil {
+		return "false"
+	}
+	return strconv.FormatBool(*f.p)
+}
+func (f *jsonFlag) IsBoolFlag() bool { return true }
+func (f *jsonFlag) Set(v string) error {
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return err
+	}
+	*f.p = b
+	if f.s != nil {
+		f.s.json = b
+	}
+	return nil
+}
+
+// wantsJSON is the fallback for a command line that failed before its flags were parsed (an unknown
+// command, a bad flag ahead of --json): --json as a flag word with a boolean value, nothing after `--`.
 func wantsJSON(args []string) bool {
 	for _, a := range args {
-		switch a {
-		case "--json", "-json", "--json=true", "-json=true", "--json=1", "-json=1":
+		if a == "--" {
+			return false
+		}
+		name, val, hasVal := strings.Cut(strings.TrimLeft(a, "-"), "=")
+		if name != "json" || !strings.HasPrefix(a, "-") || strings.HasPrefix(a, "---") {
+			continue
+		}
+		if !hasVal {
 			return true
+		}
+		if b, err := strconv.ParseBool(val); err == nil {
+			return b
 		}
 	}
 	return false
@@ -73,7 +126,7 @@ func wantsJSON(args []string) bool {
 
 // finishError prints the error document when a command failed without printing a document of its own.
 func finishError(args []string, code int, s *sink, o *counter) {
-	if code == core.ExitOK || o.n > 0 || !wantsJSON(args) {
+	if code == core.ExitOK || o.n > 0 || !(s.json || ((!s.registered || code == core.ExitUsage) && wantsJSON(args))) {
 		return
 	}
 	ec, msg := s.code, s.msg
@@ -97,17 +150,32 @@ func finishError(args []string, code int, s *sink, o *counter) {
 // --expect-digest: the plan digest (core.PlanDigest) of the plan the user reviewed. A write that
 // re-plans to a different digest is refused with code "changed" and writes nothing.
 
-func expectFlag(fs *flag.FlagSet) *string {
-	return fs.String("expect-digest", "", "apply only if the plan made now has this digest (plan_digest of --dry-run --json)")
+// expectVal remembers whether the flag was given at all, so an empty value (`--expect-digest=`, or an
+// unset shell variable) is an error and never "no check".
+type expectVal struct {
+	raw string
+	set bool
 }
 
-// parseExpect validates the flag's value: "" means none, a malformed digest is a usage error.
-func parseExpect(d Deps, label, raw string) (digest string, ok bool) {
-	if raw == "" {
+func (e *expectVal) String() string { return e.raw }
+func (e *expectVal) Set(s string) error {
+	e.raw, e.set = s, true
+	return nil
+}
+
+func expectFlag(fs *flag.FlagSet) *expectVal {
+	e := &expectVal{}
+	fs.Var(e, "expect-digest", "apply only if the plan made now has this digest (plan_digest of --dry-run --json)")
+	return e
+}
+
+// parseExpect: not given means no check; given, it must be a digest, else a usage error (exit 2).
+func parseExpect(d Deps, label string, e *expectVal) (digest string, ok bool) {
+	if !e.set {
 		return "", true
 	}
-	if digest, ok = core.ParseDigest(raw); !ok {
-		fmt.Fprintf(d.Err, "%s: --expect-digest takes the 64 hex digits of a plan_digest\n", label)
+	if digest, ok = core.ParseDigest(e.raw); !ok {
+		fmt.Fprintf(d.Err, "%s: --expect-digest takes the 64 hex digits of a plan_digest (it was empty or malformed, so nothing was checked or written)\n", label)
 	}
 	return digest, ok
 }
