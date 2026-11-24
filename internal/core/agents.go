@@ -107,6 +107,7 @@ const (
 	HarnessGemini   = "gemini-cli"
 	HarnessOpenCode = "opencode"
 	HarnessAider    = "aider"
+	HarnessPi       = "pi"
 )
 
 // HarnessTitle is the display name of a harness id (an unknown id is shown as it is).
@@ -122,6 +123,8 @@ func HarnessTitle(id string) string {
 		return "OpenCode"
 	case HarnessAider:
 		return "Aider"
+	case HarnessPi:
+		return "pi"
 	}
 	return id
 }
@@ -163,6 +166,16 @@ type Subagent struct {
 	Tokens *int64 `json:"tokens,omitempty"`
 }
 
+// AgentGit is a repository's uncommitted work: files added (new or untracked) and files changed.
+// Absent means unknown (git could not be read), never zero.
+type AgentGit struct {
+	Added    int `json:"added"`
+	Modified int `json:"modified"`
+}
+
+// maxTurnPoints bounds the per-turn token series of one agent.
+const maxTurnPoints = 120
+
 // Agent is one coding agent. Pointer fields are nil when unknown (nil is never zero).
 type Agent struct {
 	ID           string     `json:"id"`
@@ -180,7 +193,15 @@ type Agent struct {
 	Tokens       *int64     `json:"tokens,omitempty"`
 	CostUSD      *float64   `json:"cost_usd,omitempty"`
 	ContextPct   *float64   `json:"context_pct,omitempty"`
-	Term         *TermRef   `json:"term,omitempty"`
+	// ContextTokens is what the last model call read in (its prompt), ContextWindow the model's limit
+	// when the harness records one; ContextPct is derived from the two when the feed gave no share.
+	ContextTokens *int64 `json:"context_tokens,omitempty"`
+	ContextWindow *int64 `json:"context_window,omitempty"`
+	// TurnTokens is one point per model response, oldest first (cache reads left out), for a
+	// sparkline. It covers the part of the session a bounded read saw, not necessarily all of it.
+	TurnTokens []int64   `json:"turn_tokens,omitempty"`
+	Git        *AgentGit `json:"git,omitempty"`
+	Term       *TermRef  `json:"term,omitempty"`
 	// Source says how State was learned; Sources is every feed that saw this agent.
 	Source   AgentEvidence   `json:"source"`
 	Sources  []AgentEvidence `json:"sources,omitempty"`
@@ -231,6 +252,63 @@ type RateLimit struct {
 	SevenDayPct    *float64 `json:"seven_day_pct,omitempty"`
 	SevenDayResets string   `json:"seven_day_resets_at,omitempty"`
 	UpdatedAt      string   `json:"updated_at,omitempty"`
+	// The two slots are the near and the far window (5 hours and 7 days by default). A source that
+	// records the real length says so here, so a 30-day allowance is never drawn as a 7-day one.
+	ShortWindowMinutes int64 `json:"short_window_minutes,omitempty"`
+	LongWindowMinutes  int64 `json:"long_window_minutes,omitempty"`
+	// Stale is set (by the feed that read them, see RateLimitStale) when the numbers are older than
+	// RateLimitStaleAfter or say nothing about their age: a front end dims them and drops the reset
+	// countdown, since the window may have rolled over.
+	Stale bool `json:"stale,omitempty"`
+}
+
+// RateLimitStaleAfter is how old a rate-limit read may be before it is marked stale.
+const RateLimitStaleAfter = 10 * time.Minute
+
+// WindowLabel names a window from its length in minutes ("5h", "7d", "30d", "90m"); def is used
+// when the source did not say.
+func WindowLabel(minutes int64, def string) string {
+	switch {
+	case minutes <= 0:
+		return def
+	case minutes%(24*60) == 0:
+		return fmt.Sprintf("%dd", minutes/(24*60))
+	case minutes%60 == 0:
+		return fmt.Sprintf("%dh", minutes/60)
+	}
+	return fmt.Sprintf("%dm", minutes)
+}
+
+// updated parses UpdatedAt (zero when unknown).
+func (l RateLimit) updated() time.Time {
+	t, _ := time.Parse(time.RFC3339, l.UpdatedAt)
+	return t
+}
+
+// RateLimitStale is whether a read made at updatedAt (RFC 3339, "" when unknown) is stale at now. Each
+// feed marks its own entries with it, using its own clock, so a feed under test is deterministic.
+func RateLimitStale(updatedAt string, now time.Time) bool {
+	t, err := time.Parse(time.RFC3339, updatedAt)
+	return err != nil || now.Sub(t) > RateLimitStaleAfter
+}
+
+// mergeRateLimits keeps one entry per harness (two feeds may both see one account): the one updated
+// most recently wins, an entry with a known time beating one without, then the earlier feed.
+func mergeRateLimits(in []RateLimit) []RateLimit {
+	var out []RateLimit
+	at := map[string]int{}
+	for _, l := range in {
+		i, ok := at[l.Harness]
+		if !ok {
+			at[l.Harness] = len(out)
+			out = append(out, l)
+			continue
+		}
+		if l.updated().After(out[i].updated()) {
+			out[i] = l
+		}
+	}
+	return out
 }
 
 // AgentsReport is the typed view of the Agents domain.
@@ -321,7 +399,44 @@ func (a Agent) Clean() Agent {
 			a.ContextPct = nil
 		}
 	}
+	if a.ContextTokens != nil && *a.ContextTokens < 0 {
+		a.ContextTokens = nil
+	}
+	if a.ContextWindow != nil && *a.ContextWindow <= 0 {
+		a.ContextWindow = nil
+	}
+	if a.ContextPct == nil && a.ContextTokens != nil && a.ContextWindow != nil {
+		if v := float64(*a.ContextTokens) / float64(*a.ContextWindow) * 100; v <= 100 {
+			a.ContextPct = &v
+		}
+	}
+	a.TurnTokens = cleanTurns(a.TurnTokens)
+	if g := a.Git; g != nil {
+		if g.Added < 0 || g.Modified < 0 {
+			a.Git = nil
+		} else {
+			c := *g
+			a.Git = &c
+		}
+	}
 	return a
+}
+
+// cleanTurns copies the series, keeping the newest maxTurnPoints and dropping a series with a
+// negative point (a feed's bug, not data).
+func cleanTurns(in []int64) []int64 {
+	if len(in) == 0 {
+		return nil
+	}
+	if len(in) > maxTurnPoints {
+		in = in[len(in)-maxTurnPoints:]
+	}
+	for _, v := range in {
+		if v < 0 {
+			return nil
+		}
+	}
+	return append([]int64(nil), in...)
 }
 
 // CleanExtra is Clean for what a feed reports beyond agents: every string is sanitized and masked,
@@ -338,6 +453,7 @@ func CleanExtra(x AgentsExtra) AgentsExtra {
 		l.Harness = CleanAgentText(l.Harness, maxAgentFields)
 		l.FiveHourResets, l.SevenDayResets, l.UpdatedAt = CleanAgentText(l.FiveHourResets, maxAgentFields), CleanAgentText(l.SevenDayResets, maxAgentFields), CleanAgentText(l.UpdatedAt, maxAgentFields)
 		l.FiveHourPct, l.SevenDayPct = pct(l.FiveHourPct), pct(l.SevenDayPct)
+		l.ShortWindowMinutes, l.LongWindowMinutes = max(0, l.ShortWindowMinutes), max(0, l.LongWindowMinutes)
 		out.RateLimits = append(out.RateLimits, l)
 	}
 	for _, p := range x.OrphanPorts {
@@ -486,6 +602,18 @@ func mergeOne(g []Agent) Agent {
 		}
 		if m.ContextPct == nil {
 			m.ContextPct = a.ContextPct
+		}
+		if m.ContextTokens == nil {
+			m.ContextTokens = a.ContextTokens
+		}
+		if m.ContextWindow == nil {
+			m.ContextWindow = a.ContextWindow
+		}
+		if len(m.TurnTokens) == 0 {
+			m.TurnTokens = a.TurnTokens
+		}
+		if m.Git == nil {
+			m.Git = a.Git
 		}
 		if m.Term == nil {
 			m.Term = a.Term
@@ -659,6 +787,7 @@ func ReadAgents(ctx context.Context, entries []Entry) AgentsReport {
 			r.TokenRate = x.TokenRate
 		}
 	}
+	r.RateLimits = mergeRateLimits(r.RateLimits)
 	r.Agents = MergeAgents(lists...)
 	r.Header = finish(DomainAgents, Header{Source: SourceLive}, nil)
 	r.Header.Summary = r.Summarize()

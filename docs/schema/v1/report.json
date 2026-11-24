@@ -14,11 +14,20 @@
         "context_pct": {
           "type": "number"
         },
+        "context_tokens": {
+          "type": "integer"
+        },
+        "context_window": {
+          "type": "integer"
+        },
         "cost_usd": {
           "type": "number"
         },
         "cwd": {
           "type": "string"
+        },
+        "git": {
+          "$ref": "#/$defs/AgentGit"
         },
         "harness": {
           "type": "string"
@@ -74,6 +83,12 @@
         "tokens": {
           "type": "integer"
         },
+        "turn_tokens": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
         "worktree": {
           "type": "string"
         }
@@ -104,6 +119,21 @@
       "required": [
         "command",
         "pid"
+      ],
+      "type": "object"
+    },
+    "AgentGit": {
+      "properties": {
+        "added": {
+          "type": "integer"
+        },
+        "modified": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "added",
+        "modified"
       ],
       "type": "object"
     },
@@ -1066,11 +1096,20 @@
         "harness": {
           "type": "string"
         },
+        "long_window_minutes": {
+          "type": "integer"
+        },
         "seven_day_pct": {
           "type": "number"
         },
         "seven_day_resets_at": {
           "type": "string"
+        },
+        "short_window_minutes": {
+          "type": "integer"
+        },
+        "stale": {
+          "type": "boolean"
         },
         "updated_at": {
           "type": "string"

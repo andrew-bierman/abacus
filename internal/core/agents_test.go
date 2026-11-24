@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -276,5 +277,74 @@ func TestMergeKeepsTwoLiveProcessesApartEvenWithOneSessionID(t *testing.T) {
 	t2 := core.Agent{Harness: core.HarnessClaude, SessionID: "same", Source: core.EvidenceTranscript, State: core.AgentIdle, Task: "x"}
 	if got := core.MergeAgents([]core.Agent{a, b, t2}); len(got) != 2 {
 		t.Fatalf("%+v", got)
+	}
+}
+
+func TestRateLimitsKeepOneEntryPerHarnessTheNewestWins(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	p := func(v float64) *float64 { return &v }
+	ts := func(ago time.Duration) string { return now.Add(-ago).Format(time.RFC3339) }
+	a := &feed{name: "a", state: core.Ready, extra: core.AgentsExtra{RateLimits: []core.RateLimit{
+		{Harness: core.HarnessCodex, FiveHourPct: p(10), UpdatedAt: ts(30 * time.Minute)},
+		{Harness: core.HarnessClaude, FiveHourPct: p(5)},
+	}}}
+	b := &feed{name: "b", state: core.Ready, extra: core.AgentsExtra{RateLimits: []core.RateLimit{
+		{Harness: core.HarnessCodex, FiveHourPct: p(40), UpdatedAt: ts(time.Minute), Stale: false},
+		{Harness: core.HarnessClaude, FiveHourPct: p(6), UpdatedAt: ts(time.Hour), Stale: true},
+	}}}
+	r := core.ReadAgents(context.Background(), []core.Entry{{Module: a, Detection: core.Detection{State: core.Ready}}, {Module: b, Detection: core.Detection{State: core.Ready}}})
+	got := map[string]core.RateLimit{}
+	for _, l := range r.RateLimits {
+		got[l.Harness] = l
+	}
+	if len(r.RateLimits) != 2 || *got[core.HarnessCodex].FiveHourPct != 40 {
+		t.Fatalf("one entry per harness, the most recently updated: %+v", r.RateLimits)
+	}
+	if c := got[core.HarnessClaude]; *c.FiveHourPct != 6 || !c.Stale {
+		t.Fatalf("a known time beats none, and the entry keeps its own stale mark: %+v", c)
+	}
+	for _, c := range []struct {
+		at   string
+		want bool
+	}{{ts(time.Minute), false}, {ts(10 * time.Minute), false}, {ts(10*time.Minute + time.Second), true}, {"", true}, {"junk", true}} {
+		if got := core.RateLimitStale(c.at, now); got != c.want {
+			t.Errorf("%q: stale %v, want %v", c.at, got, c.want)
+		}
+	}
+	if core.WindowLabel(0, "5h") != "5h" || core.WindowLabel(300, "") != "5h" || core.WindowLabel(10080, "") != "7d" || core.WindowLabel(43200, "") != "30d" || core.WindowLabel(90, "") != "90m" {
+		t.Fatal("window labels")
+	}
+}
+
+func TestCleanDerivesContextAndBoundsSeries(t *testing.T) {
+	used, win := int64(50), int64(200)
+	a := core.Agent{Harness: "h", ContextTokens: &used, ContextWindow: &win}.Clean()
+	if a.ContextPct == nil || *a.ContextPct != 25 {
+		t.Fatalf("share derived from tokens and window: %+v", a.ContextPct)
+	}
+	over := int64(900)
+	if b := (core.Agent{ContextTokens: &over, ContextWindow: &win}).Clean(); b.ContextPct != nil {
+		t.Fatal("a window overrun is unknown, not a share above 100")
+	}
+	zero := int64(0)
+	if b := (core.Agent{ContextTokens: &used, ContextWindow: &zero}).Clean(); b.ContextPct != nil || b.ContextWindow != nil {
+		t.Fatal("a zero window is unknown")
+	}
+	long := make([]int64, 500)
+	for i := range long {
+		long[i] = int64(i)
+	}
+	if c := (core.Agent{TurnTokens: long}).Clean(); len(c.TurnTokens) != 120 || c.TurnTokens[119] != 499 {
+		t.Fatalf("the newest points are kept: %d", len(c.TurnTokens))
+	}
+	if c := (core.Agent{TurnTokens: []int64{1, -2}}).Clean(); c.TurnTokens != nil {
+		t.Fatal("a negative point drops the series")
+	}
+	if c := (core.Agent{Git: &core.AgentGit{Added: -1}}).Clean(); c.Git != nil {
+		t.Fatal("a negative count is unknown")
+	}
+	m := core.MergeAgents([]core.Agent{{Harness: "h", PID: 1, Source: core.EvidenceProcess, Git: &core.AgentGit{Modified: 2}}}, []core.Agent{{Harness: "h", PID: 1, Source: core.EvidenceMonitor, TurnTokens: []int64{3}, ContextTokens: &used, ContextWindow: &win}})
+	if len(m) != 1 || m[0].Git == nil || m[0].Git.Modified != 2 || len(m[0].TurnTokens) != 1 || m[0].ContextPct == nil {
+		t.Fatalf("every feed's new fields survive the merge: %+v", m)
 	}
 }
