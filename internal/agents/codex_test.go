@@ -29,8 +29,13 @@ func codexJSON(t *testing.T, v map[string]any) string {
 
 func codexLine(t *testing.T, eventType string, payload map[string]any) string {
 	t.Helper()
+	return codexLineAt(t, "2026-11-24T10:00:00Z", eventType, payload)
+}
+
+func codexLineAt(t *testing.T, timestamp, eventType string, payload map[string]any) string {
+	t.Helper()
 	return codexJSON(t, map[string]any{
-		"timestamp": "2026-11-24T10:00:00Z",
+		"timestamp": timestamp,
 		"type":      eventType,
 		"payload":   payload,
 	})
@@ -418,6 +423,8 @@ func TestCodexRolloutResetsWhenTheFileIsReplaced(t *testing.T) {
 		codexTokenCount(t,
 			codexCounts{input: 100, output: 50},
 			codexCounts{input: 100, output: 50}, 200_000),
+		quotaTokenCountLine(t, "2026-11-24T10:00:00Z",
+			quotaLimits(quotaSlot(9, 300, 1774686045), nil)),
 	)
 	store := &CodexStore{}
 	if got := readCodex(t, store, path); got.Tokens.Input != 100 {
@@ -435,6 +442,8 @@ func TestCodexRolloutResetsWhenTheFileIsReplaced(t *testing.T) {
 		codexTokenCount(t,
 			codexCounts{input: 9, output: 4},
 			codexCounts{input: 2, output: 1}, 200_000),
+		quotaTokenCountLine(t, "2026-11-24T11:00:00Z",
+			quotaLimits(quotaSlot(70, 300, 1774689700), nil)),
 	)
 	if err := os.Rename(replacement, path); err != nil {
 		t.Fatal(err)
@@ -449,6 +458,9 @@ func TestCodexRolloutResetsWhenTheFileIsReplaced(t *testing.T) {
 	}
 	if len(got.TokenHistory) != 2 {
 		t.Errorf("history = %v, want only the replacement's points", got.TokenHistory)
+	}
+	if got.Quota == nil || got.Quota.Short == nil || got.Quota.Short.UsedPercent != 70 {
+		t.Errorf("quota = %+v, want the replacement's 70%%", got.Quota)
 	}
 
 	if err := os.Remove(path); err != nil {
@@ -473,12 +485,14 @@ func TestCodexRolloutSkipsAnOverlongLine(t *testing.T) {
 		codexTokenCount(t,
 			codexCounts{input: 4, output: 2},
 			codexCounts{input: 4, output: 2}, 200_000),
+		quotaTokenCountLine(t, "2026-11-24T10:00:00Z",
+			quotaLimits(quotaSlot(6, 300, 1774686045), nil)),
 	)
 
 	store := &CodexStore{}
 	// The oversized line alone exceeds one read's byte budget, and a read that starts with the
 	// budget spent still makes one line of progress, so several calls finish the file.
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
 		readCodex(t, store, path)
 	}
 	got := readCodex(t, store, path)
@@ -487,6 +501,9 @@ func TestCodexRolloutSkipsAnOverlongLine(t *testing.T) {
 	}
 	if got.Title != "Real prompt" {
 		t.Errorf("title = %q, want the prompt after the oversized line", got.Title)
+	}
+	if got.Quota == nil || got.Quota.Short == nil || got.Quota.Short.UsedPercent != 6 {
+		t.Errorf("quota = %+v, want the record after the oversized line", got.Quota)
 	}
 }
 
@@ -687,6 +704,8 @@ func TestCodexRolloutResetsWhenTheFileIsTruncatedInPlace(t *testing.T) {
 		codexTokenCount(t,
 			codexCounts{input: 100, output: 50},
 			codexCounts{input: 100, output: 50}, 200_000),
+		quotaTokenCountLine(t, "2026-11-24T10:00:00Z",
+			quotaLimits(quotaSlot(9, 300, 1774686045), nil)),
 	)
 	store := &CodexStore{}
 	if got := readCodex(t, store, path); got.Tokens.Input != 100 {
@@ -701,6 +720,8 @@ func TestCodexRolloutResetsWhenTheFileIsTruncatedInPlace(t *testing.T) {
 		codexTokenCount(t,
 			codexCounts{input: 7, output: 3},
 			codexCounts{input: 7, output: 3}, 200_000),
+		quotaTokenCountLine(t, "2026-11-24T11:00:00Z",
+			quotaLimits(quotaSlot(55, 300, 1774689700), nil)),
 	)
 
 	got := readCodex(t, store, path)
@@ -712,5 +733,8 @@ func TestCodexRolloutResetsWhenTheFileIsTruncatedInPlace(t *testing.T) {
 	}
 	if got.Title != "Fresh work" {
 		t.Errorf("title = %q, want the truncated file's prompt", got.Title)
+	}
+	if got.Quota == nil || got.Quota.Short == nil || got.Quota.Short.UsedPercent != 55 {
+		t.Errorf("quota = %+v, want the truncated file's 55%%", got.Quota)
 	}
 }

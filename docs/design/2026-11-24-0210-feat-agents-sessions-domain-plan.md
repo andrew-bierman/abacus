@@ -1,7 +1,7 @@
 # Agents domain: a sessions tab for local AI coding agents
 
-Status: phase 2 underway (`internal/agents` has the opencode, claude, codex, pi and git readers;
-the quota reader, the core wiring and the tab are open).
+Status: phase 2 complete (`internal/agents` has the opencode, claude, codex, pi, git and quota
+readers); the core wiring and the tab are open.
 
 ## Goal
 
@@ -67,7 +67,7 @@ Written here, because nothing covers it:
 | Discovery, session build, child tree, port attribution, orphan detection | `discover.go` | `Machine` seam, cross-tick state in `Collector` | done |
 | Transcript reads: tokens, context, model, title, true state | phases 2 | per-harness readers | done |
 | Git branch and dirty counts per session cwd | `git.go` | `Runner` seam | done |
-| Quota gauges | `quota.go` | harness state files | open |
+| Quota gauges | `quota.go` | harness state files | done |
 | Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | open |
 
 `Machine` is the only seam the Collector needs for live state: tests supply a fixed process
@@ -328,6 +328,74 @@ Tests in `git_test.go` with a fake `Runner`:
 - a second read within `TTL` reuses the cached result, and one after it re-runs;
 - two sessions in one directory share one command.
 
+### `quota.go`
+
+Quota is account-level, not per session: abtop's panel answers "how much of the plan's allowance
+is left", and both harnesses report the same numbers for every session on the account. `Quota`
+therefore sits beside `Session`, not inside it, and a report carries one entry per source.
+
+The Codex reader records the quota on the `StoredSession` it already returns; a small reader
+handles Claude's separate status-line file.
+
+| Source | File | Shape |
+| --- | --- | --- |
+| Claude | `<claude config dir>/abtop-rate-limits.json` | status-line hook JSON: `five_hour` and `seven_day` windows with `used_percentage` and `resets_at` |
+| Codex | the live session's `rollout-*.jsonl` | `event_msg` → `token_count` → `payload.rate_limits` |
+
+- **Claude has no quota in its transcripts.** The account windows reach Claude Code through the
+  StatusLine hook's stdin, and abtop's `--setup` persists them to `abtop-rate-limits.json`. That
+  file is a data file, not a runtime dependency on abtop: any hook that writes the documented
+  shape works, a missing file means "no gauge", and abacus never runs abtop. The core wiring
+  resolves each config directory (`~/.claude`, `CLAUDE_CONFIG_DIR`, and any discovered from live
+  processes) and passes it to `ClaudeQuota`; the reader itself reads no environment.
+- **Codex reports quota inside the rollout.** Each `token_count` event may carry
+  `payload.rate_limits`; only the account-level entry counts (`limit_id` is `codex` or absent).
+  Slots are assigned by window length, not position: `window_minutes <= 300` is the short window
+  and anything longer is the long one, which keeps a free plan's 30-day primary from being drawn
+  as 5 hours. The last event wins, and a reported value keeps serving until the next event
+  arrives, matching abtop's cache.
+- **Windows are optional.** A nil window means the source did not report it, never 0% used.
+  Claude omits the window length, so the defaults are its 5 hours and 7 days. Codex records it;
+  a zero length stays zero so the tab falls back to the slot's label instead of inventing one.
+- **Codex rides the rollout's existing offset read.** The quota arrives on the same
+  `token_count` records as the token levels, so the reader folds it into the `StoredSession` it
+  already returns: one parse, one 8 MB budget, no second pass over the history. The cursor rules
+  are the JSONL readers' own (append-only, reset on inode change or a shorter file, a partial
+  trailing line waits for its newline).
+- **`Updated` says how fresh the numbers are.** Claude takes the hook's `updated_at`, Codex the
+  event timestamp. The tab dims a source older than 10 minutes and hides its reset countdown,
+  the rule abtop uses; the reader reports the timestamp rather than deciding the styling.
+
+`Quota` carries `Source`, `Short`, `Long` and `Updated`; `QuotaWindow` carries `UsedPercent`,
+`ResetsAt` and `WindowMinutes`. `StoredSession` gains `Quota *Quota`, so the Codex rollout reader
+and the core join cannot disagree about where the account value lives. `ClaudeQuota(root)` reads
+one config directory, and `ClaudeQuotaPath(root)` names its file, so the reader and its test
+agree on the filename without repeating it. The Claude file is capped at 64 KiB: abacus does not
+own it, so a corrupt or hostile writer must not turn one tick into an unbounded allocation.
+
+Tests in `quota_test.go`, synthetic state files only, with invented names:
+
+- a Claude file with both windows yields the source, both percentages, both reset times and the
+  default 5-hour and 7-day lengths;
+- a Claude file with only one window leaves the other nil;
+- a missing file, invalid JSON, an oversized file, or a file with neither window reports no
+  quota;
+- explicit `window_minutes` values survive the read, including a 30-day long window;
+- a Codex rollout's account-level `token_count` rate limits become its short and long windows,
+  with both reset times and `Updated` from the event timestamp;
+- an account report without `limit_id` counts, and a model-specific `limit_id` is ignored;
+- an empty report neither creates a quota nor replaces an earlier one;
+- a free-plan rollout with only a 30-day primary puts it in the long slot and leaves the short
+  one nil;
+- repeated `token_count` events replace the previous quota instead of accumulating;
+- a rollout with no rate limit reports no quota until one arrives, and a source with no usable
+  timestamp is stale;
+- the quota follows the rollout cursor: an appended event updates it, a partial trailing line
+  waits for its newline, a record after an over-budget line still lands, and a replaced or
+  truncated rollout resets it;
+- the JSON shape omits unreported windows and timestamps, and an unreadable Claude path or an
+  empty root reports no quota.
+
 ## Cost model
 
 Chosen to stay cheap on a machine with large histories (this one has 233M of Codex JSONL and a
@@ -350,7 +418,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `codex.go`: Codex JSONL rollout reader, incremental by offset
 - [x] `pi.go`: Pi JSONL reader, incremental by offset
 - [x] `git.go`: branch and dirty counts per session cwd
-- [ ] `quota.go`: Claude and Codex quota gauges
+- [x] `quota.go`: Claude and Codex quota gauges
 - [ ] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
 - [ ] `cli`: `abacus sessions [--json]`
 - [ ] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
@@ -444,6 +512,17 @@ Found while building the readers; none blocks the tab, and each names the item t
   asking for the same directory at once can both run `git status`, and a directory seen once stays
   in the map for the process lifetime. The core wiring owns the call pattern: keep one `Git` on
   one goroutine, or add single-flight and per-entry expiry if it parallelizes or runs for days.
+- **Quota is unjoined until the core wiring.** `ClaudeQuota` and `StoredSession.Quota` have no
+  non-test caller yet. The join must dedupe by `Source`, or ten live sessions on one account draw
+  ten identical gauges, and it must resolve each Claude config directory itself, because the
+  reader reads no environment.
+- **Codex here reports one long window.** All 7,516 sampled `rate_limits` events carry only
+  `primary` at 10,080 minutes and a null secondary, so the long gauge fills and the short one
+  stays empty; a plan that reports a 5-hour window is untested against this machine.
+- **A zero Codex window length is filed as short.** A missing or zero `window_minutes` goes into
+  the short slot, matching abtop's `mins <= 300` rule, so an omitted length would draw a 5-hour
+  label. No sampled rollout omits it; the slot rule would need a richer signal to tell the two
+  apart.
 
 ## Pass log
 
@@ -467,3 +546,9 @@ One line per completed item: what it did and how it was verified.
   --branch` per directory matches abtop's added/modified rule, with synthetic tests pinning
   branch headers (including unborn and detached), per-directory TTL reuse, failed-read caching,
   and the read deadline.
+- quota reader — `go build ./...`, `go test ./...`; Codex quota is folded into the rollout read
+  it already pays for (no second pass), and a real rollout read independently gives 74% of a
+  10,080-minute window resetting 2026-11-25 08:43:52 UTC. Synthetic tests pin both Claude
+  windows and defaults, the account-level filter and slot-by-length rule, empty reports,
+  timestamp fallback, the quota following the rollout cursor through append, partial line,
+  replacement and truncation, the 64 KiB boundary, and the report JSON's omitted fields.

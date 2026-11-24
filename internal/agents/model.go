@@ -111,9 +111,13 @@ type StoredSession struct {
 	// TokenHistory is one point per assistant response, oldest first, bounded to what a
 	// sparkline draws. Empty when the harness does not record per-turn usage.
 	TokenHistory []int64
-	CostUSD      float64
-	Updated      time.Time
-	State        State
+	// Quota is the account-level rate limit the store recorded while reading this session.
+	// It is nil when the harness does not record one; every session on one account repeats
+	// the same value, so a report keeps one entry per source.
+	Quota   *Quota
+	CostUSD float64
+	Updated time.Time
+	State   State
 }
 
 // String is for logs and doctor output, not for the UI.

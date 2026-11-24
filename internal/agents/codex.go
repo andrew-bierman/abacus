@@ -54,6 +54,9 @@ type codexFile struct {
 
 	openTurn     bool
 	pendingCalls map[string]struct{}
+
+	quota   Quota
+	quotaOK bool
 }
 
 func (c *codexFile) add(line []byte) {
@@ -70,7 +73,7 @@ func (c *codexFile) add(line []byte) {
 		}
 		c.setWindow(e.Payload.ContextWindow)
 	case "event_msg":
-		c.event(e.Payload)
+		c.event(e.Payload, e.Timestamp)
 	case "response_item":
 		c.response(e.Payload)
 	}
@@ -91,7 +94,7 @@ func (c *codexFile) meta(p codexPayload) {
 	}
 }
 
-func (c *codexFile) event(p codexPayload) {
+func (c *codexFile) event(p codexPayload, timestamp string) {
 	switch p.Type {
 	case "task_started", "user_message":
 		// The per-event vocabulary is what older rollouts write; the newer one lands as
@@ -103,10 +106,22 @@ func (c *codexFile) event(p codexPayload) {
 		}
 	case "token_count":
 		c.usage(p.Info)
+		c.setQuota(p.RateLimits, timestamp)
 	case "task_complete", "turn_aborted":
 		c.endTurn()
 	case "item_completed":
 		c.item(p.Item)
+	}
+}
+
+// setQuota records the account limit that rides a token_count event. Model-specific limits are
+// ignored by quota(); an event that reports none keeps the last account value.
+func (c *codexFile) setQuota(limits *codexQuotaLimits, timestamp string) {
+	if limits == nil {
+		return
+	}
+	if q, ok := limits.quota(timestamp); ok {
+		c.quota, c.quotaOK = q, true
 	}
 }
 
@@ -213,27 +228,33 @@ func (c *codexFile) session() StoredSession {
 	if c.sawUsage {
 		s.Context = c.context
 	}
+	if c.quotaOK {
+		q := c.quota
+		s.Quota = &q
+	}
 	return s
 }
 
 // codexEntry is the envelope every rollout line carries. Unknown types leave Type empty and
 // are ignored, which is what keeps format additions from breaking the read.
 type codexEntry struct {
-	Type    string       `json:"type"`
-	Payload codexPayload `json:"payload"`
+	Type      string       `json:"type"`
+	Timestamp string       `json:"timestamp"`
+	Payload   codexPayload `json:"payload"`
 }
 
 type codexPayload struct {
-	Type          string          `json:"type"`
-	ID            string          `json:"id"`
-	SessionID     string          `json:"session_id"`
-	CWD           string          `json:"cwd"`
-	Model         string          `json:"model"`
-	ContextWindow int64           `json:"model_context_window"`
-	Message       string          `json:"message"`
-	CallID        string          `json:"call_id"`
-	Info          *codexTokenInfo `json:"info"`
-	Item          *codexItem      `json:"item"`
+	Type          string            `json:"type"`
+	ID            string            `json:"id"`
+	SessionID     string            `json:"session_id"`
+	CWD           string            `json:"cwd"`
+	Model         string            `json:"model"`
+	ContextWindow int64             `json:"model_context_window"`
+	Message       string            `json:"message"`
+	CallID        string            `json:"call_id"`
+	Info          *codexTokenInfo   `json:"info"`
+	RateLimits    *codexQuotaLimits `json:"rate_limits"`
+	Item          *codexItem        `json:"item"`
 }
 
 type codexItem struct {
