@@ -26,7 +26,7 @@ func runAll(t *testing.T, e Env) string {
 	t.Helper()
 	var all strings.Builder
 	for _, args := range [][]string{
-		{"doctor"}, {"status"}, {"version"}, {"setup", "--dry-run"}, {"tasks"}, {"leases"}, {"queues"}, {"board"},
+		{"doctor"}, {"status"}, {"version"}, {"setup", "--dry-run"}, {"tasks"}, {"leases"}, {"queues"}, {"board"}, {"agents"},
 		{"doctor", "--json"}, {"status", "--json"}, {"rex", "layout", "--dry-run"},
 	} {
 		var o, er bytes.Buffer
@@ -57,10 +57,11 @@ func scripts(t *testing.T) *embedtest.Set {
 		"bd":          `echo '{"version":"` + tag + `","schema_version":1}'`,
 		"lambe":       "case \"$1\" in\n  version) echo '{\"version\":\"" + tag + "\",\"api_version\":1}' ;;\n  doctor) echo '[]' ;;\nesac",
 		"beads-lease": `echo '{"api_version":1,"version":"` + tag + `"}'`,
+		"abtop":       `echo '{"sessions":[]}'`,
 		"board":       "case \"$1\" in\n  --help) printf 'board 0.54.0: your Vercel team'\"'\"'s message board, for people and agents\\n\\nusage: board <command>\\n' ;;\nesac",
 	}
 	var ts []embedtest.Tool
-	for _, n := range []string{"bd", "lambe", "beads-lease", "board"} {
+	for _, n := range []string{"bd", "lambe", "beads-lease", "board", "abtop"} {
 		ts = append(ts, embedtest.Tool{Name: n, Version: "1.0.0", Body: "#!/bin/sh\n" + body[n] + "\n"})
 	}
 	return embedtest.New("# notices\n", nil, ts...)
@@ -97,7 +98,7 @@ func TestTripwireNoAdviceInAnyState(t *testing.T) {
 		t.Setenv(core.ToolsDirEnv, filepath.Join(t.TempDir(), "tools"))
 		t.Setenv("PATH", empty)
 		out := runAll(t, env(t, nil))
-		if !strings.Contains(out, "Built-in tools: 4 of 4 ready") || !strings.Contains(out, "built in") {
+		if !strings.Contains(out, "Built-in tools: 5 of 5 ready") || !strings.Contains(out, "built in") {
 			t.Fatalf("%s", out)
 		}
 		assertNoAdvice(t, "embedded", out, false)

@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 
+	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -39,7 +41,15 @@ func env(t *testing.T, vars map[string]string) Env {
 	cwd, _ := os.Getwd()
 	root := t.TempDir()
 	return Env{Getenv: func(k string) string { return vars[k] }, Cwd: cwd,
-		Config: core.ConfigStore{Path: filepath.Join(root, "c", "config.json")}, Workspace: filepath.Join(root, "ws")}
+		Config: core.ConfigStore{Path: filepath.Join(root, "c", "config.json")}, Workspace: filepath.Join(root, "ws"), Agents: hermeticAgents()}
+}
+
+// hermeticAgents is the Agents domain's sources with nothing in them: no processes, no session files,
+// no terminals. A test never reads the real machine.
+func hermeticAgents() *agents.Options {
+	return &agents.Options{FS: fstest.MapFS{}, Home: "/nonexistent",
+		Procs: func(context.Context) ([]agents.Proc, error) { return nil, nil },
+		Panes: func(context.Context) ([]agents.Pane, error) { return nil, nil }}
 }
 
 func detect(t *testing.T, e Env) map[string]core.Detection {

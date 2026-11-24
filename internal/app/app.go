@@ -27,6 +27,10 @@ type Env struct {
 	Cwd       string
 	Config    core.ConfigStore
 	Workspace string // the managed workspace directory
+	// Agents configures the Agents domain's sources (processes, session files, terminals) and turns the
+	// domain on. nil means none: a hand-built Env, as tests use, never reads the real process list or
+	// session folders. DefaultEnv opts in with real sources (a zero Options).
+	Agents *agents.Options
 }
 
 // DefaultEnv is the real process environment and the standard abacus paths.
@@ -34,7 +38,7 @@ func DefaultEnv() Env {
 	cwd, _ := os.Getwd()
 	cfg, _ := core.DefaultConfigPath()
 	ws, _ := core.DefaultWorkspaceDir()
-	return Env{Getenv: os.Getenv, Cwd: cwd, Config: core.ConfigStore{Path: cfg}, Workspace: ws}
+	return Env{Getenv: os.Getenv, Cwd: cwd, Config: core.ConfigStore{Path: cfg}, Workspace: ws, Agents: &agents.Options{}}
 }
 
 // saveTracker remembers a new workspace. It refuses to replace a tracker_dir the user already
@@ -123,7 +127,10 @@ func Build(o cli.Options, e Env) *core.Registry {
 // built-in live monitor, which adds context use, rate limits, ports and subagents when it is there.
 // ABACUS_ABTOP_BIN overrides the monitor's location.
 func agentFeeds(e Env) []core.Module {
-	local := agents.NewLocal(agents.Options{})
+	if e.Agents == nil {
+		return nil
+	}
+	local := agents.NewLocal(*e.Agents)
 	return []core.Module{local, agents.NewMonitor(agents.MonitorOptions{Bin: e.Getenv("ABACUS_ABTOP_BIN"), Enrich: local.Enrich})}
 }
 
