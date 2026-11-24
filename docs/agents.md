@@ -80,7 +80,7 @@ process list itself could not be read it is not called stopped.
   one line, credentials masked) before anything shows it. On Windows only the process list is read.
 - *OpenCode's session database*: `$XDG_DATA_HOME/opencode/opencode.db` (else `~/.local/share/opencode/`),
   read through a pure-Go SQLite driver linked into abacus (`modernc.org/sqlite`, BSD-3-Clause, no cgo, no
-  `sqlite3` program: users install nothing). It is opened `mode=ro&immutable=1` with `query_only`, only
+  `sqlite3` program: users install nothing; the driver adds about 6 MB to the binary, and its license texts and those of the modules it needs ship in the notices). It is opened `mode=ro&immutable=1` with `query_only`, only
   after the path is checked to be a regular file: no lock is taken and no `-shm` or `-wal` file is
   created, so nothing is ever written next to OpenCode's data. The price is that rows still in OpenCode's
   write-ahead log are invisible until it checkpoints, so a live session can lag; its state is therefore
