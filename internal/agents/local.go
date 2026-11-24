@@ -48,6 +48,12 @@ type scan struct {
 	dirs                        []string
 }
 
+// The real sources, as variables so this package's tests can make reaching for them fail loudly.
+var (
+	realProcs = scanProcesses
+	realPanes = tmuxPanes
+)
+
 // NewLocal returns the native feed. Zero fields of o use the real machine.
 func NewLocal(o Options) *Local {
 	if o.Home == "" {
@@ -57,10 +63,10 @@ func NewLocal(o Options) *Local {
 		o.FS = defaultFS()
 	}
 	if o.Procs == nil {
-		o.Procs = scanProcesses
+		o.Procs = realProcs
 	}
 	if o.Panes == nil {
-		o.Panes = tmuxPanes
+		o.Panes = realPanes
 	}
 	if o.Now == nil {
 		o.Now = time.Now
