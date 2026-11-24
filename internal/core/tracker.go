@@ -80,14 +80,17 @@ type TrackerRef struct {
 	dir string
 }
 
+// NewTrackerRef returns a TrackerRef that starts at dir.
 func NewTrackerRef(dir string) *TrackerRef { return &TrackerRef{dir: dir} }
 
+// Dir returns the tracker folder currently in use.
 func (r *TrackerRef) Dir() string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.dir
 }
 
+// Set changes the tracker folder, for example after setup creates the workspace.
 func (r *TrackerRef) Set(dir string) {
 	r.mu.Lock()
 	r.dir = dir

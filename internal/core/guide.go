@@ -47,12 +47,14 @@ type Guider interface {
 // NeedsSetupError is what a provider's read returns when the real cause is "not set up yet".
 type NeedsSetupError struct{ Guide Guide }
 
+// Error returns the setup message.
 func (e *NeedsSetupError) Error() string { return e.Guide.Message }
 
 // NotConnectedError is a read that failed for a reason with a plain explanation and a fix
 // the user can act on, not an internal error. Front-ends show it as "not connected".
 type NotConnectedError struct{ Reason, HowToConnect string }
 
+// Error returns the plain reason.
 func (e *NotConnectedError) Error() string { return e.Reason }
 
 // AsNeedsSetup extracts the guide from a read error.

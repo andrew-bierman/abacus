@@ -60,6 +60,7 @@ const ExportMaxOut = 64<<20 + 1
 // exportTimeout is longer than a normal read: the export walks every issue.
 const exportTimeout = 30 * time.Second
 
+// New returns the tracker module configured by o.
 func New(o Options) *Module {
 	if o.ExportRunner == nil {
 		if o.Runner == nil {

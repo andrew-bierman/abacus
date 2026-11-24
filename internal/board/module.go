@@ -49,6 +49,7 @@ type Options struct {
 	Timeout   time.Duration
 }
 
+// Module is the Board domain's provider: it reads and posts through the Board command line.
 type Module struct {
 	core.Locator
 	o Options
@@ -58,6 +59,7 @@ type Module struct {
 	deferred bool // the built-in copy is unpacked on first use, not at start
 }
 
+// New returns the Board module configured by o.
 func New(o Options) *Module {
 	if o.Runner == nil {
 		o.Runner = core.ExecRunner{Scrub: core.ScrubBoardEnvFor(o.URL), MaxOut: maxStdout}

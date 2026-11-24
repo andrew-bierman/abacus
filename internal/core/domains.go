@@ -87,6 +87,7 @@ type Task struct {
 	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
+// TasksReport is the typed view of the Tasks domain: tasks, counts and where they came from.
 type TasksReport struct {
 	Header
 	Counts   TaskCounts      `json:"counts"`
@@ -168,6 +169,7 @@ const (
 	LeaseFree  LeaseState = "free"
 )
 
+// Lease is one lease as the Leases domain reports it.
 type Lease struct {
 	Resource  string     `json:"resource"`
 	State     LeaseState `json:"state"`
@@ -175,6 +177,7 @@ type Lease struct {
 	ExpiresAt string     `json:"expires_at,omitempty"`
 }
 
+// LeasesReport is the typed view of the Leases domain.
 type LeasesReport struct {
 	Header
 	Leases []Lease `json:"leases"`
@@ -217,6 +220,7 @@ func (s RunState) Tone() Tone {
 	return ToneMuted
 }
 
+// QueueRun is one supervised run in the Queues domain.
 type QueueRun struct {
 	Issue   string   `json:"issue"`
 	State   RunState `json:"state,omitempty"`
@@ -227,18 +231,21 @@ type QueueRun struct {
 	Workflow string `json:"workflow,omitempty"`
 }
 
+// QueueItem is one task waiting in a queue.
 type QueueItem struct {
 	ID      string `json:"id"`
 	Title   string `json:"title,omitempty"`
 	Blocked bool   `json:"blocked,omitempty"`
 }
 
+// Attention is one task a person needs to look at, with the reason.
 type Attention struct {
 	Issue  string `json:"issue"`
 	Reason string `json:"reason,omitempty"`
 	Detail string `json:"detail,omitempty"`
 }
 
+// HistoryItem is one finished run in the Queues history.
 type HistoryItem struct {
 	Issue     string `json:"issue"`
 	Title     string `json:"title,omitempty"`
@@ -246,6 +253,7 @@ type HistoryItem struct {
 	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
+// QueuesReport is the typed view of the Queues domain.
 type QueuesReport struct {
 	Header
 	Runs      []QueueRun    `json:"runs,omitempty"`
@@ -424,16 +432,19 @@ func readDomain[P, B any](ctx context.Context, entries []Entry, d DomainID, call
 	return body
 }
 
+// Summarize is the one-line summary shown in the overview.
 func (r TasksReport) Summarize() string {
 	c := r.Counts
 	return fmt.Sprintf("%d tasks: %d open, %d in progress, %d blocked, %d ready", c.Total, c.Open, c.InProgress, c.Blocked, c.Ready)
 }
 
+// Summarize is the one-line summary shown in the overview.
 func (r LeasesReport) Summarize() string {
 	held, stale, free := r.counts()
 	return fmt.Sprintf("%d held, %d stale, %d free", held, stale, free)
 }
 
+// Summarize is the one-line summary shown in the overview.
 func (r QueuesReport) Summarize() string {
 	if r.Source == SourceTracker { // the tracker subset has no queue to count
 		return fmt.Sprintf("%d runs, %d need attention (%s, no live daemon)", len(r.Runs), len(r.Attention), SourceTracker)
@@ -441,10 +452,12 @@ func (r QueuesReport) Summarize() string {
 	return fmt.Sprintf("%d runs, %d queued, %d need attention", len(r.Runs), len(r.Queue), len(r.Attention))
 }
 
+// Summarize is the one-line summary shown in the overview.
 func (r BoardReport) Summarize() string {
 	return fmt.Sprintf("%d channels, %d recent threads, %d open tasks", len(r.Channels), len(r.Threads), len(r.Tasks))
 }
 
+// Summarize is the one-line summary shown in the overview.
 func (r InsightsReport) Summarize() string {
 	return fmt.Sprintf("%d actionable, %d blocked, %d cycles", r.TotalActionable, r.TotalBlocked, len(r.Cycles))
 }

@@ -200,6 +200,7 @@ type BoardPlan struct {
 	confirmed bool
 }
 
+// Confirm returns the plan marked as confirmed by the user; Apply refuses a plan that was not.
 func (p BoardPlan) Confirm() BoardPlan { p.confirmed = true; return p }
 
 func validateBoard(ch BoardChange) error {
@@ -286,8 +287,10 @@ type BoardApplier struct {
 	g *gate
 }
 
+// NewBoardApplier returns an applier that writes through w and records every attempt in a.
 func NewBoardApplier(w BoardWriter, a Audit) *BoardApplier { return &BoardApplier{w: w, g: newGate(a)} }
 
+// Apply runs a confirmed board plan once. A timeout, cancel or unreadable answer is reported as an unknown result, never as not applied.
 func (a *BoardApplier) Apply(ctx context.Context, p BoardPlan) (BoardResult, error) {
 	if !p.confirmed {
 		return BoardResult{}, ErrNotConfirmed

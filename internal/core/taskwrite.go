@@ -359,8 +359,10 @@ type Applier struct {
 	g *gate
 }
 
+// NewApplier returns an applier that writes through w and records every attempt in a.
 func NewApplier(w TaskWriter, a Audit) *Applier { return &Applier{w: w, g: newGate(a)} }
 
+// Apply runs a confirmed task change once. A timeout or cancel is reported as an unknown result, never as not applied.
 func (a *Applier) Apply(ctx context.Context, p WritePlan) (TaskResult, error) {
 	if !p.confirmed {
 		return TaskResult{}, ErrNotConfirmed

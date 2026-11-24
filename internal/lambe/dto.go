@@ -7,6 +7,7 @@ package lambe
 // SupportedAPIVersion is the only `lambe version --json` api_version this module reads.
 const SupportedAPIVersion = 1
 
+// Daemon is the supervisor's own state in a snapshot.
 type Daemon struct {
 	PID        int    `json:"pid"`
 	Identity   string `json:"identity"`
@@ -16,6 +17,7 @@ type Daemon struct {
 	Actor      string `json:"actor"`
 }
 
+// Run is one supervised run in a snapshot.
 type Run struct {
 	Issue          string `json:"issue"`
 	Session        string `json:"session"`
@@ -31,6 +33,7 @@ type Run struct {
 	Stalled        bool   `json:"stalled"`
 }
 
+// NeedsHuman is one issue the supervisor has stopped on and a person must handle.
 type NeedsHuman struct {
 	Issue  string `json:"issue"`
 	Reason string `json:"reason"`
@@ -38,6 +41,7 @@ type NeedsHuman struct {
 	Since  string `json:"since"`
 }
 
+// Snapshot is the supervisor's status document (schema version 1).
 type Snapshot struct {
 	SchemaVersion int          `json:"schema_version"`
 	Daemon        Daemon       `json:"daemon"`
@@ -47,11 +51,13 @@ type Snapshot struct {
 	TickAt        string       `json:"tick_at"`
 }
 
+// Blocker is one issue that blocks a queued issue.
 type Blocker struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 }
 
+// QueueRow is one queued issue.
 type QueueRow struct {
 	ID       string    `json:"id"`
 	Title    string    `json:"title"`
@@ -60,6 +66,7 @@ type QueueRow struct {
 	Blockers []Blocker `json:"blockers"`
 }
 
+// Queue is the supervisor's queue document.
 type Queue struct {
 	SchemaVersion int        `json:"schema_version"`
 	Daemon        Daemon     `json:"daemon"`
@@ -67,6 +74,7 @@ type Queue struct {
 	Rows          []QueueRow `json:"rows"`
 }
 
+// HistoryRun is one finished run.
 type HistoryRun struct {
 	Issue     string `json:"issue"`
 	Title     string `json:"title"`
@@ -77,6 +85,7 @@ type HistoryRun struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
+// History is the supervisor's run history document.
 type History struct {
 	SchemaVersion int          `json:"schema_version"`
 	Daemon        Daemon       `json:"daemon"`
