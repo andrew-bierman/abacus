@@ -100,7 +100,7 @@ func runTaskBulk(rest []string, d Deps) int {
 			return bad("invalid issue id %q", id)
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), core.BulkTotalTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout) // planning only: the batch gets its own time after the confirm
 	defer cancel()
 	pr := core.ResolveProviders(d.Build(o).Detect(ctx))
 	w, r := pr.Writer, pr.Reader
@@ -119,7 +119,10 @@ func runTaskBulk(rest []string, d Deps) int {
 			fmt.Fprintf(d.Err, "tasks bulk: could not read %s first: %s\n", core.Sanitize(id), core.Sanitize(err.Error()))
 			return core.ExitFail
 		}
-		t.ID = id
+		if t.ID != id { // the tracker resolved a prefix or alias: only whole ids go in a batch
+			fmt.Fprintf(d.Err, "tasks bulk: %s is not a whole task id (it resolves to %s): use the full id\n", core.Sanitize(id), core.Sanitize(t.ID))
+			return core.ExitUsage
+		}
 		targets = append(targets, t)
 	}
 	plan, err := core.PlanBulk(w, spec, targets)
@@ -165,7 +168,9 @@ func runTaskBulk(rest []string, d Deps) int {
 	if au == nil {
 		au = core.DefaultAudit()
 	}
-	rep, err := core.NewApplier(w, au).ApplyBulk(ctx, plan.Confirm(), r)
+	actx, acancel := context.WithTimeout(context.Background(), core.BulkTotalTimeout)
+	defer acancel()
+	rep, err := core.NewApplier(w, au).ApplyBulk(actx, plan.Confirm(), r)
 	if err != nil {
 		fmt.Fprintf(d.Err, "tasks bulk: %s\n", core.DescribeWriteError(err))
 		return core.ExitFail

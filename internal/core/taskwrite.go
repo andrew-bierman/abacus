@@ -596,7 +596,14 @@ func CheckFresh(ch TaskChange, cur Task) error {
 		if ch.Before.ID != "" && cur.Priority != ch.Before.Priority {
 			return staleError{fmt.Sprintf("%s is now priority %d (it was %d)", ch.ID, cur.Priority, ch.Before.Priority)}
 		}
+	case TaskUpdate:
+		if ch.Status != "" && cur.Status == ch.Status {
+			return staleError{fmt.Sprintf("%s is already %s", ch.ID, ch.Status)}
+		}
 	case TaskAssign:
+		if ch.Assignee != nil && cur.Assignee == *ch.Assignee {
+			return staleError{fmt.Sprintf("%s is already assigned to %q", ch.ID, cur.Assignee)}
+		}
 		if cur.Assignee != ch.IfAssignee {
 			return staleError{fmt.Sprintf("%s is now held by %q (it was %q)", ch.ID, cur.Assignee, ch.IfAssignee)}
 		}

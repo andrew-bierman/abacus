@@ -69,7 +69,7 @@ func insightsNormal(in *core.InsightsReport) bool {
 	if in == nil || in.Empty || in.State == core.NotConnected {
 		return false
 	}
-	return in.State != core.Degraded || in.Reason == "" || len(in.TopPicks)+len(in.Cycles)+len(in.Bottlenecks)+len(in.CriticalPath)+len(in.Blockers) > 0 || in.TotalActionable > 0
+	return in.State != core.Degraded || in.Reason == "" || len(in.TopPicks)+len(in.Cycles)+len(in.Bottlenecks)+len(in.CriticalPath)+len(in.Blockers)+len(in.Influencers)+len(in.Tracks) > 0 || in.TotalActionable > 0
 }
 
 // insightSections builds the sections from the report, in the order they are drawn.

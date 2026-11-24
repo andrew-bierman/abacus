@@ -427,6 +427,10 @@ func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
+		if s.mode == modeBulk { // the lines are wrapped again: what was seen no longer counts
+			s.mk.seen, s.mk.off = -1, 0
+			s.bulkSee()
+		}
 		if s.list.view != nil {
 			s.recompute() // the tree's branch lines are drawn to fit the width
 		}
@@ -500,7 +504,7 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if cmd, ok := s.listKey(k); ok {
 		return s, cmd
 	}
-	if s.list.cur == viewList && s.markOn() {
+	if s.list.cur == viewList && s.markOn() && !s.inDetail() {
 		if cmd, ok := s.bulkKey(k); ok {
 			return s, cmd
 		}

@@ -176,7 +176,7 @@ differ by a refresh.)
   label, `a` assigns (blank unassigns); `b`, `B` and `c` say they change one task at a time. The
   confirm screen lists every task with its exact command, and the tasks left out with why (already
   closed, already that priority, the label is already there). It scrolls (`j` `k`, `pgup` `pgdn`) and
-  `y` applies the whole batch only once its last line has been on screen. At most 25 tasks go in one
+  `y` applies the whole batch only once every line from the top to the end has been on screen (scrolling a line or a page at a time counts, a jump with `g` `G` `home` `end` does not, and a resize starts the count again). With a task shown in the detail, the edit keys act on that task, not on the marks. At most 25 tasks go in one
   batch (`a batch is at most 25 tasks`). Each task is then read again and checked right before its own
   write: one that changed since the plan is skipped and reported, never written; one whose write
   fails is reported and the rest go on; a timeout leaves that task and the rest as `result unknown`

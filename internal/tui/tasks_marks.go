@@ -43,6 +43,9 @@ type marksState struct {
 	rep    core.BulkReport
 	titles map[string]string // id -> title of the batch's tasks, for the result screen
 	off    int               // scroll of the confirm and result screens
+	// seen is the last line of the confirm screen such that every line from the top to it has been on
+	// screen (-1: none yet). Scrolling a line or a page at a time extends it; a jump does not.
+	seen int
 }
 
 // markedRows are the marked tasks that are listed now, in list order, as the batch knows them.
@@ -215,6 +218,8 @@ func (s *tasksSection) planBulk(spec core.BulkSpec, form bool) {
 	}
 	s.mk.plan, s.mk.spec, s.mk.off, s.mk.form = plan, spec, 0, false
 	s.formErr, s.mode = "", modeBulk
+	s.mk.seen = -1
+	s.bulkSee()
 }
 
 // bulkConfirmLines is the confirm screen: what the batch does, what was left out, then every task with
@@ -283,8 +288,20 @@ func (s *tasksSection) bulkLines() []string {
 // bulkAtEnd is whether the whole of the screen has been shown: the last line is in view. A batch cannot
 // be applied before that, so every task and command has been on screen.
 func (s *tasksSection) bulkAtEnd() bool {
+	return s.mk.seen >= len(s.bulkLines())-1
+}
+
+// bulkSee records the lines the screen shows now: they extend the contiguous run from the top only when
+// the window starts inside or right after it, so a jump to the end never counts the lines it skipped.
+func (s *tasksSection) bulkSee() {
 	n, rows := len(s.bulkLines()), s.bulkRows()
-	return n <= rows || s.mk.off >= n-rows
+	last := n - 1 // everything fits, or the window is at the end
+	if n > rows && s.mk.off < n-rows {
+		last = s.mk.off + rows - 2 // a "more" row takes the last one
+	}
+	if s.mk.off <= s.mk.seen+1 {
+		s.mk.seen = max(s.mk.seen, last)
+	}
 }
 
 // bulkScroll handles the scroll keys of the batch screens.
@@ -306,6 +323,9 @@ func (s *tasksSection) bulkScroll(k tea.KeyMsg) {
 		s.mk.off = maxOff
 	}
 	s.mk.off = max(0, min(s.mk.off, maxOff))
+	if s.mode == modeBulk {
+		s.bulkSee()
+	}
 }
 
 // bulkKeyMode handles keys on the confirm and result screens.

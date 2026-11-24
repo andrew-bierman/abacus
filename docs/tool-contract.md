@@ -343,7 +343,7 @@ and every task after it `unknown`; an audit log that cannot be written stops the
 nothing is sent unrecorded. The batch plan and each of its tasks are single use. Every audit line
 carries the same `batch` id (additive field of the audit entry). `abacus tasks bulk --json` prints
 `{schema_version: 1, batch_id, op, applied, skipped, failed, unknown, not_run, items: [{id, outcome,
-detail, argv}]}`; the exit code is 0 only when every task was applied. The verbs are close, status,
+detail, argv}]}`; the exit code is 0 only when every task was applied: tasks left out at plan time (already closed, already that priority, ...) are in `items` as `skipped`, so a batch with any of them exits 1. `--ids` must be whole task ids: one the tracker resolves to another id (a prefix) is refused. The verbs are close, status,
 priority, label add or remove and assign; never delete, comment or dependency edits.
 
 ## Graph engine (in-process)

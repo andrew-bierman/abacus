@@ -251,3 +251,13 @@ func TestInsightsKeysHaveOneOwnerAndAreInTheFooter(t *testing.T) {
 		}
 	}
 }
+
+func TestInsightsRendersInfluencersWhenDegradedWithAReason(t *testing.T) {
+	s, _, _ := editAt(100, 40)
+	s.Update(insightsMsg{report: core.InsightsReport{Header: core.Header{Source: core.SourceGraph, State: core.Degraded, Reason: "partial analysis"},
+		Influencers: []core.Ranked{{ID: "ac-12", Value: 0.5}}}})
+	send(s, "V")
+	if v := s.View(); !strings.Contains(v, "Influence · centrality") || !strings.Contains(v, "0.50") {
+		t.Errorf("a degraded report still shows what it has:\n%s", v)
+	}
+}

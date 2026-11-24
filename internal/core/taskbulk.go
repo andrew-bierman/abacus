@@ -280,7 +280,8 @@ func (r BulkReport) Summary() string {
 	return out
 }
 
-// AllApplied is whether every task of the batch was written.
+// AllApplied is whether every task of the batch was written; a task left out at plan time counts as
+// not applied (it is in Items as skipped).
 func (r BulkReport) AllApplied() bool { return r.Applied == len(r.Items) }
 
 func (r *BulkReport) add(it BulkItemResult) {
@@ -321,6 +322,17 @@ func newBatchID() string {
 // it unknown, and an audit log that cannot be written stops the batch (nothing is sent unrecorded).
 // Every audit line of the batch carries the same batch id. An error means nothing was done at all.
 func (a *Applier) ApplyBulk(ctx context.Context, p BulkPlan, r TaskReader) (BulkReport, error) {
+	rep, err := a.applyBulk(ctx, p, r)
+	if err != nil {
+		return rep, err
+	}
+	for _, k := range p.Skipped { // left out at plan time: in the report, so a batch is not "applied" while any task is not
+		rep.add(BulkItemResult{ID: k.ID, Outcome: BulkSkipped, Detail: k.Reason + ": left out of the plan"})
+	}
+	return rep, nil
+}
+
+func (a *Applier) applyBulk(ctx context.Context, p BulkPlan, r TaskReader) (BulkReport, error) {
 	switch {
 	case !p.confirmed:
 		return BulkReport{}, ErrNotConfirmed

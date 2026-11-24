@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -151,5 +152,55 @@ func TestBulkYesJSONPrintsTheTypedReport(t *testing.T) {
 	if code != 1 || r.SchemaVersion != 1 || !strings.HasPrefix(r.BatchID, "batch-") || r.Op != "close" || r.Applied != 1 || r.Skipped != 2 || len(r.Items) != 3 ||
 		r.Items[0].Outcome != "applied" || r.Items[1].Outcome != "skipped" || r.Items[1].Detail == "" {
 		t.Errorf("code=%d %+v", code, r)
+	}
+}
+
+// probeMod can answer a re-read with another id or another priority.
+type probeMod struct {
+	*editMod
+	alias  map[string]string // requested id -> the id the tracker resolves it to
+	lowPri map[string]bool
+}
+
+func (m *probeMod) ReadTask(ctx context.Context, id string) (core.Task, error) {
+	t, err := m.editMod.ReadTask(ctx, id)
+	if a, ok := m.alias[id]; ok {
+		t.ID = a
+	}
+	if m.lowPri[id] {
+		t.Priority = 0
+	}
+	return t, err
+}
+
+func runProbe(t *testing.T, stdin string, m *probeMod, args ...string) (int, string, string, *batchAudit) {
+	t.Helper()
+	var o, e bytes.Buffer
+	au := &batchAudit{}
+	code := cli.Run(append([]string{"tasks", "bulk"}, args...), cli.Deps{Out: &o, Err: &e, In: strings.NewReader(stdin), Audit: au, Version: "t",
+		Build: func(cli.Options) *core.Registry { return core.NewRegistry(m) }})
+	return code, o.String(), e.String(), au
+}
+
+func TestBulkRefusesAPrefixOrAliasThatResolvesToAnotherId(t *testing.T) {
+	m := &probeMod{editMod: newEditMod(), alias: map[string]string{"t-": "t-1"}}
+	code, _, errOut, au := runProbe(t, "", m, "--ids", "t-,t-1", "--op", "close", "--yes")
+	if code != 2 || len(m.ran) != 0 || len(au.lines) != 0 || !strings.Contains(errOut, "not a whole task id") {
+		t.Errorf("code=%d ran=%d err=%s", code, len(m.ran), errOut)
+	}
+}
+
+func TestBulkPlanTimeSkipsAreInTheReportAndTheExitCode(t *testing.T) {
+	m := &probeMod{editMod: newEditMod(), lowPri: map[string]bool{"t-2": true}}
+	code, out, _, _ := runProbe(t, "", m, "--ids", "t-1,t-2,t-3", "--op", "priority", "--value", "0", "--yes", "--json")
+	var r struct {
+		Applied int `json:"applied"`
+		Skipped int `json:"skipped"`
+		Items   []struct {
+			ID, Outcome string
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(out), &r); err != nil || code != 1 || r.Applied != 2 || r.Skipped != 1 || len(r.Items) != 3 || r.Items[2].ID != "t-2" || r.Items[2].Outcome != "skipped" {
+		t.Errorf("code=%d %v %+v\n%s", code, err, r, out)
 	}
 }

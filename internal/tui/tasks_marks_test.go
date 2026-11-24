@@ -428,3 +428,95 @@ func TestMarksInTheTreeAndTheFlatListAndAFoldedBranch(t *testing.T) {
 		t.Errorf("flat, the same two marks are the batch: mode %v items %d", s.mode, len(s.mk.plan.Items))
 	}
 }
+
+// bigBatch marks 25 tasks and opens the confirm at 60x24, where it is about 75 lines.
+func bigBatch(t *testing.T) (*tasksSection, taskProv) {
+	s, p, _ := editAt(60, 24)
+	snap := core.TaskSnapshot{Tracker: "big", ReadAt: goldenNow}
+	for i := 1; i <= core.MaxBulk; i++ {
+		snap.Issues = append(snap.Issues, core.TaskIssue{ID: fmt.Sprintf("big-%02d", i), Title: fmt.Sprintf("task %d", i), Status: "open", Priority: 2, CreatedAt: goldenNow.Add(-time.Hour), UpdatedAt: goldenNow})
+	}
+	s.Update(taskSnapshotMsg{snap: snap})
+	toTop(s)
+	for range snap.Issues {
+		send(s, " ")
+	}
+	send(s, "x")
+	if s.mode != modeBulk || len(s.bulkLines()) < 50 {
+		t.Fatalf("mode %v lines %d", s.mode, len(s.bulkLines()))
+	}
+	return s, p
+}
+
+// A jump to the end (G, end) or a page jump past unseen lines never opens the gate: every line from the
+// top must have been on screen.
+func TestBulkGateNeedsEveryLineSeenAndAJumpDoesNotCountSkippedLines(t *testing.T) {
+	for _, jump := range []string{"G", "end"} {
+		s, p := bigBatch(t)
+		if jump == "end" {
+			s.bulkScroll(tea.KeyMsg{Type: tea.KeyEnd})
+		} else {
+			send(s, jump)
+		}
+		if s.mk.off == 0 || s.bulkAtEnd() {
+			t.Fatalf("%s: off %d atEnd %v", jump, s.mk.off, s.bulkAtEnd())
+		}
+		_, cmd := s.Update(keyRunes("y"))
+		if cmd != nil || s.mode != modeBulk || ran(p) != "" {
+			t.Errorf("%s then y applied after only the first and last screens", jump)
+		}
+	}
+	s, _ := bigBatch(t)
+	send(s, "j", "j", "j")
+	send(s, "G") // a jump over lines no screen showed
+	if s.bulkAtEnd() {
+		t.Error("a few lines and then a jump is not every line")
+	}
+	send(s, "g") // back to the top: scrolling down from there counts again
+	for i := 0; i < 200 && !s.bulkAtEnd(); i++ {
+		send(s, "j")
+	}
+	if !s.bulkAtEnd() {
+		t.Fatal("scrolling a line at a time reaches the end")
+	}
+	if _, cmd := s.Update(keyRunes("y")); cmd == nil || s.mode != modeBulkBusy {
+		t.Error("y applies once every line was shown")
+	}
+	// pages alone (overlapping by two lines) cover everything too
+	s, _ = bigBatch(t)
+	for i := 0; i < 40 && !s.bulkAtEnd(); i++ {
+		send(s, "pgdown")
+	}
+	if !s.bulkAtEnd() {
+		t.Error("page by page reaches the end")
+	}
+}
+
+func TestBulkGateStartsOverWhenTheTerminalIsResized(t *testing.T) {
+	s, _ := bigBatch(t)
+	for i := 0; i < 200 && !s.bulkAtEnd(); i++ {
+		send(s, "j")
+	}
+	if !s.bulkAtEnd() {
+		t.Fatal("setup")
+	}
+	s.Update(tea.WindowSizeMsg{Width: 70, Height: 24})
+	if s.bulkAtEnd() {
+		t.Error("the lines are wrapped again after a resize: what was seen no longer counts")
+	}
+}
+
+// In the detail view the edit keys act on the task shown, not on the marked batch.
+func TestEditKeysInTheDetailViewActOnTheShownTaskNotTheMarks(t *testing.T) {
+	s, p, _ := editAt(100, 40)
+	markTasks(t, s, "ac-15", "ac-30")
+	onTask(t, s, "ac-12")
+	send(s, "enter")
+	if !s.inDetail() {
+		t.Fatal("setup: the detail is focused")
+	}
+	send(s, "x")
+	if s.mode != modeVerify || s.pending.ID != "ac-12" || len(s.mk.plan.Items) != 0 || ran(p) != "" {
+		t.Errorf("x acts on ac-12 alone: mode %v pending %q batch %d", s.mode, s.pending.ID, len(s.mk.plan.Items))
+	}
+}

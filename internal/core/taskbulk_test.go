@@ -310,3 +310,31 @@ func TestApplyBulkFailsClosedWhenTheAuditCannotBeWritten(t *testing.T) {
 		t.Fatalf("nothing unrecorded is written: %+v ran=%d", rep, len(w.ran))
 	}
 }
+
+func TestApplyBulkReportsTasksLeftOutAtPlanTimeAndIsNotAllApplied(t *testing.T) {
+	w := &bulkWriter{}
+	ap := core.NewApplier(w, &memAudit{})
+	ts := tasksN(3)
+	ts[1].Priority = 1
+	p, _ := core.PlanBulk(w, core.BulkSpec{Op: core.TaskPriority, Priority: ip(1)}, ts)
+	rep, err := ap.ApplyBulk(context.Background(), p.Confirm(), readerOf(ts))
+	if err != nil || rep.Applied != 2 || rep.Skipped != 1 || len(rep.Items) != 3 || rep.AllApplied() || rep.Items[2].ID != "t-2" || rep.Summary() != "2 of 3 applied, 1 skipped" {
+		t.Fatalf("%v %+v %s", err, rep, rep.Summary())
+	}
+}
+
+func TestCheckFreshRefusesANoOpStatusOrAssignee(t *testing.T) {
+	if err := core.CheckFresh(core.TaskChange{Op: core.TaskUpdate, ID: "t-1", Status: "blocked", IfStatus: "open"}, core.Task{Status: "blocked"}); !errors.Is(err, core.ErrChanged) || !strings.Contains(err.Error(), "already blocked") {
+		t.Errorf("status to the same status: %v", err)
+	}
+	if err := core.CheckFresh(core.TaskChange{Op: core.TaskUpdate, ID: "t-1", Status: "blocked", IfStatus: "open"}, core.Task{Status: "open"}); err != nil {
+		t.Errorf("a real status change fits: %v", err)
+	}
+	ch := core.TaskChange{Op: core.TaskAssign, ID: "t-1", Assignee: sp("ada"), IfAssignee: "bob"}
+	if err := core.CheckFresh(ch, core.Task{Assignee: "ada"}); !errors.Is(err, core.ErrChanged) || !strings.Contains(err.Error(), "already assigned") {
+		t.Errorf("assign to the same assignee: %v", err)
+	}
+	if err := core.CheckFresh(ch, core.Task{Assignee: "bob"}); err != nil {
+		t.Errorf("a real assignment fits: %v", err)
+	}
+}
