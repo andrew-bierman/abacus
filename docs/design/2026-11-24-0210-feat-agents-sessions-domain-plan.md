@@ -38,7 +38,7 @@ the source, not the READMEs.
 | Need | Library | Why it wins |
 | --- | --- | --- |
 | Process table, ppid tree, cmdline, cwd, CPU, RSS | `shirou/gopsutil/v4` | Per-platform detail already written: procfs, libproc, toolhelp. `net.Connections` returns listening sockets with the owning pid, replacing an `/proc/<pid>/fd` walk. |
-| opencode v2 session store | `modernc.org/sqlite` | Pure Go, no CGO, so the one-binary promise holds. |
+| opencode v2 session store | `modernc.org/sqlite` | Pure Go, no CGO, so the one-binary promise holds. Reads 4 recent sessions in 1ms. |
 | Session list, port table | `charmbracelet/bubbles/table` | Already a dependency. |
 | Context and quota bars | `bubbles/progress` | Already a dependency. |
 | Token-rate and per-turn sparklines | `bubbles/sparkline` | Already a dependency. |
@@ -95,6 +95,24 @@ Chosen to stay cheap on a machine with large histories (this one has 233M of Cod
 - Read transcripts only for live sessions, by byte offset from the last tick (phase 2). Never
   sweep all history: that is what makes a one-shot `abtop --json` take about a second here
   before parsing anything.
+
+## Progress
+
+The loop works the first unchecked item. Tick one per pass.
+
+- [x] `proc.go` + `gopsutil.go`: live state behind a `Machine` seam
+- [x] `discover.go`: sessions, child trees, ports, orphans, executing/waiting
+- [x] `opencode.go`: opencode v2 SQLite reader (tokens, model, title, parent, state)
+- [ ] `claude.go`: Claude Code JSONL reader, incremental by offset
+- [ ] `codex.go`: Codex JSONL rollout reader, incremental by offset
+- [ ] `pi.go`: Pi JSONL reader, incremental by offset
+- [ ] `git.go`: branch and dirty counts per session cwd
+- [ ] `quota.go`: Claude and Codex quota gauges
+- [ ] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
+- [ ] `cli`: `abacus sessions [--json]`
+- [ ] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
+- [ ] `tui`: golden tests for the sessions tab
+- [ ] shipping: push the branch and open the pull request
 
 ## Phases
 
