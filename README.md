@@ -177,6 +177,7 @@ abacus agents  [--harness H] [--state S] [--repo R] [--all] [--json]   every run
 abacus tasks create [--title T] [--description D] [--priority N] [--type X] [--yes] [--dry-run]
 abacus tasks update ID [--title T] [--description D] [--priority N] [--status S] [--yes] [--dry-run]
 abacus tasks close  ID [--reason R] [--yes] [--dry-run]
+abacus tasks reopen ID [--reason R] [--yes] [--dry-run]   a closed task back to open
 abacus tasks label add|remove ID LABEL [--yes] [--dry-run]
 abacus tasks assign ID NAME | ID --clear [--yes] [--dry-run]
 abacus tasks priority ID 0-4 [--yes] [--dry-run]
@@ -189,6 +190,7 @@ abacus rex layout [--new NAME] [--yes] [--dry-run]   open the cockpit tabs in a 
 abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
 abacus setup --repair [--yes] [--dry-run]       fix a half-created workspace (nothing is deleted)
 abacus config  show [--json] | get KEY | set KEY VALUE | path
+abacus schema  [NAME] [--out DIR] [--json]        the JSON Schemas of every --json output (for clients)
 abacus status  [--json] [--lambe-config FILE]     domains plus provider state
 abacus doctor  [--json] [--lambe-config FILE]     leads with ready or needs attention
 abacus version [--json]
@@ -207,9 +209,17 @@ zeroed `counts`). JSON key naming is mixed by origin (`issue` in Queues rows, `i
 not renamed within `schema_version` 1.
 
 `abacus tasks <verb> --json` prints exactly one JSON document on stdout and nothing else, and needs
-`--yes` or `--dry-run` (it cannot prompt); on failure stdout is empty and the error is on stderr. A
+`--yes` or `--dry-run` (it cannot prompt). Any command that fails with `--json` prints one error
+document on stdout, `{"schema_version": 1, "error": {"code", "message", ...}}`, with a stable code
+(`usage`, `not_connected`, `changed`, `unknown_outcome`, `audit_failed`, ...; the list is in
+`docs/tool-contract.md`), and still prints its text on stderr; exit codes are unchanged. A
 write whose result cannot be known (a timeout or cancel) says "result unknown ... refresh before
 retrying", never "not applied", and the audit log records phase `unknown`.
+
+Every write's `--dry-run --json` also prints a `plan_digest`, and every write takes `--expect-digest
+DIGEST`: it applies only if the plan made now has the same digest (same operation, targets, exact
+commands and guards), else it exits 1 with code `changed` and writes nothing. A front end uses it to
+prove that what the user confirmed is what ran.
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
 `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,

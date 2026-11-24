@@ -15,6 +15,13 @@
   `GOTOOLCHAIN=local`, install it first: `mise use go@1.26.11`. CI and
   the release workflow read the version from `go.mod`.
 
+## Contract goldens and schemas
+
+`go test ./internal/cli -update-golden` rewrites the `--json` goldens (`internal/cli/testdata`, the
+`contract/` folder); `go test ./internal/core -update-schema` rewrites `docs/schema/v1` from the Go
+types. Review the diff either way: a key may be added, never renamed or removed, within
+`schema_version` 1. See `docs/tool-contract.md`, "Schemas and fixtures for clients".
+
 ## Building from source
 
 ```
