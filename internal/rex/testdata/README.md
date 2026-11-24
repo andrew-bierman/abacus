@@ -11,3 +11,12 @@ Nothing here came from a real Rex run; no Rex was run to make them.
 - `ls-fleet.json`, `ls-null.json` and `version-no-revision.json` are hand-written to exercise
   Lambe's window naming convention (`Lambe · <ISSUE>`), a null session list and a server from
   before `api_revision` existed ("a missing `api_revision` means 0").
+
+## Captured from a real Rex (2026-11-23)
+
+These came from a real Rex, 0.1.0-preview.19 (API revision 14, macOS arm64), run as an isolated
+server on a temporary socket with its own state directory, so no real session was read or changed:
+`version-14.json`, `ls-14.json`, `block-ls.json`, `window-ls.json`, `run-json.json`,
+`split-json.json`, `new-json.json` (the `--json` answers of `run`, `split` and `new`),
+`capture.txt` (`capture --trim` of one of its panes) and `events.jsonl` (`events --json` while a
+session and its panes were created, renamed and killed; client connections are in it on purpose).

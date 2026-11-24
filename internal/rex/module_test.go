@@ -224,11 +224,11 @@ func TestRevisionGate(t *testing.T) {
 		want core.State
 	}{
 		{"min", resp{out: ver("10")}, core.Ready},
-		{"max", resp{out: ver("13")}, core.Ready},
+		{"max", resp{out: ver("14")}, core.Ready},
 		{"below", resp{out: ver("9")}, core.Incompatible},
 		{"zero", resp{out: ver("0")}, core.Incompatible},
-		{"newer server, still speaks 13", resp{out: ver("14")}, core.Ready},
-		{"newer server, oldest it speaks is 14", resp{out: `{"api_revision":14,"api_min_revision":14}`}, core.Incompatible},
+		{"newer server, still speaks 14", resp{out: ver("15")}, core.Ready},
+		{"newer server, oldest it speaks is 15", resp{out: `{"api_revision":15,"api_min_revision":15}`}, core.Incompatible},
 		{"no revision", resp{out: fixture(t, "version-no-revision.json")}, core.Incompatible},
 		{"garbage", resp{out: "nope"}, core.Incompatible},
 		{"exit 1", resp{exit: 1}, core.Incompatible},
@@ -256,15 +256,16 @@ func TestRevisionGate(t *testing.T) {
 }
 
 // help.json: api_revision is the newest revision the server supports, api_min_revision the oldest.
-// The two ranges must overlap: compatible iff api_revision >= 10 and api_min_revision <= 13.
+// The two ranges must overlap: compatible iff api_revision >= 10 and api_min_revision <= 14.
 func TestRevisionGateIsAnIntervalOverlap(t *testing.T) {
 	for _, tc := range []struct {
 		body string
 		want core.State
 	}{
-		{`{"api_revision":14,"api_min_revision":10}`, core.Ready},
-		{`{"api_revision":14,"api_min_revision":13}`, core.Ready}, // min == 13: boundary, overlaps
-		{`{"api_revision":14,"api_min_revision":14}`, core.Incompatible},
+		{`{"api_revision":15,"api_min_revision":10}`, core.Ready},
+		{`{"api_revision":15,"api_min_revision":14}`, core.Ready}, // min == 14: boundary, overlaps
+		{`{"api_revision":15,"api_min_revision":15}`, core.Incompatible},
+		{`{"api_revision":14,"api_min_revision":14}`, core.Ready}, // a real Rex 0.1.0-preview.19 is revision 14
 		{`{"api_revision":99,"api_min_revision":99}`, core.Incompatible},
 		{`{"api_revision":99}`, core.Ready}, // no min means 0
 		{`{"api_revision":10,"api_min_revision":0}`, core.Ready},
@@ -277,8 +278,8 @@ func TestRevisionGateIsAnIntervalOverlap(t *testing.T) {
 		}
 	}
 	// The detail names the cause.
-	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":14,"api_min_revision":14}`}}}
-	if d := detect(newMod(f, nil)); !strings.Contains(d.Detail, "14 or newer") || d.APIVersion != 14 {
+	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":15,"api_min_revision":15}`}}}
+	if d := detect(newMod(f, nil)); !strings.Contains(d.Detail, "15 or newer") || d.APIVersion != 15 {
 		t.Errorf("%+v", d)
 	}
 	f.resp[verLocal] = resp{out: `{"api_revision":9}`}
@@ -368,7 +369,7 @@ func TestNoServerAndAmbiguousServerExitsOnTheVersionCall(t *testing.T) {
 }
 
 func TestAnIncompatibleRexIsListedByVersionAndDoctorAsAWarning(t *testing.T) {
-	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":14,"api_min_revision":14}`}}}
+	f := &fake{resp: map[string]resp{lsLocal: {out: fixture(t, "ls-null.json")}, verLocal: {out: `{"api_revision":15,"api_min_revision":15}`}}}
 	m := newMod(f, nil)
 	entries := core.NewRegistry(m).Detect(context.Background())
 	if m.Quiet() {
@@ -703,10 +704,13 @@ func TestHostPropagationIsOnlyTheOneMachineARunCarries(t *testing.T) {
 	if err != nil || len(rep.Placements) != 4 || rep.State != core.Connected {
 		t.Fatalf("%v %+v", err, rep)
 	}
-	calls := f.called()
+	var calls []string
 	counts := map[string]int{}
-	for _, c := range calls {
-		counts[c]++
+	for _, c := range f.called() {
+		if !strings.Contains(c, "block ls") { // the pane reads are covered by the panes tests
+			calls = append(calls, c)
+			counts[c]++
+		}
 	}
 	if len(calls) != 2 || counts["-S mbp "+lsLocal] != 1 || counts[lsLocal] != 1 {
 		t.Fatalf("calls: %v", calls)

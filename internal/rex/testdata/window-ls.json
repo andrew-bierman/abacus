@@ -1,0 +1,78 @@
+{
+  "revision": 11,
+  "session_id": "session:01a20c1b-ae95-745d-ba13-9eaee76983fa",
+  "label": "demo2",
+  "active_window_id": "window:01a20c1d-f31d-7a58-b8eb-0cedf33ff953",
+  "windows": [
+    {
+      "window_id": "window:01a20c1b-bf19-7b23-95b3-5455c748c560",
+      "label": "T-42",
+      "focused_block_id": "block:01a20c1b-bf06-7309-931b-f4c50ebfdfb2",
+      "layers": [
+        {
+          "layer_id": "layer:01a20c1b-bf19-7b2b-945c-be1348f58b13",
+          "kind": "tiled",
+          "bounds": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "layout": {
+            "rect": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "block_id": "block:01a20c1b-bf06-7309-931b-f4c50ebfdfb2"
+          },
+          "blocks": [
+            {
+              "block_id": "block:01a20c1b-bf06-7309-931b-f4c50ebfdfb2",
+              "label": "shell",
+              "creator_name": "com.superlogical.terminal",
+              "flavor": "com.superlogical.terminal.shell",
+              "host_id": "b3eb2262-082b-487d-9e8c-acb189ff08fc"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "window_id": "window:01a20c1d-f31d-7a58-b8eb-0cedf33ff953",
+      "label": "Window f33ff953",
+      "focused_block_id": "block:01a20c1d-f308-7d9c-8b81-e43ed6b6bdb7",
+      "layers": [
+        {
+          "layer_id": "layer:01a20c1d-f31d-7a60-a232-8cc5ab5a3481",
+          "kind": "tiled",
+          "bounds": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "layout": {
+            "rect": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "block_id": "block:01a20c1d-f308-7d9c-8b81-e43ed6b6bdb7"
+          },
+          "blocks": [
+            {
+              "block_id": "block:01a20c1d-f308-7d9c-8b81-e43ed6b6bdb7",
+              "label": "renamed-x",
+              "creator_name": "com.superlogical.terminal",
+              "flavor": "com.superlogical.terminal.shell",
+              "host_id": "b3eb2262-082b-487d-9e8c-acb189ff08fc"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

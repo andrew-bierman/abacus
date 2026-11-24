@@ -1,0 +1,12 @@
+{
+  "session_id": "session:01a20c2b-d49c-7b89-8a70-0d4ec6a5ad37",
+  "initial_windows": [
+    {
+      "window_id": "window:01a20c2b-d4cf-71e0-b908-9cb8cfe36f1c",
+      "block_ids": [
+        "block:01a20c2b-d49c-7c21-96ab-d4034be68bcc"
+      ],
+      "revision": 1
+    }
+  ]
+}

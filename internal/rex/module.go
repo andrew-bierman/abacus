@@ -17,17 +17,19 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// Supported Rex API revisions. The server API is additive so far; 10 to 13 is the window the
-// local API reference (revision 13) and Rex's own clients advertise. A revision outside it is
-// reported incompatible rather than guessed at.
+// Supported Rex API revisions. The server API is additive so far; 10 to 14 is the window checked
+// against: revision 13 from the API reference, and 14 from a real Rex (0.1.0-preview.19) whose
+// ls, version, block ls, window ls, capture, focus, run, split, new, window new and events were
+// run for this module. A revision outside the window is reported incompatible rather than guessed at.
 const (
 	MinAPIRevision = 10
-	MaxAPIRevision = 13
+	MaxAPIRevision = 14
 )
 
 // Exit codes of `rex ls` and `rex version` that mean something here (second-hand, see
@@ -38,8 +40,16 @@ const (
 	exitAmbiguous = 3
 )
 
-// defaultCacheTTL is how long a host's session list is reused (see Module.read).
-const defaultCacheTTL = 3 * time.Second
+// defaultCacheTTL is how long a host's session list is reused (see Module.read) when there is no
+// change feed; liveCacheTTL is the longest it is reused while the feed is connected (an event
+// drops it sooner), a ceiling in case an event is missed. blockCacheTTL is the same for the panes.
+const (
+	defaultCacheTTL = 3 * time.Second
+	liveCacheTTL    = 60 * time.Second
+	blockCacheTTL   = 15 * time.Second
+	// blockReadTime bounds the pane reads of one workspace read, so slow ones never fail it.
+	blockReadTime = 600 * time.Millisecond
+)
 
 // maxHosts bounds how many distinct hosts one read contacts.
 const maxHosts = 8
@@ -80,6 +90,14 @@ type Options struct {
 	// default (3 s), negative turns the cache off. Now is the clock for it (nil means time.Now).
 	CacheTTL time.Duration
 	Now      func() time.Time
+	// Stream runs the change feed (`events --json`); nil means the real command. Writes use the
+	// same Runner as reads but behind their own allowlist. WriteTimeout bounds one write (default
+	// 10 s) and EventSettle is how long the feed must run before it counts as connected.
+	Stream       core.StreamFunc
+	WriteTimeout time.Duration
+	EventSettle  time.Duration
+	// Cwd is the directory a new terminal starts in; empty means the process's own.
+	Cwd func() string
 }
 
 // Module implements core.Module and core.WorkspaceProvider for Rex.
@@ -93,6 +111,10 @@ type Module struct {
 	rev    int
 	ver    string
 	cache  map[string]cached
+	bcache map[string]cachedBlocks
+	wrun   writeOnly   // the workspace writes, behind their own allowlist
+	crun   readOnly    // terminal reads (the end of the output is kept, not the start)
+	live   atomic.Bool // the change feed is connected
 }
 
 // New returns a Rex module with defaults filled in.
@@ -105,8 +127,22 @@ func New(o Options) *Module {
 	}
 	o.Hosts = ParseHosts(strings.Join(o.Hosts, ","))
 	o.PassEnv = ParsePassEnv(strings.Join(o.PassEnv, ","))
+	crun := o.Runner
 	if o.Runner == nil {
 		o.Runner = defaultRunner(o.PassEnv)
+		crun = core.ExecRunner{Scrub: ScrubEnvWith(o.PassEnv), MaxOut: maxCapture, KeepTail: true}
+	}
+	if o.Stream == nil {
+		o.Stream = core.ExecStream(ScrubEnvWith(o.PassEnv))
+	}
+	if o.WriteTimeout <= 0 {
+		o.WriteTimeout = 10 * time.Second
+	}
+	if o.EventSettle <= 0 {
+		o.EventSettle = 800 * time.Millisecond
+	}
+	if o.Cwd == nil {
+		o.Cwd = func() string { d, _ := os.Getwd(); return d }
 	}
 	if o.Now == nil {
 		o.Now = time.Now
@@ -124,7 +160,7 @@ func New(o Options) *Module {
 		o.CallTimeout = 2 * time.Second
 	}
 	o.LabelConventions = core.ValidConventions(o.LabelConventions)
-	return &Module{run: readOnly{inner: o.Runner}, o: o}
+	return &Module{run: readOnly{inner: o.Runner}, crun: readOnly{inner: crun}, wrun: writeOnly{inner: o.Runner}, o: o}
 }
 
 func shortHostname() string {
@@ -147,7 +183,7 @@ func (m *Module) Quiet() bool {
 func (m *Module) set(s core.State, server string, rev int, ver string) {
 	m.mu.Lock()
 	m.state, m.server, m.rev, m.ver = s, server, rev, ver
-	m.cache = nil // a new detection starts from a clean slate
+	m.cache, m.bcache = nil, nil // a new detection starts from a clean slate
 	m.mu.Unlock()
 }
 
@@ -303,7 +339,11 @@ func (m *Module) Doctor(context.Context) []core.Check {
 	case server == "":
 		return []core.Check{{Name: "rex", Status: core.StatusSkip, Detail: "no Rex server running (optional)", Fix: "start one with: rex server start"}}
 	}
-	return []core.Check{{Name: "rex", Status: core.StatusOK, Detail: fmt.Sprintf("Rex detected (%s), API revision %d", server, rev)}}
+	live := "updates by polling"
+	if m.live.Load() {
+		live = "live updates on"
+	}
+	return []core.Check{{Name: "rex", Status: core.StatusOK, Detail: fmt.Sprintf("Rex detected (%s), API revision %d (checked against %d to %d), %s", server, rev, MinAPIRevision, MaxAPIRevision, live)}}
 }
 
 // errUnrecognized is `ls --json` printing something other than the documented shape. It is
@@ -346,11 +386,14 @@ func parseLS(out []byte) (ss []session, truncated bool, err error) {
 // Status summarizes the sessions on the local server; no server is unavailable, not an error.
 func (m *Module) Status(ctx context.Context) core.Status {
 	res, _ := m.read(ctx, "")
+	info := m.info(core.Connected)
 	switch {
 	case errors.Is(res.err, errNoServer):
-		return core.Status{Unavailable: noWorkspace, HowToConnect: HowToConnect}
+		info.Connection = core.NotConnected
+		return core.Status{Unavailable: noWorkspace, HowToConnect: HowToConnect, Workspace: &info}
 	case res.err != nil:
-		return core.Status{Unavailable: safe(res.err.Error(), 200)}
+		info.Connection = core.Degraded
+		return core.Status{Unavailable: safe(res.err.Error(), 200), Workspace: &info}
 	}
 	n := fmt.Sprintf("%d sessions", len(res.ss))
 	switch {
@@ -359,7 +402,16 @@ func (m *Module) Status(ctx context.Context) core.Status {
 	case len(res.ss) == 1:
 		n = "1 session"
 	}
-	return core.Status{Summary: n}
+	return core.Status{Summary: n, Workspace: &info}
+}
+
+// info is the typed state for status JSON.
+func (m *Module) info(c core.Connection) core.WorkspaceInfo {
+	m.mu.Lock()
+	state, server, rev := m.state, m.server, m.rev
+	m.mu.Unlock()
+	return core.WorkspaceInfo{Connection: c, Server: server, APIRevision: rev, SupportedMin: MinAPIRevision, SupportedMax: MaxAPIRevision,
+		Compatible: state == core.Ready, Live: m.live.Load(), InSession: m.o.Getenv("REX_SESSION") != ""}
 }
 
 var errNoServer = errors.New("no Rex server running")
@@ -384,6 +436,9 @@ type cached struct {
 // replay, so the report can be marked stale.
 func (m *Module) read(ctx context.Context, host string) (res lsResult, replay bool) {
 	ttl := m.o.CacheTTL
+	if ttl > 0 && m.live.Load() {
+		ttl = liveCacheTTL // the change feed drops the cache when something changes
+	}
 	if ttl > 0 {
 		m.mu.Lock()
 		c, ok := m.cache[host]
@@ -454,10 +509,11 @@ func (m *Module) classify(it core.WorkspaceItem) (hostKind, string) {
 }
 
 type hostRead struct {
-	host  string
-	items []core.WorkspaceItem
-	res   lsResult
-	stale bool
+	host   string
+	items  []core.WorkspaceItem
+	res    lsResult
+	blocks map[string][]block
+	stale  bool
 }
 
 // Workspace places items among the sessions of the servers they live on: the local one, and any
@@ -499,6 +555,9 @@ func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (cor
 		go func() {
 			defer wg.Done()
 			r.res, r.stale = m.read(ctx, r.host)
+			if r.res.err == nil && len(r.res.ss) > 0 {
+				r.blocks = m.readBlocks(ctx, r.host, r.res.ss)
+			}
 		}()
 	}
 	wg.Wait()
@@ -519,7 +578,7 @@ func (m *Module) Workspace(ctx context.Context, items []core.WorkspaceItem) (cor
 		rep.Stale = rep.Stale || r.stale
 		rep.Truncated = rep.Truncated || r.res.truncated
 		for _, it := range r.items {
-			p, amb := place(it, r.res.ss, m.o.LabelConventions)
+			p, amb := place(it, r.res.ss, r.blocks, m.o.LabelConventions)
 			if p != nil {
 				rep.Placements = append(rep.Placements, *p)
 			}
