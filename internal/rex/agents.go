@@ -421,53 +421,8 @@ func (m *Module) sweepBlock(ctx context.Context, h *hostSweep, s session, b bloc
 			pane.Repo, pane.Branch = gitHead(pr.Cwd)
 		}
 	}
-	m.matchItems(&pane, texts, items)
+	pane.Item, pane.Candidates, pane.Match = core.NamedItems(texts, items, h.host, m.o.Hostname(), m.o.LabelConventions)
 	h.add(pane, true)
-}
-
-// matchItems names the work item a pane is about from the texts it carries. Items are looked at
-// once per id and only if they live on this pane's machine (an item with no machine matches any).
-// One item is a match; two or more is a list of candidates and no pick; none is neither.
-func (m *Module) matchItems(p *core.AgentPane, texts []string, items []core.WorkspaceItem) {
-	local := m.o.Hostname()
-	seen := map[string]bool{}
-	var found []core.WorkspaceItem
-	best := core.PlacementMatch("")
-	for _, it := range items {
-		if seen[it.ID] || it.ID == "" {
-			continue
-		}
-		if it.Host != "" && !strings.EqualFold(it.Host, hostOr(p.Host, local)) {
-			continue
-		}
-		for _, t := range texts {
-			mt, ok := core.MatchSessionLabel(t, it.ID, m.o.LabelConventions)
-			if !ok {
-				continue
-			}
-			seen[it.ID] = true
-			found = append(found, it)
-			if best != core.MatchExact {
-				best = mt
-			}
-			break
-		}
-	}
-	switch len(found) {
-	case 0:
-	case 1:
-		it := found[0]
-		p.Item, p.Match = &it, best
-	default:
-		p.Candidates, p.Match = found, core.MatchLabel
-	}
-}
-
-func hostOr(h, fallback string) string {
-	if h == "" {
-		return fallback
-	}
-	return h
 }
 
 // call runs one allowlisted block call under the concurrency limit and the per-call timeout. ok is

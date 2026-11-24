@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -18,6 +19,8 @@ var (
 	_ core.LeaseProvider     = Leases{}
 	_ core.WorkspaceProvider = Leases{}
 	_ core.WorkspaceProvider = WorkspaceProvider{}
+	_ core.AgentProvider     = Leases{}
+	_ core.AgentProvider     = Agents{}
 	_ core.BoardProvider     = Board{}
 	_ core.Module            = Tasks{}
 )
@@ -159,5 +162,72 @@ func TestDemoOpenPlanHasAnEmptyNotNilRungListAndACopyForEveryone(t *testing.T) {
 	b, _ := json.Marshal(rep)
 	if !strings.Contains(string(b), `"open":{"rungs":[],"copy":"rex -S operators-mac"`) {
 		t.Errorf("%s", b)
+	}
+}
+
+func TestDemoAgentsCoverEveryStateAndMakeAnAmbiguousPane(t *testing.T) {
+	now := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	items := []core.WorkspaceItem{{Kind: core.WorkspaceLease, ID: "ac-00h"}, {Kind: core.WorkspaceTask, ID: "ac-09"}, {Kind: core.WorkspaceLease, ID: "ac-zoj"}, {Kind: core.WorkspaceRun, ID: "T-1", Host: "operators-mac"}}
+	rep, err := NewAgents(func() time.Time { return now }).Agents(context.Background(), items)
+	if err != nil || rep.State != core.Connected {
+		t.Fatalf("%+v %v", rep, err)
+	}
+	states, kinds := map[core.AgentState]bool{}, map[core.AgentKind]bool{}
+	var ambiguous, stale, quiet, remote, matched int
+	for _, p := range rep.Panes {
+		states[p.State], kinds[p.Kind] = true, true
+		switch {
+		case len(p.Candidates) > 0:
+			ambiguous++
+		case p.Item != nil:
+			matched++
+		}
+		if p.IsStale(now) {
+			stale++
+		}
+		if !p.Reported {
+			quiet++
+		}
+		if p.Host != "" {
+			remote++
+		}
+	}
+	for _, s := range []core.AgentState{core.AgentBlocked, core.AgentError, core.AgentDone, core.AgentWorking, core.AgentIdle} {
+		if !states[s] {
+			t.Errorf("no %s pane", s)
+		}
+	}
+	for _, k := range []core.AgentKind{core.AgentKindPermission, core.AgentKindQuestion} {
+		if !kinds[k] {
+			t.Errorf("no %q pane", k)
+		}
+	}
+	if ambiguous != 1 || stale != 1 || quiet != 1 || remote != 1 || matched < 3 {
+		t.Fatalf("ambiguous=%d stale=%d quiet=%d remote=%d matched=%d", ambiguous, stale, quiet, remote, matched)
+	}
+	// every text of the fixture is already clean, and the read goes through core without loss
+	out := core.ReadAgentsFrom(context.Background(), NewAgents(func() time.Time { return now }), items)
+	if len(out.Panes) != len(rep.Panes) || out.Truncated {
+		t.Fatalf("%d of %d panes, truncated=%v", len(out.Panes), len(rep.Panes), out.Truncated)
+	}
+	if out.Panes[0].State != core.AgentBlocked || out.Panes[0].Kind != core.AgentKindPermission {
+		t.Fatalf("what needs a human comes first: %+v", out.Panes[0])
+	}
+	for _, p := range out.Panes {
+		if p.Open == nil || len(p.Open.Rungs) != 0 {
+			t.Fatalf("a demo pane has a plan with no command to run: %+v", p.Open)
+		}
+	}
+}
+
+func TestDemoAgentsWithNoItemsMatchNothingAndThroughLeasesToo(t *testing.T) {
+	rep, _ := NewLeases().Agents(context.Background(), nil)
+	if len(rep.Panes) == 0 {
+		t.Fatal("the demo Leases provider carries the Agents capability")
+	}
+	for _, p := range rep.Panes {
+		if p.Item != nil || len(p.Candidates) != 0 {
+			t.Fatalf("%+v", p)
+		}
 	}
 }

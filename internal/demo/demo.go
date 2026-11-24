@@ -71,6 +71,7 @@ func (module) IsDemo() bool { return true }
 type Leases struct {
 	module
 	WorkspaceProvider // the demo workspace capability rides on the demo Leases provider
+	agentSource       // and so does the Agents view's (its Open is the workspace one above)
 }
 
 // NewLeases returns the demo Leases provider.

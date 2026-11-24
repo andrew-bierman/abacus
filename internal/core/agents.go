@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -240,6 +241,44 @@ func CollapseRecords(rs []AgentRecord) (top AgentRecord, n int, ok bool) {
 		cp = cp[:maxAgentRecords]
 	}
 	return cp[0], len(cp), true
+}
+
+// NamedItems says which work item a pane is about, from the texts it carries (session label, pane
+// label, status title and message, working directory name). Each id is looked at once, and only if
+// the item lives on the pane's machine (an item with no machine matches any). One item is a match;
+// two or more are candidates, in item order, and no pick is made; none is neither. The match is
+// exact when a text is exactly a label convention for the item, else by label.
+func NamedItems(texts []string, items []WorkspaceItem, paneHost, localHost string, conventions []string) (item *WorkspaceItem, candidates []WorkspaceItem, match PlacementMatch) {
+	if paneHost == "" {
+		paneHost = localHost
+	}
+	seen := map[string]bool{}
+	var found []WorkspaceItem
+	best := PlacementMatch("")
+	for _, it := range items {
+		if seen[it.ID] || it.ID == "" || it.Host != "" && !strings.EqualFold(it.Host, paneHost) {
+			continue
+		}
+		for _, t := range texts {
+			m, ok := MatchSessionLabel(t, it.ID, conventions)
+			if !ok {
+				continue
+			}
+			seen[it.ID] = true
+			found = append(found, it)
+			if best != MatchExact {
+				best = m
+			}
+			break
+		}
+	}
+	switch len(found) {
+	case 0:
+		return nil, nil, ""
+	case 1:
+		return &found[0], nil, best
+	}
+	return nil, found, MatchLabel
 }
 
 func cleanAgentPane(p AgentPane) (AgentPane, bool) {
