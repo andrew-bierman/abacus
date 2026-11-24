@@ -651,6 +651,9 @@ type Providers struct {
 	InsightsWhy string // why a found insights provider is unusable ("" when none was found)
 	// Workspace is the optional terminal-workspace provider; nil means none is usable.
 	Workspace WorkspaceProvider
+	// Agents is the optional agent-status provider (the same module as Workspace today); nil means
+	// there is no Agents view.
+	Agents AgentProvider
 	// Guiders are the ready providers that can say their domain needs setup.
 	Guiders map[DomainID]Guider
 	Missing map[DomainID]Header
@@ -687,6 +690,7 @@ func ResolveProviders(entries []Entry) Providers {
 	p.Reader, _, _ = pick[TaskReader](entries)
 	p.Insights, p.InsightsWhy, _ = pick[InsightsProvider](entries)
 	p.Workspace, _, _ = pick[WorkspaceProvider](entries)
+	p.Agents, _, _ = pick[AgentProvider](entries)
 	return p
 }
 
