@@ -57,6 +57,16 @@ type leasesSection struct {
 }
 
 func (s *leasesSection) setWorkspace(w *wsLayer) { s.ws = w }
+func (s *leasesSection) layer() *wsLayer         { return s.ws }
+
+// wsDetailVisible: the detail pane is drawn beside the list, or on its own once opened.
+func (s *leasesSection) wsDetailVisible() bool { return !isStacked(s.width()) || s.drilled }
+
+// wsSelected is the lease under the cursor; its resource is the id and the title.
+func (s *leasesSection) wsSelected() (core.WorkspaceItem, string, bool) {
+	it, ok := s.selectedItem()
+	return it, it.ID, ok
+}
 
 // leaseItem is the workspace item of a lease: its resource.
 func leaseItem(l core.Lease) (core.WorkspaceItem, bool) {

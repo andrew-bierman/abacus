@@ -50,6 +50,19 @@ type lambeSection struct {
 }
 
 func (s *lambeSection) setWorkspace(w *wsLayer) { s.ws = w }
+func (s *lambeSection) layer() *wsLayer         { return s.ws }
+
+// wsDetailVisible: the detail pane is drawn beside the list, or on its own once opened.
+func (s *lambeSection) wsDetailVisible() bool { return !isStacked(s.width()) || s.drilled }
+
+// wsSelected is the run under the cursor; its issue is the id and the title.
+func (s *lambeSection) wsSelected() (core.WorkspaceItem, string, bool) {
+	if rs := s.runs(); s.cursor < len(rs) {
+		it, ok := runItem(rs[s.cursor])
+		return it, it.ID, ok
+	}
+	return core.WorkspaceItem{}, "", false
+}
 
 // runItem is the workspace item of a run: its issue on the machine it carries.
 func runItem(r lambe.Run) (core.WorkspaceItem, bool) {

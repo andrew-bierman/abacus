@@ -40,6 +40,18 @@ type wsLayer struct {
 	busy    bool
 	pending bool     // this layer started a handoff, so its done message is ours
 	note    []string // the framed notice, shown until the next key
+
+	// The actions of a row (workspace_actions.go): nil placer means none.
+	placer       core.WorkspaceActor
+	capt         core.WorkspaceCapturer
+	applier      *core.PlacementApplier
+	agent        func() []string // the configured agent command, read when a key is pressed
+	cwd          func() string   // the folder a new terminal starts in
+	mode         wsMode
+	plan         core.PlacementPlan
+	lastW, lastH int       // the size the confirm screen was last drawn at
+	out          *wsOutput // the last read of the selected item's terminal
+	outBusy      bool
 }
 
 func newWsLayer(tag string, prov core.WorkspaceProvider, demo bool, handoff func([]string) tea.Cmd) *wsLayer {
@@ -213,6 +225,7 @@ func (w *wsLayer) detail(th Theme, it core.WorkspaceItem, ok bool, pad int) []st
 			out = append(out, "  "+th.Text(KindMuted, "and more, not all are listed"))
 		}
 	}
+	out = append(out, w.outputLines(th, it, pad)...)
 	if r := w.rep; r.State == core.Degraded && r.Reason != "" {
 		out = append(out, th.Text(KindWarn, "workspace: "+san(r.Reason)))
 	}
@@ -369,6 +382,9 @@ func (w *wsLayer) done() bool {
 // noteBox is the framed notice for a body w wide and h tall: wrapped, never cut, and when the body
 // is too short to hold it the box says to enlarge the terminal.
 func (w *wsLayer) noteBox(th Theme, width, h int) ([]string, bool) {
+	if w != nil && w.mode != wsIdle {
+		return w.confirmBox(th, width, h), true
+	}
 	if w == nil || len(w.note) == 0 {
 		return nil, false
 	}

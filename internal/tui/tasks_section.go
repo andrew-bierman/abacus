@@ -119,6 +119,21 @@ type tasksSection struct {
 }
 
 func (s *tasksSection) setWorkspace(w *wsLayer) { s.ws = w }
+func (s *tasksSection) layer() *wsLayer         { return s.ws }
+
+// wsDetailVisible: the list view's detail pane is drawn beside the list, or on its own once opened.
+func (s *tasksSection) wsDetailVisible() bool {
+	return s.list.cur == viewList && (!isStacked(s.width()) || s.drilled || s.list.detailFocus)
+}
+
+// wsSelected is the task under the cursor and its title, for the workspace actions.
+func (s *tasksSection) wsSelected() (core.WorkspaceItem, string, bool) {
+	if t, ok := s.current(); ok {
+		it, ok := taskItem(t)
+		return it, t.Title, ok
+	}
+	return core.WorkspaceItem{}, "", false
+}
 
 // taskItem is the workspace item of a task: its id.
 func taskItem(t core.Task) (core.WorkspaceItem, bool) { return itemOf(core.WorkspaceTask, t.ID, "") }
