@@ -23,12 +23,15 @@ type Config struct {
 	BoardURL    string `json:"board_url,omitempty"`
 	// SearchHistory is "off" to keep no search history (queries are stored in plain text).
 	SearchHistory string `json:"search_history,omitempty"`
+	// AgentCommand is the argv "work on this" runs in a new terminal: the program and its
+	// arguments, with {task_id} and {title} filled in as separate arguments (see agentcmd.go).
+	AgentCommand []string `json:"agent_command,omitempty"`
 }
 
 var actorRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._@-]{0,63}$`)
 
 // ConfigKeys are the settable keys, in display order.
-var ConfigKeys = []string{"actor", "tracker_dir", "lambe_config", "board_url", "search_history"}
+var ConfigKeys = []string{"actor", "tracker_dir", "lambe_config", "board_url", "search_history", "agent_command"}
 
 // Set validates and sets one key; on error the config is unchanged.
 func (c *Config) Set(key, val string) error {
@@ -71,6 +74,12 @@ func (c *Config) Set(key, val string) error {
 		default:
 			return errors.New("search_history must be on or off")
 		}
+	case "agent_command":
+		argv, err := ParseAgentCommand(val)
+		if err != nil {
+			return err
+		}
+		c.AgentCommand = argv
 	default:
 		return fmt.Errorf("unknown setting %q (known: %s)", key, strings.Join(ConfigKeys, ", "))
 	}
@@ -93,6 +102,12 @@ func (c Config) Get(key string) (string, error) {
 			return "off", nil
 		}
 		return "on", nil
+	case "agent_command":
+		if len(c.AgentCommand) == 0 {
+			return "", nil
+		}
+		b, _ := json.Marshal(c.AgentCommand)
+		return string(b), nil
 	}
 	return "", fmt.Errorf("unknown setting %q", key)
 }

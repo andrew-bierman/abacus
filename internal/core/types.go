@@ -97,6 +97,9 @@ type Status struct {
 	// fix the user can act on (not an internal error). Additive.
 	HowToConnect string `json:"how_to_connect,omitempty"`
 	Source       string `json:"source,omitempty"`
+	// Workspace is the typed state of the optional workspace layer; only its provider sets it.
+	// Additive.
+	Workspace *WorkspaceInfo `json:"workspace,omitempty"`
 }
 
 // Module is one composable tool.
