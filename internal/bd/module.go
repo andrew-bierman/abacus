@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -197,13 +198,19 @@ type statusDoc struct {
 }
 
 type issueJSON struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Status    string `json:"status"`
-	Priority  int    `json:"priority"`
-	Type      string `json:"issue_type"`
-	Assignee  string `json:"assignee"`
-	UpdatedAt string `json:"updated_at"`
+	ID        string   `json:"id"`
+	Title     string   `json:"title"`
+	Status    string   `json:"status"`
+	Priority  int      `json:"priority"`
+	Type      string   `json:"issue_type"`
+	Assignee  string   `json:"assignee"`
+	UpdatedAt string   `json:"updated_at"`
+	Labels    []string `json:"labels"`
+	// Dependencies are what this issue depends on (its blockers, with the kind of each link).
+	Dependencies []struct {
+		ID   string `json:"id"`
+		Type string `json:"dependency_type"`
+	} `json:"dependencies"`
 }
 
 func (m *Module) Doctor(ctx context.Context) []core.Check {
@@ -354,12 +361,12 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	}
 	if err != nil {
 		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) {
-			return core.TaskResult{}, unknownOutcome()
+			return core.TaskResult{}, unknownOutcomeFor(argv[1:], m.TrackerDir())
 		}
 		return core.TaskResult{}, fmt.Errorf("bd write could not run: %s", core.Sanitize(err.Error()))
 	}
 	if exit < 0 { // killed by a signal: it may have written first
-		return core.TaskResult{}, unknownOutcome()
+		return core.TaskResult{}, unknownOutcomeFor(argv[1:], m.TrackerDir())
 	}
 	// bd's own exit code for a precondition (--if-status) that no longer held: only an update carries one.
 	// The verb is read after any -C, so a configured tracker directory does not hide it.
@@ -382,6 +389,10 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 	if bdErr != "" {
 		return core.TaskResult{}, errors.New("bd: " + core.Sanitize(bdErr))
 	}
+	// A dependency and a comment answer with their own object, not an issue.
+	if v, _ := stripDir(argv[1:], m.TrackerDir()); len(v) > 0 && (v[0] == "dep" || v[0] == "comment") {
+		return edgeOrCommentResult(v, out)
+	}
 	// Exit 0 is not enough: the write counts only if bd returned the issue that was asked for.
 	if issue.ID == "" {
 		if v, _ := stripDir(argv[1:], m.TrackerDir()); len(v) > 0 && v[0] == "reopen" && strings.Contains(strings.ToLower(string(out)+string(errOut)), "already open") {
@@ -402,7 +413,67 @@ func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, e
 			return core.TaskResult{}, core.AppliedMismatch(fmt.Sprintf("written, but the status is now %s, not %s: changed by someone else?", core.Sanitize(t.Status), want))
 		}
 	}
+	if err := checkEdit(argv[1:], m.TrackerDir(), issue); err != nil {
+		return core.TaskResult{}, err
+	}
 	return core.TaskResult{ID: core.Sanitize(issue.ID), Title: core.Sanitize(issue.Title), Status: core.Sanitize(issue.Status)}, nil
+}
+
+// checkEdit verifies a label, assignee or priority write against bd's answer: exit 0 with an issue that
+// does not show the edit is acknowledged but doubtful, so it is reported as written-but-different, never
+// as "not applied".
+func checkEdit(a []string, dir string, i issueJSON) error {
+	a, _ = stripDir(a, dir)
+	if len(a) == 0 || a[0] != "update" {
+		return nil
+	}
+	for _, f := range a {
+		switch {
+		case strings.HasPrefix(f, "--add-label="):
+			if !slices.Contains(i.Labels, strings.TrimPrefix(f, "--add-label=")) {
+				return core.AppliedMismatch("written, but bd's answer does not list the label: check the task")
+			}
+		case strings.HasPrefix(f, "--remove-label="):
+			if slices.Contains(i.Labels, strings.TrimPrefix(f, "--remove-label=")) {
+				return core.AppliedMismatch("written, but bd's answer still lists the label: check the task")
+			}
+		case strings.HasPrefix(f, "--assignee="):
+			if want := strings.TrimPrefix(f, "--assignee="); i.Assignee != want {
+				return core.AppliedMismatch("written, but bd's answer shows another assignee: check the task")
+			}
+		case strings.HasPrefix(f, "--priority="):
+			if want := strings.TrimPrefix(f, "--priority="); fmt.Sprint(i.Priority) != want {
+				return core.AppliedMismatch("written, but bd's answer shows another priority: check the task")
+			}
+		}
+	}
+	return nil
+}
+
+// edgeOrCommentResult reads bd's answer to `dep add|remove` ({issue_id, depends_on_id, status}) or
+// `comment` ({id, issue_id, text}) and holds it to the ids that were asked for.
+func edgeOrCommentResult(a []string, out []byte) (core.TaskResult, error) {
+	var o struct {
+		ID        string `json:"id"`
+		IssueID   string `json:"issue_id"`
+		DependsOn string `json:"depends_on_id"`
+		Status    string `json:"status"`
+	}
+	bad := errors.New("bd wrote but returned an unexpected answer: check the task")
+	if json.Unmarshal(out, &o) != nil {
+		return core.TaskResult{}, bad
+	}
+	if a[0] == "comment" {
+		if o.IssueID != a[1] || o.ID == "" {
+			return core.TaskResult{}, bad
+		}
+		return core.TaskResult{ID: core.Sanitize(o.IssueID), Status: "commented"}, nil
+	}
+	want := map[string]string{"add": "added", "remove": "removed"}[a[1]]
+	if o.IssueID != a[2] || o.DependsOn != a[3] || o.Status != want {
+		return core.TaskResult{}, bad
+	}
+	return core.TaskResult{ID: core.Sanitize(o.IssueID), Status: want}, nil
 }
 
 // wantedStatus is the status a write must leave the issue in: "" when the argv sets none.
@@ -447,6 +518,15 @@ func firstLine(b []byte) string {
 
 func unknownOutcome() error {
 	return core.UnknownOutcome("bd timed out; refresh before retrying")
+}
+
+// unknownOutcomeFor words the unknown outcome of a write: a comment is not idempotent, so a retry could
+// post it twice.
+func unknownOutcomeFor(a []string, dir string) error {
+	if v, _ := stripDir(a, dir); len(v) > 0 && v[0] == "comment" {
+		return core.UnknownOutcome("bd timed out; the comment may or may not have been added: check the task's comments before retrying")
+	}
+	return unknownOutcome()
 }
 
 // decodeIssue reads bd's `--json` answer: a bare issue, a one-element array, or an error
@@ -539,8 +619,17 @@ func (m *Module) ReadTask(ctx context.Context, id string) (core.Task, error) {
 	if i.ID != id {
 		return core.Task{}, errors.New("bd show returned a different issue")
 	}
-	return core.Task{ID: core.Sanitize(i.ID), Title: core.Sanitize(i.Title), Status: core.Sanitize(i.Status),
-		Priority: i.Priority, Type: core.Sanitize(i.Type), Assignee: core.Sanitize(i.Assignee), UpdatedAt: core.Sanitize(i.UpdatedAt)}, nil
+	t := core.Task{ID: core.Sanitize(i.ID), Title: core.Sanitize(i.Title), Status: core.Sanitize(i.Status),
+		Priority: i.Priority, Type: core.Sanitize(i.Type), Assignee: core.Sanitize(i.Assignee), UpdatedAt: core.Sanitize(i.UpdatedAt)}
+	for _, l := range i.Labels {
+		t.Labels = append(t.Labels, core.Sanitize(l))
+	}
+	for _, d := range i.Dependencies {
+		if d.Type == "blocks" || d.Type == "conditional-blocks" {
+			t.DependsOn = append(t.DependsOn, core.Sanitize(d.ID))
+		}
+	}
+	return t, nil
 }
 
 // initTimeout is longer than a read: bd init creates a git repository and a database.
