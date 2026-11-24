@@ -117,6 +117,7 @@ func (c *Collector) Snapshot(ctx context.Context) (Snapshot, error) {
 			Title:      baseName(cwd),
 			State:      StateWaiting,
 			LastActive: snap.Taken,
+			Started:    p.Started,
 		}
 		var treeCPU float64
 		for _, d := range Descendants(procs, pid, maxChildren) {

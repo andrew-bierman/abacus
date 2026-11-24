@@ -42,9 +42,9 @@ func newFleet() fleetMod {
 	return fleetMod{&modtest.Fake{IDStr: "fleet", Det: core.Detection{State: core.Ready, Version: "v1"}}}
 }
 
-// With no workspace provider (or one with nothing to report) status --json is byte-identical to
-// what it was before the workspace capability existed: the golden was generated on main, before
-// this change, and a mutant that always emits "workspace" must fail here.
+// With no workspace provider (or one with nothing to report) status --json omits the workspace
+// key: a mutant that always emits "workspace" must fail here. The golden also pins the sessions
+// domain's not-connected block; regenerate it with -update-golden after an intentional change.
 func TestStatusJSONIsByteIdenticalWithoutAWorkspaceProvider(t *testing.T) {
 	golden := filepath.Join("testdata", "status-no-workspace.golden.json")
 	_, got, _ := run(t, []core.Module{newFleet()}, "status", "--json")

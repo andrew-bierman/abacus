@@ -162,6 +162,9 @@ type Session struct {
 
 	// LastActive is the transcript's last write, which is how a stalled session is spotted.
 	LastActive time.Time `json:"last_active,omitempty"`
+	// Started is when the agent process began, so a front-end can say how long it has run and
+	// the join can ask a store for transcripts written since then.
+	Started time.Time `json:"started,omitzero"`
 	// ParentPID is the agent process this session reports to, when it is a subagent.
 	ParentPID int `json:"parent_pid,omitempty"`
 }
@@ -169,7 +172,7 @@ type Session struct {
 // Snapshot is one read of the machine. It is the typed shape a front-end renders and the
 // JSON shape `abacus sessions --json` prints, so the tab and the CLI cannot disagree.
 type Snapshot struct {
-	Taken    time.Time `json:"taken"`
+	Taken    time.Time `json:"taken,omitzero"`
 	Sessions []Session `json:"sessions"`
 	// Orphans are ports whose owning session is gone. They need two reads to detect, so
 	// they are empty on the first tick of a process, exactly like abtop's snapshot.

@@ -5,7 +5,11 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 )
+
+// testStart is a fixed process start time, so a test never reads the clock.
+var testStart = time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
 
 // fakeMachine is the whole test surface for live state: a fixed process table, cwds and
 // sockets. No test here reads this machine.
@@ -72,7 +76,7 @@ func TestDescendantsIsBounded(t *testing.T) {
 func TestSnapshotFindsSessionChildrenAndPorts(t *testing.T) {
 	m := &fakeMachine{
 		procs: map[int]Proc{
-			100: {PID: 100, PPID: 1, Name: "claude", Argv: []string{"/usr/bin/claude"}},
+			100: {PID: 100, PPID: 1, Name: "claude", Argv: []string{"/usr/bin/claude"}, Started: testStart},
 			200: {PID: 200, PPID: 100, Name: "node", Argv: []string{"node", "server.js"}},
 			300: {PID: 300, PPID: 1, Name: "bash", Argv: []string{"bash"}},
 		},
@@ -93,6 +97,9 @@ func TestSnapshotFindsSessionChildrenAndPorts(t *testing.T) {
 	}
 	if s.Title != "proj" {
 		t.Errorf("title = %q, want proj", s.Title)
+	}
+	if !s.Started.Equal(testStart) {
+		t.Errorf("started = %v, want the process's start time", s.Started)
 	}
 	if len(s.Children) != 1 || s.Children[0].PID != 200 {
 		t.Errorf("children = %+v, want pid 200", s.Children)

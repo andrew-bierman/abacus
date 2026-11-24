@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 )
 
 // ErrNoProcFS means the process table could not be read on this platform.
@@ -21,6 +22,10 @@ type Proc struct {
 	// CPUTime is user+system seconds accumulated by the process. A delta between two reads
 	// is how a session is known to be executing; the level alone says nothing.
 	CPUTime float64
+	// Started is when the process began. The store readers use it as the earliest transcript
+	// a session in this directory could have written, which keeps a live session from
+	// adopting an older transcript from the same project.
+	Started time.Time
 }
 
 // Socket is one listening TCP socket and the process holding it. PID is 0 when the owner is
@@ -36,6 +41,22 @@ type Machine interface {
 	Procs(ctx context.Context) (map[int]Proc, error)
 	CWD(ctx context.Context, pid int) string
 	Listeners(ctx context.Context) ([]Socket, error)
+}
+
+// Files is the open-file source a caller uses to tie a live process to the file it is writing.
+// Codex keeps no session list, so its rollout is the JSONL the process holds open. This is a
+// second seam rather than part of Machine because the Collector never needs it: walking every
+// process's file table each tick would cost more than the monitor saves, while only a handful
+// of live sessions are ever asked.
+type Files interface {
+	OpenFiles(ctx context.Context, pid int) ([]string, error)
+}
+
+// Prober is the cheap availability check a Machine may implement. Detection asks only whether
+// the process table is readable, not what is in it, so a Machine that can answer that without
+// the per-process read keeps startup from paying for the table twice.
+type Prober interface {
+	Probe(ctx context.Context) error
 }
 
 // Descendants returns the process ids below root, breadth-first, bounded so a process that

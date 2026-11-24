@@ -11,13 +11,14 @@ import (
 
 type recRun struct {
 	calls [][]string
+	out   []byte
 	exit  int
 	err   error
 }
 
 func (r *recRun) Run(_ context.Context, name string, args ...string) ([]byte, int, error) {
 	r.calls = append(r.calls, append([]string{name}, args...))
-	return nil, r.exit, r.err
+	return r.out, r.exit, r.err
 }
 
 func TestProbeFullViewMissingSaysItIsOptionalAndRunsNothing(t *testing.T) {
@@ -42,7 +43,7 @@ func TestProbeFullViewRunsOnlyDashVersion(t *testing.T) {
 
 func TestResolveProvidersMatchesDomains(t *testing.T) {
 	p := core.ResolveProviders(nil)
-	if p.Tasks != nil || p.Writer != nil || len(p.Missing) != 4 {
+	if p.Tasks != nil || p.Writer != nil || p.Sessions != nil || len(p.Missing) != 5 {
 		t.Fatalf("%+v", p)
 	}
 }

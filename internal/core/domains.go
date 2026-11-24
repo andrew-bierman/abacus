@@ -10,10 +10,11 @@ import (
 type DomainID string
 
 const (
-	DomainBoard  DomainID = "board"
-	DomainTasks  DomainID = "tasks"
-	DomainLeases DomainID = "leases"
-	DomainQueues DomainID = "queues"
+	DomainBoard    DomainID = "board"
+	DomainTasks    DomainID = "tasks"
+	DomainLeases   DomainID = "leases"
+	DomainQueues   DomainID = "queues"
+	DomainSessions DomainID = "sessions"
 )
 
 // DomainOrder is the navigation order.
@@ -30,6 +31,8 @@ func (d DomainID) Title() string {
 		return "Leases"
 	case DomainQueues:
 		return "Queues"
+	case DomainSessions:
+		return "Sessions"
 	}
 	return string(d)
 }
@@ -313,6 +316,9 @@ type DomainsReport struct {
 	Tasks  TasksReport  `json:"tasks"`
 	Leases LeasesReport `json:"leases"`
 	Queues QueuesReport `json:"queues"`
+	// Sessions is the live agent processes on this machine. Additive: a domain with no provider
+	// reads not-connected instead of disappearing.
+	Sessions SessionsReport `json:"sessions"`
 	// Workspace is where items live as terminal sessions, from the optional workspace
 	// provider. Additive: omitted when there is no provider or nothing to report.
 	Workspace *WorkspaceReport `json:"workspace,omitempty"`
@@ -333,6 +339,9 @@ type (
 	}
 	BoardProvider interface {
 		Board(context.Context) (BoardReport, error)
+	}
+	SessionProvider interface {
+		Sessions(context.Context) (SessionsReport, error)
 	}
 )
 
@@ -372,8 +381,12 @@ func pick[P any](entries []Entry) (p P, reason string, ok bool) {
 		case Ready:
 			return prov, "", true
 		case Absent:
-			if id := e.Module.ID(); reason == "" && IsBundledTool(id) {
-				reason = bundledWhat(id, refusedReason(e.Detection.Detail))
+			if reason == "" {
+				id := e.Module.ID()
+				reason = e.Detection.Detail
+				if IsBundledTool(id) {
+					reason = bundledWhat(id, refusedReason(reason))
+				}
 			}
 		default:
 			if reason == "" {
@@ -541,10 +554,11 @@ func (r LeasesReport) Status() Status {
 	return st
 }
 
-func tasksHdr(b *TasksReport) *Header   { return &b.Header }
-func leasesHdr(b *LeasesReport) *Header { return &b.Header }
-func queuesHdr(b *QueuesReport) *Header { return &b.Header }
-func boardHdr(b *BoardReport) *Header   { return &b.Header }
+func tasksHdr(b *TasksReport) *Header       { return &b.Header }
+func leasesHdr(b *LeasesReport) *Header     { return &b.Header }
+func queuesHdr(b *QueuesReport) *Header     { return &b.Header }
+func boardHdr(b *BoardReport) *Header       { return &b.Header }
+func sessionsHdr(b *SessionsReport) *Header { return &b.Header }
 
 func (r *DomainsReport) readTasks(ctx context.Context, entries []Entry) {
 	r.Tasks = readDomain(ctx, entries, DomainTasks, func(p TaskProvider, c context.Context) (TasksReport, error) { return p.Tasks(c) }, tasksHdr, TasksReport.Summarize)
@@ -565,6 +579,27 @@ func (r *DomainsReport) readBoard(ctx context.Context, entries []Entry) {
 	r.Board = readDomain(ctx, entries, DomainBoard, func(p BoardProvider, c context.Context) (BoardReport, error) { return p.Board(c) }, boardHdr, BoardReport.Summarize)
 }
 
+// readSessions is the one sessions read, shared by the domain switch and the overlapping read.
+func readSessions(ctx context.Context, entries []Entry) SessionsReport {
+	r := readDomain(ctx, entries, DomainSessions, func(p SessionProvider, c context.Context) (SessionsReport, error) { return p.Sessions(c) }, sessionsHdr, SessionsReport.Summarize)
+	r.normalize()
+	return r
+}
+
+func (r *DomainsReport) readSessions(ctx context.Context, entries []Entry) {
+	r.Sessions = readSessions(ctx, entries)
+}
+
+// startSessionsRead begins the sessions read and returns a function that waits for its report.
+// The provider keeps cross-tick reader state, so it stays on one goroutine; overlapping it with
+// the other domains only runs a read they do not touch, and keeps its cost off their critical
+// path.
+func startSessionsRead(ctx context.Context, entries []Entry) func() SessionsReport {
+	done := make(chan SessionsReport, 1)
+	go func() { done <- readSessions(ctx, entries) }()
+	return func() SessionsReport { return <-done }
+}
+
 // ReadDomain reads one domain only (and its insights, for Tasks): a single-domain
 // command must not run the other providers. The other domains are left empty.
 func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport {
@@ -581,6 +616,8 @@ func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport
 		r.readLeases(ctx, entries)
 	case DomainQueues:
 		r.readQueues(ctx, entries)
+	case DomainSessions:
+		r.readSessions(ctx, entries)
 	}
 	return r
 }
@@ -589,6 +626,7 @@ func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport
 // returned as not-connected with how to connect; it never disappears.
 func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	var r DomainsReport
+	waitSessions := startSessionsRead(ctx, entries) // overlaps the reads below
 	r.readTasks(ctx, entries)
 	r.readLeases(ctx, entries)
 	r.readQueues(ctx, entries)
@@ -597,6 +635,7 @@ func ReadDomains(ctx context.Context, entries []Entry) DomainsReport {
 	ins := readInsightsFor(ctx, entries, r.Tasks)
 	r.Tasks.Insights = &ins
 	r.Workspace = waitWorkspace()
+	r.Sessions = waitSessions()
 	return r
 }
 
@@ -655,7 +694,9 @@ type Providers struct {
 	Leases      LeaseProvider
 	Queues      QueueProvider
 	Board       BoardProvider
-	Writer      TaskWriter // the module that can write tasks, if any
+	// Sessions reads the live agent processes on this machine; nil means none is usable.
+	Sessions SessionProvider
+	Writer   TaskWriter // the module that can write tasks, if any
 	// BoardWriter is the module that can post and reply to the board, if any.
 	BoardWriter BoardWriter
 	Reader      TaskReader // re-reads one task before a write is confirmed
@@ -691,6 +732,9 @@ func ResolveProviders(entries []Entry) Providers {
 	if p.Board, why, ok = pick[BoardProvider](entries); !ok {
 		p.Missing[DomainBoard] = notConnected(DomainBoard, why)
 	}
+	if p.Sessions, why, ok = pick[SessionProvider](entries); !ok {
+		p.Missing[DomainSessions] = notConnected(DomainSessions, why)
+	}
 	p.Source, _, _ = pick[TaskSource](entries)
 	p.History, _, _ = pick[TaskHistorySource](entries)
 	p.Fingerprint, _, _ = pick[TaskFingerprinter](entries)
@@ -725,6 +769,8 @@ func statusFromDomains(m Module, d DomainsReport) (Status, bool) {
 		if d.Queues.Source == SourceTracker {
 			st.Source = SourceTracker
 		}
+	case SessionProvider:
+		h, st = d.Sessions.Header, d.Sessions.Status()
 	case InsightsProvider:
 		if d.Tasks.Insights == nil {
 			return Status{}, false

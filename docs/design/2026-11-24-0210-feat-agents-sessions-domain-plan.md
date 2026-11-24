@@ -1,7 +1,7 @@
 # Agents domain: a sessions tab for local AI coding agents
 
 Status: phase 2 complete (`internal/agents` has the opencode, claude, codex, pi, git and quota
-readers); the core wiring and the tab are open.
+readers) and the core wiring is done; the CLI command and the tab are open.
 
 ## Goal
 
@@ -68,12 +68,45 @@ Written here, because nothing covers it:
 | Transcript reads: tokens, context, model, title, true state | phases 2 | per-harness readers | done |
 | Git branch and dirty counts per session cwd | `git.go` | `Runner` seam | done |
 | Quota gauges | `quota.go` | harness state files | done |
-| Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | open |
+| Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | core done, CLI + tab open |
 
 `Machine` is the only seam the Collector needs for live state: tests supply a fixed process
 table and never read this machine.
 
 Measured: one snapshot of the 29 sessions live on this machine takes 150ms.
+
+### The core join
+
+`internal/core/sessions.go` turns the readers into one report. `SessionsReport` embeds
+`agents.Snapshot` (so the tab and `abacus sessions --json` render one shape) and adds
+`Quotas []agents.Quota`. `Sessions` is a core module and a `SessionProvider`: it is `Quiet`
+(not a tool), and `Detect` probes the process table so a machine without one reads
+`not-connected` with the reason instead of an empty tab. `DomainSessions` joins `DomainID` and
+`DomainsReport`; `DomainOrder` still gets it with the TUI tab, so no front-end shows it before
+it can render it.
+
+One call does one join:
+
+- `Collector.Snapshot` with the injected `Machine`. Store reads start at a rotating session,
+  so one large backlog cannot starve every later session of the shared 8 MB budget.
+- Start times come from `Proc.Started` (gopsutil's create time) through `Session.Started`, which
+  is what `ClaudeStore.PathFor` and `PiStore.PathFor` need for their `since` argument.
+- Claude and pi resolve a transcript by cwd and start time. opencode lists sessions with one
+  query covering the live window and is matched newest-per-directory. Codex keeps no list, so
+  its rollout is the newest `.jsonl` under the codex root among the live process's open files;
+  that needs a second, narrow seam (`agents.Files`), because `Machine` is the Collector's and
+  reading every process's fds every tick is what the cost model forbids.
+- Each live session takes Title, Model, Tokens, Context and LastActive from its store. The CPU
+  delta still wins for `executing`; the transcript's open turn supplies the rest. `Git` is
+  filled from one `agents.Git`, read once per directory through its own TTL cache.
+- Quota is deduped by `Source`. Codex rides the rollout it already read; Claude is read from
+  each config directory the join resolves (`CLAUDE_CONFIG_DIR`, then `~/.claude`). The reader
+  still reads no environment.
+- A store or transcript that cannot be read appends one bounded reason to `Unreadable`; it
+  never fails the whole read, and a partial read stays `connected`.
+
+Tests inject a fixed `Machine` and `Files`, a fake `Runner`, and temporary stores and config
+directories under `t.TempDir()`; no core test reads this machine.
 
 
 ## Two facts that need more than one read
@@ -419,7 +452,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `pi.go`: Pi JSONL reader, incremental by offset
 - [x] `git.go`: branch and dirty counts per session cwd
 - [x] `quota.go`: Claude and Codex quota gauges
-- [ ] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
+- [x] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
 - [ ] `cli`: `abacus sessions [--json]`
 - [ ] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
 - [ ] `tui`: golden tests for the sessions tab
@@ -523,6 +556,39 @@ Found while building the readers; none blocks the tab, and each names the item t
   the short slot, matching abtop's `mins <= 300` rule, so an omitted length would draw a 5-hour
   label. No sampled rollout omits it; the slot rule would need a richer signal to tell the two
   apart.
+- **The shared JSONL budget is still first-come across sessions.** Rotation recovers the tab over
+  a few ticks, but a one-shot `abacus sessions --json` calls the join once: one large rollout can
+  take a store's whole 8 MB and leave every later session with only its meta line (measured here:
+  1 of 12 live Codex sessions joined on the first read). The CLI item must read to quiescence, or
+  the readers need to split the budget per file.
+- **One store row per directory is still one row.** Claude, pi and opencode attribute the newest
+  store entry in a live cwd to every live process there, so two sessions in one worktree show the
+  same title and tokens. A range-bounded `PathFor` (each session's start to the next session's
+  start) would separate them; the tab accepts the limit until a harness exposes a session id on
+  the process.
+- **Git's budget and failure cache belong to the reader.** `agents.Git` applies its 2s timeout
+  only when the caller has no deadline, so a serial read with a longer command deadline can spend
+  it on hung mounts, and a failed read is cached as a clean status for 10s. A per-call deadline
+  and a "read failed, not clean" flag need the reader's API, not another loop in the join.
+- **opencode reads a live WAL database as immutable.** `mode=ro&immutable=1` assumes no writer;
+  a busy opencode can make the read stale or fail. Finding a snapshot-safe read is a change to
+  the reader, not the join.
+- **A missing home silently disables store joins.** `os.UserHomeDir` failure leaves every store
+  root empty while the process table still lists sessions; nothing says why their transcripts are
+  missing.
+- **Unreadable reasons can repeat.** The eight-slot bound counts duplicates, so one broken store
+  with many sessions can fill it and hide a second source's distinct reason.
+- **`Module.Status` and the domain status are two paths.** `FleetStatusReport` reads the domain,
+  while `StatusReport` calls `Module.Status`, which returns an empty status for Sessions. Until
+  they unify, a new caller that uses the module directly loses the rows.
+- **A domain still means eight edit sites.** Adding one touches the const, `Title`, the report
+  field, the read function, `ReadDomain`, `ResolveProviders`, `statusFromDomains` and the header
+  func. `readDomainsLite` is the easy omission, and a domain missing there is invisible to the
+  overview with no compile error.
+- **Store roots and recorded cwds are compared lexically.** A symlinked home can make a Codex
+  rollout or a Claude/pi transcript look outside the root until the path is resolved.
+- **A resumed Claude session is invisible until it writes.** `since` is the process start, so a
+  `--continue` transcript written earlier is filtered out until the session appends to it.
 
 ## Pass log
 
@@ -552,3 +618,11 @@ One line per completed item: what it did and how it was verified.
   windows and defaults, the account-level filter and slot-by-length rule, empty reports,
   timestamp fallback, the quota following the rollout cursor through append, partial line,
   replacement and truncation, the 64 KiB boundary, and the report JSON's omitted fields.
+- core wiring — `go build ./...`, `go vet ./...`, `go test ./...`, `go test -race
+  ./internal/core`; adds `DomainSessions`/`SessionsReport`/`SessionProvider`/`Providers.Sessions`
+  and the join (process start time, Codex rollout from open files, per-source quota dedupe,
+  bounded unreadable reasons, one read serialized for overlapping front-ends). Verified live on
+  31 sessions (2 active; codex, opencode and claude joined with tokens/context/git), and
+  synthetic tests pin the Claude, pi, Codex and opencode joins, the `since` window, the
+  newest-open-rollout rule, a v1 opencode store as "nothing there", Doctor, `CLAUDE_CONFIG_DIR`
+  quota, status fallbacks, and the JSON shape. Review residuals are recorded in Open questions.

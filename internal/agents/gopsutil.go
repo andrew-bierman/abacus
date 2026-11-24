@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"strings"
+	"time"
 
 	gnet "github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/process"
@@ -47,9 +48,25 @@ func (Native) Procs(ctx context.Context) (map[int]Proc, error) {
 		if t, err := p.TimesWithContext(ctx); err == nil && t != nil {
 			proc.CPUTime = t.User + t.System
 		}
+		// Only a session process consumes Started, and gopsutil's create time re-reads the
+		// same stat file Times just read. Paying that for every process on the machine would
+		// double the stat parse to timestamp a handful of agents.
+		if _, isSession := HarnessFor(proc); isSession {
+			if ms, err := p.CreateTimeWithContext(ctx); err == nil && ms > 0 {
+				proc.Started = time.UnixMilli(ms)
+			}
+		}
 		out[proc.PID] = proc
 	}
 	return out, nil
+}
+
+// Probe reports whether the process table can be read at all, without the per-process detail
+// Procs pays for. Session detection uses it so a startup probe does not read the whole table
+// only for the first snapshot to read it again.
+func (Native) Probe(ctx context.Context) error {
+	_, err := process.PidsWithContext(ctx)
+	return err
 }
 
 // CWD reads a process's working directory. This is the only trustworthy way to know which
@@ -64,6 +81,27 @@ func (Native) CWD(ctx context.Context, pid int) string {
 		return "" // another user's process, or it exited
 	}
 	return dir
+}
+
+// OpenFiles returns the paths a process holds open. gopsutil implements this on the platforms
+// with a file table; elsewhere it returns an error, which the caller reads as "no rollout
+// found" rather than as a failed snapshot.
+func (Native) OpenFiles(ctx context.Context, pid int) ([]string, error) {
+	p, err := process.NewProcessWithContext(ctx, int32(pid))
+	if err != nil {
+		return nil, err
+	}
+	opens, err := p.OpenFilesWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(opens))
+	for _, o := range opens {
+		if o.Path != "" {
+			out = append(out, o.Path)
+		}
+	}
+	return out, nil
 }
 
 // Listeners returns every listening TCP socket with its owner. One call covers the whole
