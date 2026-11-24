@@ -115,6 +115,8 @@ type Module struct {
 	wrun   writeOnly   // the workspace writes, behind their own allowlist
 	crun   readOnly    // terminal reads (the end of the output is kept, not the start)
 	live   atomic.Bool // the change feed is connected
+	// gen counts invalidations: a read that started before one must not be stored after it.
+	gen atomic.Uint64
 }
 
 // New returns a Rex module with defaults filled in.
@@ -184,6 +186,7 @@ func (m *Module) set(s core.State, server string, rev int, ver string) {
 	m.mu.Lock()
 	m.state, m.server, m.rev, m.ver = s, server, rev, ver
 	m.cache, m.bcache = nil, nil // a new detection starts from a clean slate
+	m.gen.Add(1)
 	m.mu.Unlock()
 }
 
@@ -447,13 +450,16 @@ func (m *Module) read(ctx context.Context, host string) (res lsResult, replay bo
 			return c.res, true
 		}
 	}
+	g := m.gen.Load()
 	res = m.sessions(ctx, host)
 	if ttl > 0 && ctx.Err() == nil { // a canceled read says nothing about rex
 		m.mu.Lock()
-		if m.cache == nil {
-			m.cache = map[string]cached{}
+		if m.gen.Load() == g { // an invalidation during the read means it may already be stale
+			if m.cache == nil {
+				m.cache = map[string]cached{}
+			}
+			m.cache[host] = cached{at: m.o.Now(), res: res}
 		}
-		m.cache[host] = cached{at: m.o.Now(), res: res}
 		m.mu.Unlock()
 	}
 	return res, false

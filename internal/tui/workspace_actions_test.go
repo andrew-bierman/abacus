@@ -486,3 +486,27 @@ func TestWithTabShowsTheNamedTabFirst(t *testing.T) {
 		}
 	}
 }
+
+func TestAChangeDuringAReadQueuesOneFollowUpRead(t *testing.T) {
+	r := newWSRunner(t)
+	m, _, _ := wsLive(t, r, nil, 120, 40)
+	h := m.(*Model).hosts[0]
+	l := h.layer()
+	first := l.fetch(h.wsItems())
+	if first == nil {
+		t.Fatal("a read starts")
+	}
+	if l.fetch(h.wsItems()) != nil || l.fetch(h.wsItems()) != nil {
+		t.Fatal("while one is in flight no second one starts")
+	}
+	msg := first()
+	before := r.callsWith("ls --json")
+	m, cmd := m.Update(msg)
+	m = drive(t, m, cmd)
+	if got := r.callsWith("ls --json") - before; got != 1 {
+		t.Fatalf("the change that arrived during the read gets exactly one more read: %d", got)
+	}
+	if l.again {
+		t.Fatal("the request is consumed")
+	}
+}

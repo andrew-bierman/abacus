@@ -360,6 +360,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	// Async results and ticks go to every section; each ignores message types it does not own.
 	cmd := m.broadcast(msg)
+	if wm, ok := msg.(workspaceMsg); ok {
+		if h := m.hostFor(wm.tag); h != nil && h.layer().again {
+			h.layer().again = false
+			cmd = tea.Batch(cmd, h.layer().fetch(h.wsItems()))
+		}
+	}
 	if wm, ok := msg.(workspaceMsg); ok { // a read of where things live arrived: the shown terminal's output is read with it
 		if h := m.hostFor(wm.tag); h != nil && h == m.activeHost() {
 			cmd = tea.Batch(cmd, h.layer().captureCmd(h, true))

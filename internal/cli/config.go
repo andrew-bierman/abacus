@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -79,12 +80,34 @@ func runConfig(rest []string, d Deps) int {
 			fmt.Fprintf(d.Err, "config: %v\n", err)
 			return core.ExitUsage
 		}
+		// The agent command is what "work on this" later runs, so changing it is recorded like any
+		// other write, before it happens (a failed record stops it), and shown back as the argv.
+		var au core.Audit
+		if args[0] == "agent_command" {
+			if au = d.Audit; au == nil {
+				au = core.DefaultAudit()
+			}
+			if err := au.Record(core.AuditEntry{Time: time.Now().UTC(), Domain: "config", Verb: "set agent_command", Phase: "attempt", Argv: scratch.AgentCommand}); err != nil {
+				fmt.Fprintf(d.Err, "config: not set: %v\n", err)
+				return core.ExitFail
+			}
+		}
 		note, err := st.UpdateNote(func(c *core.Config) error { return c.Set(args[0], args[1]) })
+		if au != nil {
+			e := core.AuditEntry{Time: time.Now().UTC(), Domain: "config", Verb: "set agent_command", Phase: "ok", Argv: scratch.AgentCommand}
+			if err != nil {
+				e.Phase, e.Error = "error", core.Sanitize(err.Error())
+			}
+			_ = au.Record(e)
+		}
 		if err != nil { // the file, the lock or the disk: not the user's typing
 			fmt.Fprintf(d.Err, "config: %v\n", err)
 			return core.ExitFail
 		}
 		fmt.Fprintf(d.Out, "%s set\n", args[0])
+		if au != nil {
+			fmt.Fprintf(d.Out, "work on this will run: %s\n", core.DisplayArgv(scratch.AgentCommand))
+		}
 		if note != "" {
 			fmt.Fprintln(d.Err, "config: "+note)
 		}

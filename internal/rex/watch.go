@@ -3,6 +3,7 @@ package rex
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -86,25 +87,46 @@ func (m *Module) Watch(ctx context.Context, changed func()) {
 	var everConnected atomic.Bool
 	for ctx.Err() == nil {
 		sctx, cancel := context.WithCancel(ctx)
-		settle := time.AfterFunc(m.o.EventSettle, func() { m.live.Store(true); everConnected.Store(true) })
-		start := time.Now()
-		_, _ = m.o.Stream(sctx, m.Bin(), eventsArgv(), func(line []byte) {
-			if relevantEvent(line) {
-				m.invalidate()
-				select {
-				case kick <- struct{}{}:
-				default:
-				}
-			}
-		})
-		cancel()
-		settle.Stop()
-		if m.live.Swap(false) { // the feed was up: what was read since may be stale
-			m.invalidate()
+		kickNow := func() {
 			select {
 			case kick <- struct{}{}:
 			default:
 			}
+		}
+		// The run's own state: the settle timer may fire as the stream ends, and a late fire must
+		// not mark a feed that is gone as live.
+		var runMu sync.Mutex
+		ended := false
+		settle := time.AfterFunc(m.o.EventSettle, func() {
+			runMu.Lock()
+			defer runMu.Unlock()
+			if ended {
+				return
+			}
+			// Connected: anything that changed since the last read and the subscription was
+			// missed, so what is cached is not to be trusted.
+			m.invalidate()
+			m.live.Store(true)
+			everConnected.Store(true)
+			kickNow()
+		})
+		start := time.Now()
+		m.invalidate()
+		_, _ = m.o.Stream(sctx, m.Bin(), eventsArgv(), func(line []byte) {
+			if relevantEvent(line) {
+				m.invalidate()
+				kickNow()
+			}
+		})
+		cancel()
+		settle.Stop()
+		runMu.Lock()
+		ended = true
+		wasLive := m.live.Swap(false)
+		runMu.Unlock()
+		if wasLive { // the feed was up: what was read since may be stale
+			m.invalidate()
+			kickNow()
 		}
 		if time.Since(start) > 10*time.Second { // it was healthy for a while: start the back-off over
 			wait = watchBackoffMin

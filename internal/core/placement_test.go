@@ -122,12 +122,13 @@ func TestAgentCommandIsAConfigKeyThatRoundTripsAndValidates(t *testing.T) {
 // ---- the placement gate ----
 
 type fakeActor struct {
-	built   []core.PlacementRequest
-	ran     [][]string
-	steps   [][]string
-	failAt  int // 1-based step that fails, 0 none
-	failErr error
-	target  string
+	built    []core.PlacementRequest
+	ran      [][]string
+	steps    [][]string
+	failAt   int // 1-based step that fails, 0 none
+	failErr  error
+	target   string
+	checkErr error
 }
 
 func (f *fakeActor) BuildPlacement(_ context.Context, r core.PlacementRequest) (core.PlacementBuild, error) {
@@ -147,6 +148,12 @@ func (f *fakeActor) RunPlacement(_ context.Context, argv []string) (core.StepRes
 	return core.StepResult{Pane: "block:" + string(rune('a'+len(f.ran)))}, nil
 }
 func (f *fakeActor) PlacementTarget() string { return "workspace (test)" }
+func (f *fakeActor) CheckPlacement(steps [][]string) error {
+	if f.checkErr != nil {
+		return f.checkErr
+	}
+	return nil
+}
 
 func workReq() core.PlacementRequest {
 	return core.PlacementRequest{Action: core.PlaceWork, Item: core.WorkspaceItem{Kind: core.WorkspaceTask, ID: "bd-1"}, Title: "t", Template: []string{"agent", "{title}"}}
@@ -392,4 +399,33 @@ func runOut(name string, args ...string) (string, error) {
 		return "fail", err
 	}
 	return "ok", nil
+}
+
+func TestApplyRefusesPlansNotMadeByPlanPlacementAndRechecksTheProvider(t *testing.T) {
+	w, a := &fakeActor{}, &memAudit{}
+	ap := core.NewPlacementApplier(w, a)
+	ctx := context.Background()
+	// A zero plan neither panics nor runs anything, confirmed or not.
+	for _, p := range []core.PlacementPlan{{}, core.PlacementPlan{}.Confirm()} {
+		if _, err := ap.Apply(ctx, p); err == nil {
+			t.Fatal("a zero plan must be refused")
+		}
+	}
+	if len(w.ran) != 0 || len(a.lines) != 0 {
+		t.Fatalf("%v %v", w.ran, a.lines)
+	}
+	// A plan whose commands the provider no longer accepts runs nothing and records nothing.
+	p, _ := core.PlanPlacement(ctx, w, workReq())
+	w.checkErr = errors.New("machine not allowed")
+	if _, err := ap.Apply(ctx, p.Confirm()); err == nil || len(w.ran) != 0 || len(a.lines) != 0 {
+		t.Fatalf("%v %v %v", err, w.ran, a.lines)
+	}
+}
+
+func TestAnExpandedWordThatIsTooLongSaysSo(t *testing.T) {
+	tpl := []string{"agent", strings.Repeat("{title}", 8)}
+	_, err := core.ExpandAgentCommand(tpl, "bd-1", strings.Repeat("x", 190))
+	if err == nil || !strings.Contains(err.Error(), "once filled in") || strings.Contains(err.Error(), "option") {
+		t.Fatalf("%v", err)
+	}
 }

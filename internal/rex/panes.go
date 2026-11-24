@@ -30,6 +30,7 @@ func (m *Module) Invalidate() { m.invalidate() }
 func (m *Module) invalidate() {
 	m.mu.Lock()
 	m.cache, m.bcache = nil, nil
+	m.gen.Add(1)
 	m.mu.Unlock()
 }
 
@@ -78,6 +79,7 @@ func (m *Module) readBlocks(ctx context.Context, host string, ss []session) map[
 			return c.by
 		}
 	}
+	g := m.gen.Load()
 	ctx, cancel := context.WithTimeout(ctx, blockReadTime)
 	defer cancel()
 	var (
@@ -109,10 +111,12 @@ func (m *Module) readBlocks(ctx context.Context, host string, ss []session) map[
 	wg.Wait()
 	if m.o.CacheTTL > 0 && ctx.Err() == nil { // a partial read is not kept
 		m.mu.Lock()
-		if m.bcache == nil {
-			m.bcache = map[string]cachedBlocks{}
+		if m.gen.Load() == g {
+			if m.bcache == nil {
+				m.bcache = map[string]cachedBlocks{}
+			}
+			m.bcache[host] = cachedBlocks{at: m.o.Now(), by: by}
 		}
-		m.bcache[host] = cachedBlocks{at: m.o.Now(), by: by}
 		m.mu.Unlock()
 	}
 	return by

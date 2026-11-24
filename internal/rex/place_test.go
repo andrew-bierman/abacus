@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -757,4 +758,138 @@ func indexOf(a []string, s string) int {
 		}
 	}
 	return -1
+}
+
+func TestAReadThatStartedBeforeAnInvalidationIsNotStored(t *testing.T) {
+	f := paneFake(t)
+	now := time.Unix(1000, 0)
+	var m *Module
+	started := make(chan struct{})
+	release := make(chan struct{})
+	slow := &gate{inner: f, key: lsLocal, started: started, release: release}
+	m = New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(k string) string { return map[string]string{"REX_SESSION": sessA}[k] },
+		Runner: slow, Hostname: func() string { return "me" }, CacheTTL: time.Hour, Now: func() time.Time { return now }})
+	detect(m)
+	slow.armed.Store(true)
+	done := make(chan struct{})
+	go func() { m.Workspace(context.Background(), []core.WorkspaceItem{item("bd-43")}); close(done) }()
+	<-started
+	m.Invalidate() // a change lands while the read is in flight
+	close(release)
+	<-done
+	before := len(f.called())
+	slow.armed.Store(false)
+	m.Workspace(context.Background(), []core.WorkspaceItem{item("bd-43")})
+	n := 0
+	for _, c := range f.called()[before:] {
+		if c == lsLocal {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("the stale read must not have been cached: ls calls after = %d", n)
+	}
+}
+
+// gate holds one call on key until released, so a test can act while it is in flight.
+type gate struct {
+	inner   *fake
+	key     string
+	started chan struct{}
+	release chan struct{}
+	armed   atomic.Bool
+}
+
+func (g *gate) Run(ctx context.Context, name string, args ...string) ([]byte, int, error) {
+	out, exit, err := g.inner.Run(ctx, name, args...)
+	if g.armed.Swap(false) && strings.Join(args, " ") == g.key {
+		close(g.started)
+		<-g.release
+	}
+	return out, exit, err
+}
+
+func TestTheFeedInvalidatesOnConnectAndNeverLeavesLiveSetAfterItEnds(t *testing.T) {
+	fast(t)
+	fd := &feed{lines: [][]string{nil}, hold: true}
+	f := paneFake(t)
+	m := watchMod(t, fd, f)
+	items := []core.WorkspaceItem{item("bd-43")}
+	m.Workspace(context.Background(), items)
+	m.Workspace(context.Background(), items)
+	ls := func() int {
+		n := 0
+		for _, c := range f.called() {
+			if c == lsLocal {
+				n++
+			}
+		}
+		return n
+	}
+	before := ls()
+	ctx, cancel := context.WithCancel(context.Background())
+	calls := make(chan struct{}, 8)
+	done := make(chan struct{})
+	go func() { m.Watch(ctx, func() { calls <- struct{}{} }); close(done) }()
+	select {
+	case <-calls:
+	case <-time.After(3 * time.Second):
+		t.Fatal("connecting must ask for a re-read")
+	}
+	m.Workspace(context.Background(), items)
+	if ls() != before+1 {
+		t.Fatalf("what was cached before the subscription is not trusted: %d -> %d", before, ls())
+	}
+	cancel()
+	<-done
+	if m.live.Load() {
+		t.Fatal("live with no feed")
+	}
+}
+
+func TestLiveIsNeverSetByASettleTimerThatFiresAfterTheStreamEnded(t *testing.T) {
+	fast(t)
+	for i := 0; i < 50; i++ {
+		fd := &feed{} // exits at once
+		m := New(Options{LookPath: func(string) (string, error) { return "/fake/rex", nil }, Getenv: func(string) string { return "" }, Runner: paneFake(t),
+			Stream: fd.stream, EventSettle: time.Microsecond * time.Duration(1+i*20), CacheTTL: time.Hour})
+		detect(m)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+		m.Watch(ctx, func() {})
+		cancel()
+		if m.live.Load() {
+			t.Fatalf("round %d: live after the feed ended", i)
+		}
+	}
+}
+
+func TestWritesAreHeldToTheConfiguredMachinesIncludingTheServerTheEnvironmentNames(t *testing.T) {
+	r := core.PlacementRequest{Action: core.PlaceWork, Item: item("bd-7"), Title: "t", Template: []string{"agent"}}
+	for server, ok := range map[string]bool{"": true, "unix:///tmp/x/s.sock": true, "/tmp/x.sock": true, "mbp": true, "me@MBP:7777": true, "tcp://mbp:9": true, "evil.example": false, "ssh://u@evil:22": false} {
+		m := readyMod(t, paneFake(t), inSession(map[string]string{"REX_SERVER": server}))
+		p, err := core.PlanPlacement(context.Background(), m, r)
+		if (err == nil) != ok {
+			t.Errorf("REX_SERVER=%q: %v", server, err)
+			continue
+		}
+		if ok && !strings.Contains(strings.Join(p.Lines, "\n"), "server: ") {
+			t.Errorf("the confirm screen names the server: %q", p.Lines)
+		}
+		if !ok {
+			if err := m.CheckPlacement([][]string{append([]string{"rex"}, runArgv(sessA, "bd-7", "", []string{"agent"})...)}); err == nil {
+				t.Errorf("REX_SERVER=%q: the check also refuses a hand-built step", server)
+			}
+		}
+	}
+	m := readyMod(t, paneFake(t), nil)
+	focus := append([]string{"rex"}, focusArgv("stranger", sessA, blk43)...)
+	if err := m.CheckPlacement([][]string{focus}); err == nil {
+		t.Error("a hand-built focus for an unconfigured machine is refused")
+	}
+	if _, err := m.RunPlacement(context.Background(), focus); err == nil {
+		t.Error("and RunPlacement refuses it too")
+	}
+	if err := m.CheckPlacement(nil); err == nil {
+		t.Error("no steps")
+	}
 }

@@ -52,6 +52,7 @@ type wsLayer struct {
 	lastW, lastH int       // the size the confirm screen was last drawn at
 	out          *wsOutput // the last read of the selected item's terminal
 	outBusy      bool
+	again        bool // a read was asked for while one was running
 }
 
 func newWsLayer(tag string, prov core.WorkspaceProvider, demo bool, handoff func([]string) tea.Cmd) *wsLayer {
@@ -95,7 +96,11 @@ func itemList(items ...core.WorkspaceItem) []core.WorkspaceItem {
 
 // fetch reads where items live, once at a time. It returns nil without a provider.
 func (w *wsLayer) fetch(items []core.WorkspaceItem) tea.Cmd {
-	if w == nil || w.prov == nil || w.busy || len(items) == 0 {
+	if w == nil || w.prov == nil || len(items) == 0 {
+		return nil
+	}
+	if w.busy { // a read is in flight and may predate what asked for this one: read once more when it lands
+		w.again = true
 		return nil
 	}
 	w.busy = true

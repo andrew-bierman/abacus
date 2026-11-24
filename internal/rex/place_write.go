@@ -45,6 +45,62 @@ func (m *Module) currentSession() (string, error) {
 	return s, nil
 }
 
+// serverOK refuses a server named by the environment (REX_SERVER) that is not this machine's own
+// socket or a host in ABACUS_REX_HOSTS: a command with no -S goes to that server, so it is held to
+// the same list as -S is.
+func (m *Module) serverOK() error {
+	s := strings.TrimSpace(m.o.Getenv("REX_SERVER"))
+	if s == "" || strings.HasPrefix(s, "unix://") || strings.HasPrefix(s, "/") {
+		return nil
+	}
+	h := s
+	if _, rest, ok := strings.Cut(h, "://"); ok {
+		h = rest
+	}
+	if _, rest, ok := strings.Cut(h, "@"); ok {
+		h = rest
+	}
+	h, _, _ = strings.Cut(strings.SplitN(h, "/", 2)[0], ":")
+	for _, a := range m.o.Hosts {
+		if strings.EqualFold(a, h) {
+			return nil
+		}
+	}
+	return errors.New("this process is attached to a server on another machine that is not in the configured list of machines abacus may contact")
+}
+
+// serverLine says which server a write goes to, for the confirm screen.
+func (m *Module) serverLine(host string) string {
+	if host != "" {
+		return "server: " + safe(host, 80)
+	}
+	if s := strings.TrimSpace(m.o.Getenv("REX_SERVER")); s != "" {
+		return "server: " + safe(s, 120)
+	}
+	return "server: this machine's workspace"
+}
+
+// CheckPlacement re-validates a plan's commands: each must be an allowed write, and the machine it
+// reaches (-S, or the server the environment names) must be one abacus may contact.
+func (m *Module) CheckPlacement(steps [][]string) error {
+	if len(steps) == 0 {
+		return errors.New("nothing to do")
+	}
+	for _, s := range steps {
+		if len(s) < 2 || s[0] != core.RexBin || !allowedWriteArgv(s[1:]) {
+			return errors.New("refused: not an allowed workspace write")
+		}
+		if s[1] == "-S" {
+			if _, err := m.targetHost(s[2]); err != nil || s[2] == "" {
+				return errors.New("refused: that machine is not in the configured list of machines abacus may contact")
+			}
+		} else if err := m.serverOK(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m *Module) command(argv []string) []string { return append([]string{core.RexBin}, argv...) }
 
 // BuildPlacement turns a request into the exact commands and a description of them. It runs only
@@ -61,9 +117,7 @@ func (m *Module) BuildPlacement(ctx context.Context, r core.PlacementRequest) (c
 		}
 		b.Steps = [][]string{m.command(focusArgv(host, p.Session, p.Block))}
 		b.Lines = []string{"bring the terminal for " + safe(r.Item.ID, core.MaxIDRunes) + " to the front", "session: " + safe(orID(p.Label, p.Session), core.MaxLabelRunes)}
-		if host != "" {
-			b.Lines = append(b.Lines, "machine: "+host)
-		}
+		b.Lines = append(b.Lines, m.serverLine(host))
 	case core.PlaceWork:
 		session, err := m.currentSession()
 		if err != nil {
@@ -87,7 +141,7 @@ func (m *Module) BuildPlacement(ctx context.Context, r core.PlacementRequest) (c
 			argv, where = splitArgv(session, anchor, label, cwd, r.Command), "a split beside this terminal"
 		}
 		b.Steps = [][]string{m.command(argv)}
-		b.Lines = []string{"open " + where + " named " + label + " in session " + session, "it runs: " + core.DisplayArgv(r.Command)}
+		b.Lines = []string{"open " + where + " named " + label + " in session " + session, "it runs: " + core.DisplayArgv(r.Command), m.serverLine("")}
 		if cwd != "" {
 			b.Lines = append(b.Lines, "in folder: "+cwd)
 		}
@@ -107,14 +161,10 @@ func orID(a, b string) string {
 	return b
 }
 
-// checkWrites refuses a plan with a command the write allowlist would not run.
+// checkWrites refuses a plan with a command the write allowlist would not run, and adds the server
+// line to the description.
 func (m *Module) checkWrites(b core.PlacementBuild) error {
-	for _, s := range b.Steps {
-		if len(s) < 2 || s[0] != core.RexBin || !allowedWriteArgv(s[1:]) {
-			return errors.New("refused: not an allowed workspace write")
-		}
-	}
-	return nil
+	return m.CheckPlacement(b.Steps)
 }
 
 func (m *Module) buildLayout(ctx context.Context, r core.PlacementRequest) (core.PlacementBuild, error) {
@@ -181,7 +231,7 @@ func (m *Module) buildLayout(ctx context.Context, r core.PlacementRequest) (core
 	if cwd != "" {
 		b.Lines = append(b.Lines, "in folder: "+cwd)
 	}
-	b.Lines = append(b.Lines, "nothing is typed into any existing terminal")
+	b.Lines = append(b.Lines, m.serverLine(""), "nothing is typed into any existing terminal")
 	return b, m.checkWrites(b)
 }
 
@@ -225,8 +275,8 @@ func (m *Module) openTabs(ctx context.Context, session string) (map[string]bool,
 // Rex's own failures before it acts (no server, a target that is not there) are "not applied";
 // a timeout, a signal or any other failure may have happened after, so it is "result unknown".
 func (m *Module) RunPlacement(ctx context.Context, argv []string) (core.StepResult, error) {
-	if len(argv) < 2 || argv[0] != core.RexBin || !allowedWriteArgv(argv[1:]) {
-		return core.StepResult{}, errors.New("refused: not an allowed workspace write")
+	if err := m.CheckPlacement([][]string{argv}); err != nil {
+		return core.StepResult{}, err
 	}
 	if m.Bin() == "" {
 		return core.StepResult{}, errors.New("Rex was not found")

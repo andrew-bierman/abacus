@@ -18,6 +18,9 @@ const (
 	maxAgentWords     = 16
 	maxAgentWordRunes = 512
 	maxAgentTitle     = 200
+	// maxExpandedWord is the longest word of the command that is run (the workspace adapter's own
+	// limit is the same, so a word over it is refused here, with the reason).
+	maxExpandedWord = 1024
 )
 
 // ItemIDRE is an item id as it may be put in a command: the shapes a task, run, lease or
@@ -91,6 +94,9 @@ func ExpandAgentCommand(tpl []string, id, title string) ([]string, error) {
 		x := strings.ReplaceAll(strings.ReplaceAll(w, "{task_id}", id), "{title}", title)
 		if x != w && strings.HasPrefix(x, "-") && !strings.HasPrefix(w, "-") {
 			return nil, fmt.Errorf("agent_command word %d would start with \"-\" once filled in, so the program could read it as an option; put text before the placeholder", i+1)
+		}
+		if n := utf8.RuneCountInString(x); n > maxExpandedWord {
+			return nil, fmt.Errorf("agent_command word %d is %d characters once filled in; the limit is %d, so shorten the template", i+1, n, maxExpandedWord)
 		}
 		out[i] = x
 	}

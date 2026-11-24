@@ -89,6 +89,9 @@ type StepResult struct{ Pane string }
 // each command before it runs it. A timeout or cancel must come back as UnknownOutcome.
 type WorkspaceActor interface {
 	BuildPlacement(ctx context.Context, r PlacementRequest) (PlacementBuild, error)
+	// CheckPlacement re-validates a plan's commands (the allowlist and which machine they reach)
+	// before any of them runs, so a plan not made by PlanPlacement cannot get past it.
+	CheckPlacement(steps [][]string) error
 	RunPlacement(ctx context.Context, argv []string) (StepResult, error)
 	// PlacementTarget says where the write goes, for the audit log and the confirm step.
 	PlacementTarget() string
@@ -168,6 +171,12 @@ func NewPlacementApplier(w WorkspaceActor, a Audit) *PlacementApplier {
 func (a *PlacementApplier) Apply(ctx context.Context, p PlacementPlan) (PlacementResult, error) {
 	if !p.confirmed {
 		return PlacementResult{}, ErrNotConfirmed
+	}
+	if p.id == 0 || len(p.Steps) == 0 {
+		return PlacementResult{}, errors.New("this plan was not made by PlanPlacement, so it is not run")
+	}
+	if err := a.w.CheckPlacement(p.Steps); err != nil {
+		return PlacementResult{}, err
 	}
 	res := PlacementResult{Action: p.Request.Action}
 	e := AuditEntry{Domain: "workspace", Verb: string(p.Request.Action), Argv: p.Steps[0], Tracker: a.w.PlacementTarget()}

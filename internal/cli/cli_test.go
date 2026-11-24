@@ -291,3 +291,47 @@ func TestTUITabFlagPassesTheLowerCasedTabAndRefusesAnythingElse(t *testing.T) {
 		t.Errorf("%q", got)
 	}
 }
+
+func TestConfigSetAgentCommandIsAuditedAndShownBack(t *testing.T) {
+	dir := t.TempDir()
+	au := &auditRec{}
+	var o, e bytes.Buffer
+	d := cli.Deps{Out: &o, Err: &e, Version: "t", Config: core.ConfigStore{Path: dir + "/c.json"}, Audit: au}
+	code := cli.Run([]string{"config", "set", "agent_command", `["claude","Work on {task_id}: {title}"]`}, d)
+	if code != 0 || !strings.Contains(o.String(), `work on this will run: claude "Work on {task_id}: {title}"`) {
+		t.Fatalf("%d %q %q", code, o.String(), e.String())
+	}
+	if len(au.lines) != 2 || au.lines[0].Phase != "attempt" || au.lines[1].Phase != "ok" || au.lines[0].Domain != "config" || au.lines[0].Argv[0] != "claude" {
+		t.Fatalf("%+v", au.lines)
+	}
+	// A failed audit stops the change.
+	au2 := &auditRec{err: errors.New("disk full")}
+	o.Reset()
+	d.Audit = au2
+	if code := cli.Run([]string{"config", "set", "agent_command", `["other"]`}, d); code == 0 {
+		t.Fatal("fail closed")
+	}
+	if v, _ := d.Config.Load(); len(v.AgentCommand) != 2 {
+		t.Fatalf("not changed: %v", v.AgentCommand)
+	}
+	// Other keys are not audited.
+	au3 := &auditRec{}
+	d.Audit = au3
+	cli.Run([]string{"config", "set", "actor", "me"}, d)
+	if len(au3.lines) != 0 {
+		t.Fatalf("%+v", au3.lines)
+	}
+}
+
+type auditRec struct {
+	lines []core.AuditEntry
+	err   error
+}
+
+func (a *auditRec) Record(e core.AuditEntry) error {
+	if a.err != nil {
+		return a.err
+	}
+	a.lines = append(a.lines, e)
+	return nil
+}
