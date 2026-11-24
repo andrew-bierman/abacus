@@ -3,12 +3,14 @@ package core_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
@@ -292,5 +294,48 @@ func TestRepairWordsAnUnknownInitOutcomeAsUnknownWithWhereTheFilesWent(t *testin
 	p, _ = e.s.Plan(core.StepRepair)
 	if _, err := e.s.Apply(context.Background(), p.Confirm()); err == nil || errors.Is(err, core.ErrOutcomeUnknown) || !strings.Contains(err.Error(), ".beads.incomplete-") {
 		t.Fatalf("%v", err)
+	}
+}
+
+func TestInspectWorkspaceRefusesWhatItCannotLookAt(t *testing.T) {
+	if h, why := core.InspectWorkspace(""); h != core.WorkspaceClean || why != "" {
+		t.Fatalf("empty path: %s %q", h, why)
+	}
+	if os.Getuid() == 0 {
+		t.Skip("permission checks do not apply to root")
+	}
+	// an unreadable folder, and an unreadable .beads, are refused with a reason, never called repairable
+	unreadable := func(path string) {
+		t.Helper()
+		if err := os.Chmod(path, 0); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { os.Chmod(path, 0o755) })
+	}
+	dir := filepath.Join(t.TempDir(), "ws")
+	write(t, filepath.Join(dir, ".beads", ".gitignore"), "x")
+	unreadable(filepath.Join(dir, ".beads"))
+	if h, why := core.InspectWorkspace(dir); h != core.WorkspaceUnsafe || !strings.Contains(why, "cannot read inside .beads") {
+		t.Fatalf("unreadable .beads: %s %q", h, why)
+	}
+	unreadable(dir)
+	if h, why := core.InspectWorkspace(dir); h != core.WorkspaceUnsafe || why == "" {
+		t.Fatalf("unreadable folder: %s %q", h, why)
+	}
+}
+
+// A failed start leaves a handful of files; a folder with thousands is somebody's data, even when every
+// file is named like something a failed start leaves.
+func TestInspectWorkspaceRefusesAnOversizedBeadsFolder(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "ws")
+	failedInitTree(t, dir, 3000)
+	noms := filepath.Join(dir, ".beads", "embeddeddolt", brand.Name, ".dolt", "noms")
+	for i := 0; i < 2100; i++ {
+		if err := os.WriteFile(filepath.Join(noms, fmt.Sprintf("%032d", i)), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if h, why := core.InspectWorkspace(dir); h != core.WorkspaceUnsafe || !strings.Contains(why, "too many files") {
+		t.Fatalf("%s %q", h, why)
 	}
 }

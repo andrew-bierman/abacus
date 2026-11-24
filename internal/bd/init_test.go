@@ -246,3 +246,79 @@ func TestAHalfCreatedWorkspaceGuidesToTheRepairNotAnotherInit(t *testing.T) {
 		t.Fatalf("%+v", g)
 	}
 }
+
+// errRunner stands in for bd failing to run, or running out of time.
+type errRunner struct {
+	err    error
+	called bool
+}
+
+func (r *errRunner) Run(context.Context, string, ...string) ([]byte, int, error) {
+	r.called = true
+	return nil, 0, r.err
+}
+
+// An init that timed out or was canceled may still have created files, so it is "result unknown", never
+// "not applied"; an init that could not start at all is a plain failure. Neither points Tasks at the folder.
+func TestRunInitTimeoutIsUnknownAndACrashIsAFailure(t *testing.T) {
+	for name, c := range map[string]struct {
+		err     error
+		unknown bool
+	}{
+		"timed out": {core.ErrTimedOut, true},
+		"canceled":  {core.ErrCanceled, true},
+		"not found": {errors.New("fork/exec /fake/bd: no such file"), false},
+	} {
+		ws := filepath.Join(t.TempDir(), "workspace")
+		ref := core.NewTrackerRef("")
+		er := &errRunner{err: c.err}
+		m := New(Options{InitDir: ws, Ref: ref, LookPath: found, InitRunner: func(string) core.Runner { return er }})
+		m.SetFound(core.Found{Bin: "/fake/bd"})
+		argv, _ := m.BuildTaskArgv(core.TaskChange{Op: core.TaskInit, Dir: ws})
+		_, err := m.RunTask(context.Background(), argv)
+		if err == nil || errors.Is(err, core.ErrOutcomeUnknown) != c.unknown || ref.Dir() != "" {
+			t.Errorf("%s: err=%v unknown=%v ref=%q", name, err, errors.Is(err, core.ErrOutcomeUnknown), ref.Dir())
+		}
+		if c.unknown && !strings.Contains(err.Error(), ws) {
+			t.Errorf("%s: the unknown outcome should say where to look: %v", name, err)
+		}
+	}
+}
+
+// A folder with an unfinished .beads is never initialised again over the top: the user is sent to the
+// repair, and bd is not run.
+func TestRunInitRefusesAHalfCreatedWorkspaceWithoutRunningBd(t *testing.T) {
+	er := &errRunner{}
+	m, _, ws := initModule(t, &dirRunner{}, nil)
+	m.o.InitRunner = func(string) core.Runner { return er }
+	if err := os.MkdirAll(filepath.Join(ws, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	argv, _ := m.BuildTaskArgv(core.TaskChange{Op: core.TaskInit, Dir: ws})
+	_, err := m.RunTask(context.Background(), argv)
+	if err == nil || !strings.Contains(err.Error(), "setup --repair") || er.called {
+		t.Fatalf("err=%v called=%v", err, er.called)
+	}
+}
+
+// A write never silently falls back to a PATH copy of bd when the bundled one was rejected: the preflight a
+// repair makes before moving any file says so, and so does the init itself.
+func TestInitPreflightAndInitRefuseAWriteThroughAFallbackBd(t *testing.T) {
+	er := &errRunner{}
+	m, _, ws := initModule(t, &dirRunner{}, nil)
+	m.o.InitRunner = func(string) core.Runner { return er }
+	m.SetFound(core.Found{Bin: "/usr/bin/bd", Src: core.SourcePATH, Ignored: "the built-in bd is not trusted"})
+	if err := m.InitPreflight(); err == nil || !strings.Contains(err.Error(), "not trusted") {
+		t.Fatalf("preflight: %v", err)
+	}
+	argv, _ := m.BuildTaskArgv(core.TaskChange{Op: core.TaskInit, Dir: ws})
+	if _, err := m.RunTask(context.Background(), argv); err == nil || er.called {
+		t.Fatalf("init ran through a fallback bd: err=%v called=%v", err, er.called)
+	}
+	// with nothing wrong, and no bd to be found, the preflight reports what is missing
+	m.SetFound(core.Found{})
+	m.o.LookPath = func(string) (string, error) { return "", errors.New("not found") }
+	if err := m.InitPreflight(); err == nil {
+		t.Fatal("preflight passed with no bd")
+	}
+}
