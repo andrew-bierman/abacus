@@ -132,13 +132,26 @@ func TestBulkAndBoardAndSetupDigests(t *testing.T) {
 		t.Error("op and destination are in the digest")
 	}
 
-	steps := []core.StepInfo{{Step: core.StepActor, State: "needed", Command: "abacus config set actor me"}, {Step: core.StepQueues, State: "done"}}
+	steps := []core.SetupStepPlan{{Step: core.StepActor, State: "needed", Argv: []string{"abacus", "config", "set", "actor", "me"}}, {Step: core.StepQueues, State: "blocked", Message: "needs the workspace"}}
 	s0 := core.SetupDigest(steps)
-	if core.SetupDigest(steps) != s0 || core.SetupDigest([]core.StepInfo{{Step: core.StepActor, State: "needed", Command: "abacus config set actor you"}}) == s0 {
-		t.Error("the setup digest follows the commands of the steps still to do")
+	mod := func(f func(*[]core.SetupStepPlan)) string {
+		c := append([]core.SetupStepPlan(nil), steps...)
+		f(&c)
+		return core.SetupDigest(c)
 	}
-	if core.SetupDigest([]core.StepInfo{{Step: core.StepActor, State: "done"}}) == s0 {
-		t.Error("a step that is done is no longer part of the plan")
+	if core.SetupDigest(steps) != s0 {
+		t.Error("deterministic")
+	}
+	for name, got := range map[string]string{
+		"argv":             mod(func(c *[]core.SetupStepPlan) { (*c)[0].Argv = []string{"abacus", "config", "set", "actor", "you"} }),
+		"blocked reason":   mod(func(c *[]core.SetupStepPlan) { (*c)[1].Message = "needs something else" }),
+		"blocked -> ready": mod(func(c *[]core.SetupStepPlan) { (*c)[1].State, (*c)[1].Argv = "needed", []string{"lambe", "init"} }),
+		"step done":        mod(func(c *[]core.SetupStepPlan) { (*c)[0].State, (*c)[0].Argv = "done", nil }),
+		"step dropped":     mod(func(c *[]core.SetupStepPlan) { *c = (*c)[:1] }),
+	} {
+		if got == s0 {
+			t.Errorf("a change to the %s does not change the setup digest", name)
+		}
 	}
 }
 

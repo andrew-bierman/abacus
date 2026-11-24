@@ -68,6 +68,8 @@ type SetupReport struct {
 	Steps      []StepInfo    `json:"steps"`
 	Results    []SetupResult `json:"results,omitempty"`
 	PlanDigest string        `json:"plan_digest"`
+	// Error is set when a step was refused because it was not the one reviewed (code "changed").
+	Error *ErrorBody `json:"error,omitempty"`
 }
 
 // SetupRepairReport is `setup --repair --json`.

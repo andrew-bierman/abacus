@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
@@ -57,12 +58,13 @@ func runSetup(rest []string, d Deps) int {
 		return runRepair(ctx, s, d, yes, dry, asJSON, expect)
 	}
 	steps := s.Steps(ctx)
-	digest := core.SetupDigest(steps)
+	reviewed := s.SetupStepPlans(ctx)
+	digest := core.SetupDigest(reviewed)
 	if expect != "" && expect != digest {
 		return planChanged(d, "setup", expect, digest)
 	}
 	var results []setupResult
-	failed := false
+	failed, changedStep := false, false
 	// Applying needs an explicit yes: --yes, or a y at the prompt (which needs input and text mode).
 	canAsk := !asJSON && d.In != nil && interactive(d.In)
 	if !dry && (yes || canAsk) {
@@ -80,6 +82,13 @@ func runSetup(rest []string, d Deps) int {
 				// With --yes the caller asked for it to be done: a step that cannot be is a failure.
 				failed = failed || yes
 				results = append(results, setupResult{Step: st.Step, Error: err.Error()})
+				continue
+			}
+			if expect != "" && !slices.Equal(p.Argv, reviewedArgv(reviewed, st.Step)) {
+				// a step that was blocked when the plan was reviewed, or whose command differs now, was never reviewed
+				failed = true
+				results = append(results, setupResult{Step: st.Step, Error: "the plan changed since you reviewed it: this step was not run; review it again"})
+				changedStep = true
 				continue
 			}
 			if !asJSON {
@@ -109,7 +118,12 @@ func runSetup(rest []string, d Deps) int {
 		steps = s.Steps(ctx) // what is left after applying
 	}
 	if asJSON {
-		jsonOut(d.Out, core.SetupReport{Steps: steps, Results: results, PlanDigest: digest})
+		rep := core.SetupReport{Steps: steps, Results: results, PlanDigest: digest}
+		if changedStep { // a step was not run because it was never reviewed: the same error object as any refusal
+			b := core.NewErrorDoc(core.CodeChanged, "the plan changed since you reviewed it: a step was not run; review it again").Error
+			rep.Error = &b
+		}
+		jsonOut(d.Out, rep)
 	} else {
 		renderSetup(d.Out, steps, results, yes || dry, canAsk)
 	}
@@ -117,6 +131,15 @@ func runSetup(rest []string, d Deps) int {
 		return core.ExitFail
 	}
 	return core.ExitOK
+}
+
+func reviewedArgv(r []core.SetupStepPlan, id core.StepID) []string {
+	for _, sp := range r {
+		if sp.Step == id {
+			return sp.Argv
+		}
+	}
+	return nil
 }
 
 // interactive reports whether r can answer a prompt: a real terminal, not a pipe, a file or

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -147,19 +148,41 @@ func (p SetupPlan) Digest() string {
 	return PlanDigest("setup", string(p.Step), []string{p.dir}, argv, nil)
 }
 
-// SetupDigest is the digest of what `setup` reports it would do: every step that is not done, in
-// order, with its state and the command it would run.
-func SetupDigest(steps []StepInfo) string {
+// SetupStepPlan is one step of `setup` as it was reviewed: its state and message (for a blocked step, the
+// reason), and the exact argv its plan would run (nil when it has no plan: done, blocked or unavailable).
+type SetupStepPlan struct {
+	Step    StepID
+	State   string
+	Message string
+	Argv    []string
+}
+
+// SetupStepPlans reads every step and plans the ones that can be planned now. Planning runs nothing.
+func (s *Setup) SetupStepPlans(ctx context.Context) []SetupStepPlan {
+	var out []SetupStepPlan
+	for _, st := range s.Steps(ctx) {
+		sp := SetupStepPlan{Step: st.Step, State: st.State, Message: st.Message}
+		if st.State == "needed" || st.State == "repair" {
+			if p, err := s.Plan(st.Step); err == nil {
+				sp.Argv = p.Argv
+			}
+		}
+		out = append(out, sp)
+	}
+	return out
+}
+
+// SetupDigest is the digest of everything `setup` reports and would run: every step in order (blocked ones
+// with their reason), its state, and the argv its plan runs.
+func SetupDigest(steps []SetupStepPlan) string {
 	var targets []string
 	var argv [][]string
 	guards := map[string]string{}
 	for _, st := range steps {
-		if st.State == "done" || st.State == "unavailable" {
-			continue
-		}
 		targets = append(targets, string(st.Step))
-		guards[string(st.Step)] = st.State
-		argv = append(argv, []string{st.Command})
+		argv = append(argv, append([]string{string(st.Step)}, st.Argv...))
+		guards[string(st.Step)+".state"] = st.State
+		guards[string(st.Step)+".message"] = st.Message
 	}
 	return PlanDigest("setup", "setup", targets, argv, guards)
 }
