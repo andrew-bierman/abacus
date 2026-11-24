@@ -173,7 +173,7 @@ func TestQueueStatesGetAMarkColoredByTheirTone(t *testing.T) {
 		{Issue: "A-0", State: "pending"}, {Issue: "A-1", State: "running"}, {Issue: "A-2", State: "failed"}, {Issue: "A-3", State: "deferred"}}}}})
 	v := sized(qm, 120, 30).View()
 	for state, kind := range map[string]Kind{"running": KindOK, "failed": KindFail, "deferred": KindWarn} {
-		if !strings.Contains(v, th.Text(kind, runStateGlyph(state))+" "+th.Text(kind, state)) {
+		if !strings.Contains(v, th.Text(kind, runStateGlyph(core.ParseRunState(state)))+" "+th.Text(kind, state)) {
 			t.Errorf("%s has a %v mark:\n%s", state, kind, v)
 		}
 	}
@@ -276,7 +276,7 @@ func TestBoardChannelsAreNotTintedOnlyPeopleAre(t *testing.T) {
 func TestRunStateGlyphsDifferPerState(t *testing.T) {
 	seen := map[string]string{}
 	for _, st := range []string{"running", "failed", "deferred", "pending", "settled", "canceled", "from-a-newer-supervisor"} {
-		g := runStateGlyph(st)
+		g := runStateGlyph(core.RunState(st))
 		if g == "" {
 			t.Errorf("%s has no glyph", st)
 		}
@@ -285,8 +285,8 @@ func TestRunStateGlyphsDifferPerState(t *testing.T) {
 		}
 		seen[g] = st
 	}
-	if runStateGlyph("RUNNING") != runStateGlyph("running") {
-		t.Error("the glyph does not depend on case")
+	if runStateGlyph(core.ParseRunState("RUNNING")) != runStateGlyph(core.RunRunning) {
+		t.Error("a parsed state is case-blind")
 	}
 }
 

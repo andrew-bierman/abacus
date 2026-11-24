@@ -486,3 +486,6 @@ func (m *Module) StartHint() string {
 	}
 	return "Start it yourself with: lambe run  (abacus never starts it for you). Its state API must be on to show live runs."
 }
+
+// RunState is the run's state as the typed core value, read once here so no front end matches strings.
+func (r Run) RunState() core.RunState { return core.ParseRunState(r.State) }

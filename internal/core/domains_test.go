@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 	"github.com/andrew-bierman/abacus/internal/core/modtest"
@@ -371,5 +372,18 @@ func TestLeaseExpiryIsTheHubsTimeOrAQuestionMarkForAHeldLeaseWithNone(t *testing
 	// Detail keeps saying the same thing through the shared rule.
 	if got := (core.Lease{State: core.LeaseHeld, Holder: "amy"}).Detail(); got != "by amy (expires ?)" {
 		t.Errorf("Detail() = %q", got)
+	}
+}
+
+func TestParseRunStateAndLeaseUntil(t *testing.T) {
+	if core.ParseRunState(" Running ") != core.RunRunning || core.ParseRunState("NEW-One").Known() {
+		t.Fatal("run state parse")
+	}
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	if d, ok := (core.Lease{ExpiresAt: "2026-01-01T12:30:00Z"}).Until(now); !ok || d != 30*time.Minute {
+		t.Fatalf("until = %v %v", d, ok)
+	}
+	if _, ok := (core.Lease{ExpiresAt: "soon"}).Until(now); ok {
+		t.Fatal("unreadable expiry must report not ok")
 	}
 }

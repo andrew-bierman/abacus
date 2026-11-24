@@ -231,6 +231,13 @@ func (s *leasesSection) detailLines() []string {
 		th.Header.Render(orDash(l.Resource)) + " " + th.Badge(toneKind(l.Tone()), san(string(l.State))), "",
 		field(holder, l.Holder), field("expires", san(l.Expiry())),
 	}
+	if d, ok := l.Until(nowFn()); ok && l.State == core.LeaseHeld {
+		left := "in " + core.SearchAge(d)
+		if d < 0 {
+			left = core.SearchAge(-d) + " ago"
+		}
+		out = append(out, field("remaining", left))
+	}
 	it, ok := leaseItem(l)
 	return append(out, s.ws.detail(th, it, ok, 12)...)
 }
