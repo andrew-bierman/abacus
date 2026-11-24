@@ -30,21 +30,50 @@ abtop is the reference for the data, not for the code. Three findings decided th
 
 So: port the behaviour, and build the corpus from this machine.
 
+## Libraries
+
+The default is to use one, and to write only what no library does. This was checked against
+the source, not the READMEs.
+
+| Need | Library | Why it wins |
+| --- | --- | --- |
+| Process table, ppid tree, cmdline, cwd, CPU, RSS | `shirou/gopsutil/v4` | Per-platform detail already written: procfs, libproc, toolhelp. `net.Connections` returns listening sockets with the owning pid, replacing an `/proc/<pid>/fd` walk. |
+| opencode v2 session store | `modernc.org/sqlite` | Pure Go, no CGO, so the one-binary promise holds. |
+| Session list, port table | `charmbracelet/bubbles/table` | Already a dependency. |
+| Context and quota bars | `bubbles/progress` | Already a dependency. |
+| Token-rate and per-turn sparklines | `bubbles/sparkline` | Already a dependency. |
+| Selected-session detail scrolling | `bubbles/viewport` | Already a dependency. |
+| Panels, colour, layout | `lipgloss` (in the tree) | Same. |
+
+Written here, because nothing covers it:
+
+- **opencode v2 reads.** `ferry` requires `…/storage/session/<project>/`, which this install
+  does not have, and `moirai` queries the v1 tables (`session`, `message`, `part`). Neither
+  knows `session_v2` / `session_message` / `session_part`. About 150 lines against a schema we
+  can read.
+- **Live process state.** No Go library in this space reads which sessions are running, what
+  they spawned, or which ports they hold. This is the half of abtop that is not a parser.
+- **Orphan detection.** Needs cross-tick history; it is a rule, not a read.
+
 ## The seam
 
 `internal/agents` is deliberately split where the data source splits.
 
 | Layer | File | What it needs | Status |
 | --- | --- | --- | --- |
-| Live process table, ppid tree, CPU ticks, cwd, listening sockets | `proc.go` | procfs (Linux), injectable `Root` | done |
+| Live state behind a seam: Procs, CWD, Listeners | `proc.go` | `Machine` interface | done |
+| gopsutil implementation of that seam | `gopsutil.go` | `gopsutil/v4` | done |
 | Discovery, session build, child tree, port attribution, orphan detection | `discover.go` | `Machine` seam, cross-tick state in `Collector` | done |
 | Transcript reads: tokens, context, model, title, true state | phases 2 | per-harness readers | open |
 | Git branch and dirty counts per session cwd | `git.go` | `Runner` seam | open |
 | Quota gauges | `quota.go` | harness state files | open |
 | Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | open |
 
-`Machine.Root` and `Collector.Now` are the only seams needed for phase 1: every test reads a
-procfs-shaped fixture in `t.TempDir()` and never this machine.
+`Machine` is the only seam the Collector needs for live state: tests supply a fixed process
+table and never read this machine.
+
+Measured: one snapshot of the 29 sessions live on this machine takes 150ms.
+
 
 ## Two facts that need more than one read
 
@@ -80,9 +109,30 @@ Chosen to stay cheap on a machine with large histories (this one has 233M of Cod
 3. **Domain wiring.** `DomainSessions` in `core/domains.go`, `SessionsReport`, `SessionProvider`,
    `Providers.Sessions`, `ReadDomains`, `abacus sessions [--json]`. Follows the existing pattern
    exactly, including "not connected" when no procfs is readable.
-4. **The tab.** `newSessionsSection` in `internal/tui`: abtop's layout in lipgloss — session
-   table with state and context bars, token breakdown, ports/orphans, selected-session detail.
-   Golden tests in `internal/tui/testdata/golden/`.
+4. **The tab.** `newSessionsSection` in `internal/tui`, abtop's layout in abacus's existing
+   widget set. No new UI dependency: bubbles already ships the four things abtop hand-rolled.
+
+   | abtop panel | abacus tab |
+   | --- | --- |
+   | Header: host CPU/mem/load | `lipgloss` row over `gopsutil` host info |
+   | Context: 200-point token-rate sparkline + per-session % bars | `bubbles/sparkline` + `bubbles/progress` |
+   | Quota: 5h/7d gauges with reset countdown | `bubbles/progress` + a lipgloss countdown |
+   | Tokens: totals + per-turn sparkline | `bubbles/sparkline` |
+   | Projects: branch + dirty counts | phase 2 `git.go` |
+   | Ports: table incl. orphans | `bubbles/table` |
+   | Sessions: list + selected detail | `bubbles/table` or the existing tasks-list pattern, detail in `bubbles/viewport` |
+
+   Golden tests in `internal/tui/testdata/golden/`, matching the other domains, with invented
+   names per `956fbb4`.
+
+## Fixtures
+
+Synthetic, never captured. `956fbb4` already established that fixtures use invented names, so
+a redacted real corpus still does not belong in the repo. Each harness reader is tested against
+a store built in the test — for opencode, a SQLite database created with the real `session_v2`
+schema and invented rows. A live compare against `abtop --json` is a local, uncommitted oracle
+while building, never a run-time dependency.
+
 
 ## Non-goals
 
