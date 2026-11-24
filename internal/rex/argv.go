@@ -9,14 +9,55 @@ import (
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// The whole set of rex argvs this module may run, all read-only:
+// The whole set of rex argvs this module may run, all read-only (SESSION and BLOCK are ids that
+// pass validID; nothing else is ever a word of an argv):
 //
 //	[-S HOST] --autostart=false ls --json
 //	--autostart=false version --json
+//	[-S HOST] --autostart=false block ls -s SESSION --json
+//	[-S HOST] --autostart=false block call -s SESSION -b BLOCK program_status
+//	[-S HOST] --autostart=false block call -s SESSION -b BLOCK process
 //
 // --autostart=false is always present so a read can never start a server. Nothing that creates,
 // renames, focuses, closes or types into a session is reachable, and neither is `api call`.
+//
+// `rex block call` is a generic verb: the same command with another method (write, reset, clear,
+// ...) changes a terminal. The method name is therefore a literal in the matcher below, and no
+// argument word is accepted after it.
 const autostartOff = "--autostart=false"
+
+// The two block methods the Agents view reads. They are literals, never a variable: widening this
+// set is a change to what abacus may do to a terminal.
+const (
+	methodProgramStatus = "program_status"
+	methodProcess       = "process"
+)
+
+// idRE is the id grammar seen on a live Rex: a kind prefix, then hex digits and hyphens, never a
+// leading dash, at most 128 characters.
+var idRE = regexp.MustCompile(`^(session|block):[0-9a-f][0-9a-f-]{0,100}$`)
+
+func validID(prefix, id string) bool {
+	return strings.HasPrefix(id, prefix+":") && idRE.MatchString(id)
+}
+
+// withHost puts the optional -S HOST prefix in front of an argv.
+func withHost(host string, a ...string) []string {
+	if host == "" {
+		return a
+	}
+	return append([]string{"-S", host}, a...)
+}
+
+// blockLsArgv lists the panes (blocks) of one session.
+func blockLsArgv(host, session string) []string {
+	return withHost(host, autostartOff, "block", "ls", "-s", session, "--json")
+}
+
+// blockCallArgv calls one of the two read-only block methods on one pane.
+func blockCallArgv(host, session, block, method string) []string {
+	return withHost(host, autostartOff, "block", "call", "-s", session, "-b", block, method)
+}
 
 // lsArgv is the session list, for the local server (host "") or the one host a run carries.
 func lsArgv(host string) []string {
@@ -54,12 +95,28 @@ func ParseHosts(csv string) []string {
 }
 
 func allowedArgv(a []string) bool {
-	switch len(a) {
-	case 3:
+	if len(a) == 3 { // the local-only shapes: no -S prefix
 		return a[0] == autostartOff && a[1] == "ls" && a[2] == "--json" ||
 			a[0] == autostartOff && a[1] == "version" && a[2] == "--json"
+	}
+	if len(a) >= 2 && a[0] == "-S" { // the optional host prefix, valid for every other shape
+		if !ValidHost(a[1]) {
+			return false
+		}
+		a = a[2:]
+	}
+	if len(a) == 0 || a[0] != autostartOff {
+		return false
+	}
+	r := a[1:]
+	switch len(r) {
+	case 2:
+		return r[0] == "ls" && r[1] == "--json"
 	case 5:
-		return a[0] == "-S" && ValidHost(a[1]) && a[2] == autostartOff && a[3] == "ls" && a[4] == "--json"
+		return r[0] == "block" && r[1] == "ls" && r[2] == "-s" && validID("session", r[3]) && r[4] == "--json"
+	case 7:
+		return r[0] == "block" && r[1] == "call" && r[2] == "-s" && validID("session", r[3]) && r[4] == "-b" && validID("block", r[5]) &&
+			(r[6] == methodProgramStatus || r[6] == methodProcess)
 	}
 	return false
 }
