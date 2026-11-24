@@ -23,7 +23,7 @@ func write(t *testing.T, path, body string) {
 }
 
 func TestInspectWorkspaceOnlyCallsAFailedInitRepairable(t *testing.T) {
-	half := func(t *testing.T, dir string) { write(t, filepath.Join(dir, ".beads", "config.yaml"), "x: 1\n") }
+	half := func(t *testing.T, dir string) { write(t, filepath.Join(dir, ".beads", ".gitignore"), "x: 1\n") }
 	cases := []struct {
 		name  string
 		setup func(t *testing.T, dir string)
@@ -49,12 +49,39 @@ func TestInspectWorkspaceOnlyCallsAFailedInitRepairable(t *testing.T) {
 			half(t, dir)
 			os.Symlink("/etc/hosts", filepath.Join(dir, ".gitignore"))
 		}, core.WorkspaceUnsafe},
+		{"config.yaml inside", func(t *testing.T, dir string) {
+			half(t, dir)
+			write(t, filepath.Join(dir, ".beads", "config.yaml"), "a: b")
+		}, core.WorkspaceUnsafe},
+		{"hooks folder inside", func(t *testing.T, dir string) {
+			half(t, dir)
+			write(t, filepath.Join(dir, ".beads", "hooks", "pre-commit"), "#!/bin/sh")
+		}, core.WorkspaceUnsafe},
+		{"empty hooks folder inside", func(t *testing.T, dir string) {
+			half(t, dir)
+			os.MkdirAll(filepath.Join(dir, ".beads", "hooks"), 0o755)
+		}, core.WorkspaceUnsafe},
+		{"database file inside", func(t *testing.T, dir string) {
+			half(t, dir)
+			write(t, filepath.Join(dir, ".beads", "beads.db"), "SQLite")
+		}, core.WorkspaceUnsafe},
+		{"backup inside", func(t *testing.T, dir string) {
+			half(t, dir)
+			write(t, filepath.Join(dir, ".beads", "backup", "x.json"), "{}")
+		}, core.WorkspaceUnsafe},
+		{"another database folder", func(t *testing.T, dir string) { half(t, dir); write(t, filepath.Join(dir, ".beads", "dolt", "x"), "d") }, core.WorkspaceUnsafe},
+		{"a failed init after the database started", func(t *testing.T, dir string) { failedInitTree(t, dir, 3000) }, core.WorkspaceHalfBuilt},
+		{"database with real data in it", func(t *testing.T, dir string) { failedInitTree(t, dir, 2<<20) }, core.WorkspaceUnsafe},
+		{"unknown file in the database tree", func(t *testing.T, dir string) {
+			failedInitTree(t, dir, 3000)
+			write(t, filepath.Join(dir, ".beads", "embeddeddolt", "abacus", ".dolt", "noms", "other"), "x")
+		}, core.WorkspaceUnsafe},
 		{"user file beside it", func(t *testing.T, dir string) { half(t, dir); write(t, filepath.Join(dir, "notes.md"), "mine") }, core.WorkspaceUnsafe},
 		{"user file, no .beads", func(t *testing.T, dir string) { write(t, filepath.Join(dir, "notes.md"), "mine") }, core.WorkspaceUnsafe},
 		{"task export inside", func(t *testing.T, dir string) {
 			write(t, filepath.Join(dir, ".beads", "issues.jsonl"), `{"id":"a-1"}`+"\n")
 		}, core.WorkspaceUnsafe},
-		{"empty export inside", func(t *testing.T, dir string) { write(t, filepath.Join(dir, ".beads", "issues.jsonl"), "") }, core.WorkspaceHalfBuilt},
+		{"empty export inside", func(t *testing.T, dir string) { write(t, filepath.Join(dir, ".beads", "issues.jsonl"), "") }, core.WorkspaceUnsafe},
 		{"nested export inside", func(t *testing.T, dir string) { write(t, filepath.Join(dir, ".beads", "a", "b", "x.JSONL"), "{}") }, core.WorkspaceUnsafe},
 		{".beads is a link", func(t *testing.T, dir string) {
 			os.Symlink(t.TempDir(), filepath.Join(dir, ".beads"))
@@ -81,7 +108,7 @@ func TestInspectWorkspaceOnlyCallsAFailedInitRepairable(t *testing.T) {
 func halfEnv(t *testing.T) setupEnv {
 	t.Helper()
 	e := newSetupEnv(t)
-	write(t, filepath.Join(e.ws, ".beads", "config.yaml"), "x: 1\n")
+	write(t, filepath.Join(e.ws, ".beads", ".gitignore"), "x: 1\n")
 	return e
 }
 
@@ -124,14 +151,14 @@ func TestRepairMovesTheUnfinishedFolderAsideAuditsAndCreatesAgain(t *testing.T) 
 	if _, err := e.s.Apply(context.Background(), p); !errors.Is(err, core.ErrNotConfirmed) {
 		t.Fatalf("unconfirmed: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(e.ws, ".beads", "config.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(e.ws, ".beads", ".gitignore")); err != nil {
 		t.Fatal("an unconfirmed repair touched the folder")
 	}
 	msg, err := e.s.Apply(context.Background(), p.Confirm())
 	if err != nil || !strings.Contains(msg, aside) {
 		t.Fatalf("%q %v", msg, err)
 	}
-	if b, err := os.ReadFile(filepath.Join(aside, "config.yaml")); err != nil || string(b) != "x: 1\n" {
+	if b, err := os.ReadFile(filepath.Join(aside, ".gitignore")); err != nil || string(b) != "x: 1\n" {
 		t.Fatalf("the user's files must be kept intact: %q %v", b, err)
 	}
 	if _, err := os.Stat(filepath.Join(e.ws, ".beads")); err == nil {
@@ -163,7 +190,7 @@ func TestRepairFailsClosedWhenTheFolderChangedOrTheAuditFails(t *testing.T) {
 	if _, err := e.s.Apply(context.Background(), p.Confirm()); err == nil || !strings.Contains(err.Error(), "changed since") {
 		t.Fatalf("a file added after the plan must stop the repair: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(e.ws, ".beads", "config.yaml")); err != nil || len(e.bd.ran) != 0 {
+	if _, err := os.Stat(filepath.Join(e.ws, ".beads", ".gitignore")); err != nil || len(e.bd.ran) != 0 {
 		t.Fatal("nothing may move or run")
 	}
 
@@ -173,7 +200,7 @@ func TestRepairFailsClosedWhenTheFolderChangedOrTheAuditFails(t *testing.T) {
 	if _, err := e.s.Apply(context.Background(), p.Confirm()); err == nil {
 		t.Fatal("a failed audit must block the repair")
 	}
-	if _, err := os.Stat(filepath.Join(e.ws, ".beads", "config.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(e.ws, ".beads", ".gitignore")); err != nil {
 		t.Fatal("the folder moved without an audit line")
 	}
 }
@@ -201,7 +228,7 @@ func TestRepairNeverOverwritesAnExistingAsideFolder(t *testing.T) {
 	if _, err := e.s.Apply(context.Background(), p.Confirm()); err == nil || !strings.Contains(err.Error(), "already exists") {
 		t.Fatalf("%v", err)
 	}
-	if _, err := os.Stat(filepath.Join(e.ws, ".beads", "config.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(e.ws, ".beads", ".gitignore")); err != nil {
 		t.Fatal("the unfinished folder must stay where it was")
 	}
 }
@@ -213,5 +240,57 @@ func TestARepairGuideNamesTheRepairCommandEverywhereItIsShown(t *testing.T) {
 	}
 	if got := (core.Guide{Step: core.StepWorkspace, Message: "m", Action: "a"}).CLILine(); strings.Contains(got, "--repair") {
 		t.Fatal(got)
+	}
+}
+
+// failedInitTree is what a real `bd init` killed after starting its database leaves (seen with
+// bd 1.3.4), with the big table file at the given size.
+func failedInitTree(t *testing.T, dir string, tableBytes int) {
+	t.Helper()
+	b := filepath.Join(dir, ".beads")
+	db := filepath.Join(b, "embeddeddolt", "abacus", ".dolt")
+	write(t, filepath.Join(b, ".gitignore"), strings.Repeat("x", 1941))
+	write(t, filepath.Join(b, "embeddeddolt", ".lock"), "")
+	write(t, filepath.Join(b, "embeddeddolt", "abacus", ".dolt_safe_to_ignore"), "")
+	write(t, filepath.Join(db, "config.json"), "{}")
+	write(t, filepath.Join(db, "noms", "manifest"), "5:__DOLT__")
+	write(t, filepath.Join(db, "noms", "LOCK"), "")
+	write(t, filepath.Join(db, "noms", "journal.idx"), "")
+	write(t, filepath.Join(db, "noms", strings.Repeat("v", 32)), strings.Repeat("d", tableBytes))
+	os.MkdirAll(filepath.Join(db, "noms", "oldgen"), 0o755)
+	os.MkdirAll(filepath.Join(db, "temptf"), 0o755)
+}
+
+func TestRepairNeedsInitToBeAbleToRunAndMovesNothingOtherwise(t *testing.T) {
+	e := halfEnv(t)
+	p, err := e.s.Plan(core.StepRepair)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.bd.preflight = errors.New("the bundled bd was rejected as unsafe")
+	if _, err := e.s.Plan(core.StepRepair); err == nil || !strings.Contains(err.Error(), "rejected") {
+		t.Fatalf("plan must refuse when init cannot run: %v", err)
+	}
+	if _, err := e.s.Apply(context.Background(), p.Confirm()); err == nil || !strings.Contains(err.Error(), "rejected") {
+		t.Fatalf("apply must refuse too: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(e.ws, ".beads", ".gitignore")); err != nil || len(e.bd.ran) != 0 {
+		t.Fatal("nothing may move when init cannot run")
+	}
+}
+
+func TestRepairWordsAnUnknownInitOutcomeAsUnknownWithWhereTheFilesWent(t *testing.T) {
+	e := halfEnv(t)
+	e.bd.runErr = core.UnknownOutcome("bd init timed out")
+	p, _ := e.s.Plan(core.StepRepair)
+	_, err := e.s.Apply(context.Background(), p.Confirm())
+	if !errors.Is(err, core.ErrOutcomeUnknown) || !strings.Contains(err.Error(), ".beads.incomplete-") || !strings.Contains(err.Error(), "is unknown: check") {
+		t.Fatalf("%v", err)
+	}
+	e = halfEnv(t)
+	e.bd.runErr = errors.New("bd init exited 1")
+	p, _ = e.s.Plan(core.StepRepair)
+	if _, err := e.s.Apply(context.Background(), p.Confirm()); err == nil || errors.Is(err, core.ErrOutcomeUnknown) || !strings.Contains(err.Error(), ".beads.incomplete-") {
+		t.Fatalf("%v", err)
 	}
 }

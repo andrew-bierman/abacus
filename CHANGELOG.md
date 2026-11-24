@@ -16,8 +16,7 @@ may change behavior, and patch versions are fixes and small additions.
   `metadata.json`, left by an init that failed). It shows the exact plan, asks (or takes `--yes`;
   `--dry-run` only shows it), re-checks the folder at apply time and audits first. Nothing is
   deleted: the unfinished `.beads` is moved to `.beads.incomplete-<time>` and the workspace is
-  created again. It refuses unless the folder is that failed start and nothing else of yours (any
-  other file, a link, or a non-empty `.jsonl` task export inside `.beads`). The Tasks tab offers it
+  created again. It refuses unless the folder is exactly what a failed init leaves (an allowlist found by failing a real init: a `.gitignore` and an empty database tree, a few KiB in all; any other file, link, `config.yaml`, hooks, backups or a database with data is refused), if init could not run, or if another process holds the workspace lock. The Tasks tab offers it
   with `r`, and Doctor and `setup` say so instead of failing at apply. `setup --yes` never repairs.
   Core: `core.InspectWorkspace`, `StepRepair`, step state `repair` (additive JSON).
 - Leases detail shows the time a held lease has left (`remaining`); core `Lease.Until`.

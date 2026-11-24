@@ -27,7 +27,11 @@ type fakeBd struct {
 	trackerDir string
 	ran        [][]string
 	guide      *core.Guide // overrides the default workspace guide
+	preflight  error       // what InitPreflight reports (the tool missing or rejected)
+	runErr     error       // what the init run fails with
 }
+
+func (f *fakeBd) InitPreflight() error { return f.preflight }
 
 func (f *fakeBd) Domain() core.DomainID { return core.DomainTasks }
 func (f *fakeBd) Guide(context.Context) *core.Guide {
@@ -43,6 +47,9 @@ func (f *fakeBd) BuildTaskArgv(ch core.TaskChange) ([]string, error) {
 }
 func (f *fakeBd) RunTask(_ context.Context, argv []string) (core.TaskResult, error) {
 	f.ran = append(f.ran, argv)
+	if f.runErr != nil {
+		return core.TaskResult{}, f.runErr
+	}
 	return core.TaskResult{Title: "fleet workspace in " + f.initDir, Status: "initialized"}, nil
 }
 

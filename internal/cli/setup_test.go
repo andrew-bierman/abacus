@@ -227,7 +227,7 @@ func halfWorkspace(t *testing.T) string {
 	if err := os.MkdirAll(filepath.Join(ws, ".beads"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(ws, ".beads", "config.yaml"), []byte("x"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(ws, ".beads", ".gitignore"), []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return ws
@@ -237,7 +237,7 @@ func TestSetupRepairShowsThePlanAndChangesNothingWithoutAYes(t *testing.T) {
 	for _, args := range [][]string{{"--dry-run"}, {"--dry-run", "--yes"}, {}, {"--json"}} {
 		ws := halfWorkspace(t)
 		code, out, _, bd, au := runRepairCmd(t, ws, args...)
-		if _, err := os.Stat(filepath.Join(ws, ".beads", "config.yaml")); err != nil || bd.runs != 0 || au.n != 0 {
+		if _, err := os.Stat(filepath.Join(ws, ".beads", ".gitignore")); err != nil || bd.runs != 0 || au.n != 0 {
 			t.Fatalf("%v changed something", args)
 		}
 		wantCode := core.ExitFail // no yes, no terminal: asked for confirmation
@@ -256,7 +256,7 @@ func TestSetupRepairYesSetsItAsideAndRefusesAFolderWithUserFiles(t *testing.T) {
 	if code != 0 || bd.runs != 1 || au.n < 2 || !strings.Contains(out, "done:") {
 		t.Fatalf("code=%d runs=%d audit=%d\n%s%s", code, bd.runs, au.n, out, errs)
 	}
-	if m, _ := filepath.Glob(filepath.Join(ws, ".beads.incomplete-*", "config.yaml")); len(m) != 1 {
+	if m, _ := filepath.Glob(filepath.Join(ws, ".beads.incomplete-*", ".gitignore")); len(m) != 1 {
 		t.Fatal("the unfinished files must be kept")
 	}
 
@@ -266,7 +266,7 @@ func TestSetupRepairYesSetsItAsideAndRefusesAFolderWithUserFiles(t *testing.T) {
 	if code == 0 || bd.runs != 0 || au.n != 0 || !strings.Contains(errs, "refusing") {
 		t.Fatalf("code=%d runs=%d audit=%d %s", code, bd.runs, au.n, errs)
 	}
-	if _, err := os.Stat(filepath.Join(ws, ".beads", "config.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(ws, ".beads", ".gitignore")); err != nil {
 		t.Fatal("a refused repair must leave everything where it was")
 	}
 }

@@ -309,6 +309,20 @@ func (m *Module) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
 	return snap, err
 }
 
+// InitPreflight is whether an init could run now: the same two checks RunTask makes first, with
+// no side effects, so a repair never moves files when init could not follow.
+func (m *Module) InitPreflight() error {
+	if err := m.writeBlocked(); err != nil {
+		return err
+	}
+	if m.Bin() == "" {
+		if _, absent := m.Find("bd", m.o.Bin, m.o.LookPath); absent != "" {
+			return errors.New(absent)
+		}
+	}
+	return nil
+}
+
 // RunTask runs a planned write. It re-checks the write allowlist, so nothing but a built
 // argv can reach the process, and decodes bd's `--json` answer (an object or a one-element array).
 func (m *Module) RunTask(ctx context.Context, argv []string) (core.TaskResult, error) {
