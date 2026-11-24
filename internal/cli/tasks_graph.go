@@ -24,7 +24,7 @@ func runTaskGraph(rest []string, d Deps) int {
 	var o Options
 	var asJSON, whole bool
 	var depth int
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.BoolVar(&whole, "whole", false, "every linked task in topological layers, not one task's neighborhood")
 	fs.IntVar(&depth, "depth", 2, "neighborhood depth, 1 to 6")
 	if fs.Parse(rest) != nil {
@@ -39,13 +39,11 @@ func runTaskGraph(rest []string, d Deps) int {
 	prov := core.ResolveProviders(d.Build(o).Detect(ctx))
 	src := prov.Source
 	if src == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	snap, err := src.Snapshot(ctx)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks graph: %s\n", describeReadError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "tasks graph: %s\n", describeReadError(err))
 	}
 	now := time.Now()
 	if d.Now != nil {
@@ -60,8 +58,7 @@ func runTaskGraph(rest []string, d Deps) int {
 	}
 	gv := taskview.NewGraphIndex(taskview.Build(snap, now)).View(taskview.GraphOptions{Focus: id, Depth: depth, Whole: whole, Insights: ins})
 	if id != "" && gv.Focus == "" {
-		fmt.Fprintf(d.Err, "tasks graph: no task %q\n", core.Sanitize(id))
-		return core.ExitFail
+		return failf(d, core.CodeNotFound, "tasks graph: no task %q\n", core.Sanitize(id))
 	}
 	if asJSON {
 		jsonOut(d.Out, gv)

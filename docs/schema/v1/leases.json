@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "Lease": {
+      "properties": {
+        "expires_at": {
+          "type": "string"
+        },
+        "holder": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource",
+        "state"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: leases",
+  "properties": {
+    "domain": {
+      "type": "string"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "leases": {
+      "items": {
+        "$ref": "#/$defs/Lease"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "leases",
+    "schema_version",
+    "state",
+    "title"
+  ],
+  "title": "leases",
+  "type": "object",
+  "x-abacus-schema": 1
+}

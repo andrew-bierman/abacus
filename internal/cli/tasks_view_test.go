@@ -228,7 +228,7 @@ func TestTasksBoardReadFailureExitsNonZeroWithNoJSON(t *testing.T) {
 	bad := []core.Module{snapMod{Fake: &modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1"}}, err: errors.New("export failed")}}
 	for _, args := range [][]string{{"tasks", "board"}, {"tasks", "board", "--json"}} {
 		code, out, errOut := runTasks(t, bad, args...)
-		if code != core.ExitFail || out != "" || !strings.Contains(errOut, "export failed") {
+		if code != core.ExitFail || (out != "") != strings.Contains(strings.Join(args, " "), "--json") || !strings.Contains(errOut, "export failed") {
 			t.Errorf("%v: %d %q %q", args, code, out, errOut)
 		}
 	}

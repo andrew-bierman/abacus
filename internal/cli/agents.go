@@ -21,7 +21,7 @@ func runAgents(rest []string, d Deps) int {
 	var asJSON bool
 	var f core.AgentFilter
 	var state string
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.StringVar(&f.Harness, "harness", "", "only this harness (claude-code, codex, ...)")
 	fs.StringVar(&state, "state", "", "only this state: "+statesList())
 	fs.StringVar(&f.Repo, "repo", "", "only this repository")

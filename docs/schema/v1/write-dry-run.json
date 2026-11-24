@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: every single write with --dry-run",
+  "properties": {
+    "argv": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "change": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "context": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "dry_run": {
+      "type": "boolean"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "steps": {
+      "items": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "argv",
+    "change",
+    "dry_run",
+    "plan_digest",
+    "schema_version"
+  ],
+  "title": "write-dry-run",
+  "type": "object",
+  "x-abacus-schema": 1
+}

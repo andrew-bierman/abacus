@@ -1,0 +1,67 @@
+{
+  "attention": [
+    {
+      "issue": "T-2",
+      "reason": "gate_failed",
+      "detail": "gh:pr rejected: merge conflict"
+    }
+  ],
+  "domain": "queues",
+  "history": [
+    {
+      "issue": "H-2",
+      "title": "gate red task",
+      "updated_at": "2026-11-19T12:00:00Z"
+    },
+    {
+      "issue": "H-1",
+      "title": "restart interrupted task",
+      "updated_at": "2026-11-19T11:00:00Z"
+    },
+    {
+      "issue": "H-3",
+      "outcome": "completed",
+      "updated_at": "2026-11-19T10:00:00Z"
+    }
+  ],
+  "queue": [
+    {
+      "id": "Q-1",
+      "title": "ready task"
+    },
+    {
+      "id": "Q-2",
+      "title": "blocked task",
+      "blocked": true
+    }
+  ],
+  "reason": "demo data: fixtures, no live daemon",
+  "runs": [
+    {
+      "issue": "T-1",
+      "state": "running",
+      "phase": "gating",
+      "machine": "operators-mac",
+      "workflow": "general"
+    },
+    {
+      "issue": "T-2",
+      "state": "deferred",
+      "phase": "deferred",
+      "machine": "operators-mac"
+    },
+    {
+      "issue": "T-3",
+      "state": "running",
+      "phase": "running",
+      "machine": "operators-mac",
+      "stalled": true,
+      "workflow": "review"
+    }
+  ],
+  "schema_version": 1,
+  "source": "snapshot",
+  "state": "degraded",
+  "summary": "3 runs, 2 queued, 1 need attention",
+  "title": "Queues"
+}

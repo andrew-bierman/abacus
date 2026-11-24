@@ -1,0 +1,291 @@
+{
+  "$defs": {
+    "GraphEdge": {
+      "properties": {
+        "drawn": {
+          "type": "boolean"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "drawn",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "GraphLayer": {
+      "properties": {
+        "layer": {
+          "type": "integer"
+        },
+        "more": {
+          "type": "integer"
+        },
+        "nodes": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "layer",
+        "nodes"
+      ],
+      "type": "object"
+    },
+    "GraphNode": {
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "blocked_by": {
+          "type": "integer"
+        },
+        "blocks": {
+          "type": "integer"
+        },
+        "bottleneck": {
+          "type": "boolean"
+        },
+        "focus": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "in_cycle": {
+          "type": "boolean"
+        },
+        "layer": {
+          "type": "integer"
+        },
+        "missing": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "on_chain": {
+          "type": "boolean"
+        },
+        "order": {
+          "type": "integer"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "self_dependency": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "layer",
+        "order",
+        "priority",
+        "status",
+        "title"
+      ],
+      "type": "object"
+    },
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "OutlineRow": {
+      "properties": {
+        "depth": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "more": {
+          "type": "integer"
+        },
+        "node": {
+          "$ref": "#/$defs/GraphNode"
+        },
+        "repeat": {
+          "type": "boolean"
+        },
+        "side": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "depth",
+        "side"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks graph",
+  "properties": {
+    "chain": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "components": {
+      "type": "integer"
+    },
+    "cross_links": {
+      "type": "integer"
+    },
+    "cycles": {
+      "items": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "type": "array"
+    },
+    "depth": {
+      "type": "integer"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/GraphEdge"
+      },
+      "type": "array"
+    },
+    "focus": {
+      "type": "string"
+    },
+    "hidden": {
+      "type": "integer"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "isolated": {
+      "type": "integer"
+    },
+    "layers": {
+      "items": {
+        "$ref": "#/$defs/GraphLayer"
+      },
+      "type": "array"
+    },
+    "marks_source": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/GraphNode"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "open_blockers": {
+      "type": "integer"
+    },
+    "outline": {
+      "items": {
+        "$ref": "#/$defs/OutlineRow"
+      },
+      "type": "array"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "self_dependencies": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "total": {
+      "type": "integer"
+    },
+    "unblocks": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "domain",
+    "mode",
+    "nodes",
+    "schema_version",
+    "state",
+    "title",
+    "total"
+  ],
+  "title": "tasks-graph",
+  "type": "object",
+  "x-abacus-schema": 1
+}

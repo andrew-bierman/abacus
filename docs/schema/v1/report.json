@@ -1,0 +1,1448 @@
+{
+  "$defs": {
+    "Agent": {
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "children": {
+          "items": {
+            "$ref": "#/$defs/AgentChild"
+          },
+          "type": "array"
+        },
+        "context_pct": {
+          "type": "number"
+        },
+        "cost_usd": {
+          "type": "number"
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "harness": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_activity": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "ports": {
+          "items": {
+            "$ref": "#/$defs/AgentPort"
+          },
+          "type": "array"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "state": {
+          "type": "string"
+        },
+        "subagents": {
+          "items": {
+            "$ref": "#/$defs/Subagent"
+          },
+          "type": "array"
+        },
+        "task": {
+          "type": "string"
+        },
+        "term": {
+          "$ref": "#/$defs/TermRef"
+        },
+        "tokens": {
+          "type": "integer"
+        },
+        "worktree": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "harness",
+        "id",
+        "source",
+        "state"
+      ],
+      "type": "object"
+    },
+    "AgentChild": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "mem_kb": {
+          "type": "integer"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "pid"
+      ],
+      "type": "object"
+    },
+    "AgentPort": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "port"
+      ],
+      "type": "object"
+    },
+    "AgentsReport": {
+      "properties": {
+        "agents": {
+          "items": {
+            "$ref": "#/$defs/Agent"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "domain": {
+          "type": "string"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "orphan_ports": {
+          "items": {
+            "$ref": "#/$defs/AgentPort"
+          },
+          "type": "array"
+        },
+        "rate_limits": {
+          "items": {
+            "$ref": "#/$defs/RateLimit"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "setup": {
+          "$ref": "#/$defs/Guide"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "token_rate": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "agents",
+        "domain",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "Ambiguity": {
+      "properties": {
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Placement"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "item": {
+          "$ref": "#/$defs/WorkspaceItem"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "candidates",
+        "item"
+      ],
+      "type": "object"
+    },
+    "Attention": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "type": "object"
+    },
+    "BoardChannel": {
+      "properties": {
+        "messages": {
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "threads": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "BoardMessage": {
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "cut": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "BoardReport": {
+      "properties": {
+        "channels": {
+          "items": {
+            "$ref": "#/$defs/BoardChannel"
+          },
+          "type": "array"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "setup": {
+          "$ref": "#/$defs/Guide"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/BoardTask"
+          },
+          "type": "array"
+        },
+        "threads": {
+          "items": {
+            "$ref": "#/$defs/BoardThread"
+          },
+          "type": "array"
+        },
+        "title": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "BoardTask": {
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "claimant": {
+          "type": "string"
+        },
+        "cut": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "until": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "state"
+      ],
+      "type": "object"
+    },
+    "BoardThread": {
+      "properties": {
+        "last": {
+          "$ref": "#/$defs/BoardMessage"
+        },
+        "replies": {
+          "type": "integer"
+        },
+        "root": {
+          "$ref": "#/$defs/BoardMessage"
+        }
+      },
+      "required": [
+        "replies",
+        "root"
+      ],
+      "type": "object"
+    },
+    "BundledSummary": {
+      "properties": {
+        "elsewhere": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "embedded": {
+          "type": "boolean"
+        },
+        "line": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "unusable": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "verified": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "embedded",
+        "line",
+        "total",
+        "verified"
+      ],
+      "type": "object"
+    },
+    "Check": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "fix": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "detail",
+        "name",
+        "status"
+      ],
+      "type": "object"
+    },
+    "Detection": {
+      "properties": {
+        "api_version": {
+          "type": "integer"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "ignored": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "type": "object"
+    },
+    "DomainLine": {
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "guide": {
+          "$ref": "#/$defs/Guide"
+        },
+        "line": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "line",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "DomainsReport": {
+      "properties": {
+        "agents": {
+          "$ref": "#/$defs/AgentsReport"
+        },
+        "board": {
+          "$ref": "#/$defs/BoardReport"
+        },
+        "leases": {
+          "$ref": "#/$defs/LeasesReport"
+        },
+        "queues": {
+          "$ref": "#/$defs/QueuesReport"
+        },
+        "tasks": {
+          "$ref": "#/$defs/TasksReport"
+        },
+        "workspace": {
+          "$ref": "#/$defs/WorkspaceReport"
+        }
+      },
+      "required": [
+        "agents",
+        "board",
+        "leases",
+        "queues",
+        "tasks"
+      ],
+      "type": "object"
+    },
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "HistoryItem": {
+      "properties": {
+        "issue": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "type": "object"
+    },
+    "InsightsReport": {
+      "properties": {
+        "blockers": {
+          "items": {
+            "$ref": "#/$defs/Pick"
+          },
+          "type": "array"
+        },
+        "bottlenecks": {
+          "items": {
+            "$ref": "#/$defs/Ranked"
+          },
+          "type": "array"
+        },
+        "critical_path": {
+          "items": {
+            "$ref": "#/$defs/Ranked"
+          },
+          "type": "array"
+        },
+        "critical_path_note": {
+          "type": "string"
+        },
+        "cycles": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "type": "array"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "graph_edges": {
+          "type": "integer"
+        },
+        "graph_nodes": {
+          "type": "integer"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "influencers": {
+          "items": {
+            "$ref": "#/$defs/Ranked"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "setup": {
+          "$ref": "#/$defs/Guide"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "top_picks": {
+          "items": {
+            "$ref": "#/$defs/Pick"
+          },
+          "type": "array"
+        },
+        "total_actionable": {
+          "type": "integer"
+        },
+        "total_blocked": {
+          "type": "integer"
+        },
+        "tracks": {
+          "items": {
+            "$ref": "#/$defs/Track"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "domain",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "Lease": {
+      "properties": {
+        "expires_at": {
+          "type": "string"
+        },
+        "holder": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource",
+        "state"
+      ],
+      "type": "object"
+    },
+    "LeasesReport": {
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "leases": {
+          "items": {
+            "$ref": "#/$defs/Lease"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "setup": {
+          "$ref": "#/$defs/Guide"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "leases",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "ModuleReport": {
+      "properties": {
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/Check"
+          },
+          "type": "array"
+        },
+        "detection": {
+          "$ref": "#/$defs/Detection"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        }
+      },
+      "required": [
+        "detection",
+        "id",
+        "name"
+      ],
+      "type": "object"
+    },
+    "OpenPlan": {
+      "properties": {
+        "copy": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "rungs": {
+          "items": {
+            "$ref": "#/$defs/OpenRung"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "rungs"
+      ],
+      "type": "object"
+    },
+    "OpenRung": {
+      "properties": {
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "interactive": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "argv",
+        "interactive",
+        "name"
+      ],
+      "type": "object"
+    },
+    "Overview": {
+      "properties": {
+        "attention": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "bundled": {
+          "$ref": "#/$defs/BundledSummary"
+        },
+        "domain_lines": {
+          "items": {
+            "$ref": "#/$defs/DomainLine"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "headline": {
+          "type": "string"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "tools": {
+          "items": {
+            "$ref": "#/$defs/ToolLine"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "bundled",
+        "domain_lines",
+        "headline",
+        "ready",
+        "tools"
+      ],
+      "type": "object"
+    },
+    "Pick": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "score": {
+          "type": "number"
+        },
+        "title": {
+          "type": "string"
+        },
+        "unblocks": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "Placement": {
+      "properties": {
+        "block": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "item": {
+          "$ref": "#/$defs/WorkspaceItem"
+        },
+        "label": {
+          "type": "string"
+        },
+        "match": {
+          "type": "string"
+        },
+        "open": {
+          "$ref": "#/$defs/OpenPlan"
+        },
+        "session": {
+          "type": "string"
+        },
+        "tab": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "item"
+      ],
+      "type": "object"
+    },
+    "QueueItem": {
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "QueueRun": {
+      "properties": {
+        "issue": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        },
+        "stalled": {
+          "type": "boolean"
+        },
+        "state": {
+          "type": "string"
+        },
+        "workflow": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "type": "object"
+    },
+    "QueuesReport": {
+      "properties": {
+        "attention": {
+          "items": {
+            "$ref": "#/$defs/Attention"
+          },
+          "type": "array"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "history": {
+          "items": {
+            "$ref": "#/$defs/HistoryItem"
+          },
+          "type": "array"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "queue": {
+          "items": {
+            "$ref": "#/$defs/QueueItem"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "runs": {
+          "items": {
+            "$ref": "#/$defs/QueueRun"
+          },
+          "type": "array"
+        },
+        "setup": {
+          "$ref": "#/$defs/Guide"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "Ranked": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "value"
+      ],
+      "type": "object"
+    },
+    "RateLimit": {
+      "properties": {
+        "five_hour_pct": {
+          "type": "number"
+        },
+        "five_hour_resets_at": {
+          "type": "string"
+        },
+        "harness": {
+          "type": "string"
+        },
+        "seven_day_pct": {
+          "type": "number"
+        },
+        "seven_day_resets_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "harness"
+      ],
+      "type": "object"
+    },
+    "Row": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "tone": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource",
+        "state",
+        "tone"
+      ],
+      "type": "object"
+    },
+    "Status": {
+      "properties": {
+        "how_to_connect": {
+          "type": "string"
+        },
+        "lines": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/Row"
+          },
+          "type": "array"
+        },
+        "source": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "unavailable": {
+          "type": "string"
+        },
+        "workspace": {
+          "$ref": "#/$defs/WorkspaceInfo"
+        }
+      },
+      "type": "object"
+    },
+    "Subagent": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "tokens": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "Task": {
+      "properties": {
+        "assignee": {
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "priority",
+        "status",
+        "title"
+      ],
+      "type": "object"
+    },
+    "TaskCounts": {
+      "properties": {
+        "blocked": {
+          "type": "integer"
+        },
+        "closed": {
+          "type": "integer"
+        },
+        "deferred": {
+          "type": "integer"
+        },
+        "in_progress": {
+          "type": "integer"
+        },
+        "open": {
+          "type": "integer"
+        },
+        "ready": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "blocked",
+        "closed",
+        "deferred",
+        "in_progress",
+        "open",
+        "ready",
+        "total"
+      ],
+      "type": "object"
+    },
+    "TasksReport": {
+      "properties": {
+        "counts": {
+          "$ref": "#/$defs/TaskCounts"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "insights": {
+          "$ref": "#/$defs/InsightsReport"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "recent": {
+          "items": {
+            "$ref": "#/$defs/Task"
+          },
+          "type": "array"
+        },
+        "setup": {
+          "$ref": "#/$defs/Guide"
+        },
+        "source": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "counts",
+        "domain",
+        "state",
+        "title"
+      ],
+      "type": "object"
+    },
+    "TermRef": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "type": "object"
+    },
+    "ToolLine": {
+      "properties": {
+        "bundled_tool": {
+          "type": "boolean"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "where": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "where"
+      ],
+      "type": "object"
+    },
+    "Track": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "WorkspaceInfo": {
+      "properties": {
+        "api_revision": {
+          "type": "integer"
+        },
+        "compatible": {
+          "type": "boolean"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "in_session": {
+          "type": "boolean"
+        },
+        "live": {
+          "type": "boolean"
+        },
+        "server": {
+          "type": "string"
+        },
+        "supported_max": {
+          "type": "integer"
+        },
+        "supported_min": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "compatible",
+        "connection",
+        "in_session",
+        "live",
+        "supported_max",
+        "supported_min"
+      ],
+      "type": "object"
+    },
+    "WorkspaceItem": {
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "WorkspaceReport": {
+      "properties": {
+        "ambiguous": {
+          "items": {
+            "$ref": "#/$defs/Ambiguity"
+          },
+          "type": "array"
+        },
+        "how_to_connect": {
+          "type": "string"
+        },
+        "placements": {
+          "items": {
+            "$ref": "#/$defs/Placement"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "stale": {
+          "type": "boolean"
+        },
+        "state": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: version, doctor, status",
+  "properties": {
+    "bundled": {
+      "$ref": "#/$defs/BundledSummary"
+    },
+    "domains": {
+      "$ref": "#/$defs/DomainsReport"
+    },
+    "modules": {
+      "items": {
+        "$ref": "#/$defs/ModuleReport"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "overview": {
+      "$ref": "#/$defs/Overview"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "modules",
+    "schema_version",
+    "version"
+  ],
+  "title": "report",
+  "type": "object",
+  "x-abacus-schema": 1
+}

@@ -1,0 +1,114 @@
+{
+  "$defs": {
+    "ErrorBody": {
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "unknown_outcome": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "SetupResult": {
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "applied",
+        "step"
+      ],
+      "type": "object"
+    },
+    "StepInfo": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "plan": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "state": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "message",
+        "state",
+        "step"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: setup",
+  "properties": {
+    "error": {
+      "$ref": "#/$defs/ErrorBody"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/SetupResult"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/StepInfo"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "plan_digest",
+    "schema_version",
+    "steps"
+  ],
+  "title": "setup",
+  "type": "object",
+  "x-abacus-schema": 1
+}

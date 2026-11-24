@@ -24,7 +24,7 @@ func runTaskHistory(rest []string, d Deps) int {
 	var o Options
 	var asJSON bool
 	limit := core.HistoryDefaultLimit
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.IntVar(&limit, "limit", core.HistoryDefaultLimit, fmt.Sprintf("most events to show (1-%d)", core.HistoryMaxLimit))
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -45,13 +45,11 @@ func runTaskHistory(rest []string, d Deps) int {
 	defer cancel()
 	src := core.ResolveProviders(d.Build(o).Detect(ctx)).History
 	if src == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	rep, err := src.History(ctx, id, limit)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks history: %s\n", describeReadError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "tasks history: %s\n", describeReadError(err))
 	}
 	if asJSON {
 		jsonOut(d.Out, rep)

@@ -22,7 +22,7 @@ func configStore(d Deps) (core.ConfigStore, error) {
 func runConfig(rest []string, d Deps) int {
 	fs := flag.NewFlagSet("config", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
-	asJSON := fs.Bool("json", false, "print JSON (show)")
+	asJSON := jsonBool(d, fs, "print JSON (show)")
 	if len(rest) == 0 || strings.HasPrefix(rest[0], "-") {
 		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path\nkeys: "+strings.Join(core.ConfigKeys, ", "))
 		return core.ExitUsage
@@ -47,10 +47,7 @@ func runConfig(rest []string, d Deps) int {
 			return core.ExitFail
 		}
 		if *asJSON {
-			jsonOut(d.Out, struct {
-				Path string `json:"path"`
-				core.Config
-			}{st.Path, c})
+			jsonOut(d.Out, core.ConfigShow{Path: st.Path, Config: c})
 			return core.ExitOK
 		}
 		fmt.Fprintf(d.Out, "%s\n", st.Path)
@@ -88,8 +85,7 @@ func runConfig(rest []string, d Deps) int {
 				au = core.DefaultAudit()
 			}
 			if err := au.Record(core.AuditEntry{Time: time.Now().UTC(), Domain: "config", Verb: "set agent_command", Phase: "attempt", Argv: scratch.AgentCommand}); err != nil {
-				fmt.Fprintf(d.Err, "config: not set: %v\n", err)
-				return core.ExitFail
+				return failf(d, core.CodeAuditFailed, "config: not set: %v\n", err)
 			}
 		}
 		note, err := st.UpdateNote(func(c *core.Config) error { return c.Set(args[0], args[1]) })

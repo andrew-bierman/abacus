@@ -55,6 +55,50 @@ control characters removed before any front-end sees it.
 The umbrella's own `--json` output carries `schema_version` (currently 1). Native clients should
 check it and treat a higher number as a breaking change.
 
+## Errors: stable codes
+
+A command that fails prints its plain text on stderr, as always, and exits 0/1/2 with the meanings
+above (2 is a usage error, 1 is everything else). Run with `--json`, it also prints exactly one
+document on stdout, so a client never matches prose:
+
+```json
+{"schema_version": 1, "error": {"code": "not_connected", "message": "tasks: not connected. ...", "retryable": true, "unknown_outcome": true}}
+```
+
+`retryable` and `unknown_outcome` are omitted when false. `retryable` is true only for `timeout` and
+`changed` (run it again, after re-planning for `changed`); `unknown_outcome` is true only for
+`unknown_outcome`: the write may have happened, so show "result unknown", offer a refresh and never a
+retry. `message` is the human sentence (control characters removed); do not parse it.
+
+The set is closed and typed in core (`core.ErrorCode`); a client treats a code it does not know as
+`failed`, since a new code is an additive change:
+
+| Code | Exit | Meaning |
+|---|---|---|
+| `usage` | 2 | the command line is wrong (unknown command or flag, bad value, `--json` without `--yes` or `--dry-run`); nothing ran |
+| `not_connected` | 1 | the domain has no working provider, or the provider says why it is not connected |
+| `needs_setup` | 1 | the provider is there but first-run setup is not done |
+| `not_found` | 1 | the task or other thing named does not exist (task views; a write's pre-read failure is `failed`) |
+| `refused` | 1 | abacus declined on purpose and nothing was written (not confirmed, cannot verify, the task is not in the state the verb needs) |
+| `changed` | 1 | what was planned no longer matches (the task moved, or `--expect-digest` differs from the plan made now); nothing was written, plan again |
+| `already_applied` | 1 | this plan was already applied (single use) |
+| `unknown_outcome` | 1 | the write may or may not have happened (timeout, cancel, killed, or the provider exited 0 but its answer could not be matched to the task asked for): "result unknown ... refresh before retrying", never "not applied"; the audit phase is `unknown` |
+| `applied_mismatch` | 1 | the write landed but the result is not the one asked for |
+| `audit_failed` | 1 | the audit log could not be written, so the write was blocked (fail closed) |
+| `timeout` | 1 | a read ran out of time or was cancelled |
+| `unsupported` | 1 | the provider does not offer what the command needs (for example it cannot read the task first) |
+| `failed` | 1 | anything else that failed |
+
+A failing command that already prints its own result document is exempt from the error document and
+keeps its own: a `doctor` with a failing check (its report), a `tasks bulk` where some tasks did not
+apply (its batch report, one outcome per task) and `setup` (its steps and results). `setup --repair
+--json` and a `setup --json` that refused an unreviewed step put the same `error` object
+(`{code, message, ...}`, from the closed set above) inside their own document, next to `results`, so a
+client reads one place. `--json` is read as the command's own flags read it (`--json=T` counts, `--json=false`
+does not, a `--json` after `--` or as another flag's value does not); only a command line that fails before
+its flags are parsed falls back to looking for the word. Exit codes are unchanged, and a read that finds a domain not connected still exits 0 with the state in
+the report. A command run without `--json` prints no document.
+
 ## Reference: how the umbrella uses Lambe
 
 | Surface | Command or route | Used for |
@@ -345,6 +389,39 @@ closed set and `source` says how it was learned.
   unknown). It has no schema version, so the shape of the pinned release is the contract, and anything
   without a `sessions` list degrades to a note. No write path exists.
 
+## Plan digests: apply exactly what was shown
+
+Every write goes through plan, confirm, single-use apply and audit. Over the command line those are
+two processes (`--dry-run`, then `--yes`), so the second could build a different plan than the one a
+person confirmed. The plan digest closes that:
+
+- `--dry-run --json` of every write (single task verbs, `tasks bulk`, `board post|reply`, `setup`,
+  `setup --repair`) includes `plan_digest`: sha256 (64 lowercase hex digits) over the operation, the
+  targets, every exact argv in order, and the guards (the status or assignee the plan was made against;
+  for a batch, each task's own, and the tasks left out). It does not include anything a person reads
+  (titles, ages, wording) or a value that differs per run (a repair's `.beads` set-aside folder name).
+  The encoding is length-prefixed, so no two plans share bytes. A Board plan's argv carries its
+  idempotency key. On the command line the key comes from the content alone (target, channel or reply
+  target, text) with no clock, so a dry run reviewed long before the apply, or across any boundary, has the
+  same digest. A double post is guarded by the audit log instead: a post whose content was recorded (attempt,
+  ok or unknown) in the last ten minutes is refused (code `refused`, in a dry run too) unless `--again`, and a
+  post made again gets a key the log has never recorded, so the board does not silently drop it. An audit log
+  that cannot be read stops a board write.
+- The setup digest covers every step, blocked ones included with their reason, and the exact argv each
+  planned step would run. With `--expect-digest`, `setup --yes` re-plans each step before running it and does
+  not run one whose command differs from the reviewed one, or that was blocked when reviewed and became
+  runnable since (creating the workspace unblocks Queues: that second step needs a new review). The result
+  document says so (`error.code` `changed`) and the earlier, reviewed steps stay applied.
+- Every write accepts `--expect-digest DIGEST`. The apply plans again, and when the digest differs
+  (the task moved, the argv would differ, a task left or joined the batch, the plan no longer builds)
+  it exits 1 with code `changed`, before anything is confirmed, audited or run. A malformed digest is
+  a usage error. With `--dry-run` it makes the same check.
+- The applied envelopes echo `plan_digest` (`{applied, result, plan_digest}`; the bulk report carries
+  it too), so a client can show which plan ran.
+- This is what the process boundary allows: it proves the plan equals the confirmed one, not that two
+  processes cannot both apply it. The audit log, the tracker's own guards and the client serializing its
+  applies cover that; the single-use id remains in-process.
+
 ## Bulk task changes
 
 One verb on up to 25 tasks, through the same gate as a single write: `core.PlanBulk` plans one
@@ -453,6 +530,32 @@ invented issues behind the recorded bv fixtures) and hand-written `bv --robot-*`
 `testdata/robot` (worked out from the graph shapes, not captured from a run). The only recorded bv
 output used is `testdata/bv`, static JSON whose provenance is in its README; no bv program is run
 anywhere in the repository or its tests.
+
+## Schemas and fixtures for clients
+
+`abacus schema` prints the JSON Schemas (draft 2020-12) of every `--json` output, generated by
+reflection from the Go types the CLI encodes (`core.SchemaSpecs`); `abacus schema NAME` prints one, and
+`abacus schema --out DIR` writes them all (`NAME.json`): every file is checked first, then written
+atomically (a temporary file in DIR, renamed), a symbolic link is never written through or replaced, and a file
+that is not an abacus schema (it carries `"x-abacus-schema"`) is not replaced unless `--force`. The checked-in copy is `docs/schema/v1/`. A test
+regenerates the schemas and fails when a Go type changed without the file (`go test ./internal/core
+-update-schema`, then review the diff: only additions are allowed within `schema_version` 1), and
+another validates every contract golden against its schema. The schemas follow `encoding/json`: field
+names and `omitempty` (optional) from the tags, embedded structs flattened, a nil list may be `null`
+unless the field is `omitempty`, `time.Time` is a `date-time` string, and a type with its own marshaler
+(`OpenPlan`, `OpenRung`) has non-null lists. Closed sets that may grow (states, kinds, statuses, error
+codes) are plain strings, never schema enums, so an additive value does not break a generated client.
+The schemas are open: an unknown key is additive, not an error. Every root requires `schema_version`
+(1).
+
+`internal/cli/testdata/contract/` holds the golden bytes of every command a client decodes, made from
+the demo providers (invented data, nothing contacted) at a fixed clock: `version`, `doctor`, `status`,
+`board`, `tasks`, `leases`, `queues`, `agents`, `search`, `config-show`, `setup`, `setup-applied`, a
+`dry-run-*` for every write verb (create, update, close, reopen, label, assign, priority, dep, comment,
+bulk, board-post, board-reply), `applied-*` for a task write, a batch and a board post, `error-*`, and
+`schema-index`; the task views and search have theirs in `internal/cli/testdata/`. `go test ./internal/cli
+-update-golden` rewrites them and refuses anything that is not a `schema_version` 1 object. `batch_id` is
+a random per-run value, normalized in its golden.
 
 ## Clients
 

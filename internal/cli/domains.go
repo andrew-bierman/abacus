@@ -182,7 +182,7 @@ func runDomain(cmd string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
-	asJSON := fs.Bool("json", false, "print JSON")
+	asJSON := jsonBool(d, fs, "print JSON")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -232,8 +232,8 @@ func firstOf(a []string) string {
 
 func runTaskWrite(verb string, rest []string, d Deps) int {
 	op := core.TaskOp(verb)
-	if op != core.TaskCreate && op != core.TaskUpdate && op != core.TaskClose {
-		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, graph, history, create, update, close, label, assign, priority, dep, comment, bulk)\n", verb)
+	if op != core.TaskCreate && op != core.TaskUpdate && op != core.TaskClose && op != core.TaskReopen {
+		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, graph, history, create, update, close, reopen, label, assign, priority, dep, comment, bulk)\n", verb)
 		return core.ExitUsage
 	}
 	ch := core.TaskChange{Op: op}
@@ -249,9 +249,10 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	var o Options
 	var yes, dry, asJSON bool
 	var title, desc, status, reason, typ, prio string
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.StringVar(&title, "title", "", "title")
 	fs.StringVar(&desc, "description", "", "description")
 	fs.StringVar(&prio, "priority", "", "priority 0-4")
@@ -261,8 +262,8 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if op == core.TaskCreate {
 		fs.StringVar(&typ, "type", "", "type: "+strings.Join(core.TaskTypes, ", "))
 	}
-	if op == core.TaskClose {
-		fs.StringVar(&reason, "reason", "", "reason for closing")
+	if op == core.TaskClose || op == core.TaskReopen {
+		fs.StringVar(&reason, "reason", "", "reason for closing or reopening")
 	}
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -273,6 +274,10 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	}
 	if asJSON && !yes && !dry {
 		fmt.Fprintf(d.Err, "tasks %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
+	expect, okDigest := parseExpect(d, "tasks "+verb, expectRaw)
+	if !okDigest {
 		return core.ExitUsage
 	}
 	ch.Title, ch.Description, ch.Status, ch.Reason, ch.Type = title, desc, status, reason, typ
@@ -289,8 +294,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	entries := d.Build(o).Detect(ctx)
 	w := core.ResolveProviders(entries).Writer
 	if w == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	if ch.Status != "" && !slices.Contains(core.TaskStatuses, ch.Status) {
 		fmt.Fprintf(d.Err, "tasks %s: status must be one of %s (use close to close)\n", verb, strings.Join(core.TaskStatuses, ", "))
@@ -299,13 +303,11 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if ch.Status != "" { // a status change names the status the task has now, read here, so a change by someone else is refused
 		r := core.ResolveProviders(entries).Reader
 		if r == nil {
-			fmt.Fprintf(d.Err, "tasks %s: cannot read the task's current status, so --status is not available\n", verb)
-			return core.ExitFail
+			return failf(d, core.CodeUnsupported, "tasks %s: cannot read the task's current status, so --status is not available\n", verb)
 		}
 		cur, err := r.ReadTask(ctx, ch.ID)
 		if err != nil {
-			fmt.Fprintf(d.Err, "tasks %s: could not read %s first: %s\n", verb, core.Sanitize(ch.ID), core.Sanitize(err.Error()))
-			return core.ExitFail
+			return failf(d, core.CodeFor(err), "tasks %s: could not read %s first: %s\n", verb, core.Sanitize(ch.ID), core.Sanitize(err.Error()))
 		}
 		ch.IfStatus, ch.Before = cur.Status, cur
 		// naming the status it already has is not a change: drop it (and its guard) when other fields
@@ -314,13 +316,47 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 			ch.Status, ch.IfStatus = "", ""
 		}
 	}
+	reader := core.ResolveProviders(entries).Reader
+	if op == core.TaskReopen { // like the kanban move out of closed: the task is read first, and again before the write
+		if !core.TaskIDRE.MatchString(ch.ID) {
+			fmt.Fprintf(d.Err, "invalid issue id %q\n", ch.ID)
+			return core.ExitUsage
+		}
+		if reader == nil {
+			return failf(d, core.CodeUnsupported, "tasks reopen: cannot read the task's current status, so it cannot be reopened safely\n")
+		}
+		cur, err := reader.ReadTask(ctx, ch.ID)
+		if err != nil {
+			return failf(d, core.CodeFor(err), "tasks reopen: could not read %s first: %s\n", core.Sanitize(ch.ID), core.Sanitize(err.Error()))
+		}
+		if cur.ID != ch.ID { // the tracker resolved a prefix or alias: only a whole id is reopened
+			fmt.Fprintf(d.Err, "tasks reopen: %s is not a whole task id (it resolves to %s): use the full id\n", core.Sanitize(ch.ID), core.Sanitize(cur.ID))
+			return core.ExitUsage
+		}
+		if cur.Status != "closed" {
+			code := core.CodeRefused
+			if expect != "" {
+				code = core.CodeChanged // it was closed when the plan was reviewed
+			}
+			return failf(d, code, "tasks reopen: %s is not closed (it is %s), so there is nothing to reopen\n", core.Sanitize(ch.ID), core.Sanitize(cur.Status))
+		}
+		ch.Before, ch.Expect = cur, cur.Status
+	}
 	plan, err := core.PlanTaskChange(w, ch)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks %s: %v\n", verb, err)
-		return core.ExitUsage
+		return planFailed(d, "tasks "+verb, expect, err)
 	}
-	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Apply this change? [y/N] ",
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
+			if op == core.TaskReopen { // someone else may have reopened it, or changed it, since the plan
+				cur, err := reader.ReadTask(ctx, ch.ID)
+				if err != nil {
+					return core.TaskResult{}, "", fmt.Errorf("%w (%s)", core.ErrCannotVerify, core.Sanitize(err.Error()))
+				}
+				if cur.ID != ch.ID || cur.Status != ch.Expect {
+					return core.TaskResult{}, "", core.Stale(fmt.Sprintf("%s is now %s (it was %s)", ch.ID, cur.Status, ch.Expect))
+				}
+			}
 			res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
 			return res, fmt.Sprintf("done: %s %s", res.ID, res.Title), err
 		}})
@@ -336,19 +372,18 @@ type writeFlow struct {
 	more       [][]string // later commands of a plan with several steps
 	yes, dry   bool
 	asJSON     bool
+	digest     string // the plan digest (core.PlanDigest) of this plan
+	expect     string // --expect-digest: refuse unless the plan made now has this digest
 	prompt     string
 	apply      func(au core.Audit) (result any, done string, err error)
 }
 
 func runWrite(d Deps, f writeFlow) int {
+	if f.expect != "" && f.expect != f.digest {
+		return planChanged(d, f.label, f.expect, f.digest)
+	}
 	if f.dry && f.asJSON {
-		jsonOut(d.Out, struct {
-			DryRun  bool       `json:"dry_run"`
-			Lines   []string   `json:"change"`
-			Context []string   `json:"context,omitempty"`
-			Argv    []string   `json:"argv"`
-			Steps   [][]string `json:"steps,omitempty"`
-		}{true, f.lines, f.ctx, f.argv, f.more})
+		jsonOut(d.Out, core.WriteDryRun{DryRun: true, Lines: f.lines, Context: f.ctx, Argv: f.argv, Steps: f.more, PlanDigest: f.digest})
 		return core.ExitOK
 	}
 	if !f.asJSON {
@@ -367,8 +402,7 @@ func runWrite(d Deps, f writeFlow) int {
 		fmt.Fprint(d.Err, f.prompt)
 		if !confirmed(d.In) {
 			fmt.Fprintln(d.Err)
-			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
-			return core.ExitFail
+			return failf(d, core.CodeRefused, "not applied: the change was not confirmed\n")
 		}
 	}
 	au := d.Audit
@@ -377,14 +411,10 @@ func runWrite(d Deps, f writeFlow) int {
 	}
 	res, done, err := f.apply(au)
 	if err != nil {
-		fmt.Fprintf(d.Err, "%s: %s\n", f.label, core.DescribeWriteError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "%s: %s\n", f.label, core.DescribeWriteError(err))
 	}
 	if f.asJSON {
-		jsonOut(d.Out, struct {
-			Applied bool `json:"applied"`
-			Result  any  `json:"result"`
-		}{true, res})
+		jsonOut(d.Out, core.WriteApplied{Applied: true, Result: res, PlanDigest: f.digest})
 	} else {
 		fmt.Fprintln(d.Out, done)
 	}
@@ -428,10 +458,13 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	fs.SetOutput(d.Err)
 	var o Options
 	var yes, dry, asJSON bool
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.StringVar(&text, "text", text, "the message text (use it when the text starts with -)")
+	var again bool
+	fs.BoolVar(&again, "again", false, "post even though the same message was just posted (or tried) from this machine")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
 	}
@@ -441,6 +474,10 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	}
 	if asJSON && !yes && !dry {
 		fmt.Fprintf(d.Err, "board %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
+		return core.ExitUsage
+	}
+	expect, okDigest := parseExpect(d, "board "+verb, expectRaw)
+	if !okDigest {
 		return core.ExitUsage
 	}
 	ch := core.BoardChange{Op: op, Text: text}
@@ -453,17 +490,28 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	defer cancel()
 	w := core.ResolveProviders(d.Build(o).Detect(ctx)).BoardWriter
 	if w == nil {
-		fmt.Fprintf(d.Err, "board: not connected. %s\n", core.HowToConnectFor(core.DomainBoard))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "board: not connected. %s\n", core.HowToConnectFor(core.DomainBoard))
+	}
+	au := d.Audit
+	if au == nil {
+		au = core.DefaultAudit()
+	}
+	// The key comes from the content, not the clock; the audit log says whether this is a repeat.
+	nonce, repeat, err := core.BoardCLINonce(au, w.Target(), ch, core.BoardKeyWindow, time.Now())
+	if err != nil {
+		return failf(d, core.CodeAuditFailed, "board %s: %v\n", verb, err)
+	}
+	ch.Nonce = nonce
+	if repeat && !again {
+		return failf(d, core.CodeRefused, "board %s: the same message was posted, or tried, from this machine in the last %d minutes (the board may already have it: refresh it first); nothing was written. --again posts it anyway\n", verb, int(core.BoardKeyWindow/time.Minute))
 	}
 	plan, err := core.PlanBoardChange(w, ch)
 	if err != nil {
-		fmt.Fprintf(d.Err, "board %s: %v\n", verb, err)
-		return core.ExitUsage
+		return planFailed(d, "board "+verb, expect, err)
 	}
 	dctx, dcancel := context.WithTimeout(ctx, 2*core.DefaultExecTimeout)
 	defer dcancel()
-	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Post this to the board? [y/N] ",
+	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Post this to the board? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
 			return res, "done: posted #" + res.ID, err

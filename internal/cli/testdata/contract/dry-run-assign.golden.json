@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "bd",
+    "assign",
+    "ac-12",
+    "--assignee=mei"
+  ],
+  "change": [
+    "assign task ac-12",
+    "title: \"wire the lease heartbeat\"",
+    "assignee: \"ada\" -\u003e \"mei\""
+  ],
+  "dry_run": true,
+  "plan_digest": "571b2de2b35090fc7d7e22e0a123ce8ded5dad1a86718cd9cd85a59961391f92",
+  "schema_version": 1
+}

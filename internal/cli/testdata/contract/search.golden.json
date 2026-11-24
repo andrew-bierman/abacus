@@ -1,0 +1,110 @@
+{
+  "domains": [
+    {
+      "domain": "tasks",
+      "title": "Tasks",
+      "state": "searched",
+      "docs": 14,
+      "read_at": "2026-11-24T09:00:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "board",
+      "title": "Board",
+      "state": "searched",
+      "docs": 3,
+      "read_at": "2026-11-24T09:00:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "leases",
+      "title": "Leases",
+      "state": "searched",
+      "docs": 4,
+      "read_at": "2026-11-24T09:00:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "queues",
+      "title": "Queues",
+      "state": "searched",
+      "reason": "demo data: fixtures, no live daemon",
+      "docs": 9,
+      "read_at": "2026-11-24T09:00:00Z",
+      "age": "just now"
+    },
+    {
+      "domain": "agents",
+      "title": "Agents",
+      "state": "searched",
+      "docs": 6,
+      "read_at": "2026-11-24T09:00:00Z",
+      "age": "just now"
+    }
+  ],
+  "groups": [
+    {
+      "domain": "tasks",
+      "title": "Tasks",
+      "total": 4,
+      "results": [
+        {
+          "domain": "tasks",
+          "kind": "task",
+          "id": "ac-16",
+          "label": "ac-16",
+          "title": "stale lease warning",
+          "meta": "open · P2",
+          "status": "open",
+          "matched": [
+            "title"
+          ],
+          "rank": 2
+        },
+        {
+          "domain": "tasks",
+          "kind": "task",
+          "id": "ac-15",
+          "label": "ac-15",
+          "title": "lease holder column",
+          "meta": "open · P1 · mei",
+          "status": "open",
+          "matched": [
+            "title"
+          ],
+          "rank": 2
+        },
+        {
+          "domain": "tasks",
+          "kind": "task",
+          "id": "ac-12",
+          "label": "ac-12",
+          "title": "wire the lease heartbeat",
+          "meta": "in progress · P0 · ada",
+          "status": "in_progress",
+          "matched": [
+            "title"
+          ],
+          "rank": 2
+        },
+        {
+          "domain": "tasks",
+          "kind": "task",
+          "id": "ac-01",
+          "label": "ac-01",
+          "title": "Fleet workspace",
+          "meta": "open · P1 · mei",
+          "status": "open",
+          "snippet": "…the fleet. - leases show who holds what -…",
+          "matched": [
+            "body"
+          ],
+          "rank": 5
+        }
+      ]
+    }
+  ],
+  "query": "lease",
+  "schema_version": 1,
+  "total": 4
+}

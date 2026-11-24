@@ -117,8 +117,8 @@ func TestSearchExitCodesAndSilentStdoutOnFailure(t *testing.T) {
 			if code != c.code || !strings.Contains(errOut, c.sub) {
 				t.Errorf("%s json=%v: code %d err %q, want %d %q", c.name, js, code, errOut, c.code, c.sub)
 			}
-			if js && out != "" {
-				t.Errorf("%s: stdout must be empty on failure under --json, got %q", c.name, out)
+			if js != (errorCode(out) != "") || (!js && out != "") {
+				t.Errorf("%s: under --json stdout is one error document, otherwise empty; got %q", c.name, out)
 			}
 		}
 	}
@@ -214,7 +214,7 @@ func TestSearchUnquotedWordsKeepTheirOrder(t *testing.T) {
 
 func TestSearchLimitAboveTheMaximumIsRefused(t *testing.T) {
 	for _, lim := range []string{"201", "-1", "abc"} {
-		if code, out, _ := runSearch(t, searchMods(nil), "x", "--limit", lim, "--json"); code != core.ExitUsage || out != "" {
+		if code, out, _ := runSearch(t, searchMods(nil), "x", "--limit", lim, "--json"); code != core.ExitUsage || errorCode(out) != "usage" {
 			t.Errorf("--limit %s: code %d out %q", lim, code, out)
 		}
 	}

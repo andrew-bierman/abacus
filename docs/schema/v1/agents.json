@@ -1,0 +1,286 @@
+{
+  "$defs": {
+    "Agent": {
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "children": {
+          "items": {
+            "$ref": "#/$defs/AgentChild"
+          },
+          "type": "array"
+        },
+        "context_pct": {
+          "type": "number"
+        },
+        "cost_usd": {
+          "type": "number"
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "harness": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_activity": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "ports": {
+          "items": {
+            "$ref": "#/$defs/AgentPort"
+          },
+          "type": "array"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "state": {
+          "type": "string"
+        },
+        "subagents": {
+          "items": {
+            "$ref": "#/$defs/Subagent"
+          },
+          "type": "array"
+        },
+        "task": {
+          "type": "string"
+        },
+        "term": {
+          "$ref": "#/$defs/TermRef"
+        },
+        "tokens": {
+          "type": "integer"
+        },
+        "worktree": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "harness",
+        "id",
+        "source",
+        "state"
+      ],
+      "type": "object"
+    },
+    "AgentChild": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "mem_kb": {
+          "type": "integer"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "pid"
+      ],
+      "type": "object"
+    },
+    "AgentPort": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "port"
+      ],
+      "type": "object"
+    },
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "RateLimit": {
+      "properties": {
+        "five_hour_pct": {
+          "type": "number"
+        },
+        "five_hour_resets_at": {
+          "type": "string"
+        },
+        "harness": {
+          "type": "string"
+        },
+        "seven_day_pct": {
+          "type": "number"
+        },
+        "seven_day_resets_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "harness"
+      ],
+      "type": "object"
+    },
+    "Subagent": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "tokens": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "TermRef": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: agents",
+  "properties": {
+    "agents": {
+      "items": {
+        "$ref": "#/$defs/Agent"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "domain": {
+      "type": "string"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "notes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "orphan_ports": {
+      "items": {
+        "$ref": "#/$defs/AgentPort"
+      },
+      "type": "array"
+    },
+    "rate_limits": {
+      "items": {
+        "$ref": "#/$defs/RateLimit"
+      },
+      "type": "array"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "token_rate": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "agents",
+    "domain",
+    "schema_version",
+    "state",
+    "title"
+  ],
+  "title": "agents",
+  "type": "object",
+  "x-abacus-schema": 1
+}

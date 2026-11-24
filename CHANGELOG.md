@@ -8,11 +8,45 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Client contract (the core prerequisites of `docs/design/2026-11-24-plan-native-clients.md`, section 9;
+  all additive, `schema_version` stays 1, exit codes 0/1/2 keep their meaning, no success path changes):
+  - Golden fixtures for every read command and every write envelope (dry-run, applied, bulk, board) in
+    `internal/cli/testdata/contract`, from the demo providers, with the `-update-golden` flow and a drift
+    test.
+  - Stable error codes: a command that fails with `--json` prints one `{schema_version, error: {code,
+    message, retryable?, unknown_outcome?}}` document on stdout (stderr text and exit codes unchanged). The
+    closed set (`usage`, `not_connected`, `needs_setup`, `not_found`, `refused`, `changed`,
+    `already_applied`, `unknown_outcome`, `applied_mismatch`, `audit_failed`, `timeout`, `unsupported`,
+    `failed`) is typed in core and documented in `docs/tool-contract.md`.
+  - `plan_digest` in the `--dry-run --json` of every write (and in the applied result), and
+    `--expect-digest DIGEST` on every write: apply refuses with code `changed` when the plan made now is
+    not the one reviewed.
+  - `abacus tasks reopen ID [--reason R]`, through the same gate as close, refusing a task that is not
+    closed and one that changed after the plan.
+  - `abacus schema [NAME] [--out DIR]` and `docs/schema/v1`: JSON Schemas derived from the Go types, with a
+    test that fails when a type changes without the checked-in schema and one that validates every golden
+    against its schema.
 - `abacus help [COMMAND]`, `abacus --help` and `COMMAND --help` (also `tasks VERB --help`) print usage on
   stdout and exit 0 (they used to be an "unknown command" usage error, exit 2). `abacus completion
   bash|zsh|fish` prints a shell completion script. The top-level usage lists every `tasks` verb
   (graph and history were missing) and the exit codes.
 - A test that fails when a key the TUI binds is not named in `docs/tui.md`.
+
+### Changed
+
+- Review fixes to the client contract: an empty or malformed `--expect-digest` is a usage error, never "no
+  check"; `schema --out` never overwrites a file that is not an abacus schema (without `--force`) or follows a
+  symbolic link, and writes atomically; a command-line board post's idempotency key has no clock in it (the
+  digest no longer depends on the ten-minute bucket) and repeats are refused from the audit log unless
+  `--again`; the setup digest covers blocked steps and an unreviewed step is not run under `--expect-digest`;
+  a provider answer that cannot be matched to the write is "result unknown" (code `unknown_outcome`), not
+  "not applied"; `tasks reopen` refuses an id the tracker resolved to another; `--json` is read with the
+  command's real flag semantics; `setup --repair --json` failures carry an `error` object; a stale contract
+  golden fails the run (and `-update-golden` removes it).
+
+- A command that fails with `--json` now prints the error document on stdout (it used to print nothing
+  there); stderr and the exit code are as before. A failing command that already printed its own document
+  (`doctor` with a failing check, a `tasks bulk` where some tasks did not apply, `setup`) keeps it.
 
 ### Fixed
 

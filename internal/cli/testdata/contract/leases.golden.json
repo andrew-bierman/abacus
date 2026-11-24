@@ -1,0 +1,31 @@
+{
+  "domain": "leases",
+  "leases": [
+    {
+      "resource": "dm-zoj",
+      "state": "held",
+      "holder": "bot-scheduler-01",
+      "expires_at": "12m"
+    },
+    {
+      "resource": "dm-00h",
+      "state": "held",
+      "holder": "agent-notebook-1",
+      "expires_at": "3m"
+    },
+    {
+      "resource": "dm-1k2",
+      "state": "stale",
+      "holder": "claude-mac"
+    },
+    {
+      "resource": "ac-9x1",
+      "state": "free"
+    }
+  ],
+  "schema_version": 1,
+  "source": "live",
+  "state": "connected",
+  "summary": "2 held, 1 stale, 1 free",
+  "title": "Leases"
+}

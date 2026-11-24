@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "BoardResult": {
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: board post and reply with --yes",
+  "properties": {
+    "applied": {
+      "type": "boolean"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "result": {
+      "$ref": "#/$defs/BoardResult"
+    },
+    "schema_version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "applied",
+    "plan_digest",
+    "result",
+    "schema_version"
+  ],
+  "title": "write-applied-board",
+  "type": "object",
+  "x-abacus-schema": 1
+}

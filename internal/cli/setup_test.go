@@ -270,3 +270,28 @@ func TestSetupRepairYesSetsItAsideAndRefusesAFolderWithUserFiles(t *testing.T) {
 		t.Fatal("a refused repair must leave everything where it was")
 	}
 }
+
+// A failed repair --json keeps its own document (results) and carries the closed-set error object in it.
+func TestSetupRepairJSONFailuresCarryAnErrorObject(t *testing.T) {
+	check := func(name, out, code string) {
+		t.Helper()
+		var d struct {
+			Results []struct{ Error string }
+			Error   *struct{ Code, Message string }
+		}
+		if json.Unmarshal([]byte(out), &d) != nil || d.Error == nil || d.Error.Code != code || d.Error.Message == "" || len(d.Results) != 1 {
+			t.Errorf("%s: want error code %s in the results document: %s", name, code, out)
+		}
+	}
+	_, out, _, _, _ := runRepairCmd(t, halfWorkspace(t), "--json") // not confirmed
+	check("not confirmed", out, "refused")
+	code, out, _, _, _ := runRepairCmd(t, filepath.Join(t.TempDir(), "none"), "--json", "--yes") // nothing to repair
+	if code != 1 {
+		t.Errorf("exit %d", code)
+	}
+	check("nothing to repair", out, "refused")
+	_, out, _, _, _ = runRepairCmd(t, halfWorkspace(t), "--json", "--dry-run")
+	if strings.Contains(out, `"error"`) {
+		t.Errorf("a success has no error object: %s", out)
+	}
+}

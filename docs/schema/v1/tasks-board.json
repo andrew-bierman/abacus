@@ -1,0 +1,195 @@
+{
+  "$defs": {
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "KanbanCard": {
+      "properties": {
+        "age": {
+          "type": "string"
+        },
+        "assignee": {
+          "type": "string"
+        },
+        "blocked": {
+          "type": "boolean"
+        },
+        "blocked_by": {
+          "type": "integer"
+        },
+        "blocks": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "priority",
+        "status",
+        "title"
+      ],
+      "type": "object"
+    },
+    "KanbanColumn": {
+      "properties": {
+        "blocked": {
+          "type": "integer"
+        },
+        "cards": {
+          "items": {
+            "$ref": "#/$defs/KanbanCard"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "count": {
+          "type": "integer"
+        },
+        "folded": {
+          "type": "boolean"
+        },
+        "key": {
+          "type": "string"
+        },
+        "p0p1": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "cards",
+        "count",
+        "key",
+        "title"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks board",
+  "properties": {
+    "closed_hidden": {
+      "type": "integer"
+    },
+    "columns": {
+      "items": {
+        "$ref": "#/$defs/KanbanColumn"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "deps_unknown": {
+      "type": "boolean"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "group": {
+      "type": "string"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "query": {
+      "type": "string"
+    },
+    "read_at": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "shown": {
+      "type": "integer"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "total": {
+      "type": "integer"
+    },
+    "tracker": {
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "columns",
+    "domain",
+    "group",
+    "schema_version",
+    "shown",
+    "state",
+    "title",
+    "total"
+  ],
+  "title": "tasks-board",
+  "type": "object",
+  "x-abacus-schema": 1
+}

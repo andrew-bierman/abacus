@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: config show",
+  "properties": {
+    "actor": {
+      "type": "string"
+    },
+    "agent_command": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "board_url": {
+      "type": "string"
+    },
+    "lambe_config": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "search_history": {
+      "type": "string"
+    },
+    "tracker_dir": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "schema_version"
+  ],
+  "title": "config-show",
+  "type": "object",
+  "x-abacus-schema": 1
+}

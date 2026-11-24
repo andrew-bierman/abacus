@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
@@ -22,12 +23,7 @@ func setupFor(d Deps, entries []core.Entry) *core.Setup {
 	return core.NewSetup(entries, o)
 }
 
-type setupResult struct {
-	Step    core.StepID `json:"step"`
-	Applied bool        `json:"applied"`
-	Message string      `json:"message,omitempty"`
-	Error   string      `json:"error,omitempty"`
-}
+type setupResult = core.SetupResult
 
 // runSetup is `abacus setup [--json] [--yes] [--dry-run]`: report the first-run steps and,
 // only when asked (--yes, or a y at the prompt), perform them through the same confirmed,
@@ -37,9 +33,10 @@ func runSetup(rest []string, d Deps) int {
 	fs.SetOutput(d.Err)
 	var o Options
 	var yes, dry, asJSON, repair bool
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "apply every step that is needed without asking")
 	fs.BoolVar(&dry, "dry-run", false, "report only; change nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.BoolVar(&repair, "repair", false, "repair a half-created workspace: show the plan, set the unfinished files aside (nothing is deleted) and create it again")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the queues daemon")
 	if fs.Parse(rest) != nil {
@@ -49,16 +46,25 @@ func runSetup(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "setup: unexpected argument %q\n", fs.Arg(0))
 		return core.ExitUsage
 	}
+	expect, okDigest := parseExpect(d, "setup", expectRaw)
+	if !okDigest {
+		return core.ExitUsage
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
 	defer cancel()
 	entries := d.Build(o).Detect(ctx)
 	s := setupFor(d, entries)
 	if repair {
-		return runRepair(ctx, s, d, yes, dry, asJSON)
+		return runRepair(ctx, s, d, yes, dry, asJSON, expect)
 	}
 	steps := s.Steps(ctx)
+	reviewed := s.SetupStepPlans(ctx)
+	digest := core.SetupDigest(reviewed)
+	if expect != "" && expect != digest {
+		return planChanged(d, "setup", expect, digest)
+	}
 	var results []setupResult
-	failed := false
+	failed, changedStep := false, false
 	// Applying needs an explicit yes: --yes, or a y at the prompt (which needs input and text mode).
 	canAsk := !asJSON && d.In != nil && interactive(d.In)
 	if !dry && (yes || canAsk) {
@@ -76,6 +82,13 @@ func runSetup(rest []string, d Deps) int {
 				// With --yes the caller asked for it to be done: a step that cannot be is a failure.
 				failed = failed || yes
 				results = append(results, setupResult{Step: st.Step, Error: err.Error()})
+				continue
+			}
+			if expect != "" && !slices.Equal(p.Argv, reviewedArgv(reviewed, st.Step)) {
+				// a step that was blocked when the plan was reviewed, or whose command differs now, was never reviewed
+				failed = true
+				results = append(results, setupResult{Step: st.Step, Error: "the plan changed since you reviewed it: this step was not run; review it again"})
+				changedStep = true
 				continue
 			}
 			if !asJSON {
@@ -105,10 +118,12 @@ func runSetup(rest []string, d Deps) int {
 		steps = s.Steps(ctx) // what is left after applying
 	}
 	if asJSON {
-		jsonOut(d.Out, struct {
-			Steps   []core.StepInfo `json:"steps"`
-			Applied []setupResult   `json:"results,omitempty"`
-		}{steps, results})
+		rep := core.SetupReport{Steps: steps, Results: results, PlanDigest: digest}
+		if changedStep { // a step was not run because it was never reviewed: the same error object as any refusal
+			b := core.NewErrorDoc(core.CodeChanged, "the plan changed since you reviewed it: a step was not run; review it again").Error
+			rep.Error = &b
+		}
+		jsonOut(d.Out, rep)
 	} else {
 		renderSetup(d.Out, steps, results, yes || dry, canAsk)
 	}
@@ -116,6 +131,15 @@ func runSetup(rest []string, d Deps) int {
 		return core.ExitFail
 	}
 	return core.ExitOK
+}
+
+func reviewedArgv(r []core.SetupStepPlan, id core.StepID) []string {
+	for _, sp := range r {
+		if sp.Step == id {
+			return sp.Argv
+		}
+	}
+	return nil
 }
 
 // interactive reports whether r can answer a prompt: a real terminal, not a pipe, a file or
@@ -178,13 +202,22 @@ func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPr
 // runRepair is `abacus setup --repair`: plan the repair, show exactly what it will do, and
 // apply it only after --yes or a y at the prompt, through the same audited gate. --dry-run only
 // shows the plan. A folder that holds anything else of the user's is refused.
-func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool) int {
+func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool, expect string) int {
 	res := setupResult{Step: core.StepRepair}
-	finish := func(code int) int {
+	digest := ""
+	var finishWith func(code int, ec core.ErrorCode) int
+	finish := func(code int) int { return finishWith(code, "") }
+	finishWith = func(code int, ec core.ErrorCode) int {
 		if asJSON {
-			jsonOut(d.Out, struct {
-				Results []setupResult `json:"results"`
-			}{[]setupResult{res}})
+			rep := core.SetupRepairReport{Results: []setupResult{res}, PlanDigest: digest}
+			if code != core.ExitOK { // the same error object every failing command prints, inside this document
+				if ec == "" {
+					ec = core.CodeFailed
+				}
+				b := core.NewErrorDoc(ec, res.Error).Error
+				rep.Error = &b
+			}
+			jsonOut(d.Out, rep)
 		}
 		return code
 	}
@@ -194,7 +227,11 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 		if !asJSON {
 			fmt.Fprintf(d.Err, "repair: %s\n", res.Error)
 		}
-		return finish(core.ExitFail)
+		return finishWith(core.ExitFail, core.CodeRefused)
+	}
+	digest = p.Digest()
+	if expect != "" && expect != digest {
+		return planChanged(d, "repair", expect, digest) // before anything is printed: under --json this is the error document
 	}
 	if !asJSON {
 		for _, l := range p.Lines {
@@ -214,7 +251,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 			if !asJSON {
 				fmt.Fprintln(d.Err, res.Error)
 			}
-			return finish(core.ExitFail)
+			return finishWith(core.ExitFail, core.CodeRefused)
 		}
 		fmt.Fprint(d.Out, "Apply this repair? [y/N] ")
 		line, _ := bufio.NewReader(d.In).ReadString('\n')
@@ -223,7 +260,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 			if !asJSON {
 				fmt.Fprintln(d.Out, res.Error)
 			}
-			return finish(core.ExitFail)
+			return finishWith(core.ExitFail, core.CodeRefused)
 		}
 	}
 	msg, err := s.Apply(ctx, p.Confirm())
@@ -232,7 +269,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 		if !asJSON {
 			fmt.Fprintf(d.Err, "repair: %s\n", res.Error)
 		}
-		return finish(core.ExitFail)
+		return finishWith(core.ExitFail, core.CodeFor(err))
 	}
 	res.Applied, res.Message = true, msg
 	if !asJSON {

@@ -319,7 +319,7 @@ func TestEditJSONIsOneDocumentAndFailuresPrintNoneOnStdout(t *testing.T) {
 	m := newEditMod()
 	m.fail = errors.New("bd: boom")
 	code, out, _, _ := runIn(t, "", []core.Module{m}, "tasks", "comment", "t-1", "hi", "--yes", "--json")
-	if code != 1 || strings.TrimSpace(out) != "" {
-		t.Fatalf("a failed write prints nothing on stdout: %d %q", code, out)
+	if code != 1 || errorCode(out) != "failed" {
+		t.Fatalf("a failed write prints only the error document on stdout: %d %q", code, out)
 	}
 }

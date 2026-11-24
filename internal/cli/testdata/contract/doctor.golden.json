@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "version": "0.0.0-contract",
+  "modules": [
+    {
+      "id": "lambe",
+      "name": "Lambe",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "api_version": 1
+      },
+      "checks": [
+        {
+          "name": "demo",
+          "status": "ok",
+          "detail": "fixture data, no daemon contacted"
+        }
+      ]
+    },
+    {
+      "id": "beads-lease",
+      "name": "Leases (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      },
+      "checks": [
+        {
+          "name": "demo data",
+          "status": "ok",
+          "detail": "fixtures, nothing contacted"
+        }
+      ]
+    },
+    {
+      "id": "bd",
+      "name": "Tasks (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      },
+      "checks": [
+        {
+          "name": "demo data",
+          "status": "ok",
+          "detail": "fixtures, nothing contacted"
+        }
+      ]
+    },
+    {
+      "id": "board",
+      "name": "Fake board",
+      "detection": {
+        "state": "ready",
+        "version": "0.54.0"
+      }
+    },
+    {
+      "id": "agents",
+      "name": "Agents (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      },
+      "checks": [
+        {
+          "name": "demo data",
+          "status": "ok",
+          "detail": "fixtures, nothing contacted"
+        }
+      ]
+    }
+  ],
+  "overview": {
+    "ready": true,
+    "headline": "Ready — 1 optional thing to set up",
+    "attention": [
+      "Queues: demo data: fixtures, no live daemon"
+    ],
+    "domain_lines": [
+      {
+        "domain": "tasks",
+        "title": "Tasks",
+        "state": "connected",
+        "line": "14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready"
+      },
+      {
+        "domain": "leases",
+        "title": "Leases",
+        "state": "connected",
+        "line": "2 held, 1 stale, 1 free"
+      },
+      {
+        "domain": "queues",
+        "title": "Queues",
+        "state": "degraded",
+        "line": "demo data: fixtures, no live daemon"
+      },
+      {
+        "domain": "board",
+        "title": "Board",
+        "state": "connected",
+        "line": "2 channels, 1 recent threads, 1 open tasks"
+      },
+      {
+        "domain": "agents",
+        "title": "Agents",
+        "state": "connected",
+        "line": "6 agents: 1 running, 1 waiting, 1 idle"
+      }
+    ],
+    "tools": [
+      {
+        "id": "lambe",
+        "name": "Lambe",
+        "state": "ready",
+        "where": "",
+        "version": "demo",
+        "bundled_tool": true
+      },
+      {
+        "id": "beads-lease",
+        "name": "Leases (demo)",
+        "state": "ready",
+        "where": "demo",
+        "version": "demo",
+        "bundled_tool": true
+      },
+      {
+        "id": "bd",
+        "name": "Tasks (demo)",
+        "state": "ready",
+        "where": "demo",
+        "version": "demo",
+        "bundled_tool": true
+      },
+      {
+        "id": "board",
+        "name": "Fake board",
+        "state": "ready",
+        "where": "",
+        "version": "0.54.0",
+        "bundled_tool": true,
+        "optional": true
+      },
+      {
+        "id": "agents",
+        "name": "Agents (demo)",
+        "state": "ready",
+        "where": "demo",
+        "version": "demo"
+      }
+    ],
+    "bundled": {
+      "total": 4,
+      "verified": 0,
+      "elsewhere": [
+        "lambe",
+        "board"
+      ],
+      "embedded": false,
+      "line": "Development build: tools are not built in; build with make build"
+    }
+  }
+}

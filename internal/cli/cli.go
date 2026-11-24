@@ -46,7 +46,7 @@ func usageText() string {
 
 fleet:
   board       channels and recent threads; board post|reply send a message
-  tasks       task summary; list|show|board|graph|history browse; create|update|close|label|assign|priority|dep|comment change one task; bulk changes up to 25
+  tasks       task summary; list|show|board|graph|history browse; create|update|close|reopen|label|assign|priority|dep|comment change one task; bulk changes up to 25
   leases      held, stale and free leases
   queues      runs, queue, attention and history
   agents      every running coding agent; --harness, --state, --repo, --all
@@ -57,6 +57,7 @@ first run:
   setup       report and (with --yes) perform first-run setup; --dry-run, --repair fixes a half-created workspace
   rex         layout: open the cockpit tabs in a terminal workspace (optional); --new NAME
   config      show|get|set|path: settings (actor, tracker_dir, lambe_config, board_url, ...)
+  schema      the JSON Schemas of every --json output, for clients; --out DIR writes them
 
 diagnostics:
   version     print versions and which providers were detected
@@ -72,8 +73,23 @@ exit codes: 0 ok, 1 something failed or is not ready, 2 usage error
 
 func usage(d Deps) { fmt.Fprint(d.Err, usageText()) }
 
-// Run dispatches a command and returns the process exit code.
+// Run dispatches a command and returns the process exit code. A command that fails with --json
+// also prints one JSON error document (see errors.go).
 func Run(args []string, d Deps) int {
+	if d.Err == nil {
+		d.Err = io.Discard
+	}
+	if d.Out == nil {
+		d.Out = io.Discard
+	}
+	s, o := &sink{w: d.Err}, &counter{w: d.Out}
+	d.Err, d.Out = s, o
+	code := run(args, d)
+	finishError(args, code, s, o)
+	return code
+}
+
+func run(args []string, d Deps) int {
 	if len(args) == 0 {
 		usage(d)
 		return core.ExitUsage
@@ -111,6 +127,8 @@ func dispatch(args []string, d Deps) int {
 		return runRex(rest, d)
 	case "config":
 		return runConfig(rest, d)
+	case "schema":
+		return runSchema(rest, d)
 	case "licenses":
 		return runLicenses(rest, d)
 	case "completion":
@@ -123,7 +141,7 @@ func dispatch(args []string, d Deps) int {
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
-	asJSON := fs.Bool("json", false, "print JSON")
+	asJSON := jsonBool(d, fs, "print JSON")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the daemon")
 	fs.BoolVar(&o.Demo, "demo", false, "render from fixtures (tui)")
 	tab := fs.String("tab", "", "tab to open first: board, tasks, leases, queues or doctor (tui)")

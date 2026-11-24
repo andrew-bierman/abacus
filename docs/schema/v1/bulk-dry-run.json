@@ -1,0 +1,88 @@
+{
+  "$defs": {
+    "BulkDryRunItem": {
+      "properties": {
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "change": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "argv",
+        "change",
+        "id"
+      ],
+      "type": "object"
+    },
+    "BulkSkip": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "reason"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks bulk --dry-run",
+  "properties": {
+    "dry_run": {
+      "type": "boolean"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/BulkDryRunItem"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "op": {
+      "type": "string"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "skipped": {
+      "items": {
+        "$ref": "#/$defs/BulkSkip"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "dry_run",
+    "items",
+    "op",
+    "plan_digest",
+    "schema_version"
+  ],
+  "title": "bulk-dry-run",
+  "type": "object",
+  "x-abacus-schema": 1
+}

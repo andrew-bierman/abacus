@@ -57,7 +57,7 @@ func runSearch(rest []string, d Deps) int {
 	var asJSON bool
 	var doms domainList
 	limit := core.DefaultSearchLimit
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.Var(&doms, "domain", "search only these domains (tasks, board, leases, queues, agents); repeat or comma-separate")
 	fs.IntVar(&limit, "limit", core.DefaultSearchLimit, fmt.Sprintf("results per domain (1 to %d)", core.MaxSearchLimit))
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
@@ -110,8 +110,7 @@ func runSearch(rest []string, d Deps) int {
 		}
 	}
 	if searched == 0 {
-		fmt.Fprintf(d.Err, "search: no domain could be searched (%s)\n", strings.Join(unsearched(rep), "; "))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "search: no domain could be searched (%s)\n", strings.Join(unsearched(rep), "; "))
 	}
 	if asJSON {
 		jsonOut(d.Out, rep)

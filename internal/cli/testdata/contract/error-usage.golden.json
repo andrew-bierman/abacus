@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "usage",
+    "message": "tasks close: --json needs --yes or --dry-run (it cannot prompt)"
+  },
+  "schema_version": 1
+}

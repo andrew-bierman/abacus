@@ -1,0 +1,9 @@
+{
+  "applied": true,
+  "plan_digest": "ab70b26d11413217a10c08379fd25d54debd600f0b7a53412e671e8b55fdfea0",
+  "result": {
+    "id": "demo-1",
+    "title": "demo change (nothing was written)"
+  },
+  "schema_version": 1
+}

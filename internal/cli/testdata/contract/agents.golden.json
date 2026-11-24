@@ -1,0 +1,175 @@
+{
+  "agents": [
+    {
+      "id": "codex:41310",
+      "harness": "codex",
+      "pid": 41310,
+      "session_id": "demo-s2",
+      "repo": "mill",
+      "branch": "main",
+      "cwd": "/work/mill",
+      "model": "codex-demo-1",
+      "state": "waiting",
+      "task": "Package the wheat module",
+      "last_activity": "2026-11-24T08:58:25Z",
+      "tokens": 4321,
+      "context_pct": 18,
+      "term": {
+        "kind": "tmux pane",
+        "ref": "work:2.1",
+        "command": "tmux switch-client -t %5"
+      },
+      "source": "monitor",
+      "sources": [
+        "monitor"
+      ]
+    },
+    {
+      "id": "claude-code:demo-s4",
+      "harness": "claude-code",
+      "session_id": "demo-s4",
+      "repo": "attic",
+      "branch": "chore/deps",
+      "cwd": "/work/attic",
+      "model": "claude-demo-1",
+      "state": "error",
+      "task": "Bump the lockfile",
+      "last_activity": "2026-11-24T08:57:00Z",
+      "source": "transcript",
+      "sources": [
+        "transcript"
+      ]
+    },
+    {
+      "id": "claude-code:41022",
+      "harness": "claude-code",
+      "pid": 41022,
+      "session_id": "demo-s1",
+      "repo": "orchard",
+      "branch": "feat/pear-counter",
+      "cwd": "/work/orchard",
+      "model": "claude-demo-1",
+      "state": "running",
+      "task": "Add a pear counter to the orchard report",
+      "last_activity": "2026-11-24T08:59:56Z",
+      "tokens": 152300,
+      "context_pct": 72,
+      "term": {
+        "kind": "tmux pane",
+        "ref": "work:1.0",
+        "command": "tmux switch-client -t %3"
+      },
+      "source": "monitor",
+      "sources": [
+        "monitor"
+      ],
+      "ports": [
+        {
+          "port": 5173,
+          "pid": 41188,
+          "command": "node dev-server.js"
+        }
+      ],
+      "children": [
+        {
+          "pid": 41187,
+          "command": "go build ./...",
+          "mem_kb": 120000
+        },
+        {
+          "pid": 41188,
+          "command": "node dev-server.js",
+          "mem_kb": 80000,
+          "port": 5173
+        }
+      ],
+      "subagents": [
+        {
+          "name": "Survey the orchard",
+          "state": "done",
+          "tokens": 12400
+        },
+        {
+          "name": "Check the harvest tests",
+          "state": "working",
+          "tokens": 8200
+        }
+      ]
+    },
+    {
+      "id": "claude-code:41555",
+      "harness": "claude-code",
+      "pid": 41555,
+      "session_id": "demo-s3",
+      "repo": "cellar",
+      "branch": "fix/barrel-rename",
+      "worktree": "cellar-barrels",
+      "cwd": "/work/wt/cellar-barrels",
+      "model": "claude-demo-1",
+      "state": "idle",
+      "task": "Rename the barrel type everywhere",
+      "last_activity": "2026-11-24T08:53:00Z",
+      "source": "transcript",
+      "sources": [
+        "transcript"
+      ]
+    },
+    {
+      "id": "opencode:41701",
+      "harness": "opencode",
+      "pid": 41701,
+      "repo": "barn",
+      "branch": "main",
+      "cwd": "/work/barn",
+      "state": "unknown",
+      "source": "process",
+      "sources": [
+        "process"
+      ]
+    },
+    {
+      "id": "codex:demo-s5",
+      "harness": "codex",
+      "session_id": "demo-s5",
+      "repo": "orchard",
+      "branch": "docs",
+      "cwd": "/work/orchard",
+      "model": "codex-demo-1",
+      "state": "stopped",
+      "task": "Write the pruning guide",
+      "last_activity": "2026-11-24T08:48:00Z",
+      "source": "transcript",
+      "sources": [
+        "transcript"
+      ]
+    }
+  ],
+  "domain": "agents",
+  "orphan_ports": [
+    {
+      "port": 4000,
+      "pid": 40990,
+      "command": "node old-server.js"
+    }
+  ],
+  "rate_limits": [
+    {
+      "harness": "claude-code",
+      "five_hour_pct": 35,
+      "five_hour_resets_at": "2026-11-24T10:30:00Z",
+      "seven_day_pct": 12,
+      "seven_day_resets_at": "2026-11-27T09:00:00Z"
+    },
+    {
+      "harness": "codex",
+      "five_hour_pct": 88,
+      "five_hour_resets_at": "2026-11-24T09:25:00Z"
+    }
+  ],
+  "schema_version": 1,
+  "source": "live",
+  "state": "connected",
+  "summary": "6 agents: 1 running, 1 waiting, 1 idle",
+  "title": "Agents",
+  "token_rate": 310
+}

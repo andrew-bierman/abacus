@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "bd",
+    "label-add",
+    "ac-12",
+    "--label=ui"
+  ],
+  "change": [
+    "add a label to task ac-12",
+    "title: \"wire the lease heartbeat\"",
+    "label: \"ui\""
+  ],
+  "dry_run": true,
+  "plan_digest": "c7d6bee4ed2b5c6bdfacbaf47114c5938fb88098d5c18392bad8433f4da53662",
+  "schema_version": 1
+}

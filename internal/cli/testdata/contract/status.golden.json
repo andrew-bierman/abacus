@@ -1,0 +1,688 @@
+{
+  "schema_version": 1,
+  "version": "0.0.0-contract",
+  "modules": [
+    {
+      "id": "lambe",
+      "name": "Lambe",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "api_version": 1
+      },
+      "status": {
+        "summary": "3 runs, 2 queued, 1 need attention",
+        "lines": [
+          "T-1  running  gating",
+          "T-2  deferred  deferred",
+          "T-3  running  running  (stalled)"
+        ]
+      }
+    },
+    {
+      "id": "beads-lease",
+      "name": "Leases (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      },
+      "status": {
+        "summary": "2 held, 1 stale, 1 free",
+        "lines": [
+          "dm-zoj  held by bot-scheduler-01 (expires 12m)",
+          "dm-00h  held by agent-notebook-1 (expires 3m)",
+          "dm-1k2  stale (last holder claude-mac)",
+          "ac-9x1  free"
+        ],
+        "rows": [
+          {
+            "resource": "dm-zoj",
+            "state": "held",
+            "tone": "info",
+            "detail": "by bot-scheduler-01 (expires 12m)"
+          },
+          {
+            "resource": "dm-00h",
+            "state": "held",
+            "tone": "info",
+            "detail": "by agent-notebook-1 (expires 3m)"
+          },
+          {
+            "resource": "dm-1k2",
+            "state": "stale",
+            "tone": "warn",
+            "detail": "(last holder claude-mac)"
+          },
+          {
+            "resource": "ac-9x1",
+            "state": "free",
+            "tone": "ok"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd",
+      "name": "Tasks (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      },
+      "status": {
+        "summary": "14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready"
+      }
+    },
+    {
+      "id": "board",
+      "name": "Fake board",
+      "detection": {
+        "state": "ready",
+        "version": "0.54.0"
+      },
+      "status": {}
+    },
+    {
+      "id": "agents",
+      "name": "Agents (demo)",
+      "detection": {
+        "state": "ready",
+        "version": "demo",
+        "source": "demo"
+      },
+      "status": {
+        "summary": "demo data"
+      }
+    }
+  ],
+  "domains": {
+    "board": {
+      "domain": "board",
+      "title": "Board",
+      "state": "connected",
+      "source": "live",
+      "summary": "2 channels, 1 recent threads, 1 open tasks",
+      "channels": [
+        {
+          "path": "dev",
+          "threads": 1
+        },
+        {
+          "path": "work"
+        }
+      ],
+      "threads": [
+        {
+          "root": {
+            "id": "2",
+            "channel": "dev",
+            "author": "ada",
+            "text": "deploys are green\nagain"
+          },
+          "replies": 1,
+          "last": {
+            "id": "3",
+            "author": "claude",
+            "text": "ack"
+          }
+        }
+      ],
+      "tasks": [
+        {
+          "id": "4",
+          "text": "fix it",
+          "state": "claimed",
+          "claimant": "codex via ada"
+        }
+      ]
+    },
+    "tasks": {
+      "domain": "tasks",
+      "title": "Tasks",
+      "state": "connected",
+      "source": "live",
+      "summary": "14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready",
+      "counts": {
+        "total": 14,
+        "open": 6,
+        "in_progress": 3,
+        "blocked": 2,
+        "deferred": 1,
+        "closed": 2,
+        "ready": 3
+      },
+      "recent": [
+        {
+          "id": "ac-12",
+          "title": "wire the lease heartbeat",
+          "status": "in_progress",
+          "priority": 0
+        },
+        {
+          "id": "ac-09",
+          "title": "queue attention digest",
+          "status": "open",
+          "priority": 2
+        },
+        {
+          "id": "ac-03",
+          "title": "retire the old poller",
+          "status": "closed",
+          "priority": 3
+        }
+      ],
+      "insights": {
+        "domain": "tasks",
+        "title": "Insights",
+        "state": "connected",
+        "source": "graph analysis",
+        "summary": "3 actionable, 4 blocked, 1 cycles",
+        "top_picks": [
+          {
+            "id": "ac-12",
+            "title": "wire the lease heartbeat",
+            "reasons": [
+              "P0 bug in progress",
+              "unblocks the queue attention digest"
+            ],
+            "unblocks": 2
+          },
+          {
+            "id": "ac-15",
+            "title": "lease holder column",
+            "reasons": [
+              "P1 and ready",
+              "unblocks the stale lease warning"
+            ],
+            "unblocks": 1
+          },
+          {
+            "id": "ac-30",
+            "title": "saved filters",
+            "reasons": [
+              "ready, nothing waits on it"
+            ]
+          }
+        ],
+        "blockers": [
+          {
+            "id": "ac-12",
+            "title": "wire the lease heartbeat",
+            "unblocks": 2
+          },
+          {
+            "id": "ac-15",
+            "title": "lease holder column",
+            "unblocks": 1
+          }
+        ],
+        "critical_path": [
+          {
+            "id": "ac-12",
+            "value": 3
+          },
+          {
+            "id": "ac-09",
+            "value": 2
+          },
+          {
+            "id": "ac-15",
+            "value": 2
+          },
+          {
+            "id": "ac-16",
+            "value": 1
+          }
+        ],
+        "bottlenecks": [
+          {
+            "id": "ac-12",
+            "value": 4.5
+          },
+          {
+            "id": "ac-15",
+            "value": 2
+          },
+          {
+            "id": "ac-09",
+            "value": 0.5
+          }
+        ],
+        "influencers": [
+          {
+            "id": "ac-12",
+            "value": 0.61
+          },
+          {
+            "id": "ac-09",
+            "value": 0.42
+          },
+          {
+            "id": "ac-15",
+            "value": 0.35
+          }
+        ],
+        "cycles": [
+          [
+            "ac-20",
+            "ac-21",
+            "ac-20"
+          ]
+        ],
+        "tracks": [
+          {
+            "id": "track-A",
+            "items": [
+              "ac-12",
+              "ac-09"
+            ]
+          },
+          {
+            "id": "track-B",
+            "items": [
+              "ac-15",
+              "ac-16"
+            ]
+          }
+        ],
+        "total_actionable": 3,
+        "total_blocked": 4
+      }
+    },
+    "leases": {
+      "domain": "leases",
+      "title": "Leases",
+      "state": "connected",
+      "source": "live",
+      "summary": "2 held, 1 stale, 1 free",
+      "leases": [
+        {
+          "resource": "dm-zoj",
+          "state": "held",
+          "holder": "bot-scheduler-01",
+          "expires_at": "12m"
+        },
+        {
+          "resource": "dm-00h",
+          "state": "held",
+          "holder": "agent-notebook-1",
+          "expires_at": "3m"
+        },
+        {
+          "resource": "dm-1k2",
+          "state": "stale",
+          "holder": "claude-mac"
+        },
+        {
+          "resource": "ac-9x1",
+          "state": "free"
+        }
+      ]
+    },
+    "queues": {
+      "domain": "queues",
+      "title": "Queues",
+      "state": "degraded",
+      "source": "snapshot",
+      "summary": "3 runs, 2 queued, 1 need attention",
+      "reason": "demo data: fixtures, no live daemon",
+      "runs": [
+        {
+          "issue": "T-1",
+          "state": "running",
+          "phase": "gating",
+          "machine": "operators-mac",
+          "workflow": "general"
+        },
+        {
+          "issue": "T-2",
+          "state": "deferred",
+          "phase": "deferred",
+          "machine": "operators-mac"
+        },
+        {
+          "issue": "T-3",
+          "state": "running",
+          "phase": "running",
+          "machine": "operators-mac",
+          "stalled": true,
+          "workflow": "review"
+        }
+      ],
+      "queue": [
+        {
+          "id": "Q-1",
+          "title": "ready task"
+        },
+        {
+          "id": "Q-2",
+          "title": "blocked task",
+          "blocked": true
+        }
+      ],
+      "attention": [
+        {
+          "issue": "T-2",
+          "reason": "gate_failed",
+          "detail": "gh:pr rejected: merge conflict"
+        }
+      ],
+      "history": [
+        {
+          "issue": "H-2",
+          "title": "gate red task",
+          "updated_at": "2026-11-19T12:00:00Z"
+        },
+        {
+          "issue": "H-1",
+          "title": "restart interrupted task",
+          "updated_at": "2026-11-19T11:00:00Z"
+        },
+        {
+          "issue": "H-3",
+          "outcome": "completed",
+          "updated_at": "2026-11-19T10:00:00Z"
+        }
+      ]
+    },
+    "agents": {
+      "domain": "agents",
+      "title": "Agents",
+      "state": "connected",
+      "source": "live",
+      "summary": "6 agents: 1 running, 1 waiting, 1 idle",
+      "agents": [
+        {
+          "id": "codex:41310",
+          "harness": "codex",
+          "pid": 41310,
+          "session_id": "demo-s2",
+          "repo": "mill",
+          "branch": "main",
+          "cwd": "/work/mill",
+          "model": "codex-demo-1",
+          "state": "waiting",
+          "task": "Package the wheat module",
+          "last_activity": "2026-11-24T08:58:25Z",
+          "tokens": 4321,
+          "context_pct": 18,
+          "term": {
+            "kind": "tmux pane",
+            "ref": "work:2.1",
+            "command": "tmux switch-client -t %5"
+          },
+          "source": "monitor",
+          "sources": [
+            "monitor"
+          ]
+        },
+        {
+          "id": "claude-code:demo-s4",
+          "harness": "claude-code",
+          "session_id": "demo-s4",
+          "repo": "attic",
+          "branch": "chore/deps",
+          "cwd": "/work/attic",
+          "model": "claude-demo-1",
+          "state": "error",
+          "task": "Bump the lockfile",
+          "last_activity": "2026-11-24T08:57:00Z",
+          "source": "transcript",
+          "sources": [
+            "transcript"
+          ]
+        },
+        {
+          "id": "claude-code:41022",
+          "harness": "claude-code",
+          "pid": 41022,
+          "session_id": "demo-s1",
+          "repo": "orchard",
+          "branch": "feat/pear-counter",
+          "cwd": "/work/orchard",
+          "model": "claude-demo-1",
+          "state": "running",
+          "task": "Add a pear counter to the orchard report",
+          "last_activity": "2026-11-24T08:59:56Z",
+          "tokens": 152300,
+          "context_pct": 72,
+          "term": {
+            "kind": "tmux pane",
+            "ref": "work:1.0",
+            "command": "tmux switch-client -t %3"
+          },
+          "source": "monitor",
+          "sources": [
+            "monitor"
+          ],
+          "ports": [
+            {
+              "port": 5173,
+              "pid": 41188,
+              "command": "node dev-server.js"
+            }
+          ],
+          "children": [
+            {
+              "pid": 41187,
+              "command": "go build ./...",
+              "mem_kb": 120000
+            },
+            {
+              "pid": 41188,
+              "command": "node dev-server.js",
+              "mem_kb": 80000,
+              "port": 5173
+            }
+          ],
+          "subagents": [
+            {
+              "name": "Survey the orchard",
+              "state": "done",
+              "tokens": 12400
+            },
+            {
+              "name": "Check the harvest tests",
+              "state": "working",
+              "tokens": 8200
+            }
+          ]
+        },
+        {
+          "id": "claude-code:41555",
+          "harness": "claude-code",
+          "pid": 41555,
+          "session_id": "demo-s3",
+          "repo": "cellar",
+          "branch": "fix/barrel-rename",
+          "worktree": "cellar-barrels",
+          "cwd": "/work/wt/cellar-barrels",
+          "model": "claude-demo-1",
+          "state": "idle",
+          "task": "Rename the barrel type everywhere",
+          "last_activity": "2026-11-24T08:53:00Z",
+          "source": "transcript",
+          "sources": [
+            "transcript"
+          ]
+        },
+        {
+          "id": "opencode:41701",
+          "harness": "opencode",
+          "pid": 41701,
+          "repo": "barn",
+          "branch": "main",
+          "cwd": "/work/barn",
+          "state": "unknown",
+          "source": "process",
+          "sources": [
+            "process"
+          ]
+        },
+        {
+          "id": "codex:demo-s5",
+          "harness": "codex",
+          "session_id": "demo-s5",
+          "repo": "orchard",
+          "branch": "docs",
+          "cwd": "/work/orchard",
+          "model": "codex-demo-1",
+          "state": "stopped",
+          "task": "Write the pruning guide",
+          "last_activity": "2026-11-24T08:48:00Z",
+          "source": "transcript",
+          "sources": [
+            "transcript"
+          ]
+        }
+      ],
+      "rate_limits": [
+        {
+          "harness": "claude-code",
+          "five_hour_pct": 35,
+          "five_hour_resets_at": "2026-11-24T10:30:00Z",
+          "seven_day_pct": 12,
+          "seven_day_resets_at": "2026-11-27T09:00:00Z"
+        },
+        {
+          "harness": "codex",
+          "five_hour_pct": 88,
+          "five_hour_resets_at": "2026-11-24T09:25:00Z"
+        }
+      ],
+      "orphan_ports": [
+        {
+          "port": 4000,
+          "pid": 40990,
+          "command": "node old-server.js"
+        }
+      ],
+      "token_rate": 310
+    },
+    "workspace": {
+      "state": "connected",
+      "placements": [
+        {
+          "id": "pl-5869f1ec4e9f",
+          "item": {
+            "kind": "run",
+            "id": "T-1",
+            "host": "operators-mac"
+          },
+          "host": "operators-mac",
+          "session": "demo:s1",
+          "label": "Lambe · T-1",
+          "match": "exact",
+          "open": {
+            "rungs": [],
+            "copy": "rex -S operators-mac",
+            "note": "Demo data: nothing is run."
+          }
+        },
+        {
+          "id": "pl-be7cedc84c6f",
+          "item": {
+            "kind": "run",
+            "id": "T-3",
+            "host": "operators-mac"
+          },
+          "host": "operators-mac",
+          "session": "demo:s3",
+          "label": "review T-3 notes",
+          "match": "label",
+          "open": {
+            "rungs": [],
+            "copy": "rex -S operators-mac",
+            "note": "Demo data: nothing is run."
+          }
+        },
+        {
+          "id": "pl-65aca4103bc0",
+          "item": {
+            "kind": "lease",
+            "id": "dm-zoj"
+          },
+          "session": "demo:s4",
+          "label": "Lambe · dm-zoj",
+          "match": "exact",
+          "open": {
+            "rungs": [],
+            "copy": "rex",
+            "note": "Demo data: nothing is run."
+          }
+        },
+        {
+          "id": "pl-f01fcaf0fb2a",
+          "item": {
+            "kind": "lease",
+            "id": "dm-00h"
+          },
+          "session": "demo:s5",
+          "label": "dm-00h",
+          "match": "exact",
+          "open": {
+            "rungs": [],
+            "copy": "rex",
+            "note": "Demo data: nothing is run."
+          }
+        },
+        {
+          "id": "pl-20b39cb12ca3",
+          "item": {
+            "kind": "task",
+            "id": "ac-09"
+          },
+          "session": "demo:s8",
+          "label": "Lambe · ac-09",
+          "match": "exact",
+          "open": {
+            "rungs": [],
+            "copy": "rex",
+            "note": "Demo data: nothing is run."
+          }
+        }
+      ],
+      "ambiguous": [
+        {
+          "item": {
+            "kind": "lease",
+            "id": "dm-1k2"
+          },
+          "candidates": [
+            {
+              "id": "pl-2f9f5e5174d5",
+              "item": {
+                "kind": "lease",
+                "id": "dm-1k2"
+              },
+              "session": "demo:s6",
+              "label": "Lambe · dm-1k2",
+              "match": "exact",
+              "open": {
+                "rungs": [],
+                "copy": "rex",
+                "note": "Demo data: nothing is run."
+              }
+            },
+            {
+              "id": "pl-bef8639807a9",
+              "item": {
+                "kind": "lease",
+                "id": "dm-1k2"
+              },
+              "session": "demo:s7",
+              "label": "retry dm-1k2",
+              "match": "label",
+              "open": {
+                "rungs": [],
+                "copy": "rex",
+                "note": "Demo data: nothing is run."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -263,23 +263,23 @@ func TestJSONConfirmedPrintsOnlyTheResult(t *testing.T) {
 	}
 }
 
-func TestJSONWithoutYesOrDryRunIsAUsageErrorWithEmptyStdout(t *testing.T) {
+func TestJSONWithoutYesOrDryRunIsAUsageErrorWithOnlyTheErrorDocument(t *testing.T) {
 	m := newTaskMod()
 	code, out, errOut, _ := runIn(t, "y\n", []core.Module{m}, "tasks", "create", "--title", "hello", "--json")
-	if code != 2 || out != "" || len(m.ran) != 0 || !strings.Contains(errOut, "--yes") {
+	if code != 2 || errorCode(out) != "usage" || len(m.ran) != 0 || !strings.Contains(errOut, "--yes") {
 		t.Fatalf("code=%d out=%q err=%q ran=%v", code, out, errOut, m.ran)
 	}
 }
 
-func TestJSONFailureLeavesStdoutEmpty(t *testing.T) {
+func TestJSONFailurePrintsOnlyTheErrorDocument(t *testing.T) {
 	m := newTaskMod()
 	m.fail = errors.New("bd: boom")
 	code, out, errOut, _ := runIn(t, "", []core.Module{m}, "tasks", "close", "t-1", "--yes", "--json")
-	if code != 1 || out != "" || !strings.Contains(errOut, "boom") {
+	if code != 1 || errorCode(out) != "failed" || !strings.Contains(errOut, "boom") {
 		t.Fatalf("code=%d out=%q err=%q", code, out, errOut)
 	}
 	code, out, _, _ = runIn(t, "", nil, "tasks", "create", "--title", "x", "--yes", "--json")
-	if code != 1 || out != "" {
+	if code != 1 || errorCode(out) != "not_connected" {
 		t.Fatalf("not connected under --json: code=%d out=%q", code, out)
 	}
 }

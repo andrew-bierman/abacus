@@ -1,0 +1,231 @@
+{
+  "$defs": {
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "TaskCommentView": {
+      "properties": {
+        "age": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "object"
+    },
+    "TaskRef": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "status"
+      ],
+      "type": "object"
+    },
+    "TaskRow": {
+      "properties": {
+        "age": {
+          "type": "string"
+        },
+        "assignee": {
+          "type": "string"
+        },
+        "blocked": {
+          "type": "boolean"
+        },
+        "blocked_by": {
+          "type": "integer"
+        },
+        "blocks": {
+          "type": "integer"
+        },
+        "child_done": {
+          "type": "integer"
+        },
+        "child_total": {
+          "type": "integer"
+        },
+        "comments": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "defer_until": {
+          "type": "string"
+        },
+        "held_by": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "priority",
+        "status",
+        "title"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks show",
+  "properties": {
+    "acceptance": {
+      "type": "string"
+    },
+    "blocked_by": {
+      "items": {
+        "$ref": "#/$defs/TaskRef"
+      },
+      "type": "array"
+    },
+    "blocks": {
+      "items": {
+        "$ref": "#/$defs/TaskRef"
+      },
+      "type": "array"
+    },
+    "children": {
+      "items": {
+        "$ref": "#/$defs/TaskRef"
+      },
+      "type": "array"
+    },
+    "close_reason": {
+      "type": "string"
+    },
+    "closed_at": {
+      "type": "string"
+    },
+    "comments": {
+      "items": {
+        "$ref": "#/$defs/TaskCommentView"
+      },
+      "type": "array"
+    },
+    "description": {
+      "type": "string"
+    },
+    "design": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "parent": {
+      "$ref": "#/$defs/TaskRef"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "row": {
+      "$ref": "#/$defs/TaskRow"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "row",
+    "schema_version",
+    "state",
+    "title"
+  ],
+  "title": "tasks-show",
+  "type": "object",
+  "x-abacus-schema": 1
+}

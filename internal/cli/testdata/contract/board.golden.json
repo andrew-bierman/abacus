@@ -1,0 +1,41 @@
+{
+  "channels": [
+    {
+      "path": "dev",
+      "threads": 1
+    },
+    {
+      "path": "work"
+    }
+  ],
+  "domain": "board",
+  "schema_version": 1,
+  "source": "live",
+  "state": "connected",
+  "summary": "2 channels, 1 recent threads, 1 open tasks",
+  "tasks": [
+    {
+      "id": "4",
+      "text": "fix it",
+      "state": "claimed",
+      "claimant": "codex via ada"
+    }
+  ],
+  "threads": [
+    {
+      "root": {
+        "id": "2",
+        "channel": "dev",
+        "author": "ada",
+        "text": "deploys are green\nagain"
+      },
+      "replies": 1,
+      "last": {
+        "id": "3",
+        "author": "claude",
+        "text": "ack"
+      }
+    }
+  ],
+  "title": "Board"
+}

@@ -1,0 +1,227 @@
+{
+  "$defs": {
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "TaskTreeRow": {
+      "properties": {
+        "age": {
+          "type": "string"
+        },
+        "assignee": {
+          "type": "string"
+        },
+        "blocked": {
+          "type": "boolean"
+        },
+        "blocked_by": {
+          "type": "integer"
+        },
+        "blocks": {
+          "type": "integer"
+        },
+        "child_done": {
+          "type": "integer"
+        },
+        "child_total": {
+          "type": "integer"
+        },
+        "comments": {
+          "type": "integer"
+        },
+        "context": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "defer_until": {
+          "type": "string"
+        },
+        "depth": {
+          "type": "integer"
+        },
+        "folded": {
+          "type": "boolean"
+        },
+        "has_children": {
+          "type": "boolean"
+        },
+        "held_by": {
+          "type": "string"
+        },
+        "hidden": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "depth",
+        "id",
+        "priority",
+        "status",
+        "title"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks list --tree",
+  "properties": {
+    "descending": {
+      "type": "boolean"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "folded": {
+      "type": "integer"
+    },
+    "folds_paused": {
+      "type": "boolean"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "matched": {
+      "type": "integer"
+    },
+    "orphans": {
+      "type": "integer"
+    },
+    "parent_cycles": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "preset": {
+      "type": "string"
+    },
+    "query": {
+      "type": "string"
+    },
+    "read_at": {
+      "type": "string"
+    },
+    "ready": {
+      "type": "integer"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/TaskTreeRow"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "shown": {
+      "type": "integer"
+    },
+    "sort": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "total": {
+      "type": "integer"
+    },
+    "tracker": {
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "domain",
+    "matched",
+    "preset",
+    "ready",
+    "rows",
+    "schema_version",
+    "shown",
+    "sort",
+    "state",
+    "title",
+    "total"
+  ],
+  "title": "tasks-tree",
+  "type": "object",
+  "x-abacus-schema": 1
+}

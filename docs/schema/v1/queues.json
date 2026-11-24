@@ -1,0 +1,174 @@
+{
+  "$defs": {
+    "Attention": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "type": "object"
+    },
+    "Guide": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
+    "HistoryItem": {
+      "properties": {
+        "issue": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "type": "object"
+    },
+    "QueueItem": {
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "QueueRun": {
+      "properties": {
+        "issue": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        },
+        "stalled": {
+          "type": "boolean"
+        },
+        "state": {
+          "type": "string"
+        },
+        "workflow": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: queues",
+  "properties": {
+    "attention": {
+      "items": {
+        "$ref": "#/$defs/Attention"
+      },
+      "type": "array"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "history": {
+      "items": {
+        "$ref": "#/$defs/HistoryItem"
+      },
+      "type": "array"
+    },
+    "how_to_connect": {
+      "type": "string"
+    },
+    "queue": {
+      "items": {
+        "$ref": "#/$defs/QueueItem"
+      },
+      "type": "array"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "runs": {
+      "items": {
+        "$ref": "#/$defs/QueueRun"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/Guide"
+    },
+    "source": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "schema_version",
+    "state",
+    "title"
+  ],
+  "title": "queues",
+  "type": "object",
+  "x-abacus-schema": 1
+}

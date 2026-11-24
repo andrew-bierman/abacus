@@ -1,0 +1,82 @@
+{
+  "$defs": {
+    "BulkItemResult": {
+      "properties": {
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "outcome"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: tasks bulk --yes",
+  "properties": {
+    "applied": {
+      "type": "integer"
+    },
+    "batch_id": {
+      "type": "string"
+    },
+    "failed": {
+      "type": "integer"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/BulkItemResult"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "not_run": {
+      "type": "integer"
+    },
+    "op": {
+      "type": "string"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "skipped": {
+      "type": "integer"
+    },
+    "unknown": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "applied",
+    "batch_id",
+    "failed",
+    "items",
+    "not_run",
+    "op",
+    "schema_version",
+    "skipped",
+    "unknown"
+  ],
+  "title": "bulk-result",
+  "type": "object",
+  "x-abacus-schema": 1
+}

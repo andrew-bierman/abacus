@@ -18,14 +18,6 @@ var bulkOps = map[string]core.TaskOp{
 	"label-add": core.TaskLabelAdd, "label-remove": core.TaskLabelRemove, "assign": core.TaskAssign,
 }
 
-// bulkItemJSON is one task of a planned batch in --dry-run --json.
-type bulkItemJSON struct {
-	ID     string   `json:"id"`
-	Title  string   `json:"title,omitempty"`
-	Change string   `json:"change"`
-	Argv   []string `json:"argv"`
-}
-
 // runTaskBulk handles `tasks bulk`: one verb on up to 25 tasks. Every task is read first, the plan lists
 // every task with its exact command, one confirm covers the batch, and each task is read again and
 // guarded right before its own write, so a task that changed is skipped and reported, never written.
@@ -35,9 +27,10 @@ func runTaskBulk(rest []string, d Deps) int {
 	var o Options
 	var yes, dry, asJSON, clear bool
 	var ids, op, value string
+	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 	fs.BoolVar(&dry, "dry-run", false, "print the plan and every command; run nothing")
-	fs.BoolVar(&asJSON, "json", false, "print JSON")
+	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.BoolVar(&clear, "clear", false, "with --op assign: unassign")
 	fs.StringVar(&ids, "ids", "", fmt.Sprintf("comma-separated task ids (at most %d)", core.MaxBulk))
 	fs.StringVar(&op, "op", "", "close, status, priority, label-add, label-remove or assign")
@@ -54,6 +47,10 @@ func runTaskBulk(rest []string, d Deps) int {
 	}
 	if asJSON && !yes && !dry {
 		return bad("--json needs --yes or --dry-run (it cannot prompt)")
+	}
+	expect, okDigest := parseExpect(d, "tasks bulk", expectRaw)
+	if !okDigest {
+		return core.ExitUsage
 	}
 	taskOp, ok := bulkOps[op]
 	if !ok {
@@ -105,19 +102,16 @@ func runTaskBulk(rest []string, d Deps) int {
 	pr := core.ResolveProviders(d.Build(o).Detect(ctx))
 	w, r := pr.Writer, pr.Reader
 	if w == nil {
-		fmt.Fprintf(d.Err, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
-		return core.ExitFail
+		return failf(d, core.CodeNotConnected, "tasks: not connected. %s\n", core.HowToConnectFor(core.DomainTasks))
 	}
 	if r == nil {
-		fmt.Fprintln(d.Err, "tasks bulk: cannot read the tasks' current state, so they cannot be changed safely")
-		return core.ExitFail
+		return failf(d, core.CodeUnsupported, "tasks bulk: cannot read the tasks' current state, so they cannot be changed safely\n")
 	}
 	targets := make([]core.Task, 0, len(list))
 	for _, id := range list {
 		t, err := r.ReadTask(ctx, id)
 		if err != nil {
-			fmt.Fprintf(d.Err, "tasks bulk: could not read %s first: %s\n", core.Sanitize(id), core.Sanitize(err.Error()))
-			return core.ExitFail
+			return failf(d, core.CodeFor(err), "tasks bulk: could not read %s first: %s\n", core.Sanitize(id), core.Sanitize(err.Error()))
 		}
 		if t.ID != id { // the tracker resolved a prefix or alias: only whole ids go in a batch
 			fmt.Fprintf(d.Err, "tasks bulk: %s is not a whole task id (it resolves to %s): use the full id\n", core.Sanitize(id), core.Sanitize(t.ID))
@@ -127,21 +121,18 @@ func runTaskBulk(rest []string, d Deps) int {
 	}
 	plan, err := core.PlanBulk(w, spec, targets)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks bulk: %v\n", err)
-		return core.ExitUsage
+		return planFailed(d, "tasks bulk", expect, err)
+	}
+	digest := plan.Digest()
+	if expect != "" && expect != digest {
+		return planChanged(d, "tasks bulk", expect, digest)
 	}
 	if dry && asJSON {
-		items := make([]bulkItemJSON, len(plan.Items))
+		items := make([]core.BulkDryRunItem, len(plan.Items))
 		for i, it := range plan.Items {
-			items[i] = bulkItemJSON{ID: it.Change.ID, Title: it.Change.Before.Title, Change: core.BulkItemText(it.Change), Argv: it.Argv}
+			items[i] = core.BulkDryRunItem{ID: it.Change.ID, Title: it.Change.Before.Title, Change: core.BulkItemText(it.Change), Argv: it.Argv}
 		}
-		jsonOut(d.Out, struct {
-			SchemaVersion int             `json:"schema_version"`
-			DryRun        bool            `json:"dry_run"`
-			Op            string          `json:"op"`
-			Items         []bulkItemJSON  `json:"items"`
-			Skipped       []core.BulkSkip `json:"skipped,omitempty"`
-		}{1, true, op, items, plan.Skipped})
+		jsonOut(d.Out, core.BulkDryRun{SchemaVersion: 1, DryRun: true, Op: op, Items: items, Skipped: plan.Skipped, PlanDigest: digest})
 		return core.ExitOK
 	}
 	if !asJSON {
@@ -160,8 +151,7 @@ func runTaskBulk(rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "Apply %s? [y/N] ", core.Plural(len(plan.Items), "change"))
 		if !confirmed(d.In) {
 			fmt.Fprintln(d.Err)
-			fmt.Fprintln(d.Err, "not applied: the change was not confirmed")
-			return core.ExitFail
+			return failf(d, core.CodeRefused, "not applied: the change was not confirmed\n")
 		}
 	}
 	au := d.Audit
@@ -172,9 +162,9 @@ func runTaskBulk(rest []string, d Deps) int {
 	defer acancel()
 	rep, err := core.NewApplier(w, au).ApplyBulk(actx, plan.Confirm(), r)
 	if err != nil {
-		fmt.Fprintf(d.Err, "tasks bulk: %s\n", core.DescribeWriteError(err))
-		return core.ExitFail
+		return failf(d, core.CodeFor(err), "tasks bulk: %s\n", core.DescribeWriteError(err))
 	}
+	rep.PlanDigest = digest
 	if asJSON {
 		jsonOut(d.Out, rep)
 	} else {

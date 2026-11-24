@@ -1,0 +1,9 @@
+{
+  "applied": true,
+  "plan_digest": "be14c3cdeeb549855bbb11f978bc6c56e99a5f377c273e7fb9790938b6d70baa",
+  "result": {
+    "id": "9",
+    "text": "deploys are green again"
+  },
+  "schema_version": 1
+}

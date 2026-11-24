@@ -9,12 +9,12 @@ import (
 )
 
 // topCommands are the commands completion offers, in the order usage lists them.
-var topCommands = []string{"board", "tasks", "leases", "queues", "agents", "tui", "search", "rex", "setup", "config", "version", "doctor", "status", "licenses", "completion", "help"}
+var topCommands = []string{"board", "tasks", "leases", "queues", "agents", "tui", "search", "rex", "setup", "config", "schema", "version", "doctor", "status", "licenses", "completion", "help"}
 
 // taskVerbs are the `tasks` subcommands, in the order the help lists them.
-var taskVerbs = []string{"list", "show", "board", "graph", "history", "create", "update", "close", "label", "assign", "priority", "dep", "comment", "bulk"}
+var taskVerbs = []string{"list", "show", "board", "graph", "history", "create", "update", "close", "reopen", "label", "assign", "priority", "dep", "comment", "bulk"}
 
-const writeFlags = "[--yes] [--dry-run] [--json]"
+const writeFlags = "[--yes] [--dry-run] [--expect-digest DIGEST] [--json]"
 
 // subHelp is the usage of each subcommand that has its own words; --help prints it (stdout, exit 0).
 var subHelp = map[string]string{
@@ -27,6 +27,7 @@ var subHelp = map[string]string{
 	"tasks create":   "usage: abacus tasks create --title TITLE [--description TEXT] [--type TYPE] [--priority 0-4] " + writeFlags,
 	"tasks update":   "usage: abacus tasks update ID [--title TITLE] [--description TEXT] [--status STATUS] [--priority 0-4] " + writeFlags,
 	"tasks close":    "usage: abacus tasks close ID [--reason TEXT] " + writeFlags,
+	"tasks reopen":   "usage: abacus tasks reopen ID [--reason TEXT] " + writeFlags,
 	"tasks label":    "usage: abacus tasks " + editVerbs["label"] + " " + writeFlags,
 	"tasks assign":   "usage: abacus tasks " + editVerbs["assign"] + " " + writeFlags,
 	"tasks priority": "usage: abacus tasks " + editVerbs["priority"] + " " + writeFlags,
@@ -39,6 +40,7 @@ var subHelp = map[string]string{
 	"rex":            "usage: abacus rex layout [--new NAME] [--yes] [--dry-run] [--json]\n\nOpens the cockpit tabs in a terminal workspace; it only opens tabs.",
 	"rex layout":     "usage: abacus rex layout [--new NAME] [--yes] [--dry-run] [--json]",
 	"config":         "usage: abacus config show [--json] | get KEY | set KEY VALUE | path\nkeys: " + strings.Join(core.ConfigKeys, ", "),
+	"schema":         "usage: abacus schema [NAME] [--out DIR [--force]] [--json]\n\nWith no NAME, list the schemas of the --json outputs (JSON Schema, draft 2020-12; every document carries schema_version 1).\nWith a NAME, print that schema. With --out DIR, write every schema to DIR as NAME.json. Writes only into DIR, and never over a symbolic link or a file that is not an abacus schema (--force replaces the latter).",
 	"licenses":       "usage: abacus licenses\n\nPrints the third-party notices and license texts carried in this file.",
 	"completion":     "usage: abacus completion bash|zsh|fish\n\nPrints a shell completion script, for example: source <(abacus completion bash)",
 	"help":           "usage: abacus help [command]",

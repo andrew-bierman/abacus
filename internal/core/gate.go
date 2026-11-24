@@ -41,7 +41,7 @@ func (g *gate) do(id uint64, e AuditEntry, run func() error) error {
 	g.mu.Unlock()
 	e.Time, e.Phase = time.Now().UTC(), "attempt"
 	if err := g.audit.Record(e); err != nil {
-		return err
+		return &AuditError{err}
 	}
 	err := run()
 	e.Time, e.Phase = time.Now().UTC(), "ok"
