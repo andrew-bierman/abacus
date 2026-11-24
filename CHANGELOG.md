@@ -6,6 +6,8 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-24
+
 ### Added
 
 - Marks and bulk changes on the Tasks list and tree: `space` marks, `R` marks a range, `I` inverts,
