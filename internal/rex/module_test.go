@@ -17,6 +17,7 @@ import (
 var (
 	_ core.Module            = (*Module)(nil)
 	_ core.WorkspaceProvider = (*Module)(nil)
+	_ core.AgentProvider     = (*Module)(nil)
 )
 
 type resp struct {

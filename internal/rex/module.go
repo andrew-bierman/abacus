@@ -1,6 +1,7 @@
 // Package rex is the optional terminal-workspace adapter. It composes the `rex` CLI only,
-// through a Runner seam: `ls --json` and `version --json` behind an exact argv allowlist and a
-// scrubbed environment, never starting a server. It imports no Rex or Lambe code and no UI.
+// through a Runner seam: `ls --json`, `version --json` and, for the Agents view, `block ls` and
+// two read-only `block call` methods behind an exact argv allowlist (argv.go) and a scrubbed
+// environment, never starting a server. It imports no Rex or Lambe code and no UI.
 //
 // Rex is optional and pre-1.0, so every failure here degrades to "no workspace" and never
 // to a failed cockpit: an absent server is not an error, an unsupported API revision is a
@@ -82,7 +83,7 @@ type Options struct {
 	Now      func() time.Time
 }
 
-// Module implements core.Module and core.WorkspaceProvider for Rex.
+// Module implements core.Module, core.WorkspaceProvider and core.AgentProvider for Rex.
 type Module struct {
 	core.Locator
 	run    readOnly
@@ -93,6 +94,9 @@ type Module struct {
 	rev    int
 	ver    string
 	cache  map[string]cached
+	// The Agents sweep: the one in flight, and each pane's foreground process for a few seconds.
+	flight *flight
+	procs  map[string]procEntry
 }
 
 // New returns a Rex module with defaults filled in.
