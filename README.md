@@ -1,8 +1,9 @@
 # abacus
 
-The fleet cockpit for Beads-powered agent fleets. See the board, the tasks, the leases and the
-Symphony queues, and change the tasks that are safe to change, from one terminal tool. The tools
-that supply the data are providers behind each view (see Providers).
+The fleet cockpit for Beads-powered agent fleets. See the board, the tasks, the leases, the
+Symphony queues and the AI coding agents running on this machine, and change the tasks that are
+safe to change, from one terminal tool. The tools that supply the data are providers behind each
+view (see Providers).
 
 ## Install
 
@@ -48,9 +49,10 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 | Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; graph insights (next pick, blockers, critical path, cycles) in a second view | create, update, close (with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
+| Sessions | the AI coding agents running on this machine: state, tokens, context, child processes, ports and account quota | read only |
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
-`abacus tasks|leases|queues|board [--json]` print the same typed reports the TUI renders, and
+`abacus tasks|leases|queues|board|sessions [--json]` print the same typed reports the TUI renders, and
 `abacus tasks list|show|board|graph|history` print the task list, one task in full, the kanban columns and the dependency graph (`--query`, `--sort`, `--json`) and a task's history, and
 `abacus search "QUERY"` (or `ctrl+k` in the TUI) searches every domain at once. In the TUI, `:` opens a k9s-style command prompt (`:tasks`, `:graph`, `:filter label:ui`, `:search foo`, `:help`) that only navigates, and `d` and `y` describe the selected task or show it as JSON.
 
@@ -160,7 +162,7 @@ or error messages that help you fix one.
 ## Usage
 
 ```
-abacus board|tasks|leases|queues [--json]
+abacus board|tasks|leases|queues|sessions [--json]
 abacus tasks create [--title T] [--description D] [--priority N] [--type X] [--yes] [--dry-run]
 abacus tasks update ID [--title T] [--description D] [--priority N] [--status S] [--yes] [--dry-run]
 abacus tasks close  ID [--reason R] [--yes] [--dry-run]
@@ -175,9 +177,9 @@ abacus version [--json]
 
 Exit codes: `doctor` exits 1 when a check failed or a provider is broken; a write exits 1 when it
 was not applied or its result is unknown; any command exits 2 on a usage error (including a stray
-positional argument). The domain reads (`board`, `tasks`, `leases`, `queues`) and `status` exit 0
-whatever the connection state: the outcome is in each domain's `state` (`connected`,
-`not-connected`, `degraded`) and `reason`. `status --json` and `doctor --json` keep
+positional argument). The domain reads (`board`, `tasks`, `leases`, `queues`, `sessions`) and
+`status` exit 0 whatever the connection state: the outcome is in each domain's `state`
+(`connected`, `not-connected`, `degraded`) and `reason`. `status --json` and `doctor --json` keep
 `schema_version` 1; `status --json` gains an additive `domains` section. Every read command's JSON
 carries `schema_version`. A not-connected or degraded domain keeps the same shape (`leases: []`,
 zeroed `counts`). JSON key naming is mixed by origin (`issue` in Queues rows, `id` in Tasks) and is

@@ -1,7 +1,7 @@
 # Agents domain: a sessions tab for local AI coding agents
 
 Status: phase 2 complete (`internal/agents` has the opencode, claude, codex, pi, git and quota
-readers) and the core wiring is done; the CLI command and the tab are open.
+readers), the core wiring and `abacus sessions` are done; the tab is open.
 
 ## Goal
 
@@ -68,7 +68,7 @@ Written here, because nothing covers it:
 | Transcript reads: tokens, context, model, title, true state | phases 2 | per-harness readers | done |
 | Git branch and dirty counts per session cwd | `git.go` | `Runner` seam | done |
 | Quota gauges | `quota.go` | harness state files | done |
-| Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | core done, CLI + tab open |
+| Domain wiring: `DomainSessions`, provider, CLI, TUI tab | `core` + `tui` | the report types above | core + CLI done, tab open |
 
 `Machine` is the only seam the Collector needs for live state: tests supply a fixed process
 table and never read this machine.
@@ -104,6 +104,15 @@ One call does one join:
   still reads no environment.
 - A store or transcript that cannot be read appends one bounded reason to `Unreadable`; it
   never fails the whole read, and a partial read stays `connected`.
+
+The JSONL stores share one 8 MB budget per tick, which is right for a tab that reads again in a
+few seconds and wrong for a one-shot command: the first file in the caller's order can spend the
+whole budget and leave every later session with only its first line. So the domain has two reads
+over the same join. `Sessions` is the tab's read: one bounded pass. `SessionsComplete` is the
+CLI's read: it gives every transcript a full budget per pass (`BeginDrainPass` on the JSONL
+stores) and repeats the pass until every store reports `CaughtUp`, bounded so a hostile rollout
+cannot make one command run forever. Both return the same `SessionsReport`, so the tab and
+`abacus sessions --json` still render one shape.
 
 Tests inject a fixed `Machine` and `Files`, a fake `Runner`, and temporary stores and config
 directories under `t.TempDir()`; no core test reads this machine.
@@ -453,7 +462,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `git.go`: branch and dirty counts per session cwd
 - [x] `quota.go`: Claude and Codex quota gauges
 - [x] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
-- [ ] `cli`: `abacus sessions [--json]`
+- [x] `cli`: `abacus sessions [--json]`
 - [ ] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
 - [ ] `tui`: golden tests for the sessions tab
 - [ ] shipping: push the branch and open the pull request
@@ -486,7 +495,9 @@ The loop works the first unchecked item. Tick one per pass.
 
    Golden tests in `internal/tui/testdata/golden/`, matching the other domains, with invented
    names per `956fbb4`. The sparkline is drawn rather than borrowed: `bubbles v1.0.0` has no
-   sparkline package, and none of the other four panels needs one.
+   sparkline package, and none of the other four panels needs one. Session titles, models,
+   branch names and child commands come from transcripts and the kernel, so the tab sanitizes
+   them with `core.Sanitize` before drawing, as the CLI's text renderer does.
 
 ## Fixtures
 
@@ -556,16 +567,30 @@ Found while building the readers; none blocks the tab, and each names the item t
   the short slot, matching abtop's `mins <= 300` rule, so an omitted length would draw a 5-hour
   label. No sampled rollout omits it; the slot rule would need a richer signal to tell the two
   apart.
-- **The shared JSONL budget is still first-come across sessions.** Rotation recovers the tab over
-  a few ticks, but a one-shot `abacus sessions --json` calls the join once: one large rollout can
-  take a store's whole 8 MB and leave every later session with only its meta line (measured here:
-  1 of 12 live Codex sessions joined on the first read). The CLI item must read to quiescence, or
-  the readers need to split the budget per file.
+- **The shared JSONL budget is first-come across sessions, and the CLI drains around it.**
+  Rotation recovers the tab over a few ticks, but a one-shot `abacus sessions --json` used to call
+  the join once: one large rollout could take a store's whole 8 MB and leave every later session
+  with only its meta line (measured here: 1 of 12 live Codex sessions joined on the first read).
+  `SessionsComplete` now gives every transcript a full budget per pass and repeats until the
+  stores report `CaughtUp` (16 passes at most). The tab still shares one budget, so its first
+  frame stays cheap; a live rollout past 128 MB would still need later ticks.
 - **One store row per directory is still one row.** Claude, pi and opencode attribute the newest
   store entry in a live cwd to every live process there, so two sessions in one worktree show the
   same title and tokens. A range-bounded `PathFor` (each session's start to the next session's
   start) would separate them; the tab accepts the limit until a harness exposes a session id on
   the process.
+- **`status` reads Sessions with the tab's bounded pass.** `ReadDomains` overlaps one bounded
+  sessions read with the other domains, so `status --json`'s `domains.sessions` can under-report a
+  long transcript while `sessions --json` drains it; both still say `connected`, and the report has
+  no partial flag. A consumer that needs the full totals calls `sessions --json`. Making status
+  drain would trade ~1 s there for consistency, which is the tab item's call.
+- **The one-shot drain repeats the whole join per pass.** `SessionsComplete` re-reads the process
+  table, the opencode rows, every Codex process's open files and the quota files on each pass,
+  while only the JSONL cursors need to advance; the whole command measured 0.9 s here for 30
+  sessions and a 50 MB live rollout. A transcript-only drain over one snapshot would cut most of
+  that, but it also changes which pass can observe an orphaned port, so it belongs with the tab's
+  polling item. The same pass structure weakens the CLI's `executing`: the last pass compares CPU
+  ticks milliseconds apart, not a tab tick apart, so an I/O-bound session may read `waiting`.
 - **Git's budget and failure cache belong to the reader.** `agents.Git` applies its 2s timeout
   only when the caller has no deadline, so a serial read with a longer command deadline can spend
   it on hung mounts, and a failed read is cached as a clean status for 10s. A per-call deadline
@@ -626,3 +651,11 @@ One line per completed item: what it did and how it was verified.
   synthetic tests pin the Claude, pi, Codex and opencode joins, the `since` window, the
   newest-open-rollout rule, a v1 opencode store as "nothing there", Doctor, `CLAUDE_CONFIG_DIR`
   quota, status fallbacks, and the JSON shape. Review residuals are recorded in Open questions.
+- cli — `go build ./...`, `go vet ./...`, `go test ./...`; `abacus sessions [--json]` prints the
+  typed `SessionsReport` (verified live: 30 sessions, 23 joined with tokens/context/git, 0.9 s)
+  and a text row per session with tokens, context, branch, children, ports, quota, orphans and
+  unreadable reasons. `SessionsComplete` drains the JSONL stores (per-file budget, `CaughtUp`,
+  16-pass bound, last-good-pass fallback) while the tab keeps its bounded read; `ReadDomain` is the
+  draining read and `app.Build` registers the provider. Tests pin the drain past one budget, the
+  partial-read reason, the CLI text/JSON shape, staleness, control-character sanitizing, the
+  not-connected row, and the registry wiring. Review residuals are recorded in Open questions.

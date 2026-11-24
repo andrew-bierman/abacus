@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
@@ -116,6 +117,80 @@ func orQ(s string) string {
 	return s
 }
 
+func renderSessions(w io.Writer, r core.SessionsReport, now time.Time) {
+	head(w, r.Header)
+	for _, s := range r.Sessions {
+		line := fmt.Sprintf("    %-8s %-7d %-9s", s.Harness, s.PID, s.State)
+		if s.Title != "" {
+			line += " " + core.Sanitize(s.Title)
+		}
+		if s.Model != "" {
+			line += "  " + core.Sanitize(s.Model)
+		}
+		if t := s.Tokens.Total(); t > 0 {
+			line += fmt.Sprintf("  %d tok", t)
+		}
+		if p := s.Context.Percent(); p > 0 {
+			line += fmt.Sprintf("  %.0f%% ctx", p)
+		}
+		if s.Git.Branch != "" {
+			line += "  " + core.Sanitize(s.Git.Branch)
+		}
+		if n := len(s.Children); n > 0 {
+			line += fmt.Sprintf("  %d children", n)
+		}
+		if nums := portNumbers(s.Ports); len(nums) > 0 {
+			line += "  ports " + strings.Join(nums, ",")
+		}
+		fmt.Fprintln(w, line)
+	}
+	for _, q := range r.Quotas {
+		line := fmt.Sprintf("    quota %s%s%s", q.Source,
+			quotaWindow(agents.QuotaShortWindowMinutes, q.Short), quotaWindow(agents.QuotaLongWindowMinutes, q.Long))
+		if q.Stale(now) {
+			line += "  (stale)"
+		}
+		fmt.Fprintln(w, line)
+	}
+	for _, p := range r.Orphans {
+		fmt.Fprintf(w, "    orphan port %d  %s  (%s)\n", p.Port, core.Sanitize(p.Command), core.Sanitize(p.Project))
+	}
+	for _, why := range r.Unreadable {
+		fmt.Fprintf(w, "    unreadable %s\n", why)
+	}
+}
+
+// quotaWindow keeps an unreported window invisible instead of drawing a made-up zero, and falls
+// back to the slot's documented length when the source did not record one.
+func quotaWindow(fallbackMinutes int64, w *agents.QuotaWindow) string {
+	if w == nil {
+		return ""
+	}
+	minutes := w.WindowMinutes
+	if minutes <= 0 {
+		minutes = fallbackMinutes
+	}
+	return fmt.Sprintf("  %s %.0f%%", windowLength(minutes), w.UsedPercent)
+}
+
+func windowLength(minutes int64) string {
+	switch {
+	case minutes%(24*60) == 0:
+		return strconv.FormatInt(minutes/(24*60), 10) + "d"
+	case minutes%60 == 0:
+		return strconv.FormatInt(minutes/60, 10) + "h"
+	}
+	return strconv.FormatInt(minutes, 10) + "m"
+}
+
+func portNumbers(ports []agents.Port) []string {
+	out := make([]string, len(ports))
+	for i, p := range ports {
+		out[i] = strconv.Itoa(p.Port)
+	}
+	return out
+}
+
 func renderBoard(w io.Writer, r core.BoardReport) {
 	head(w, r.Header)
 	if r.Truncated != "" {
@@ -208,6 +283,15 @@ func runDomain(cmd string, rest []string, d Deps) int {
 		v = dom.Board
 		if !*asJSON {
 			renderBoard(d.Out, dom.Board)
+		}
+	case "sessions":
+		v = dom.Sessions
+		if !*asJSON {
+			now := time.Now
+			if d.Now != nil {
+				now = d.Now
+			}
+			renderSessions(d.Out, dom.Sessions, now())
 		}
 	}
 	if *asJSON {

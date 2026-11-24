@@ -14,10 +14,11 @@ const (
 	// the reset countdown rather than presenting a percentage from a rolled-over allowance.
 	QuotaStaleAfter = 10 * time.Minute
 
-	// quotaShortWindowMinutes and quotaLongWindowMinutes are Claude's documented window
-	// lengths, and Codex uses the short one as the line between its two slots.
-	quotaShortWindowMinutes = 5 * 60
-	quotaLongWindowMinutes  = 7 * 24 * 60
+	// QuotaShortWindowMinutes and QuotaLongWindowMinutes are Claude's documented window
+	// lengths, and Codex uses the short one as the line between its two slots. A front-end
+	// uses them when a source omits `window_minutes` and only the slot is known.
+	QuotaShortWindowMinutes = 5 * 60
+	QuotaLongWindowMinutes  = 7 * 24 * 60
 
 	// maxClaudeQuotaBytes bounds a status-line file abacus does not own. The real shape is a
 	// few hundred bytes; a corrupt or hostile writer must not turn one tick into an unbounded
@@ -113,8 +114,8 @@ func parseClaudeQuota(raw []byte) (Quota, bool) {
 	}
 	q := Quota{
 		Source:  HarnessClaude,
-		Short:   f.FiveHour.quotaWindow(quotaShortWindowMinutes),
-		Long:    f.SevenDay.quotaWindow(quotaLongWindowMinutes),
+		Short:   f.FiveHour.quotaWindow(QuotaShortWindowMinutes),
+		Long:    f.SevenDay.quotaWindow(QuotaLongWindowMinutes),
 		Updated: unixTime(f.UpdatedAt),
 	}
 	if q.Short == nil && q.Long == nil {
@@ -173,7 +174,7 @@ func (l *codexQuotaLimits) quota(timestamp string) (Quota, bool) {
 			ResetsAt:      unixTime(w.ResetsAt),
 			WindowMinutes: w.WindowMinutes,
 		}
-		if w.WindowMinutes <= quotaShortWindowMinutes {
+		if w.WindowMinutes <= QuotaShortWindowMinutes {
 			q.Short = window
 		} else {
 			q.Long = window

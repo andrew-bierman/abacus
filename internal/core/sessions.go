@@ -135,9 +135,20 @@ type Sessions struct {
 	pi        agents.PiStore
 	opencode  agents.OpenCodeStore
 	git       agents.Git
-
+	// drains is every JSONL store, in one place: a new harness joins here and the drain's three
+	// operations cannot each forget it.
+	drains []jsonlDrainer
+	// mu serializes reads: the stores keep cross-tick cursors.
 	mu     sync.Mutex
 	rotate int
+}
+
+// jsonlDrainer is a store whose history a one-shot read can finish in passes. opencode is not
+// one: a database query is already complete.
+type jsonlDrainer interface {
+	BeginDrainPass()
+	EndDrainPass()
+	CaughtUp() bool
 }
 
 // NewSessions builds the sessions provider. Every unset edge falls back to this machine, so a
@@ -187,7 +198,7 @@ func NewSessions(o SessionsOptions) *Sessions {
 			dirs = append(dirs, filepath.Join(o.Home, ".claude"))
 		}
 	}
-	return &Sessions{
+	s := &Sessions{
 		files:      o.Files,
 		codexRoot:  o.CodexRoot,
 		claudeDirs: dedupeDirs(dirs),
@@ -198,6 +209,8 @@ func NewSessions(o SessionsOptions) *Sessions {
 		opencode:   agents.OpenCodeStore{Path: o.OpenCodeDB},
 		git:        agents.Git{Runner: o.Runner, Now: o.Now},
 	}
+	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.pi}
+	return s
 }
 
 // dedupeDirs keeps one path per cleaned directory, so CLAUDE_CONFIG_DIR pointing at ~/.claude
@@ -268,7 +281,78 @@ func (*Sessions) Status(context.Context) Status { return Status{} }
 func (s *Sessions) Sessions(ctx context.Context) (SessionsReport, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.readLocked(ctx)
+}
 
+// maxDrainPasses bounds SessionsComplete: each pass parses up to 8 MB of every transcript, so
+// sixteen passes cover a 128 MB live history before the read reports itself partial.
+const maxDrainPasses = 16
+
+// SessionsComplete is the one-shot read behind `abacus sessions`: it repeats the join until every
+// transcript store has caught up. A tab can afford a stalling nobody would notice over a few
+// seconds' ticks; a command that reads once and exits cannot, so here each pass gives every
+// transcript a full byte budget and the loop ends as soon as the stores report no records left.
+//
+// A provider used by both a tab and this read keeps its cursors either way: the shared budget is
+// restored after the drain. A read that stops short, because a later pass failed or the bound was
+// reached, keeps the last good report and says in Unreadable that it is partial.
+func (s *Sessions) SessionsComplete(ctx context.Context) (SessionsReport, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	defer func() {
+		for _, d := range s.drains {
+			d.EndDrainPass()
+		}
+	}()
+
+	var rep SessionsReport
+	complete := false
+	for i := 0; i < maxDrainPasses; i++ {
+		s.beginDrainPass()
+		pass, err := s.readLocked(ctx)
+		if err != nil {
+			if i == 0 {
+				return SessionsReport{}, err
+			}
+			// The join worked a pass ago, so keep what it produced rather than trading a
+			// partial report for an empty one.
+			rep.partial("sessions: " + err.Error())
+			return rep, nil
+		}
+		rep = pass
+		if s.caughtUp() {
+			complete = true
+			break
+		}
+	}
+	if !complete {
+		rep.partial("sessions: a transcript was not read to the end (pass bound reached)")
+	}
+	return rep, nil
+}
+
+// beginDrainPass lets each store start the pass with a full byte budget and clears the markers of
+// the pass before. Clearing every pass matters: a transcript whose process exited between passes
+// is no longer read, and an old marker would keep CaughtUp false until the bound ran out.
+func (s *Sessions) beginDrainPass() {
+	for _, d := range s.drains {
+		d.BeginDrainPass()
+	}
+}
+
+// caughtUp reports whether every JSONL store consumed all the records it was asked for. opencode
+// reads a database, where one query is already complete, so it is not in drains.
+func (s *Sessions) caughtUp() bool {
+	for _, d := range s.drains {
+		if !d.CaughtUp() {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Sessions) readLocked(ctx context.Context) (SessionsReport, error) {
 	snap, err := s.collector.Snapshot(ctx)
 	if err != nil {
 		return SessionsReport{}, err
@@ -521,8 +605,14 @@ func (s *Sessions) quotaList(seen map[agents.Harness]agents.Quota) []agents.Quot
 // unreadable records why part of the read is missing, bounded so a broken machine cannot grow
 // the report with the session count.
 func (r *SessionsReport) unreadable(source agents.Harness, err error) {
+	r.partial(string(source) + ": " + err.Error())
+}
+
+// partial records a reason the report is not a complete read, bounded the same way. It is for
+// reasons that are not one harness's store: a drain that stopped short, for example.
+func (r *SessionsReport) partial(reason string) {
 	if len(r.Unreadable) >= maxUnreadable {
 		return
 	}
-	r.Unreadable = append(r.Unreadable, ClipRunes(Sanitize(string(source)+": "+err.Error()), maxUnreadableReason))
+	r.Unreadable = append(r.Unreadable, ClipRunes(Sanitize(reason), maxUnreadableReason))
 }

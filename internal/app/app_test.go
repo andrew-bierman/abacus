@@ -2,11 +2,13 @@ package app
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -39,8 +41,19 @@ func env(t *testing.T, vars map[string]string) Env {
 	cwd, _ := os.Getwd()
 	root := t.TempDir()
 	return Env{Getenv: func(k string) string { return vars[k] }, Cwd: cwd,
-		Config: core.ConfigStore{Path: filepath.Join(root, "c", "config.json")}, Workspace: filepath.Join(root, "ws")}
+		Config: core.ConfigStore{Path: filepath.Join(root, "c", "config.json")}, Workspace: filepath.Join(root, "ws"),
+		Sessions: core.SessionsOptions{Machine: noProcTable{}}}
 }
+
+type noProcTable struct{}
+
+func (noProcTable) Procs(context.Context) (map[int]agents.Proc, error) {
+	return nil, errors.New("test: no process table")
+}
+
+func (noProcTable) CWD(context.Context, int) string { return "" }
+
+func (noProcTable) Listeners(context.Context) ([]agents.Socket, error) { return nil, nil }
 
 func detect(t *testing.T, e Env) map[string]core.Detection {
 	t.Helper()
@@ -49,6 +62,17 @@ func detect(t *testing.T, e Env) map[string]core.Detection {
 		out[en.Module.ID()] = en.Detection
 	}
 	return out
+}
+
+func TestSessionsIsWiredWithoutATool(t *testing.T) {
+	got := detect(t, env(t, nil))
+	d, ok := got["sessions"]
+	if !ok {
+		t.Fatal("Sessions is not in the registry: it reads the machine, not a tool, and an absent provider must still appear")
+	}
+	if d.State != core.Absent || !strings.Contains(d.Detail, "no process table") {
+		t.Fatalf("detection = %+v, want the test machine's reason", d)
+	}
 }
 
 func TestBinaryPrecedenceIsOverrideThenBundledThenPATH(t *testing.T) {

@@ -25,7 +25,7 @@ func runAll(t *testing.T, e Env) string {
 	t.Helper()
 	var all strings.Builder
 	for _, args := range [][]string{
-		{"doctor"}, {"status"}, {"version"}, {"setup", "--dry-run"}, {"tasks"}, {"leases"}, {"queues"}, {"board"},
+		{"doctor"}, {"status"}, {"version"}, {"setup", "--dry-run"}, {"tasks"}, {"leases"}, {"queues"}, {"board"}, {"sessions"},
 		{"doctor", "--json"}, {"status", "--json"},
 	} {
 		var o, er bytes.Buffer

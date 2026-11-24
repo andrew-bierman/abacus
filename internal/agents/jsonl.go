@@ -30,6 +30,9 @@ const (
 type jsonlCursor struct {
 	info   os.FileInfo
 	offset int64
+	// stoppedShort marks a read that spent its byte budget with bytes still unread, so the
+	// drain's CaughtUp can tell "there is more to parse" from "the file ended mid-record".
+	stoppedShort bool
 }
 
 // cursor lets an accumulator embedded with a jsonlCursor satisfy jsonlAccumulator.
@@ -49,7 +52,7 @@ func (c *jsonlCursor) replaced(info os.FileInfo) bool {
 	return !os.SameFile(c.info, info) || info.Size() < c.offset
 }
 
-func (c *jsonlCursor) caughtUp(info os.FileInfo) bool {
+func (c *jsonlCursor) atEOF(info os.FileInfo) bool {
 	return !c.replaced(info) && info.Size() <= c.offset
 }
 
@@ -58,6 +61,7 @@ func (c *jsonlCursor) caughtUp(info os.FileInfo) bool {
 // newline is left unconsumed, so a record still being written is reread once and counted once.
 func (c *jsonlCursor) read(f *os.File, info os.FileInfo, budget *int64, add func([]byte)) error {
 	c.info = info
+	c.stoppedShort = false
 	if info.Size() <= c.offset {
 		return nil
 	}
@@ -79,6 +83,9 @@ func (c *jsonlCursor) read(f *os.File, info os.FileInfo, budget *int64, add func
 			add(line)
 		}
 		if *budget <= 0 {
+			// Only bytes past this point mean work left. A budget spent exactly on the last
+			// record has caught the file up, and saying otherwise costs the drain a whole pass.
+			c.stoppedShort = c.offset < info.Size()
 			return nil
 		}
 	}
@@ -98,6 +105,10 @@ func (b *readBudget) take() *int64 {
 	return &b.left
 }
 
+// reset makes the next take start a fresh budget. A zero readBudget would do the same through
+// the elapsed-time check; naming it keeps the three places that reset from drifting apart.
+func (b *readBudget) reset() { *b = readBudget{} }
+
 // jsonlAccumulator is one session's per-file state: the cursor it advances, the records it
 // folds in, and the session it reports. Sharing it is what keeps the two JSONL stores on one
 // lifecycle, so a fix to resume, rotation or trimming cannot land in only one of them.
@@ -111,6 +122,38 @@ type jsonlAccumulator interface {
 type jsonlFiles struct {
 	files  map[string]jsonlAccumulator
 	budget readBudget
+	drain  bool
+}
+
+// BeginDrainPass switches the store to one-shot mode and starts a pass: each transcript gets the
+// full byte budget (load resets it per file) and the previous pass's unfinished markers are
+// cleared, so CaughtUp describes this pass alone. It is promoted to every JSONL store, so the
+// join asks each store it holds.
+func (s *jsonlFiles) BeginDrainPass() {
+	s.drain = true
+	for _, st := range s.files {
+		st.cursor().stoppedShort = false
+	}
+}
+
+// EndDrainPass restores the shared per-tick budget after a one-shot read, so a provider that
+// also feeds a tab does not keep paying for a full history on every later read. The budget is
+// reset too: a drain pass can end with it spent, and the next tab read should start a fresh one.
+func (s *jsonlFiles) EndDrainPass() {
+	s.drain = false
+	s.budget.reset()
+}
+
+// CaughtUp reports whether the last drain pass consumed every complete record in every file the
+// store read. A file left with a partial trailing line counts as caught up: that line is not a
+// record yet. It is only meaningful after BeginDrainPass.
+func (s *jsonlFiles) CaughtUp() bool {
+	for _, st := range s.files {
+		if st.cursor().stoppedShort {
+			return false
+		}
+	}
+	return true
 }
 
 // load returns the accumulated facts for the file at path, reading only the bytes appended
@@ -127,7 +170,7 @@ func (s *jsonlFiles) load(path string, empty error, newAcc func() jsonlAccumulat
 		}
 		return StoredSession{}, err
 	}
-	if st, ok := s.files[path]; ok && st.cursor().caughtUp(info) {
+	if st, ok := s.files[path]; ok && st.cursor().atEOF(info) {
 		return st.session(), nil
 	}
 	f, err := os.Open(path)
@@ -146,6 +189,9 @@ func (s *jsonlFiles) load(path string, empty error, newAcc func() jsonlAccumulat
 	if !ok || st.cursor().replaced(info) {
 		st = newAcc()
 		s.files[path] = st
+	}
+	if s.drain {
+		s.budget.reset()
 	}
 	err = st.cursor().read(f, info, s.budget.take(), st.add)
 	s.trim(path)

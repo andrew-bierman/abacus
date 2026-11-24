@@ -95,7 +95,7 @@ func runAudit(t *testing.T, stdin string, mods []core.Module, au *memAudit, args
 }
 
 func TestDomainCommandsShowNotConnectedWithHowToConnect(t *testing.T) {
-	for _, d := range []string{"tasks", "leases", "queues", "board"} {
+	for _, d := range []string{"tasks", "leases", "queues", "board", "sessions"} {
 		code, out, _, _ := runIn(t, "", nil, d)
 		if code != 0 || !strings.Contains(out, "not connected") {
 			t.Errorf("%s: code=%d out=%q", d, code, out)
@@ -107,7 +107,10 @@ func TestDomainCommandsShowNotConnectedWithHowToConnect(t *testing.T) {
 			State         string `json:"state"`
 			How           string `json:"how_to_connect"`
 		}
-		if err := json.Unmarshal([]byte(js), &got); err != nil || got.SchemaVersion != 1 || got.Domain != d || got.State != "not-connected" || got.How == "" {
+		// Sessions is this machine, not a tool: there is nothing to install, so it carries no
+		// how-to-connect text, while every tool-backed domain names what to set up.
+		wantHow := d != "sessions"
+		if err := json.Unmarshal([]byte(js), &got); err != nil || got.SchemaVersion != 1 || got.Domain != d || got.State != "not-connected" || (got.How != "") != wantHow {
 			t.Errorf("%s json: %v %+v\n%s", d, err, got, js)
 		}
 	}

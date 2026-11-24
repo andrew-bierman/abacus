@@ -26,6 +26,10 @@ type Env struct {
 	Cwd       string
 	Config    core.ConfigStore
 	Workspace string // the managed workspace directory
+	// Sessions is the live-agent read: its process table, the stores the agents write, and the
+	// git runner. The zero value reads this machine; a test supplies a machine it controls so
+	// the output does not depend on what happens to be running.
+	Sessions core.SessionsOptions
 }
 
 // DefaultEnv is the real process environment and the standard abacus paths.
@@ -113,6 +117,7 @@ func Build(o cli.Options, e Env) *core.Registry {
 		// ABACUS_REX_PASS_ENV the extra variables (such as SSH_AUTH_SOCK) rex is given.
 		rex.New(rex.Options{Bin: e.Getenv("ABACUS_REX_BIN"), Getenv: e.Getenv,
 			Hosts: rex.ParseHosts(e.Getenv("ABACUS_REX_HOSTS")), PassEnv: rex.ParsePassEnv(e.Getenv("ABACUS_REX_PASS_ENV"))}),
+		core.NewSessions(e.Sessions),
 		core.NewConfigCheck(e.Config),
 	)
 }

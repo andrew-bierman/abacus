@@ -343,6 +343,12 @@ type (
 	SessionProvider interface {
 		Sessions(context.Context) (SessionsReport, error)
 	}
+	// SessionCompleter is a SessionProvider that can read until its transcript stores are
+	// caught up. A one-shot front-end needs it: a tab takes one bounded read per tick and
+	// lets the next tick finish a long history, but `abacus sessions` has no next tick.
+	SessionCompleter interface {
+		SessionsComplete(context.Context) (SessionsReport, error)
+	}
 )
 
 // HowToConnectBoardDegraded is the hint for a Board read that failed although the tool is there.
@@ -579,15 +585,29 @@ func (r *DomainsReport) readBoard(ctx context.Context, entries []Entry) {
 	r.Board = readDomain(ctx, entries, DomainBoard, func(p BoardProvider, c context.Context) (BoardReport, error) { return p.Board(c) }, boardHdr, BoardReport.Summarize)
 }
 
-// readSessions is the one sessions read, shared by the domain switch and the overlapping read.
-func readSessions(ctx context.Context, entries []Entry) SessionsReport {
-	r := readDomain(ctx, entries, DomainSessions, func(p SessionProvider, c context.Context) (SessionsReport, error) { return p.Sessions(c) }, sessionsHdr, SessionsReport.Summarize)
+// readSessionsVia is the one sessions read: both front-end variants supply only how the provider
+// is called, so the header, summary and normalization cannot drift between them.
+func readSessionsVia(ctx context.Context, entries []Entry, call func(SessionProvider, context.Context) (SessionsReport, error)) SessionsReport {
+	r := readDomain(ctx, entries, DomainSessions, call, sessionsHdr, SessionsReport.Summarize)
 	r.normalize()
 	return r
 }
 
-func (r *DomainsReport) readSessions(ctx context.Context, entries []Entry) {
-	r.Sessions = readSessions(ctx, entries)
+// readSessions is the tab's read, shared by the overlapping read below.
+func readSessions(ctx context.Context, entries []Entry) SessionsReport {
+	return readSessionsVia(ctx, entries, func(p SessionProvider, c context.Context) (SessionsReport, error) { return p.Sessions(c) })
+}
+
+// readSessionsComplete is the Sessions domain read for a one-shot caller: it asks the provider
+// for a read that drains its transcript stores, and accepts a provider that can only do the
+// tab's bounded read. The tab never reaches it: ReadDomains keeps one bounded pass per tick.
+func readSessionsComplete(ctx context.Context, entries []Entry) SessionsReport {
+	return readSessionsVia(ctx, entries, func(p SessionProvider, c context.Context) (SessionsReport, error) {
+		if full, ok := p.(SessionCompleter); ok {
+			return full.SessionsComplete(c)
+		}
+		return p.Sessions(c)
+	})
 }
 
 // startSessionsRead begins the sessions read and returns a function that waits for its report.
@@ -617,7 +637,9 @@ func ReadDomain(ctx context.Context, entries []Entry, id DomainID) DomainsReport
 	case DomainQueues:
 		r.readQueues(ctx, entries)
 	case DomainSessions:
-		r.readSessions(ctx, entries)
+		// A single-domain read is a one-shot command's read: it drains a long transcript
+		// instead of leaving the rest to a later tick the command does not have.
+		r.Sessions = readSessionsComplete(ctx, entries)
 	}
 	return r
 }

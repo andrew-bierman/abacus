@@ -8,6 +8,10 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- `abacus sessions [--json]`: the AI coding agents live on this machine (Claude Code, Codex,
+  opencode and pi) with their state, tokens, context, child processes, listening ports and account
+  quota, joined from the process table and each harness's own store. Read only. A one-shot command
+  drains a long transcript that a tab would finish over later ticks.
 - Open-source readiness: `SECURITY.md` (private GitHub advisories), `CONTRIBUTING.md`,
   `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue and pull request templates, `CODEOWNERS`,
   Dependabot config, `.editorconfig`, `docs/README.md` (index), `make help` and `make cover`.
