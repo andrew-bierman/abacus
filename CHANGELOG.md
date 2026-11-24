@@ -6,6 +6,33 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Added
+
+- `abacus help [COMMAND]`, `abacus --help` and `COMMAND --help` (also `tasks VERB --help`) print usage on
+  stdout and exit 0 (they used to be an "unknown command" usage error, exit 2). `abacus completion
+  bash|zsh|fish` prints a shell completion script. The top-level usage lists every `tasks` verb
+  (graph and history were missing) and the exit codes.
+- A test that fails when a key the TUI binds is not named in `docs/tui.md`.
+
+### Fixed
+
+- The footer hints no longer end in a word cut in half ("H/L move car..."): hints that do not fit are
+  dropped whole and an ellipsis says so. The Board confirm screen keeps "y apply" and "n/esc edit" ahead
+  of the scroll hint when the footer is narrow.
+- The `?` overlay said `1-9 jump to tab`; there are six tabs, and only `1`-`6` jump now.
+- Agents: "1 port(s)" is "1 port"/"2 ports", and the sort label reads `sort: attention` like the Tasks one.
+- `docs/tui.md`: removed the duplicate `?` row, the stale "`:kanban` not available yet" and "switching
+  trackers is not available yet" notes (`P` and `:ctx NAME` switch).
+- README: usage lists `agents`, `board post|reply`, `tasks list|show|board|graph|history`, `rex layout`,
+  `completion` and `help`; the domain table and the Writes section match the current write verbs and the
+  Board's TUI compose.
+
+### Tests
+
+- New behavior tests for the plan wording of create and update, bulk summaries, the repair size and
+  unreadable-folder limits, init outcomes (timeout and cancel are "result unknown"; a half-created folder is
+  never initialised over; a fallback bd is never used to write) and the `config` verbs and exit codes.
+
 ### Docs
 
 - `docs/design/2026-11-24-plan-native-clients.md`: a proposal for a native SwiftUI macOS client over the
