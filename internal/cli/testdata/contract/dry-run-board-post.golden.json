@@ -4,7 +4,7 @@
     "post",
     "dev",
     "--idempotency-key",
-    "abacus-1748787d927489d8",
+    "abacus-8bc37d82336332b0",
     "--",
     "deploys are green again"
   ],
@@ -12,12 +12,12 @@
     "post a new thread to channel dev",
     "text: \"deploys are green again\"",
     "board: the default board (board_url (config))",
-    "idempotency key: abacus-1748787d927489d8 (a retry of the same text a moment later usually reuses it, but not across a ten-minute clock boundary)"
+    "idempotency key: abacus-8bc37d82336332b0 (a retry of this same draft reuses it, so the board takes it at most once)"
   ],
   "context": [
     "existing channel dev"
   ],
   "dry_run": true,
-  "plan_digest": "f81da7d6b9eafca1fa2f35f248c3ef96da3b2f954697872e24d5a906878720ae",
+  "plan_digest": "be14c3cdeeb549855bbb11f978bc6c56e99a5f377c273e7fb9790938b6d70baa",
   "schema_version": 1
 }

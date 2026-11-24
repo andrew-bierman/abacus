@@ -3,6 +3,7 @@ package core_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
 )
@@ -148,5 +149,25 @@ func TestParseDigest(t *testing.T) {
 		if valid != ok || (ok && got != d) {
 			t.Errorf("%q: %q %v", in, got, valid)
 		}
+	}
+}
+
+func TestFileAuditReadsBackAndBoardCLINonceUsesIt(t *testing.T) {
+	a := core.FileAudit(t.TempDir() + "/audit.jsonl")
+	r := a.(core.AuditReader)
+	if es, err := r.Entries(); err != nil || len(es) != 0 {
+		t.Fatalf("a missing log is empty: %v %v", es, err)
+	}
+	ch := core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hi"}
+	n0, rep, err := core.BoardCLINonce(a, (&fakeBoardWriter{}).Target(), ch, 10*time.Minute, time.Now())
+	if err != nil || rep || n0 != "cli-0" {
+		t.Fatalf("%s %v %v", n0, rep, err)
+	}
+	ch.Nonce = n0
+	p, _ := core.PlanBoardChange(&fakeBoardWriter{}, ch)
+	_ = a.Record(core.AuditEntry{Time: time.Now(), Domain: "board", Verb: "post", Phase: "attempt", Argv: p.Argv})
+	n1, rep, _ := core.BoardCLINonce(a, (&fakeBoardWriter{}).Target(), core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hi"}, 10*time.Minute, time.Now())
+	if n1 != "cli-1" || !rep {
+		t.Errorf("a recorded key is a repeat and the next key is fresh: %s %v", n1, rep)
 	}
 }

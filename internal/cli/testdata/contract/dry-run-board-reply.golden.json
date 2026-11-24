@@ -4,7 +4,7 @@
     "reply",
     "15",
     "--idempotency-key",
-    "abacus-10e099a3b8278f8b",
+    "abacus-e04e8d5322ce9342",
     "--",
     "rolled back"
   ],
@@ -12,12 +12,12 @@
     "reply in the thread of message 15",
     "text: \"rolled back\"",
     "board: the default board (board_url (config))",
-    "idempotency key: abacus-10e099a3b8278f8b (a retry of the same text a moment later usually reuses it, but not across a ten-minute clock boundary)"
+    "idempotency key: abacus-e04e8d5322ce9342 (a retry of this same draft reuses it, so the board takes it at most once)"
   ],
   "context": [
     "existing channel 15"
   ],
   "dry_run": true,
-  "plan_digest": "81587df8c68360c497cf74857a9feb7fc07687c387099222caeb808a1a1d189e",
+  "plan_digest": "e2edd57bf26b84286440a8a1a5dfba68ca8161a923e69e21ed3ce6d2f817d68b",
   "schema_version": 1
 }

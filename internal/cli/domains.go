@@ -463,6 +463,8 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	fs.BoolVar(&dry, "dry-run", false, "print the change and the command; run nothing")
 	jsonVar(d, fs, &asJSON, "print JSON")
 	fs.StringVar(&text, "text", text, "the message text (use it when the text starts with -)")
+	var again bool
+	fs.BoolVar(&again, "again", false, "post even though the same message was just posted (or tried) from this machine")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
 	}
@@ -489,6 +491,19 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	w := core.ResolveProviders(d.Build(o).Detect(ctx)).BoardWriter
 	if w == nil {
 		return failf(d, core.CodeNotConnected, "board: not connected. %s\n", core.HowToConnectFor(core.DomainBoard))
+	}
+	au := d.Audit
+	if au == nil {
+		au = core.DefaultAudit()
+	}
+	// The key comes from the content, not the clock; the audit log says whether this is a repeat.
+	nonce, repeat, err := core.BoardCLINonce(au, w.Target(), ch, core.BoardKeyWindow, time.Now())
+	if err != nil {
+		return failf(d, core.CodeAuditFailed, "board %s: %v\n", verb, err)
+	}
+	ch.Nonce = nonce
+	if repeat && !again {
+		return failf(d, core.CodeRefused, "board %s: the same message was posted, or tried, from this machine in the last %d minutes (the board may already have it: refresh it first); nothing was written. --again posts it anyway\n", verb, int(core.BoardKeyWindow/time.Minute))
 	}
 	plan, err := core.PlanBoardChange(w, ch)
 	if err != nil {
