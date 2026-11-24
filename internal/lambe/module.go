@@ -304,7 +304,7 @@ func (m *Module) Status(ctx context.Context) core.Status {
 
 // Line is the one-line run summary every front-end shows.
 func (r Run) Line() string {
-	return core.QueueRun{Issue: r.Issue, State: core.RunState(r.State), Phase: r.Phase, Stalled: r.Stalled}.Line()
+	return core.QueueRun{Issue: r.Issue, State: core.ParseRunState(r.State), Phase: r.Phase, Stalled: r.Stalled}.Line()
 }
 
 func orUnknown(s string) string {
@@ -358,7 +358,7 @@ func queuesReport(v View, demo bool) core.QueuesReport {
 	}
 	r.Reason = strings.Join(why, "; ")
 	for _, x := range v.Snapshot.Runs {
-		r.Runs = append(r.Runs, core.QueueRun{Issue: x.Issue, State: core.RunState(x.State), Phase: x.Phase, Machine: x.Machine, Stalled: x.Stalled, Workflow: x.Workflow})
+		r.Runs = append(r.Runs, core.QueueRun{Issue: x.Issue, State: x.RunState(), Phase: x.Phase, Machine: x.Machine, Stalled: x.Stalled, Workflow: x.Workflow})
 	}
 	for _, x := range v.Queue.Rows {
 		r.Queue = append(r.Queue, core.QueueItem{ID: x.ID, Title: x.Title, Blocked: x.Blocked})
@@ -486,3 +486,6 @@ func (m *Module) StartHint() string {
 	}
 	return "Start it yourself with: lambe run  (abacus never starts it for you). Its state API must be on to show live runs."
 }
+
+// RunState is the run's state as the typed core value, read once here so no front end matches strings.
+func (r Run) RunState() core.RunState { return core.ParseRunState(r.State) }

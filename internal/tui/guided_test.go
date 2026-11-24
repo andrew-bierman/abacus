@@ -3,6 +3,8 @@ package tui
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -16,11 +18,12 @@ import (
 // freshBd is a Tasks provider with no tracker yet that can create the workspace.
 type freshBd struct {
 	*modtest.Fake
-	mu   sync.Mutex
-	made bool
-	ran  [][]string
-	fail error
-	dir  string // InitDir when set
+	mu     sync.Mutex
+	made   bool
+	ran    [][]string
+	fail   error
+	dir    string // InitDir when set
+	repair bool   // the workspace is half-created: the guide offers the repair
 }
 
 func (f *freshBd) Domain() core.DomainID { return core.DomainTasks }
@@ -29,6 +32,9 @@ func (f *freshBd) Guide(context.Context) *core.Guide {
 	defer f.mu.Unlock()
 	if f.made {
 		return nil
+	}
+	if f.repair {
+		return &core.Guide{Domain: core.DomainTasks, Step: core.StepRepair, Message: "Your fleet workspace was only partly created", Action: "repair it (nothing is deleted)"}
 	}
 	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)", Detail: "It will be created in /data/abacus/workspace."}
 }
@@ -199,5 +205,31 @@ func TestAHiddenGuidedTabNeverProbesAndTheVisibleOneDoes(t *testing.T) {
 	tm.Update(runeOrKey("1"))
 	if sec.active {
 		t.Fatal("deactivated on leaving")
+	}
+}
+
+func TestAHalfCreatedWorkspaceOffersARepairWithTheExactPlan(t *testing.T) {
+	ws := filepath.Join(t.TempDir(), "ws")
+	if err := os.MkdirAll(filepath.Join(ws, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bd := &freshBd{Fake: &modtest.Fake{IDStr: "bd"}, dir: ws, repair: true}
+	m, au := guidedRig(t, bd)
+	if v := m.View(); !strings.Contains(v, "only partly created — press r to repair it") {
+		t.Fatalf("missing the repair call to action:\n%s", v)
+	}
+	m = press(m, "r")
+	v := m.View()
+	for _, want := range []string{"Confirm this setup step", ".beads.incomplete-", "nothing is deleted"} {
+		if !strings.Contains(v, want) {
+			t.Fatalf("repair confirm screen missing %q:\n%s", want, v)
+		}
+	}
+	if len(bd.ran) != 0 || au.n != 0 {
+		t.Fatal("opening the repair plan must not run or audit anything")
+	}
+	m = pressSettle(t, m, "y")
+	if _, err := os.Stat(filepath.Join(ws, ".beads")); err == nil || len(bd.ran) != 1 {
+		t.Fatalf("y repairs once: ran=%d\n%s", len(bd.ran), m.View())
 	}
 }

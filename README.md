@@ -167,6 +167,7 @@ abacus tasks close  ID [--reason R] [--yes] [--dry-run]
 abacus search QUERY [--domain D] [--limit N] [--json]   search tasks, board, leases and queues
 abacus tui     [--demo]
 abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
+abacus setup --repair [--yes] [--dry-run]       fix a half-created workspace (nothing is deleted)
 abacus config  show [--json] | get KEY | set KEY VALUE | path
 abacus status  [--json] [--lambe-config FILE]     domains plus provider state
 abacus doctor  [--json] [--lambe-config FILE]     leads with ready or needs attention

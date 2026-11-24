@@ -184,3 +184,89 @@ func TestConfigSetExitCodesSeparateUsageFromWriteFailures(t *testing.T) {
 		t.Errorf("the corrupt file should be kept: %v", err)
 	}
 }
+
+// repairBd is a Tasks provider that can create the workspace; it only counts the init.
+type repairBd struct {
+	*modtest.Fake
+	dir  string
+	runs int
+}
+
+func (b *repairBd) Domain() core.DomainID { return core.DomainTasks }
+func (b *repairBd) Guide(context.Context) *core.Guide {
+	return &core.Guide{Domain: core.DomainTasks, Step: core.StepRepair, Message: "Your fleet workspace was only partly created", Action: "repair it"}
+}
+func (b *repairBd) TrackerDir() string { return "" }
+func (b *repairBd) InitDir() string    { return b.dir }
+func (b *repairBd) BuildTaskArgv(core.TaskChange) ([]string, error) {
+	return []string{"bd", "init"}, nil
+}
+func (b *repairBd) RunTask(context.Context, []string) (core.TaskResult, error) {
+	b.runs++
+	return core.TaskResult{Status: "initialized"}, nil
+}
+
+func runRepairCmd(t *testing.T, ws string, extra ...string) (int, string, string, *repairBd, *memAudit) {
+	t.Helper()
+	t.Chdir(t.TempDir())
+	bd := &repairBd{Fake: ready("bd"), dir: ws}
+	au := &memAudit{}
+	var o, e bytes.Buffer
+	d := cli.Deps{Out: &o, Err: &e, Version: "test", Audit: au,
+		Build: func(cli.Options) *core.Registry { return core.NewRegistry(bd) },
+		Setup: func(entries []core.Entry) *core.Setup {
+			return core.NewSetup(entries, core.SetupOptions{Workspace: ws, Audit: au})
+		}}
+	code := cli.Run(append([]string{"setup", "--repair"}, extra...), d)
+	return code, o.String(), e.String(), bd, au
+}
+
+func halfWorkspace(t *testing.T) string {
+	t.Helper()
+	ws := filepath.Join(t.TempDir(), "ws")
+	if err := os.MkdirAll(filepath.Join(ws, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ws, ".beads", ".gitignore"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return ws
+}
+
+func TestSetupRepairShowsThePlanAndChangesNothingWithoutAYes(t *testing.T) {
+	for _, args := range [][]string{{"--dry-run"}, {"--dry-run", "--yes"}, {}, {"--json"}} {
+		ws := halfWorkspace(t)
+		code, out, _, bd, au := runRepairCmd(t, ws, args...)
+		if _, err := os.Stat(filepath.Join(ws, ".beads", ".gitignore")); err != nil || bd.runs != 0 || au.n != 0 {
+			t.Fatalf("%v changed something", args)
+		}
+		wantCode := core.ExitFail // no yes, no terminal: asked for confirmation
+		if len(args) > 0 && args[0] == "--dry-run" {
+			wantCode = core.ExitOK
+		}
+		if code != wantCode || (len(args) != 1 || args[0] != "--json") && !strings.Contains(out, ".beads.incomplete-") {
+			t.Fatalf("%v: code=%d\n%s", args, code, out)
+		}
+	}
+}
+
+func TestSetupRepairYesSetsItAsideAndRefusesAFolderWithUserFiles(t *testing.T) {
+	ws := halfWorkspace(t)
+	code, out, errs, bd, au := runRepairCmd(t, ws, "--yes")
+	if code != 0 || bd.runs != 1 || au.n < 2 || !strings.Contains(out, "done:") {
+		t.Fatalf("code=%d runs=%d audit=%d\n%s%s", code, bd.runs, au.n, out, errs)
+	}
+	if m, _ := filepath.Glob(filepath.Join(ws, ".beads.incomplete-*", ".gitignore")); len(m) != 1 {
+		t.Fatal("the unfinished files must be kept")
+	}
+
+	ws = halfWorkspace(t)
+	os.WriteFile(filepath.Join(ws, "mine.txt"), []byte("x"), 0o600)
+	code, _, errs, bd, au = runRepairCmd(t, ws, "--yes")
+	if code == 0 || bd.runs != 0 || au.n != 0 || !strings.Contains(errs, "refusing") {
+		t.Fatalf("code=%d runs=%d audit=%d %s", code, bd.runs, au.n, errs)
+	}
+	if _, err := os.Stat(filepath.Join(ws, ".beads", ".gitignore")); err != nil {
+		t.Fatal("a refused repair must leave everything where it was")
+	}
+}

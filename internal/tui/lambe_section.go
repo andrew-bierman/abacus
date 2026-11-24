@@ -222,7 +222,7 @@ func (s *lambeSection) ids() []string {
 }
 
 // stateKind is the color role of a run state; the severity itself is decided once, in core.
-func stateKind(state string) Kind { return toneKind(core.RunState(strings.ToLower(state)).Tone()) }
+func stateKind(state core.RunState) Kind { return toneKind(state.Tone()) }
 
 func (s *lambeSection) countLabel(label string, n int) string {
 	return s.th.Header.Render(label) + " " + s.th.Text(KindMuted, fmt.Sprint(n))
@@ -268,8 +268,8 @@ func runCols(withFlag bool) []column {
 }
 
 // runStateGlyph is a shape per run state, so the mark before the state says something without color.
-func runStateGlyph(state string) string {
-	switch core.RunState(strings.ToLower(state)) {
+func runStateGlyph(state core.RunState) string {
+	switch state {
 	case core.RunRunning:
 		return "●"
 	case core.RunFailed:
@@ -323,8 +323,8 @@ func (s *lambeSection) listLines(iw int) ([]string, int) {
 			}
 			return append(cells, orDash(r.Phase), machine, orDash(r.Workflow), orDash(r.LastEventAge))
 		}
-		kind := stateKind(r.State)
-		glyph := runStateGlyph(r.State)
+		kind := stateKind(r.RunState())
+		glyph := runStateGlyph(r.RunState())
 		styled = append(styled, mk(th.Text(kind, glyph)+" "+th.Text(kind, state), flag, th.Tint(r.Machine, orDash(r.Machine))))
 		plain = append(plain, mk(glyph+" "+state, plainFlag, orDash(r.Machine)))
 	}
@@ -370,7 +370,7 @@ func (s *lambeSection) detailLines() []string {
 		return []string{th.Header.Render("Run"), th.Text(KindMuted, "nothing selected")}
 	}
 	r := runs[s.cursor]
-	head := th.Header.Render(orDash(r.Issue)) + " " + th.Badge(stateKind(r.State), orDash(r.State))
+	head := th.Header.Render(orDash(r.Issue)) + " " + th.Badge(stateKind(r.RunState()), orDash(r.State))
 	if r.Stalled {
 		head += " " + th.Badge(KindWarn, "stalled")
 	}

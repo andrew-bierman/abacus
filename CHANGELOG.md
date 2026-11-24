@@ -12,6 +12,14 @@ may change behavior, and patch versions are fixes and small additions.
   `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue and pull request templates, `CODEOWNERS`,
   Dependabot config, `.editorconfig`, `docs/README.md` (index), `make help` and `make cover`.
   Doc comments on the main exported identifiers in `internal/core`, `internal/lambe`, `internal/board`.
+- `abacus setup --repair` fixes a half-created workspace (a `.beads` folder with no
+  `metadata.json`, left by an init that failed). It shows the exact plan, asks (or takes `--yes`;
+  `--dry-run` only shows it), re-checks the folder at apply time and audits first. Nothing is
+  deleted: the unfinished `.beads` is moved to `.beads.incomplete-<time>` and the workspace is
+  created again. It refuses unless the folder is exactly what a failed init leaves (an allowlist found by failing a real init: a `.gitignore` and an empty database tree, a few KiB in all; any other file, link, `config.yaml`, hooks, backups or a database with data is refused), if init could not run, or if another process holds the workspace lock. The Tasks tab offers it
+  with `r`, and Doctor and `setup` say so instead of failing at apply. `setup --yes` never repairs.
+  Core: `core.InspectWorkspace`, `StepRepair`, step state `repair` (additive JSON).
+- Leases detail shows the time a held lease has left (`remaining`); core `Lease.Until`.
 
 ### Changed
 
@@ -20,6 +28,9 @@ may change behavior, and patch versions are fixes and small additions.
   instead); no behavior change.
 - The release workflow installs the bun version `bundled-tools.json` pins before packaging (it was
   missing on the runner; the workflow has not run end to end yet).
+- Run states are parsed once, in core (`core.ParseRunState`, `lambe.Run.RunState`); the Queues
+  tab no longer lowercases or matches state strings. Typed `LeasesReport` rendering and the
+  `RunState` enum with its tone were already in place.
 
 ## [0.4.0] - 2026-11-23
 

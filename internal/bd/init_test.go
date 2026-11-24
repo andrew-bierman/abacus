@@ -225,3 +225,24 @@ func TestEveryBdCallRunsWithTheBeadsEnvironmentScrubbed(t *testing.T) {
 		t.Errorf("BEADS_ACTOR must still reach every call:\n%s", s)
 	}
 }
+
+func TestAHalfCreatedWorkspaceGuidesToTheRepairNotAnotherInit(t *testing.T) {
+	t.Chdir(t.TempDir())
+	ws := filepath.Join(t.TempDir(), "workspace")
+	m := mod(newFake(), Options{InitDir: ws})
+	m.Detect(context.Background())
+	if err := os.MkdirAll(filepath.Join(ws, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if g := m.Guide(context.Background()); g == nil || g.Step != core.StepRepair || !strings.Contains(g.Detail, ws) {
+		t.Fatalf("%+v", g)
+	}
+	// A folder with someone's files in it is not offered a repair: the normal step stays, and its
+	// apply refuses to run over a half-created .beads.
+	if err := os.WriteFile(filepath.Join(ws, "mine.txt"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if g := m.Guide(context.Background()); g == nil || g.Step != core.StepWorkspace {
+		t.Fatalf("%+v", g)
+	}
+}

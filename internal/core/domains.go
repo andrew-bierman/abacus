@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 )
 
 // DomainID names what the user manages. Providers (the tools) are invisible behind it.
@@ -196,6 +198,10 @@ const (
 	RunFailed   RunState = "failed"
 	RunCanceled RunState = "canceled"
 )
+
+// ParseRunState reads a supervisor's state name once, at the edge: case and padding are
+// forgiven, an unknown name passes through (lowercased) as an unknown state.
+func ParseRunState(name string) RunState { return RunState(strings.ToLower(strings.TrimSpace(name))) }
 
 // Known reports whether the state is one this build recognizes.
 func (s RunState) Known() bool {
@@ -497,6 +503,16 @@ func (l Lease) Expiry() string {
 		return "?"
 	}
 	return l.ExpiresAt
+}
+
+// Until is how long a held lease has left (negative once past) at now; ok is false when the
+// lease has no readable expiry. The provider reports no acquisition time, so there is no age.
+func (l Lease) Until(now time.Time) (d time.Duration, ok bool) {
+	t, err := time.Parse(time.RFC3339, l.ExpiresAt)
+	if err != nil {
+		return 0, false
+	}
+	return t.Sub(now), true
 }
 
 // Detail is the lease's one-line description, shared by every front-end.

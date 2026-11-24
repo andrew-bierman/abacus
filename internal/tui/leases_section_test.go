@@ -149,8 +149,29 @@ func TestStateKindFollowsCoreTone(t *testing.T) {
 		"pending": KindMuted, "settled": KindMuted, "canceled": KindMuted, "": KindMuted, "from-a-newer-supervisor": KindMuted,
 		"active": KindMuted, "error": KindMuted, // never reported by the supervisor: no color of their own
 	} {
-		if got := stateKind(state); got != want {
+		if got := stateKind(core.ParseRunState(state)); got != want {
 			t.Errorf("stateKind(%q) = %v, want %v", state, got, want)
 		}
+	}
+}
+
+// A held lease with a readable expiry shows what is left, from the typed time (no text parsing).
+func TestLeaseDetailShowsTimeRemaining(t *testing.T) {
+	soon := goldenNow.Add(12 * time.Minute).Format(time.RFC3339)
+	past := goldenNow.Add(-3 * time.Hour).Format(time.RFC3339)
+	for _, c := range []struct{ expiry, want string }{{soon, "in 12m"}, {past, "3h ago"}} {
+		r := leasesReport(core.Lease{Resource: "a", State: core.LeaseHeld, Holder: "x", ExpiresAt: c.expiry})
+		s := leasesWith(&r)
+		var m tea.Model = s
+		m, _ = m.Update(leasesMsg{read: r})
+		if v := sized(m, 100, 20).View(); !strings.Contains(v, "remaining") || !strings.Contains(v, c.want) {
+			t.Errorf("%s: missing %q:\n%s", c.expiry, c.want, v)
+		}
+	}
+	r := leasesReport(core.Lease{Resource: "a", State: core.LeaseStale, Holder: "x", ExpiresAt: goldenNow.Format(time.RFC3339)})
+	var m tea.Model = leasesWith(&r)
+	m, _ = m.Update(leasesMsg{read: r})
+	if strings.Contains(sized(m, 100, 20).View(), "remaining") {
+		t.Error("only a held lease has time left")
 	}
 }
