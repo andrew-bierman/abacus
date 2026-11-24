@@ -6,6 +6,10 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-23
+
+First release since 0.2.0. The 0.3.0 section below was never tagged; its changes ship here.
+
 ### Added
 
 - Command prompt and k9s-style layer (U6 of `docs/plans/2026-11-23-feat-tasks-workspace-plan.md`):
