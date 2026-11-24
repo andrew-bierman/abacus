@@ -186,6 +186,8 @@ abacus tasks comment ID TEXT | ID --text TEXT [--yes] [--dry-run]
 abacus tasks bulk --ids ID,ID,... --op close|status|priority|label-add|label-remove|assign [--value V | --clear] [--yes] [--dry-run] [--json]   up to 25 tasks, one confirm
 abacus search QUERY [--domain D] [--limit N] [--json]   search tasks, board, leases and queues
 abacus tui     [--demo] [--tab NAME]
+abacus <read command> --demo   invented data from the same fixtures as the demo cockpit; also ABACUS_DEMO=1
+abacus tasks|search|status|doctor ... --tracker DIR   use this tracker for one command (wins over ABACUS_BD_DIR)
 abacus rex layout [--new NAME] [--yes] [--dry-run]   open the cockpit tabs in a terminal workspace (optional)
 abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
 abacus setup --repair [--yes] [--dry-run]       fix a half-created workspace (nothing is deleted)
@@ -207,6 +209,14 @@ whatever the connection state: the outcome is in each domain's `state` (`connect
 carries `schema_version`. A not-connected or degraded domain keeps the same shape (`leases: []`,
 zeroed `counts`). JSON key naming is mixed by origin (`issue` in Queues rows, `id` in Tasks) and is
 not renamed within `schema_version` 1.
+
+`--demo` (or `ABACUS_DEMO=1`) makes every read command (`board`, `tasks` and its views, `leases`, `queues`,
+`agents`, `status`, `doctor`, `setup`, `search`, `version`) answer from invented fixtures: nothing is contacted,
+and the JSON carries `"demo": true`. A write in demo mode is refused (code `refused`, nothing recorded) unless
+it is a `--dry-run` plan. `--tracker DIR` (an absolute folder that holds `.beads`, checked like every tracker
+abacus switches to) picks the tracker for one command without touching the settings. A SIGINT or SIGTERM while a
+write is being applied stops the tool, finishes the audit record as `unknown` and exits 1 with the
+`unknown_outcome` document under `--json`: the result is unknown, never "not applied".
 
 `abacus tasks <verb> --json` prints exactly one JSON document on stdout and nothing else, and needs
 `--yes` or `--dry-run` (it cannot prompt). Any command that fails with `--json` prints one error
