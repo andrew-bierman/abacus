@@ -354,7 +354,7 @@ func scenarios() []scenario {
 		{name: "tasks-workspace", build: wsStd, keys: []string{"2", "j"}, tab: "Tasks", extra: workspaceSizes},
 		// Workspace actions and terminal output, over the real adapter with a scripted runner.
 		{name: "leases-terminal-output", build: wsActionsStd, tab: "Leases", extra: workspaceSizes},
-		{name: "leases-focus-confirm", build: wsActionsStd, keys: []string{"t"}, tab: "Leases", footHas: []string{"y apply", "n/esc cancel"}, extra: workspaceSizes},
+		{name: "leases-focus-confirm", build: wsActionsStd, keys: []string{"m"}, tab: "Leases", footHas: []string{"y apply", "n/esc cancel"}, extra: workspaceSizes},
 		{name: "leases-work-confirm", build: wsActionsStd, keys: []string{"W"}, tab: "Leases", footHas: []string{"y apply", "n/esc cancel"}, extra: workspaceSizes},
 		{name: "doctor", build: std, keys: []string{"5"}, tab: "Doctor"},
 		{name: "help", build: std, keys: []string{"?"}, tab: "Board", overlay: true},

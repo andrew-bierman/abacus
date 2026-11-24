@@ -98,7 +98,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 │                                                                      │ │ session     session:01a20c1b-ae95-745d-ba1… │
 │                                                                      │ │ match       exact                           │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · t show terminal · W work on this
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · m show terminal · W work on this
 === 120x30 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · t show terminal · W work on this
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · m show terminal · W work on this
 === 60x24 ===
 abacus   Board  Tasks  [Leases]  Queues  Doctor
 ────────────────────────────────────────────────────────────
@@ -187,4 +187,4 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · t show terminal · W work on this
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · w workspace · m show terminal · W work on this

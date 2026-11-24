@@ -18,7 +18,7 @@ import (
 // here types into a terminal, and a read of a terminal never writes.
 
 var (
-	keyFocus      = key.NewBinding(key.WithKeys("t"), key.WithHelp("t", "show terminal"))
+	keyFocus      = key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "show terminal"))
 	keyWork       = key.NewBinding(key.WithKeys("W"), key.WithHelp("W", "work on this"))
 	keyPlaceSplit = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "tab/split"))
 )
@@ -113,7 +113,7 @@ func (w *wsLayer) modalBindings() []key.Binding {
 	return b
 }
 
-// actionKey handles t and W on the selected row. Planning runs only reads, so it is quick enough
+// actionKey handles m and W on the selected row. Planning runs only reads, so it is quick enough
 // to do here; the write waits for y on the confirm screen.
 func (w *wsLayer) actionKey(k tea.KeyMsg, h wsHost) (tea.Cmd, bool) {
 	if w == nil || w.applier == nil || !key.Matches(k, keyFocus, keyWork) {

@@ -8,7 +8,7 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
-- Terminal workspace (optional), first class: `t` brings an item's terminal to the front and `W`
+- Terminal workspace (optional), first class: `m` brings an item's terminal to the front and `W`
   opens a terminal running the new `agent_command` setting (an argv with `{task_id}` and `{title}`,
   each word one argument, never a shell) from a task, run or lease, each behind the usual plan,
   confirm, single-use and audit gate with its own exact argv allowlist (nothing is typed into any

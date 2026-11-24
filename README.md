@@ -150,7 +150,7 @@ or error messages that help you fix one.
   feed, and `focus`, `run`, `split`, `new` and `window new` writes), always with
   `--autostart=false`, behind exact argv allowlists and a scrubbed environment
   (`HOME`, `PATH`, the XDG dirs and `REX_*`), and never starts a server or types into a
-  terminal. On a row, `t` brings its terminal forward and `W` opens one running your `agent_command`
+  terminal. On a row, `m` brings its terminal forward and `W` opens one running your `agent_command`
   (`abacus config set agent_command '["prog","Work on {task_id}: {title}"]'`), each after a confirm
   screen; `abacus rex layout` opens the cockpit tabs. Only this machine and the hosts you list in `ABACUS_REX_HOSTS` are ever contacted
   (`-S` can open an ssh connection); `ABACUS_REX_PASS_ENV=SSH_AUTH_SOCK` opts in to passing a

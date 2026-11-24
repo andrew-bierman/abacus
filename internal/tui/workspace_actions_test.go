@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -166,9 +167,9 @@ func TestFocusIsPlannedShownExactlyConfirmedAppliedOnceAndAudited(t *testing.T) 
 	r := newWSRunner(t)
 	m, a, _ := wsLive(t, r, nil, 240, 40)
 	if !strings.Contains(m.View(), "show terminal") {
-		t.Fatalf("t is offered when the row has a terminal:\n%s", m.View())
+		t.Fatalf("m is offered when the row has a terminal:\n%s", m.View())
 	}
-	m = keys(m, "t")
+	m = keys(m, "m")
 	v := m.View()
 	for _, want := range []string{"bring the terminal for bd-43 to the front", "command: rex --autostart=false focus -s " + tSessA + " " + tBlk43, "y runs it", "n cancels"} {
 		if !strings.Contains(v, want) {
@@ -199,12 +200,12 @@ func TestFocusIsPlannedShownExactlyConfirmedAppliedOnceAndAudited(t *testing.T) 
 func TestCancelRunsNothingAndSingleUseHoldsAgainstADoublePress(t *testing.T) {
 	r := newWSRunner(t)
 	m, a, _ := wsLive(t, r, nil, 120, 40)
-	m, cmd := keys(m, "t").Update(runeKey("n"))
+	m, cmd := keys(m, "m").Update(runeKey("n"))
 	m = drive(t, m, cmd)
 	if len(r.writes()) != 0 || a.phases() != "" || !strings.Contains(m.View(), "cancelled: nothing was changed") {
 		t.Fatalf("%v %q\n%s", r.writes(), a.phases(), m.View())
 	}
-	m = keys(m, "x", "t")
+	m = keys(m, "x", "m")
 	m1, c1 := m.Update(runeKey("y"))
 	m2, c2 := m1.Update(runeKey("y")) // the second press lands while the first is still running
 	drive(t, m2, c2)
@@ -218,14 +219,14 @@ func TestAnUnknownOutcomeIsNeverCalledNotApplied(t *testing.T) {
 	r := newWSRunner(t)
 	r.resp[kFoc] = wsResp{err: core.ErrTimedOut}
 	m, a, _ := wsLive(t, r, nil, 120, 40)
-	m, cmd := keys(m, "t").Update(runeKey("y"))
+	m, cmd := keys(m, "m").Update(runeKey("y"))
 	m = drive(t, m, cmd)
 	v := m.View()
 	if !strings.Contains(v, "result unknown") || strings.Contains(v, "not applied") || a.phases() != "attempt,unknown" {
 		t.Fatalf("%q\n%s", a.phases(), v)
 	}
 	r.resp[kFoc] = wsResp{exit: 4}
-	m = keys(m, "x", "t")
+	m = keys(m, "x", "m")
 	m, cmd = m.Update(runeKey("y"))
 	m = drive(t, m, cmd)
 	if v := m.View(); !strings.Contains(v, "not applied: no workspace server is running") {
@@ -237,7 +238,7 @@ func TestAFailedAuditBlocksTheWriteInTheTui(t *testing.T) {
 	r := newWSRunner(t)
 	m, a, _ := wsLive(t, r, nil, 120, 40)
 	a.err = errors.New("disk full")
-	m, cmd := keys(m, "t").Update(runeKey("y"))
+	m, cmd := keys(m, "m").Update(runeKey("y"))
 	m = drive(t, m, cmd)
 	if len(r.writes()) != 0 || !strings.Contains(m.View(), "not applied") {
 		t.Fatalf("fail closed: %v\n%s", r.writes(), m.View())
@@ -249,9 +250,9 @@ func TestFocusIsInactiveWithoutATerminalAndSaysWhy(t *testing.T) {
 	m, _, _ := wsLive(t, r, nil, 120, 40)
 	m = keys(m, "j") // bd-77 has no terminal
 	if strings.Contains(m.View(), "show terminal") {
-		t.Fatalf("t must not be offered:\n%s", m.View())
+		t.Fatalf("m must not be offered:\n%s", m.View())
 	}
-	m = keys(m, "t")
+	m = keys(m, "m")
 	if v := m.View(); !strings.Contains(v, "No terminal is named for bd-77") || len(r.writes()) != 0 {
 		t.Fatalf("%s", v)
 	}
@@ -315,8 +316,8 @@ func TestAClippedConfirmScreenCannotBeApplied(t *testing.T) {
 func TestWhileAPlanIsOnScreenOnlyItsKeysAct(t *testing.T) {
 	r := newWSRunner(t)
 	m, _, _ := wsLive(t, r, nil, 120, 40)
-	m = keys(m, "t")
-	for _, k := range []string{"q", "j", "2", "W", "t", "tab"} {
+	m = keys(m, "m")
+	for _, k := range []string{"q", "j", "2", "W", "m", "tab"} {
 		var cmd tea.Cmd
 		m, cmd = m.Update(runeKey(k))
 		if cmd != nil && k == "q" {
@@ -337,7 +338,7 @@ func TestDemoAndNoProviderOfferNoActions(t *testing.T) {
 	rec := &wsRecorder{}
 	m := demoWorkspaceModel(t, asciiTheme(), rec, 100, 32)
 	m = keys(m, "3")
-	for _, k := range []string{"t", "W"} {
+	for _, k := range []string{"m", "W"} {
 		var cmd tea.Cmd
 		m, cmd = m.Update(runeKey(k))
 		if cmd != nil || strings.Contains(m.View(), "y runs it") {
@@ -508,5 +509,32 @@ func TestAChangeDuringAReadQueuesOneFollowUpRead(t *testing.T) {
 	}
 	if l.again {
 		t.Fatal("the request is consumed")
+	}
+}
+
+// The placement keys have one owner each: no other binding in the shell, in any section or any
+// mode, uses m or W (a section key would be shadowed by, or shadow, the layer's).
+func TestPlacementKeysAreOwnedByNoOtherBinding(t *testing.T) {
+	files, _ := filepath.Glob("*.go")
+	re := regexp.MustCompile(`WithKeys\(([^)]*)\)`)
+	owners := map[string][]string{}
+	for _, f := range files {
+		if strings.HasSuffix(f, "_test.go") {
+			continue
+		}
+		b, _ := os.ReadFile(f)
+		for _, m := range re.FindAllStringSubmatch(string(b), -1) {
+			for _, k := range regexp.MustCompile(`"([^"]*)"`).FindAllStringSubmatch(m[1], -1) {
+				owners[k[1]] = append(owners[k[1]], f)
+			}
+		}
+	}
+	for _, k := range []string{"m", "W"} {
+		if got := owners[k]; len(got) != 1 || got[0] != "workspace_actions.go" {
+			t.Errorf("%q is owned by %v: only the workspace actions may use it", k, got)
+		}
+	}
+	if keyFocus.Keys()[0] != "m" || keyWork.Keys()[0] != "W" {
+		t.Errorf("%v %v", keyFocus.Keys(), keyWork.Keys())
 	}
 }
