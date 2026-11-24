@@ -130,10 +130,13 @@ type Track struct {
 // provider cannot supply is simply empty; Header.Reason says which were unavailable.
 type InsightsReport struct {
 	Header
-	TopPicks        []Pick     `json:"top_picks,omitempty"`
-	Blockers        []Pick     `json:"blockers,omitempty"`
-	CriticalPath    []Ranked   `json:"critical_path,omitempty"`
-	Bottlenecks     []Ranked   `json:"bottlenecks,omitempty"`
+	TopPicks     []Pick   `json:"top_picks,omitempty"`
+	Blockers     []Pick   `json:"blockers,omitempty"`
+	CriticalPath []Ranked `json:"critical_path,omitempty"`
+	Bottlenecks  []Ranked `json:"bottlenecks,omitempty"`
+	// Influencers ranks tasks by eigenvector centrality (a PageRank-style score: well-connected tasks that
+	// important tasks depend on). Additive: older readers ignore it.
+	Influencers     []Ranked   `json:"influencers,omitempty"`
 	Cycles          [][]string `json:"cycles,omitempty"`
 	Tracks          []Track    `json:"tracks,omitempty"`
 	TotalActionable int        `json:"total_actionable,omitempty"`

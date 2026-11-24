@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Tasks]  2/6
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how
+  much it unblocks and how urgent it
+  is. 'unblocks N' counts the tasks
+  waiting on it; the reasons show
+  under the selected row.
+  Blockers to clear: open work other
+  ↕ +60 more
+?/esc close · ↑/↓ scroll
+=== 40x30 ===
+ [Tasks]  2/6
+────────────────────────────────────────
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how
+  much it unblocks and how urgent it
+  is. 'unblocks N' counts the tasks
+  waiting on it; the reasons show
+  under the selected row.
+  Blockers to clear: open work other
+  tasks are waiting on, the most-
+  blocking first.
+  Bottlenecks (betweenness): tasks
+  that sit on the most dependency
+  paths between other tasks. A high
+  value means a delay here ripples
+  through many chains.
+  Critical path (impact depth): tasks
+  ranked by how long a chain of work
+  hangs off them. The top ones set the
+  minimum time left.
+  Influence (centrality): a PageRank-
+  style score, higher when important
+  tasks depend on a task. It finds
+  well-connected keystones the other
+  two can miss.
+  Cycles: tasks that wait on each
+  ↕ +43 more
+?/esc close · ↑/↓ scroll
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how much it unblocks and how urgent it is.
+  'unblocks N' counts the tasks waiting on it; the reasons show under the
+  selected row.
+  Blockers to clear: open work other tasks are waiting on, the most-blocking
+  first.
+  Bottlenecks (betweenness): tasks that sit on the most dependency paths
+  ↕ +44 more
+?/esc close · ↑/↓ scroll
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how much it unblocks and how urgent it is.
+  'unblocks N' counts the tasks waiting on it; the reasons show under the
+  selected row.
+  Blockers to clear: open work other tasks are waiting on, the most-blocking
+  first.
+  Bottlenecks (betweenness): tasks that sit on the most dependency paths
+  between other tasks. A high value means a delay here ripples through many
+  chains.
+  Critical path (impact depth): tasks ranked by how long a chain of work hangs
+  off them. The top ones set the minimum time left.
+  Influence (centrality): a PageRank-style score, higher when important tasks
+  depend on a task. It finds well-connected keystones the other two can miss.
+  Cycles: tasks that wait on each other in a loop. None of them can become
+  ready until one link is removed; the critical path is skipped while a cycle
+  exists.
+  Parallel tracks: groups of ready work that do not depend on each other, so
+  they can proceed side by side.
+  s changes the row order (rank, id, title), S reverses it, enter opens the
+  task in the List, g shows its graph.
+
+  tab/→         next tab
+  shift+tab/←   prev tab
+  1-9           jump to tab
+  ↕ +27 more
+?/esc close · ↑/↓ scroll
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how much it unblocks and how urgent it is. 'unblocks N' counts the tasks waiting on
+  it; the reasons show under the selected row.
+  Blockers to clear: open work other tasks are waiting on, the most-blocking first.
+  Bottlenecks (betweenness): tasks that sit on the most dependency paths between other tasks. A high value means a
+  delay here ripples through many chains.
+  Critical path (impact depth): tasks ranked by how long a chain of work hangs off them. The top ones set the minimum
+  ↕ +38 more
+?/esc close · ↑/↓ scroll
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how much it unblocks and how urgent it is. 'unblocks N' counts the tasks waiting on
+  it; the reasons show under the selected row.
+  Blockers to clear: open work other tasks are waiting on, the most-blocking first.
+  Bottlenecks (betweenness): tasks that sit on the most dependency paths between other tasks. A high value means a
+  delay here ripples through many chains.
+  Critical path (impact depth): tasks ranked by how long a chain of work hangs off them. The top ones set the minimum
+  time left.
+  Influence (centrality): a PageRank-style score, higher when important tasks depend on a task. It finds well-
+  connected keystones the other two can miss.
+  Cycles: tasks that wait on each other in a loop. None of them can become ready until one link is removed; the
+  critical path is skipped while a cycle exists.
+  Parallel tracks: groups of ready work that do not depend on each other, so they can proceed side by side.
+  s changes the row order (rank, id, title), S reverses it, enter opens the task in the List, g shows its graph.
+
+  tab/→         next tab
+  shift+tab/←   prev tab
+  1-9           jump to tab
+  ctrl+k        search everything
+  :             command
+  ?             help
+  q             quit
+
+  v             view
+  ↕ +21 more
+?/esc close · ↑/↓ scroll
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how much it unblocks
+  and how urgent it is. 'unblocks N' counts the tasks
+  waiting on it; the reasons show under the selected row.
+  Blockers to clear: open work other tasks are waiting on,
+  the most-blocking first.
+  Bottlenecks (betweenness): tasks that sit on the most
+  dependency paths between other tasks. A high value means
+  a delay here ripples through many chains.
+  Critical path (impact depth): tasks ranked by how long a
+  chain of work hangs off them. The top ones set the
+  minimum time left.
+  Influence (centrality): a PageRank-style score, higher
+  when important tasks depend on a task. It finds well-
+  connected keystones the other two can miss.
+  Cycles: tasks that wait on each other in a loop. None of
+  them can become ready until one link is removed; the
+  critical path is skipped while a cycle exists.
+  ↕ +35 more
+?/esc close · ↑/↓ scroll
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Keys
+
+  What the Insights numbers mean
+  Next picks: ready work ranked by how much it unblocks and how urgent it is. 'unblocks N' counts
+  the tasks waiting on it; the reasons show under the selected row.
+  Blockers to clear: open work other tasks are waiting on, the most-blocking first.
+  Bottlenecks (betweenness): tasks that sit on the most dependency paths between other tasks. A
+  high value means a delay here ripples through many chains.
+  Critical path (impact depth): tasks ranked by how long a chain of work hangs off them. The top
+  ones set the minimum time left.
+  Influence (centrality): a PageRank-style score, higher when important tasks depend on a task. It
+  finds well-connected keystones the other two can miss.
+  Cycles: tasks that wait on each other in a loop. None of them can become ready until one link is
+  removed; the critical path is skipped while a cycle exists.
+  Parallel tracks: groups of ready work that do not depend on each other, so they can proceed side
+  by side.
+  s changes the row order (rank, id, title), S reverses it, enter opens the task in the List, g
+  shows its graph.
+
+  tab/→         next tab
+  shift+tab/←   prev tab
+  1-9           jump to tab
+  ctrl+k        search everything
+  :             command
+  ?             help
+  q             quit
+
+  v             view
+  ↕ +21 more
+?/esc close · ↑/↓ scroll

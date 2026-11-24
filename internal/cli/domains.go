@@ -167,6 +167,9 @@ func runDomain(cmd string, rest []string, d Deps) int {
 	if cmd == "tasks" && len(rest) > 0 && rest[0] == "graph" {
 		return runTaskGraph(rest[1:], d)
 	}
+	if cmd == "tasks" && firstOf(rest) == "bulk" {
+		return runTaskBulk(rest[1:], d)
+	}
 	if _, edit := editVerbs[firstOf(rest)]; cmd == "tasks" && edit {
 		return runTaskEdit(rest[0], rest[1:], d)
 	}
@@ -230,7 +233,7 @@ func firstOf(a []string) string {
 func runTaskWrite(verb string, rest []string, d Deps) int {
 	op := core.TaskOp(verb)
 	if op != core.TaskCreate && op != core.TaskUpdate && op != core.TaskClose {
-		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, create, update, close, label, assign, priority, dep, comment)\n", verb)
+		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, create, update, close, label, assign, priority, dep, comment, bulk)\n", verb)
 		return core.ExitUsage
 	}
 	ch := core.TaskChange{Op: op}

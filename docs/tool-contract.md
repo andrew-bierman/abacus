@@ -331,9 +331,24 @@ closed set and `source` says how it was learned.
   unknown). It has no schema version, so the shape of the pinned release is the contract, and anything
   without a `sessions` list degrades to a note. No write path exists.
 
+## Bulk task changes
+
+One verb on up to 25 tasks, through the same gate as a single write: `core.PlanBulk` plans one
+single-task change per task (so each has its own exact argv from the same allowlist; a task the change
+no longer fits is left out and named in `skipped`), the front end shows the whole plan and asks once,
+and `Applier.ApplyBulk` runs it. Nothing is atomic. Before each task is written it is read again and
+checked (the status it was planned against, then the edit's own check); a task that changed or cannot be
+read is skipped, never written. A failure does not stop the rest; a timeout or cancel makes that task
+and every task after it `unknown`; an audit log that cannot be written stops the batch (`not_run`), so
+nothing is sent unrecorded. The batch plan and each of its tasks are single use. Every audit line
+carries the same `batch` id (additive field of the audit entry). `abacus tasks bulk --json` prints
+`{schema_version: 1, batch_id, op, applied, skipped, failed, unknown, not_run, items: [{id, outcome,
+detail, argv}]}`; the exit code is 0 only when every task was applied: tasks left out at plan time (already closed, already that priority, ...) are in `items` as `skipped`, so a batch with any of them exits 1. `--ids` must be whole task ids: one the tracker resolves to another id (a prefix) is refused. The verbs are close, status,
+priority, label add or remove and assign; never delete, comment or dependency edits.
+
 ## Graph engine (in-process)
 
-The Tasks insights (top picks, blockers, critical path, cycles, actionable and blocked counts) are
+The Tasks insights (top picks, blockers, critical path, bottlenecks, influence, cycles, actionable and blocked counts) are
 computed inside abacus by bv's `pkg/analysis`, in one in-memory pass, behind
 `core.InsightsProvider` (`internal/graph`; the only bv import is `bvanalyzer.go`). It is the only
 engine: there is no switch, no `ABACUS_GRAPH_ENGINE`, no bv subprocess and no bv program in the

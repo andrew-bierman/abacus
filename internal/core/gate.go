@@ -17,6 +17,18 @@ type gate struct {
 
 func newGate(a Audit) *gate { return &gate{audit: a, applied: map[uint64]bool{}} }
 
+// claim marks id used without running anything (ErrAlreadyApplied if it was): a bulk plan is single use
+// as a whole, on top of each of its items being single use.
+func (g *gate) claim(id uint64) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.applied[id] {
+		return ErrAlreadyApplied
+	}
+	g.applied[id] = true
+	return nil
+}
+
 // do claims id (ErrAlreadyApplied if it was used), records the attempt e (fail closed), runs
 // the write, and records its outcome. An outcome that cannot be known is recorded as "unknown".
 func (g *gate) do(id uint64, e AuditEntry, run func() error) error {

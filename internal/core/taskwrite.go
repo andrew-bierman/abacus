@@ -390,6 +390,8 @@ type AuditEntry struct {
 	Argv    []string  `json:"argv"`
 	Tracker string    `json:"tracker,omitempty"`
 	Error   string    `json:"error,omitempty"`
+	// Batch is the id shared by every entry of one bulk change (additive; empty for a single write).
+	Batch string `json:"batch,omitempty"`
 }
 
 // Audit records mutations. A failed Record blocks the mutation (fail closed).
@@ -458,17 +460,26 @@ func NewApplier(w TaskWriter, a Audit) *Applier { return &Applier{w: w, g: newGa
 
 // Apply runs a confirmed task change once. A timeout or cancel is reported as an unknown result, never as not applied.
 func (a *Applier) Apply(ctx context.Context, p WritePlan) (TaskResult, error) {
+	res, _, err := a.apply(ctx, p, "")
+	return res, err
+}
+
+// apply is Apply plus whether the write was handed to the provider (false: refused before it, so an
+// error is the confirm check, a reused plan or the audit log) and the batch id for the audit line.
+func (a *Applier) apply(ctx context.Context, p WritePlan, batch string) (TaskResult, bool, error) {
 	if !p.confirmed {
-		return TaskResult{}, ErrNotConfirmed
+		return TaskResult{}, false, ErrNotConfirmed
 	}
-	e := AuditEntry{Domain: string(DomainTasks), Verb: string(p.Change.Op), Argv: p.Argv, Tracker: a.w.TrackerDir()}
+	e := AuditEntry{Domain: string(DomainTasks), Verb: string(p.Change.Op), Argv: p.Argv, Tracker: a.w.TrackerDir(), Batch: batch}
 	var res TaskResult
+	ran := false
 	err := a.g.do(p.id, e, func() error {
 		var err error
+		ran = true
 		res, err = a.w.RunTask(ctx, p.Argv)
 		return err
 	})
-	return res, err
+	return res, ran, err
 }
 
 // DisplayArgv renders an argv for a person: arguments with spaces or quotes are quoted, and so is
@@ -585,7 +596,14 @@ func CheckFresh(ch TaskChange, cur Task) error {
 		if ch.Before.ID != "" && cur.Priority != ch.Before.Priority {
 			return staleError{fmt.Sprintf("%s is now priority %d (it was %d)", ch.ID, cur.Priority, ch.Before.Priority)}
 		}
+	case TaskUpdate:
+		if ch.Status != "" && cur.Status == ch.Status {
+			return staleError{fmt.Sprintf("%s is already %s", ch.ID, ch.Status)}
+		}
 	case TaskAssign:
+		if ch.Assignee != nil && cur.Assignee == *ch.Assignee {
+			return staleError{fmt.Sprintf("%s is already assigned to %q", ch.ID, cur.Assignee)}
+		}
 		if cur.Assignee != ch.IfAssignee {
 			return staleError{fmt.Sprintf("%s is now held by %q (it was %q)", ch.ID, cur.Assignee, ch.IfAssignee)}
 		}

@@ -54,6 +54,10 @@ const (
 	modeConfirm
 	modeBusy
 	modeVerify // re-reading the issue before the confirm screen
+	// The batch of marked tasks (tasks_marks.go): its confirm screen, the wait, and the result.
+	modeBulk
+	modeBulkBusy
+	modeBulkDone
 )
 
 type formField struct {
@@ -103,8 +107,10 @@ type tasksSection struct {
 	insBusy     bool
 	wantIns     bool // insights are read after the next tasks read: an empty tracker skips the analysis
 
-	ws *wsLayer // the optional workspace layer; nil without one
-	kb kanban   // the Kanban view's cursor and options (tasks_kanban.go)
+	ws     *wsLayer // the optional workspace layer; nil without one
+	kb     kanban   // the Kanban view's cursor and options (tasks_kanban.go)
+	mk     marksState
+	insNav insightsNav // the Insights view's cursor and sort (tasks_insights.go)
 
 	// U10: live refresh, history, saved filters and the tracker switcher (tasks_live.go and friends).
 	live  liveState
@@ -197,6 +203,8 @@ func (s *tasksSection) baseBindings() []key.Binding {
 		return []key.Binding{keyYes, keyNo}
 	case modeVerify:
 		return []key.Binding{keyBack}
+	case modeBulk, modeBulkBusy, modeBulkDone:
+		return s.bulkBindings()
 	case modeBusy:
 		return nil
 	}
@@ -208,7 +216,7 @@ func (s *tasksSection) baseBindings() []key.Binding {
 	}
 	it, ok := s.selectedItem()
 	// the edit keys come last: a narrow footer is cut from the right, and `?` lists them all
-	return append(s.listBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload, keyTag, keyUntag, keyAssign, keyPrio, keyBlock, keyUnblock, keyComment)
+	return append(append(s.listBindings(), keyNew, keyEdit, keyClose, keyFull, s.ws.jumpBinding(it, ok), keyReload, keyTag, keyUntag, keyAssign, keyPrio, keyBlock, keyUnblock, keyComment), s.markBindings()...)
 }
 
 func (s *tasksSection) fetchTasks() tea.Cmd {
@@ -397,6 +405,8 @@ func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ch.Before = m.task
 		}
 		s.toConfirm(ch)
+	case bulkAppliedMsg:
+		return s, s.bulkApplied(m)
 	case tasksTickMsg:
 		return s, tea.Batch(s.livePoll(), s.tick())
 	case taskAppliedMsg:
@@ -417,6 +427,10 @@ func (s *tasksSection) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		s.resize(m)
+		if s.mode == modeBulk { // the lines are wrapped again: what was seen no longer counts
+			s.mk.seen, s.mk.off = -1, 0
+			s.bulkSee()
+		}
 		if s.list.view != nil {
 			s.recompute() // the tree's branch lines are drawn to fit the width
 		}
@@ -475,10 +489,12 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			s.mode, s.notice = modeList, "cancelled: nothing was changed"
 		}
 		return s, nil
-	case modeBusy:
+	case modeBulk, modeBulkDone:
+		return s.bulkKeyMode(k)
+	case modeBusy, modeBulkBusy:
 		return s, nil
 	}
-	s.notice = ""
+	s.notice, s.mk.form = "", false
 	if s.ws.swallow() {
 		return s, nil
 	}
@@ -487,6 +503,11 @@ func (s *tasksSection) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if cmd, ok := s.listKey(k); ok {
 		return s, cmd
+	}
+	if s.list.cur == viewList && s.markOn() && !s.inDetail() {
+		if cmd, ok := s.bulkKey(k); ok {
+			return s, cmd
+		}
 	}
 	switch {
 	case key.Matches(k, keyWorkspace):
@@ -570,6 +591,9 @@ func (s *tasksSection) formKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 // submitForm turns the form into a change and moves toward the confirm screen. Nothing is
 // written here: a plan only describes the change. Only fields the user edited are sent.
 func (s *tasksSection) submitForm() tea.Cmd {
+	if s.mk.form {
+		return s.submitBulk()
+	}
 	if core.NeedsFresh(s.op) {
 		return s.submitEdit()
 	}
@@ -673,12 +697,17 @@ func (s *tasksSection) modalView() []string {
 	switch s.mode {
 	case modeForm:
 		title := editTitle(s.op, s.target.ID)
+		if s.mk.form {
+			title = s.bulkFormTitle()
+		}
 		body := fieldRows(th, s.fields, s.fi, inner)
 		if s.formErr != "" {
 			body = append(body, "")
 			body = append(body, wrap(th.Text(KindFail, san(s.formErr)), inner)...)
 		}
 		return box(th, san(title), body, w, s.h)
+	case modeBulk, modeBulkBusy, modeBulkDone:
+		return s.bulkView()
 	case modeVerify:
 		body := wrap("reading "+san(s.pending.ID)+" before the confirm screen", inner)
 		body = append(body, "", th.Text(KindMuted, "esc cancels"))

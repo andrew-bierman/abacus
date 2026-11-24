@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Tasks]  2/6
+ List  Kanban  Graph [Insights]
+╭─ ▸ Insights · graph analysis · sor… ─╮
+│ Next picks  3                        │
+│   ac-30  ○ saved filters             │
+│   ac-15  ○ lease holder column    +1 │
+│ ▸ ac-12  ◐ wire the lease heartb… +2 │
+│     why: P0 bug in progress          │
+│     why: unblocks the queue          │
+│   ↕ +28 more                         │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Tasks]  2/6
+────────────────────────────────────────
+ List  Kanban  Graph [Insights]
+╭─ ▸ Insights · graph analysis · sor… ─╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████▓▓▓▓▓▓░░░····· │
+│ 14 tasks: 6 open · 3 in progress · 2 │
+│ blocked · 1 deferred · 2 closed      │
+│ 3 actionable · 4 blocked · 1 cycle · │
+│ ready 3                              │
+│ Next picks  3                        │
+│   ac-30  ○ saved filters             │
+│   ac-15  ○ lease holder column    +1 │
+│ ▸ ac-12  ◐ wire the lease heartb… +2 │
+│     why: P0 bug in progress          │
+│     why: unblocks the queue          │
+│     attention digest                 │
+│                                      │
+│ Blockers to clear  2                 │
+│   ac-15  ○ lease holder column    +1 │
+│   ac-12  ◐ wire the lease heartb… +2 │
+│                                      │
+│ Bottlenecks · betweenness  3         │
+│   ac-15  ○ lease holder column     2 │
+│   ac-12  ◐ wire the lease hea…  4.50 │
+│   ac-09  ○ queue attention di…  0.50 │
+│                                      │
+│ Critical path · impact depth  4      │
+│   ↕ +16 more                         │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+ List  Kanban  Graph [Insights]                               14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                 │
+│   ac-30  ○ saved filters                                                     │
+│   ac-15  ○ lease holder column                                    unblocks 1 │
+│ ▸ ac-12  ◐ wire the lease heartbeat                               unblocks 2 │
+│   ↕ +30 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view · enter open task …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                               14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                 │
+│ Next picks  3                                                                │
+│   ac-30  ○ saved filters                                                     │
+│   ac-15  ○ lease holder column                                    unblocks 1 │
+│ ▸ ac-12  ◐ wire the lease heartbeat                               unblocks 2 │
+│     why: P0 bug in progress                                                  │
+│     why: unblocks the queue attention digest                                 │
+│                                                                              │
+│ Blockers to clear  2                                                         │
+│   ac-15  ○ lease holder column                                    unblocks 1 │
+│   ac-12  ◐ wire the lease heartbeat                               unblocks 2 │
+│                                                                              │
+│ Bottlenecks · betweenness  3                                                 │
+│   ac-15  ○ lease holder column                                   ██░░░     2 │
+│   ac-12  ◐ wire the lease heartbeat                              █████  4.50 │
+│   ac-09  ○ queue attention digest                                █░░░░  0.50 │
+│                                                                              │
+│ Critical path · impact depth  4                                              │
+│   ac-16  ○ stale lease warning                                   ██░░░     1 │
+│   ac-15  ○ lease holder column                                   ███░░     2 │
+│   ac-12  ◐ wire the lease heartbeat                              █████     3 │
+│   ↕ +13 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view · enter open task …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
+ List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                                                         │
+│   ac-30  ○ saved filters                                                                                             │
+│   ac-15  ○ lease holder column                                                                            unblocks 1 │
+│ ▸ ac-12  ◐ wire the lease heartbeat                                                                       unblocks 2 │
+│   ↕ +30 more                                                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                                                         │
+│ Next picks  3                                                                                                        │
+│   ac-30  ○ saved filters                                                                                             │
+│   ac-15  ○ lease holder column                                                                            unblocks 1 │
+│ ▸ ac-12  ◐ wire the lease heartbeat                                                                       unblocks 2 │
+│     why: P0 bug in progress                                                                                          │
+│     why: unblocks the queue attention digest                                                                         │
+│                                                                                                                      │
+│ Blockers to clear  2                                                                                                 │
+│   ac-15  ○ lease holder column                                                                            unblocks 1 │
+│   ac-12  ◐ wire the lease heartbeat                                                                       unblocks 2 │
+│                                                                                                                      │
+│ Bottlenecks · betweenness  3                                                                                         │
+│   ac-15  ○ lease holder column                                                                           ██░░░     2 │
+│   ac-12  ◐ wire the lease heartbeat                                                                      █████  4.50 │
+│   ac-09  ○ queue attention digest                                                                        █░░░░  0.50 │
+│                                                                                                                      │
+│ Critical path · impact depth  4                                                                                      │
+│   ac-16  ○ stale lease warning                                                                           ██░░░     1 │
+│   ac-15  ○ lease holder column                                                                           ███░░     2 │
+│   ac-12  ◐ wire the lease heartbeat                                                                      █████     3 │
+│   ↕ +13 more                                                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]           14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                 │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1         │
+│ deferred · 2 closed                                      │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3             │
+│ Next picks  3                                            │
+│   ac-30  ○ saved filters                                 │
+│   ac-15  ○ lease holder column                unblocks 1 │
+│ ▸ ac-12  ◐ wire the lease heartbeat           unblocks 2 │
+│     why: P0 bug in progress                              │
+│     why: unblocks the queue attention digest             │
+│                                                          │
+│ Blockers to clear  2                                     │
+│   ac-15  ○ lease holder column                unblocks 1 │
+│   ac-12  ◐ wire the lease heartbeat           unblocks 2 │
+│                                                          │
+│ Bottlenecks · betweenness  3                             │
+│   ac-15  ○ lease holder column               ██░░░     2 │
+│   ↕ +20 more                                             │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                                                   14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis · sort: id ↓ ───────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                         │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                             │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                                     │
+│ Next picks  3                                                                                    │
+│   ac-30  ○ saved filters                                                                         │
+│   ac-15  ○ lease holder column                                                        unblocks 1 │
+│ ▸ ac-12  ◐ wire the lease heartbeat                                                   unblocks 2 │
+│     why: P0 bug in progress                                                                      │
+│     why: unblocks the queue attention digest                                                     │
+│                                                                                                  │
+│ Blockers to clear  2                                                                             │
+│   ac-15  ○ lease holder column                                                        unblocks 1 │
+│   ac-12  ◐ wire the lease heartbeat                                                   unblocks 2 │
+│                                                                                                  │
+│ Bottlenecks · betweenness  3                                                                     │
+│   ac-15  ○ lease holder column                                                       ██░░░     2 │
+│   ac-12  ◐ wire the lease heartbeat                                                  █████  4.50 │
+│   ac-09  ○ queue attention digest                                                    █░░░░  0.50 │
+│                                                                                                  │
+│ Critical path · impact depth  4                                                                  │
+│   ac-16  ○ stale lease warning                                                       ██░░░     1 │
+│   ac-15  ○ lease holder column                                                       ███░░     2 │
+│   ac-12  ◐ wire the lease heartbeat                                                  █████     3 │
+│   ac-09  ○ queue attention digest                                                    ███░░     2 │
+│                                                                                                  │
+│   ↕ +11 more                                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort …

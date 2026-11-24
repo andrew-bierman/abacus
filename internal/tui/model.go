@@ -574,6 +574,10 @@ func (m *Model) headerLines(w int) []string {
 	return out
 }
 
+// helpNoter is implemented by a section whose current view has numbers worth explaining: the help
+// overlay shows them under the keys.
+type helpNoter interface{ helpNotes() (string, []string) }
+
 var helpKeys = table{cols: []column{{min: 13, max: 13, prio: 0}, {min: 1, prio: 1}}, gap: 1}
 
 // overlayLines is the help overlay for a body w wide and h tall (h <= 0: unknown). It is a
@@ -582,6 +586,15 @@ var helpKeys = table{cols: []column{{min: 13, max: 13, prio: 0}, {min: 1, prio: 
 func (m *Model) overlayLines(w, h int) []string {
 	var rows []string
 	widths := helpKeys.fit(max(w-panelChromeW, 1))
+	if n, ok := inner(m.active()).(helpNoter); ok { // what the numbers of the view on screen mean, before the keys
+		if title, notes := n.helpNotes(); len(notes) > 0 {
+			rows = append(rows, m.th.Section(title))
+			for _, note := range notes {
+				rows = append(rows, wrap(note, max(w-panelChromeW, 1))...)
+			}
+			rows = append(rows, "")
+		}
+	}
 	for gi, g := range m.FullHelp() {
 		if gi > 0 {
 			rows = append(rows, "")

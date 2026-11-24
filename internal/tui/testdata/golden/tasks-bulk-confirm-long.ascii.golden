@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Tasks]  2/6
+╭─ ▸ Confirm 10 changes ───────────────╮
+│ close 10 tasks                       │
+│                                      │
+│ each task is read again right before │
+│ its own write; one that changed is   │
+│ skipped                              │
+│                                      │
+│   ac-12  wire the lease heartbeat    │
+│   ↕ +29 more                         │
+╰──────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit …
+=== 40x30 ===
+ [Tasks]  2/6
+────────────────────────────────────────
+╭─ ▸ Confirm 10 changes ───────────────╮
+│ close 10 tasks                       │
+│                                      │
+│ each task is read again right before │
+│ its own write; one that changed is   │
+│ skipped                              │
+│                                      │
+│   ac-12  wire the lease heartbeat    │
+│   (close)                            │
+│     command: bd close ac-12          │
+│   ac-15  lease holder column         │
+│   (close)                            │
+│     command: bd close ac-15          │
+│   ac-09  queue attention digest      │
+│   (close)                            │
+│     command: bd close ac-09          │
+│   ac-16  stale lease warning         │
+│   (close)                            │
+│     command: bd close ac-16          │
+│   ac-20  split graph source from     │
+│   export  (close)                    │
+│     command: bd close ac-20          │
+│   ac-21  export reader  (close)      │
+│     command: bd close ac-21          │
+│   ac-25  doctor: stale export        │
+│   ↕ +12 more                         │
+╰──────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+╭─ ▸ Confirm 10 changes ───────────────────────────────────────────────────────╮
+│ close 10 tasks                                                               │
+│                                                                              │
+│ each task is read again right before its own write; one that changed is      │
+│ skipped                                                                      │
+│                                                                              │
+│   ac-12  wire the lease heartbeat  (close)                                   │
+│     command: bd close ac-12                                                  │
+│   ↕ +20 more                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 10 changes ───────────────────────────────────────────────────────╮
+│ close 10 tasks                                                               │
+│                                                                              │
+│ each task is read again right before its own write; one that changed is      │
+│ skipped                                                                      │
+│                                                                              │
+│   ac-12  wire the lease heartbeat  (close)                                   │
+│     command: bd close ac-12                                                  │
+│   ac-15  lease holder column  (close)                                        │
+│     command: bd close ac-15                                                  │
+│   ac-09  queue attention digest  (close)                                     │
+│     command: bd close ac-09                                                  │
+│   ac-16  stale lease warning  (close)                                        │
+│     command: bd close ac-16                                                  │
+│   ac-20  split graph source from export  (close)                             │
+│     command: bd close ac-20                                                  │
+│   ac-21  export reader  (close)                                              │
+│     command: bd close ac-21                                                  │
+│   ac-25  doctor: stale export warning  (close)                               │
+│     command: bd close ac-25                                                  │
+│   ac-27  board thread digest  (close)                                        │
+│     command: bd close ac-27                                                  │
+│   ac-30  saved filters  (close)                                              │
+│     command: bd close ac-30                                                  │
+│   ac-33  help overlay per view  (close)                                      │
+│   ↕ +3 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
+╭─ ▸ Confirm 10 changes ───────────────────────────────────────────────────────────────────────────────────────────────╮
+│ close 10 tasks                                                                                                       │
+│                                                                                                                      │
+│ each task is read again right before its own write; one that changed is skipped                                      │
+│                                                                                                                      │
+│   ac-12  wire the lease heartbeat  (close)                                                                           │
+│     command: bd close ac-12                                                                                          │
+│   ac-15  lease holder column  (close)                                                                                │
+│   ↕ +19 more                                                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 10 changes ───────────────────────────────────────────────────────────────────────────────────────────────╮
+│ close 10 tasks                                                                                                       │
+│                                                                                                                      │
+│ each task is read again right before its own write; one that changed is skipped                                      │
+│                                                                                                                      │
+│   ac-12  wire the lease heartbeat  (close)                                                                           │
+│     command: bd close ac-12                                                                                          │
+│   ac-15  lease holder column  (close)                                                                                │
+│     command: bd close ac-15                                                                                          │
+│   ac-09  queue attention digest  (close)                                                                             │
+│     command: bd close ac-09                                                                                          │
+│   ac-16  stale lease warning  (close)                                                                                │
+│     command: bd close ac-16                                                                                          │
+│   ac-20  split graph source from export  (close)                                                                     │
+│     command: bd close ac-20                                                                                          │
+│   ac-21  export reader  (close)                                                                                      │
+│     command: bd close ac-21                                                                                          │
+│   ac-25  doctor: stale export warning  (close)                                                                       │
+│     command: bd close ac-25                                                                                          │
+│   ac-27  board thread digest  (close)                                                                                │
+│     command: bd close ac-27                                                                                          │
+│   ac-30  saved filters  (close)                                                                                      │
+│     command: bd close ac-30                                                                                          │
+│   ac-33  help overlay per view  (close)                                                                              │
+│     command: bd close ac-33                                                                                          │
+│   ↕ +2 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 10 changes ───────────────────────────────────╮
+│ close 10 tasks                                           │
+│                                                          │
+│ each task is read again right before its own write; one  │
+│ that changed is skipped                                  │
+│                                                          │
+│   ac-12  wire the lease heartbeat  (close)               │
+│     command: bd close ac-12                              │
+│   ac-15  lease holder column  (close)                    │
+│     command: bd close ac-15                              │
+│   ac-09  queue attention digest  (close)                 │
+│     command: bd close ac-09                              │
+│   ac-16  stale lease warning  (close)                    │
+│     command: bd close ac-16                              │
+│   ac-20  split graph source from export  (close)         │
+│     command: bd close ac-20                              │
+│   ac-21  export reader  (close)                          │
+│     command: bd close ac-21                              │
+│   ac-25  doctor: stale export warning  (close)           │
+│   ↕ +9 more                                              │
+╰──────────────────────────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 10 changes ───────────────────────────────────────────────────────────────────────────╮
+│ close 10 tasks                                                                                   │
+│                                                                                                  │
+│ each task is read again right before its own write; one that changed is skipped                  │
+│                                                                                                  │
+│   ac-12  wire the lease heartbeat  (close)                                                       │
+│     command: bd close ac-12                                                                      │
+│   ac-15  lease holder column  (close)                                                            │
+│     command: bd close ac-15                                                                      │
+│   ac-09  queue attention digest  (close)                                                         │
+│     command: bd close ac-09                                                                      │
+│   ac-16  stale lease warning  (close)                                                            │
+│     command: bd close ac-16                                                                      │
+│   ac-20  split graph source from export  (close)                                                 │
+│     command: bd close ac-20                                                                      │
+│   ac-21  export reader  (close)                                                                  │
+│     command: bd close ac-21                                                                      │
+│   ac-25  doctor: stale export warning  (close)                                                   │
+│     command: bd close ac-25                                                                      │
+│   ac-27  board thread digest  (close)                                                            │
+│     command: bd close ac-27                                                                      │
+│   ac-30  saved filters  (close)                                                                  │
+│     command: bd close ac-30                                                                      │
+│   ac-33  help overlay per view  (close)                                                          │
+│     command: bd close ac-33                                                                      │
+│                                                                                                  │
+│ y applies all 10 · n or esc cancels                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab

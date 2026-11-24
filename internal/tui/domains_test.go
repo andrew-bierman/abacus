@@ -147,7 +147,7 @@ func TestTasksListsEveryTaskAndKeepsTheSummaryAndInsightsInTheirOwnView(t *testi
 		t.Errorf("the default quick filter hides closed tasks:\n%s", v)
 	}
 	v = press(m, "V").View()
-	for _, want := range []string{"Graph [Insights]", "14 tasks:", "ready 3", "Insights · graph analysis", "next", "critical path", "cycle"} {
+	for _, want := range []string{"Graph [Insights]", "14 tasks:", "ready 3", "Insights · graph analysis", "Next picks", "Critical path", "Cycles"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("insights view: missing %q:\n%s", want, v)
 		}

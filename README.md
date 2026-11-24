@@ -179,6 +179,7 @@ abacus tasks assign ID NAME | ID --clear [--yes] [--dry-run]
 abacus tasks priority ID 0-4 [--yes] [--dry-run]
 abacus tasks dep add|remove ID --blocked-by OTHER | --blocks OTHER [--yes] [--dry-run]
 abacus tasks comment ID TEXT | ID --text TEXT [--yes] [--dry-run]
+abacus tasks bulk --ids ID,ID,... --op close|status|priority|label-add|label-remove|assign [--value V | --clear] [--yes] [--dry-run] [--json]   up to 25 tasks, one confirm
 abacus search QUERY [--domain D] [--limit N] [--json]   search tasks, board, leases and queues
 abacus tui     [--demo]
 abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
