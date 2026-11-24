@@ -158,3 +158,10 @@ while building, never a run-time dependency.
 - Token *cost* in currency. It is derivable once tokens exist; it is not a phase 1 concern.
 - Depending on an abtop binary at run time. The sidecar pattern stays a development oracle: it
   would break abacus's one-self-contained-file promise and hand upstream's churn to us.
+
+## Pass log
+
+One line per completed item: what it did and how it was verified.
+
+- opencode v2 reader — `go build ./...`, `go test ./internal/agents`; verified against the
+  real store (4 sessions, 1ms, busy session marked thinking).
