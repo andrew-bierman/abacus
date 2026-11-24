@@ -115,7 +115,7 @@ pin_tool() {
   local assets="{}" p
   for p in "${platforms[@]}"; do
     local os="${p%-*}" arch="${p#*-}" asset want got
-    asset="$(expand "$asset_t" "$version" "$os" "$arch")"
+    asset="$(expand_tool "$tool" "$asset_t" "$version" "$os" "$arch")"
     want="$(awk -v a="$asset" '$2==a || $2=="*"a {print $1}' "$sumfile" | head -n1)"
     if [ ! -f "$dir/$asset" ]; then # a cached download is still verified below
       gh release download "$tag" -R "$repo" -p "$asset" -D "$dir" || die "$tool: cannot download $asset"
@@ -126,14 +126,14 @@ pin_tool() {
       want="$got"; echo "WARNING: $asset: no upstream checksum; pinned from this download ($got)" >&2
     fi
     [ "$got" = "$want" ] || die "$tool: $asset sha256 $got does not match upstream $want"
-    assets="$(jq -c --arg p "$p" --arg a "$asset" --arg h "$want" --arg m "$(expand "$member_t" "$version" "$os" "$arch")" \
+    assets="$(jq -c --arg p "$p" --arg a "$asset" --arg h "$want" --arg m "$(expand_tool "$tool" "$member_t" "$version" "$os" "$arch")" \
       '. + {($p): {asset: $a, sha256: $h, member: $m}}' <<<"$assets")"
   done
 
   # The license: from the first platform's archive (verified above) or fetched at the pinned tag.
   local lic lsha; lic="$(mktemp)"; tmps+=("$lic")
   if [ "$(tool_field "$tool" .license_source.from)" = archive ]; then
-    extract_member "$dir/$(expand "$asset_t" "$version" darwin arm64)" "$(tool_field "$tool" .license_source.member)" "$lic"
+    extract_member "$dir/$(expand_tool "$tool" "$asset_t" "$version" darwin arm64)" "$(expand_tool "$tool" "$(tool_field "$tool" .license_source.member)" "$version" darwin arm64)" "$lic"
   else
     fetch_license "$tool" "$version" "$lic"
   fi
