@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "bd",
+    "reopen",
+    "ac-03"
+  ],
+  "change": [
+    "reopen task ac-03",
+    "title: \"retire the old poller\"",
+    "status: \"closed\" -\u003e \"open\"",
+    "reason: \"regressed\""
+  ],
+  "dry_run": true,
+  "schema_version": 1
+}

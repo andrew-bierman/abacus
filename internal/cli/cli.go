@@ -46,7 +46,7 @@ func usageText() string {
 
 fleet:
   board       channels and recent threads; board post|reply send a message
-  tasks       task summary; list|show|board|graph|history browse; create|update|close|label|assign|priority|dep|comment change one task; bulk changes up to 25
+  tasks       task summary; list|show|board|graph|history browse; create|update|close|reopen|label|assign|priority|dep|comment change one task; bulk changes up to 25
   leases      held, stale and free leases
   queues      runs, queue, attention and history
   agents      every running coding agent; --harness, --state, --repo, --all

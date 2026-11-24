@@ -12,7 +12,7 @@ import (
 var topCommands = []string{"board", "tasks", "leases", "queues", "agents", "tui", "search", "rex", "setup", "config", "version", "doctor", "status", "licenses", "completion", "help"}
 
 // taskVerbs are the `tasks` subcommands, in the order the help lists them.
-var taskVerbs = []string{"list", "show", "board", "graph", "history", "create", "update", "close", "label", "assign", "priority", "dep", "comment", "bulk"}
+var taskVerbs = []string{"list", "show", "board", "graph", "history", "create", "update", "close", "reopen", "label", "assign", "priority", "dep", "comment", "bulk"}
 
 const writeFlags = "[--yes] [--dry-run] [--json]"
 
@@ -27,6 +27,7 @@ var subHelp = map[string]string{
 	"tasks create":   "usage: abacus tasks create --title TITLE [--description TEXT] [--type TYPE] [--priority 0-4] " + writeFlags,
 	"tasks update":   "usage: abacus tasks update ID [--title TITLE] [--description TEXT] [--status STATUS] [--priority 0-4] " + writeFlags,
 	"tasks close":    "usage: abacus tasks close ID [--reason TEXT] " + writeFlags,
+	"tasks reopen":   "usage: abacus tasks reopen ID [--reason TEXT] " + writeFlags,
 	"tasks label":    "usage: abacus tasks " + editVerbs["label"] + " " + writeFlags,
 	"tasks assign":   "usage: abacus tasks " + editVerbs["assign"] + " " + writeFlags,
 	"tasks priority": "usage: abacus tasks " + editVerbs["priority"] + " " + writeFlags,

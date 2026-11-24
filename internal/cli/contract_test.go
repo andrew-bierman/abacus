@@ -111,6 +111,7 @@ func TestContractWriteGoldens(t *testing.T) {
 		{"dry-run-create", []string{"tasks", "create", "--title", "Add a pear counter", "--priority", "2", "--type", "feature", "--dry-run", "--json"}},
 		{"dry-run-update", []string{"tasks", "update", "ac-12", "--status", "blocked", "--dry-run", "--json"}},
 		{"dry-run-close", []string{"tasks", "close", "ac-12", "--reason", "done", "--dry-run", "--json"}},
+		{"dry-run-reopen", []string{"tasks", "reopen", "ac-03", "--reason", "regressed", "--dry-run", "--json"}},
 		{"dry-run-label", []string{"tasks", "label", "add", "ac-12", "ui", "--dry-run", "--json"}},
 		{"dry-run-assign", []string{"tasks", "assign", "ac-12", "mei", "--dry-run", "--json"}},
 		{"dry-run-priority", []string{"tasks", "priority", "ac-12", "3", "--dry-run", "--json"}},

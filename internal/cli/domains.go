@@ -232,8 +232,8 @@ func firstOf(a []string) string {
 
 func runTaskWrite(verb string, rest []string, d Deps) int {
 	op := core.TaskOp(verb)
-	if op != core.TaskCreate && op != core.TaskUpdate && op != core.TaskClose {
-		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, graph, history, create, update, close, label, assign, priority, dep, comment, bulk)\n", verb)
+	if op != core.TaskCreate && op != core.TaskUpdate && op != core.TaskClose && op != core.TaskReopen {
+		fmt.Fprintf(d.Err, "unknown tasks command %q (list, show, board, graph, history, create, update, close, reopen, label, assign, priority, dep, comment, bulk)\n", verb)
 		return core.ExitUsage
 	}
 	ch := core.TaskChange{Op: op}
@@ -261,8 +261,8 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if op == core.TaskCreate {
 		fs.StringVar(&typ, "type", "", "type: "+strings.Join(core.TaskTypes, ", "))
 	}
-	if op == core.TaskClose {
-		fs.StringVar(&reason, "reason", "", "reason for closing")
+	if op == core.TaskClose || op == core.TaskReopen {
+		fs.StringVar(&reason, "reason", "", "reason for closing or reopening")
 	}
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
@@ -311,6 +311,24 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 			ch.Status, ch.IfStatus = "", ""
 		}
 	}
+	reader := core.ResolveProviders(entries).Reader
+	if op == core.TaskReopen { // like the kanban move out of closed: the task is read first, and again before the write
+		if !core.TaskIDRE.MatchString(ch.ID) {
+			fmt.Fprintf(d.Err, "invalid issue id %q\n", ch.ID)
+			return core.ExitUsage
+		}
+		if reader == nil {
+			return failf(d, core.CodeUnsupported, "tasks reopen: cannot read the task's current status, so it cannot be reopened safely\n")
+		}
+		cur, err := reader.ReadTask(ctx, ch.ID)
+		if err != nil {
+			return failf(d, core.CodeFor(err), "tasks reopen: could not read %s first: %s\n", core.Sanitize(ch.ID), core.Sanitize(err.Error()))
+		}
+		if cur.Status != "closed" {
+			return failf(d, core.CodeRefused, "tasks reopen: %s is not closed (it is %s), so there is nothing to reopen\n", core.Sanitize(ch.ID), core.Sanitize(cur.Status))
+		}
+		ch.Before, ch.Expect = cur, cur.Status
+	}
 	plan, err := core.PlanTaskChange(w, ch)
 	if err != nil {
 		fmt.Fprintf(d.Err, "tasks %s: %v\n", verb, err)
@@ -318,6 +336,15 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	}
 	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
+			if op == core.TaskReopen { // someone else may have reopened it, or changed it, since the plan
+				cur, err := reader.ReadTask(ctx, ch.ID)
+				if err != nil {
+					return core.TaskResult{}, "", fmt.Errorf("%w (%s)", core.ErrCannotVerify, core.Sanitize(err.Error()))
+				}
+				if cur.Status != ch.Expect {
+					return core.TaskResult{}, "", core.Stale(fmt.Sprintf("%s is now %s (it was %s)", ch.ID, cur.Status, ch.Expect))
+				}
+			}
 			res, err := core.NewApplier(w, au).Apply(ctx, plan.Confirm())
 			return res, fmt.Sprintf("done: %s %s", res.ID, res.Title), err
 		}})
