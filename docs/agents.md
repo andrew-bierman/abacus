@@ -1,7 +1,8 @@
 # Agents
 
 One dashboard of every coding agent running on this machine, across harnesses: Claude Code and
-Codex first, with OpenCode, Gemini CLI and Aider seen as processes. It is read only. abacus never
+Codex, OpenCode and pi read from the files and database they write, with Gemini CLI and Aider seen as
+processes. It is read only. abacus never
 starts, stops, signals or types into an agent.
 
 `abacus agents [--json] [--harness H] [--state S] [--repo R] [WORDS...]` prints the report, the
@@ -10,7 +11,8 @@ Agents tab shows it live, `abacus search` and `ctrl+k` cover it, and `:agents` j
 ## What an agent is
 
 The typed report (`AgentsReport`, `schema_version` 1, additive changes only) holds `agents[]` and,
-when the live monitor supplied them, `rate_limits[]`, `orphan_ports[]` and `token_rate`.
+`rate_limits[]` (from the session files, the status-line file and the live monitor), and, when the live
+monitor supplied them, `orphan_ports[]` and `token_rate`.
 `notes[]` says which source could not be read; the other sources still count.
 
 | Field | Meaning |
@@ -22,6 +24,9 @@ when the live monitor supplied them, `rate_limits[]`, `orphan_ports[]` and `toke
 | `task` | the last prompt a person typed (or the monitor's title), one line, at most 160 characters, obvious credentials masked |
 | `last_activity` | when its session file last changed (RFC 3339, UTC) |
 | `tokens`, `cost_usd`, `context_pct` | pointers: absent means unknown, never zero |
+| `context_tokens`, `context_window` | what the last model call read in, and the model's limit when the harness records one (Codex does; Claude Code, pi and OpenCode do not). `context_pct` is derived from the two when no source gave a share; a call larger than its window is unknown, not 100%+ |
+| `turn_tokens` | one point per model response, oldest first, at most 120, for a sparkline. Cache reads are left out (input, output and cache writes are counted). It covers the part of the session file a bounded read saw (the last 512 KiB), not necessarily the whole session; OpenCode records none |
+| `git` | `added` (new or untracked files) and `modified` (every other change, deletions and renames included) uncommitted in the agent's repository; absent when git could not be read, `{0,0}` when the tree is clean |
 | `term` | where its terminal is: `kind`, `ref` and a `command` a person can copy; abacus never runs it |
 | `ports`, `children`, `subagents` | live detail from the monitor |
 
@@ -55,6 +60,9 @@ Only the tail of a file is read. The last meaningful record and the file's age d
 | the model finished its turn | any | `idle` |
 | an API error | under 30 minutes | `error` |
 
+pi's last records map the same way (a user message, a tool result, a response that stopped for a tool, a
+response that ended, an error); OpenCode's own busy and idle stamps stand in for the last record.
+
 A session with no process is `stopped` (shown for 15 minutes after its last change); when the
 process list itself could not be read it is not called stopped.
 
@@ -65,10 +73,39 @@ process list itself could not be read it is not called stopped.
 - *Processes*: the process list through `gopsutil` (BSD-3-Clause, maintained), keeping processes whose
   name or first arguments match a known harness. A helper whose parent is the same harness is not a
   second agent. The directory of each match is read for git facts.
-- *Session files*: `~/.claude/projects/*/*.jsonl` and `~/.codex/sessions/YYYY/MM/DD/*.jsonl`. Reads are
-  bounded: the last 512 KiB of a file (plus the first line of a Codex file, where its identity is), at
+- *Session files*: `~/.claude/projects/*/*.jsonl`, `~/.codex/sessions/YYYY/MM/DD/*.jsonl` and
+  `~/.pi/agent/sessions/--<directory>--/*.jsonl` (a session folder pi's own settings move elsewhere is
+  not looked at). Reads are bounded: the last 512 KiB of a file (plus the first line of a Codex file, where its identity is), at
   most 64 files and 24 MiB per read, under a deadline. Text is sanitized (control characters removed,
   one line, credentials masked) before anything shows it. On Windows only the process list is read.
+- *OpenCode's session database*: `$XDG_DATA_HOME/opencode/opencode.db` (else `~/.local/share/opencode/`),
+  read through a pure-Go SQLite driver linked into abacus (`modernc.org/sqlite`, BSD-3-Clause, no cgo, no
+  `sqlite3` program: users install nothing). It is opened `mode=ro&immutable=1` with `query_only`, only
+  after the path is checked to be a regular file: no lock is taken and no `-shm` or `-wal` file is
+  created, so nothing is ever written next to OpenCode's data. The price is that rows still in OpenCode's
+  write-ahead log are invisible until it checkpoints, so a live session can lag; its state is therefore
+  read with the same age rules as a transcript (a `busy` stamp older than three minutes is `unknown`, never
+  `running`). The newest 50 sessions of the last 7 days are read; a session with a parent is a subagent and
+  not an agent of its own. The table must have `id`, `directory` and `time_updated`; every other column is
+  optional, so a layout change costs a field and a different file reads as "nothing here". Any other
+  failure (a corrupt file, a torn read) is a note. The column names come from OpenCode's own schema as
+  described by the parallel work, not from a live OpenCode checked here: the invented test databases pin
+  what is read, and a real one should be looked at before relying on `state`.
+- *Rate limits*: Codex writes the account's limits into its session files (a `token_count` event); the
+  newest read wins and the window length decides which slot it fills, so a free plan's 30-day window is
+  never drawn as 5 hours. A limit named for one model is not the account's and is ignored. Claude Code
+  keeps its limits out of its files; they are read from `~/.claude/abtop-rate-limits.json` only when a
+  status-line hook has written one (the live monitor reads the same file, and abacus creates nothing).
+  Every entry older than ten minutes, or with no time, is `stale`: the tab draws it dim with no reset
+  countdown, since the window may have rolled over. One entry per harness is kept, the most recently
+  updated winning when two sources saw the same account.
+- *Uncommitted files*: for an agent that runs inside a repository, one `git status --porcelain=v1`
+  with the fixed argv `--no-optional-locks -c core.fsmonitor=false -C DIR status --porcelain=v1`, a 3 second
+  deadline, a 2 MiB output cap and an environment cut to what git needs to find its files. `core.fsmonitor`
+  is switched off on the command line because a repository's own configuration can make git run a program
+  there (a test with a hostile repository checks it never does). Only an absolute directory that already
+  has a repository is asked (so git is there to run), at most 24 directories per read, four at a time,
+  each answer reused for 15 seconds. No git, a failure or a timeout is `git` absent.
 - *Terminals*: `tmux list-panes -a` (one fixed read-only argv, short deadline, scrubbed environment).
   The agent's process, or an ancestor, is matched to a pane's process. Every pane id is validated
   before it is put in a command line a person copies. `cmux surface` and `rex session` exist as
@@ -152,6 +189,17 @@ hook command would append one line of JSON per event to a file in abacus's own s
 0600, size-capped, never in a repository); the Agents feed would read its tail like a session file
 and give those states `hook` evidence. Until then nothing here edits any harness configuration.
 
+## Why one Agents domain
+
+A parallel "Sessions" domain (PR #57) answered the same question with a second report, tab and command.
+Two places for the same agents would disagree, so its genuinely new capabilities were ported here as
+additive fields and sources, rewritten to this package's conventions (injected sources, text cleaned in
+core at one door, bounded reads, regular files only, no real home or process reads in tests, invented
+fixtures). Not ported: the second domain, command, tab and report types, its own process discovery (the
+process list, ports and the monitor already cover it), its incremental file cursors (bounded tail reads
+are simpler and safe), the `abacus sessions` schema, and a per-session OpenCode turn series (the
+`session_message` table was not read; OpenCode has no `turn_tokens`).
+
 ## Credits and references
 
 - [abtop](https://github.com/graykode/abtop) (MIT): the live monitor, and the inspiration for the
@@ -162,3 +210,6 @@ and give those states `hook` evidence. Until then nothing here edits any harness
   references for how to tell what an agent is doing from its files. No code was copied.
 - [gopsutil](https://github.com/shirou/gopsutil) (BSD-3-Clause): the process list, linked into the
   binary; its license ships with abacus.
+- [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) (BSD-3-Clause) and the modules it needs:
+  the SQLite driver that reads OpenCode's database, linked into the binary; every license text ships
+  with abacus (`abacus licenses`).

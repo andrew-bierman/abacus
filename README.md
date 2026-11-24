@@ -48,7 +48,7 @@ On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it on
 | Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; a tree of epics and children, a kanban view, a dependency graph and graph insights (next pick, blockers, critical path, cycles) | create, update, close, label, assign, set the priority, add or remove a blocker, comment, move a kanban card, and change up to 25 marked tasks at once (each with a confirm step); first run: create the fleet workspace |
 | Leases | held, stale and free leases | read only |
 | Queues | runs, the queue, what needs attention, history | read only |
-| Agents | every running coding agent (Claude Code, Codex, ...): state, repo and branch, task, context, rate limits, ports, subagents; where its state came from is always shown | read only (see [docs/agents.md](docs/agents.md)) |
+| Agents | every running coding agent (Claude Code, Codex, OpenCode, pi, ...): state, repo and branch, task, uncommitted files, context use, per-turn token sparkline, rate limits (marked stale when old), ports, subagents; where its state came from is always shown | read only (see [docs/agents.md](docs/agents.md)) |
 
 A domain with no provider shows "not connected" and how to connect; it never disappears.
 `abacus tasks|leases|queues|board|agents [--json]` print the same typed reports the TUI renders, and
@@ -99,6 +99,7 @@ binary is built: [docs/built-in-tools.md](docs/built-in-tools.md).
 | [abtop](https://github.com/graykode/abtop) (optional, Agents) | 0.5.5 | MIT |
 | [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (linked library) | 0.27.0 | MIT, see its LICENSE |
 | [gopsutil](https://github.com/shirou/gopsutil) (linked library) | 4.26.10 | BSD-3-Clause |
+| [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) (linked library) | 1.63.0 | BSD-3-Clause |
 
 Doctor shows each tool as `built in` with its version. If the tools folder cannot be used it says
 which folder and the one fix; set `ABACUS_TOOLS_DIR` to a writable folder.
@@ -131,7 +132,9 @@ or error messages that help you fix one.
   `.beads/issues.jsonl`. It is not a tool and has no switch: there is no bv program to bundle,
   find or run.
 - **Agents** (`internal/agents`): native, in this process. It reads the process list and the session
-  files Claude Code and Codex already write (bounded tails, read only), plus tmux pane ids, and merges
+  files Claude Code, Codex and pi already write (bounded tails, read only), OpenCode's session
+  database (opened read-only and immutable, through a linked pure-Go SQLite driver), the uncommitted-file
+  count of each agent's repository (one fixed read-only `git status`), plus tmux pane ids, and merges
   them with the optional built-in live monitor's snapshot (one argv, `--json`) by pid or session id.
   See `docs/agents.md`.
 - **b9s**: an optional extra for its full tree and graph view: press `o` on Tasks to open it in the
@@ -303,5 +306,6 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
   tab's richer detail, and the model for its panels. abacus runs it as a subprocess and imports none of
   its code.
 - [gopsutil](https://github.com/shirou/gopsutil) (BSD-3-Clause): the process list.
+- [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) (BSD-3-Clause): reads OpenCode's session database, linked in.
 - [agent-deck](https://github.com/asheshgoplani/agent-deck) and [agentsview](https://github.com/wesm/agentsview)
   (MIT): read as references for telling what an agent is doing from its files; no code was used.

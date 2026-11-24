@@ -21,6 +21,19 @@ may change behavior, and patch versions are fixes and small additions.
   `tasks.changed` / `workspace.changed` / `engine.degraded` notifications from the TUI's fingerprint poll and the
   workspace provider's event feed. Additive: schemas `serve-initialize`, `serve-plan`, `serve-applied`,
   `serve-error` and `workspace` in `docs/schema/v1`; `taskview.ReadSearchFeeds` (moved out of the CLI). `version --json` `contract.serve` is now true and lists the `serve` capability; the effects table classifies `serve` as reads, and `serve --demo` serves reads marked `demo: true` and refuses every plan and apply. The write gate turns a panic in a provider into a recorded result unknown.
+=======
+- Agents: richer reads, all additive (`schema_version` stays 1), ported from the parallel sessions work
+  into the one Agents domain rather than a second domain. New agent fields `context_tokens`,
+  `context_window` (a share is derived when both are known), `turn_tokens` (per-response token series
+  for a sparkline, cache reads left out) and `git` (`added`/`modified` uncommitted files); `rate_limits`
+  entries gain `short_window_minutes`, `long_window_minutes` and `stale`, and one entry is kept per
+  harness. New sources: OpenCode sessions from its local SQLite database (read-only, immutable, through
+  the linked pure-Go `modernc.org/sqlite`, BSD-3-Clause, notices shipped), pi sessions from its JSONL
+  files (new `pi` harness), Codex rate limits and context window from its session files, Claude rate
+  limits from the status-line file when one exists, Claude and Codex per-turn tokens. The Agents tab
+  shows a per-turn sparkline, a context bar with tokens and window, uncommitted files and dimmed stale
+  limits with no reset countdown; `abacus agents` prints the same.
+>>>>>>> a7dae10 (📝 docs: richer Agents reads, what was ported from the sessions work and what was not)
 - Client contract (the core prerequisites of `docs/design/2026-11-24-plan-native-clients.md`, section 9;
   all additive, `schema_version` stays 1, exit codes 0/1/2 keep their meaning, no success path changes):
   - Golden fixtures for every read command and every write envelope (dry-run, applied, bulk, board) in
