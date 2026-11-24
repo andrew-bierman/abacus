@@ -36,6 +36,7 @@ Footer and the `?` overlay are generated from the `key.Binding` values in
 | `r` | Tasks, Board: refresh (Tasks also reruns graph insights). Doctor: run doctor again. Board also refreshes every 30 seconds, only while its tab is visible and never two reads at once |
 | `enter`, `esc` | Queues and Tasks, narrow layout only: open the detail; `esc` closes it, a second `esc` clears the filter. Tasks, wide layout: `enter` focuses the detail to scroll it, `esc` leaves |
 | `/` | Queues: filter runs by issue, state, phase, machine or workflow. Tasks: the query (below); `enter` keeps it, `esc` clears it |
+| `space`, `R`, `I`, `U` | Tasks list and tree: mark the task and move down, mark a range, invert marks, clear marks; the edit keys then act on all marks (one confirm, at most 25 tasks) |
 | `s` `S`, `f`, `v` `V` | Tasks list: next sort key, reverse the direction; next quick filter; next, previous view (List, Kanban, Graph, Insights) |
 | `g` | Tasks list: open the dependency graph on the selected task. In the Graph view: switch between the task's neighborhood and the whole graph. `[` `]` change the depth, `h` `l` step to a sibling (a layer in the whole graph), `enter` refocuses on the selected node (on the focus itself, or in the whole graph, it opens that task in the list), `esc` returns to the list |
 | `ctrl+k` | global search from any tab (see "Global search"); not offered while a form, the confirm screen or a filter is open |
@@ -152,12 +153,37 @@ differ by a refresh.)
   duration is that long ago, so `updated>7d` is "touched in the last week" and `updated<7d` is
   "untouched for a week". A mistake keeps the last good filter and says what is wrong and where
   (`unknown field "foo" (col 25)`). The grammar is `internal/query`, shared with every later search.
-- **Insights.** `v` switches to the graph insights panel: the counts bar, the next pick, the issues
-  that block the most, the critical path and dependency cycles. Insights are read on start and on
-  `r`, not on a timer, because each read analyzes the whole tracker. Without an insights provider the panel says it is not connected and what is
+- **Insights.** `v` switches to the Insights view: the counts bar and totals, then sections of rows
+  from the in-process graph analysis, each with a cursor: Next picks (the reasons show under the
+  selected row), Blockers to clear, Bottlenecks (betweenness), Critical path (impact depth), Influence
+  (centrality, a PageRank-style score), Cycles and Parallel tracks. A ranking row shows the task's
+  status, title and its value with a small bar; a section with nothing to show is left out, and an
+  empty critical path says why (a cycle skips it). `j` `k` move across sections (the cursor follows its
+  task through a refresh), `enter` opens the task in the List (clearing a filter that hides it, and
+  drilling into the detail when stacked), `g` shows its graph, `s` cycles the row order (rank, id,
+  title) and `S` reverses it (cycles and tracks keep the engine's order). `?` on this view adds
+  "What the Insights numbers mean". Insights are read on start and on `r`, not on a timer, because
+  each read analyzes the whole tracker. Without an insights provider the panel says it is not connected and what is
   wrong with abacus's own bd (a built-in copy that could not be set up: choose a folder with
   `ABACUS_TOOLS_DIR`, or download abacus again if it is damaged; a development build says its
   bd is not available).
+- **Marks and bulk changes.** `space` marks the task under the cursor and moves down (a second press
+  unmarks it), `R` marks from the last marked task to the cursor, `I` inverts the marks over the
+  listed tasks and `U` clears them; the panel title counts them (`3 marked`, with `+N not listed` for
+  marks a filter or a folded branch hides, which are never part of a batch). Marks are by task id and
+  survive a refresh; a task the tracker no longer has is unmarked. While anything is marked the edit
+  keys act on the marks: `x` closes, `e` sets a status, `p` a priority, `t` and `u` add or remove a
+  label, `a` assigns (blank unassigns); `b`, `B` and `c` say they change one task at a time. The
+  confirm screen lists every task with its exact command, and the tasks left out with why (already
+  closed, already that priority, the label is already there). It scrolls (`j` `k`, `pgup` `pgdn`) and
+  `y` applies the whole batch only once its last line has been on screen. At most 25 tasks go in one
+  batch (`a batch is at most 25 tasks`). Each task is then read again and checked right before its own
+  write: one that changed since the plan is skipped and reported, never written; one whose write
+  fails is reported and the rest go on; a timeout leaves that task and the rest as `result unknown`
+  (never "not applied"); an audit log that cannot be written stops the batch (`not_run`). The result
+  screen names every task's outcome and the batch id (`3 of 5 applied, 1 skipped, 1 failed`); the tasks
+  that were not applied stay marked so the batch can be tried again. Every task has its own audit
+  lines, all carrying the same `batch` id. Marks and bulk work in the List and tree views.
 - **Live refresh.** Tasks checks the tracker about every 5 seconds without running anything: an
   embedded tracker keeps a small manifest file that changes on every write and never on a read, so
   abacus compares it with the one kept from the last full read and reads the whole tracker only when
@@ -269,7 +295,8 @@ differ by a refresh.)
   is unknown ("may or may not have been added: check the task's comments before retrying"), never
   "not applied". The prompt (`:`) never writes; it does not take these words.
 - **Insights view.** `n` works from any view; `e`, `x`, the edit keys above and the workspace key act
-  on the list's task, which this view does not show, so they only say `switch to the List view (v)`.
+  on the list's task, which this view does not show, so they only say `switch to the List view (v)`
+  (`enter` and `g` there open the row's task or graph).
 - **Read only.** Nothing in the list, sort, query or detail writes. The `n`, `e`, `x` and edit-key forms and
   the confirm gate below are unchanged and now act on the task under the cursor.
 

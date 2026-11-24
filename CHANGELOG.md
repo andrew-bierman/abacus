@@ -8,6 +8,19 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Marks and bulk changes on the Tasks list and tree: `space` marks, `R` marks a range, `I` inverts,
+  `U` clears; with marks, `x` `e` `p` `t` `u` `a` act on all of them. One plan lists every task with its
+  exact command, one `y` applies it (only once the whole plan has been on screen), each task is read
+  again and guarded right before its own write (a changed task is skipped and reported, a failure does
+  not stop the rest, a timeout leaves the rest `result unknown`), at most 25 tasks per batch, an audit
+  entry per task all carrying one `batch` id (additive field). `abacus tasks bulk --ids ... --op ...
+  [--value V | --clear]` does the same with `--yes`, `--dry-run` and `--json` (typed `schema_version` 1
+  result with per-task outcomes). Core: `core.PlanBulk`, `Applier.ApplyBulk`, `BulkReport`.
+- Insights view rebuilt as readable sections with a cursor: Next picks (reasons on the selected row),
+  Blockers, Bottlenecks (betweenness), Critical path (impact depth), Influence (centrality, a
+  PageRank-style score), Cycles and Parallel tracks, with value bars, `s` `S` sort, `enter` to open the
+  task and `g` for its graph, and the meaning of each number on `?`. The insights report gains
+  `influencers` (additive).
 - Terminal workspace (optional), first class: `m` brings an item's terminal to the front and `W`
   opens a terminal running the new `agent_command` setting (an argv with `{task_id}` and `{title}`,
   each word one argument, never a shell) from a task, run or lease, each behind the usual plan,
