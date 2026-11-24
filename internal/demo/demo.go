@@ -93,6 +93,27 @@ func NewBoard() Board { return Board{module{"board", "Board (demo)", "demo"}} }
 
 func (Board) Board(context.Context) (core.BoardReport, error) { return BoardReport(), nil }
 
+// The demo Board is also a writer, like the demo Tasks provider: a post or reply can be planned and
+// shown, and "applied" it changes nothing and says so. The command line never gets that far in demo mode
+// (it refuses every write but a --dry-run plan, and has no audit log to write).
+
+// BuildBoardArgv shows the command a real post or reply would run.
+func (Board) BuildBoardArgv(ch core.BoardChange, key string) ([]string, error) {
+	target := ch.Channel
+	if ch.Op == core.BoardReply {
+		target = ch.ID
+	}
+	return []string{"board", string(ch.Op), target, "--idempotency-key", key, "--", ch.Text}, nil
+}
+
+// RunBoard applies the change to nothing and reports a made-up id.
+func (Board) RunBoard(_ context.Context, _ []string, ch core.BoardChange) (core.BoardResult, error) {
+	return core.BoardResult{ID: "demo-1", Text: ch.Text}, nil
+}
+func (Board) Target() string                                      { return "" } // nothing to name: the TUI header shows a target when there is one
+func (Board) TargetSource() string                                { return "demo data" }
+func (Board) Describe(context.Context, core.BoardChange) []string { return nil }
+
 // Tasks provides the Tasks domain, its graph insights and a write path that changes nothing.
 type Tasks struct{ module }
 

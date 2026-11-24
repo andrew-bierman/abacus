@@ -2,6 +2,8 @@ package demo
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -59,4 +61,37 @@ func TaskSnapshot(now time.Time) core.TaskSnapshot {
 // Snapshot makes the demo Tasks provider the snapshot source too.
 func (Tasks) Snapshot(context.Context) (core.TaskSnapshot, error) {
 	return TaskSnapshot(time.Now()), nil
+}
+
+// History serves the demo task's event log, newest first, made from the fixture task itself (created,
+// comments, the state it is in now), so `tasks history --demo` and the TUI's History view show something.
+func (Tasks) History(_ context.Context, id string, limit int) (core.TaskHistoryReport, error) {
+	return TaskHistoryAt(time.Now(), id, limit)
+}
+
+// TaskHistoryAt is the demo history at a given moment (the contract goldens pin it).
+func TaskHistoryAt(now time.Time, id string, limit int) (core.TaskHistoryReport, error) {
+	snap := TaskSnapshot(now)
+	for _, i := range snap.Issues {
+		if i.ID != id {
+			continue
+		}
+		ev := []core.TaskHistoryEvent{{At: i.CreatedAt, Actor: i.Assignee, Kind: "created", Detail: i.Title}}
+		for _, c := range i.Comments {
+			ev = append(ev, core.TaskHistoryEvent{At: c.CreatedAt, Actor: c.Author, Kind: "commented", Detail: c.Text})
+		}
+		if i.Status != "open" && i.Status != "closed" {
+			ev = append(ev, core.TaskHistoryEvent{At: i.UpdatedAt, Actor: i.Assignee, Kind: "status_changed", Detail: "open -> " + i.Status})
+		}
+		if !i.ClosedAt.IsZero() {
+			ev = append(ev, core.TaskHistoryEvent{At: i.ClosedAt, Actor: i.Assignee, Kind: "closed", Detail: i.CloseReason})
+		}
+		sort.SliceStable(ev, func(a, b int) bool { return ev[a].At.After(ev[b].At) })
+		rep := core.TaskHistoryReport{ID: id, Events: ev, ReadAt: snap.ReadAt}
+		if limit > 0 && len(ev) > limit {
+			rep.Events, rep.Truncated = ev[:limit], true
+		}
+		return rep, nil
+	}
+	return core.TaskHistoryReport{}, fmt.Errorf("no such issue %s", id)
 }

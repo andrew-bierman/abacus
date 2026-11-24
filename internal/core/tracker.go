@@ -46,7 +46,7 @@ func HasOwnTracker(dir string) bool {
 }
 
 // TrackerChoice is which tracker Tasks reads. Dir is the directory for `bd -C` ("" means the
-// working directory); Source is env, here, config, config-missing, workspace or none. When
+// working directory); Source is flag (--tracker), env, here, config, config-missing, workspace or none. When
 // there is none, Offer is the managed workspace a confirmed setup step may create. A
 // config-missing choice names the saved path in Missing and offers nothing: replacing a path the
 // user saved is never automatic.

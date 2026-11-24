@@ -34,6 +34,10 @@
     "batch_id": {
       "type": "string"
     },
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
+    },
     "failed": {
       "type": "integer"
     },

@@ -60,3 +60,25 @@ func TestDemoTasksProvidesTheSnapshot(t *testing.T) {
 		t.Fatalf("%v %d", err, len(s.Issues))
 	}
 }
+
+func TestTaskHistoryAtIsNewestFirstTruncatesAndRefusesUnknownIDs(t *testing.T) {
+	now := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	rep, err := TaskHistoryAt(now, "ac-12", 50)
+	if err != nil || rep.ID != "ac-12" || rep.Truncated || len(rep.Events) != 4 || rep.Events[len(rep.Events)-1].Kind != "created" {
+		t.Fatalf("%+v %v", rep, err)
+	}
+	for i := 1; i < len(rep.Events); i++ {
+		if rep.Events[i].At.After(rep.Events[i-1].At) {
+			t.Errorf("not newest first: %v", rep.Events)
+		}
+	}
+	if rep, _ := TaskHistoryAt(now, "ac-12", 2); len(rep.Events) != 2 || !rep.Truncated {
+		t.Errorf("limit: %+v", rep)
+	}
+	if _, err := TaskHistoryAt(now, "zz-1", 5); err == nil {
+		t.Error("an id that is not a fixture task has no history")
+	}
+	if rep, _ := TaskHistoryAt(now, "ac-03", 50); rep.Events[0].Kind != "closed" {
+		t.Errorf("a closed task's newest event is the close: %+v", rep.Events)
+	}
+}

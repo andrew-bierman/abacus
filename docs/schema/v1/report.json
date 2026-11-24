@@ -433,6 +433,39 @@
       ],
       "type": "object"
     },
+    "Contract": {
+      "properties": {
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "error_codes": {
+          "type": "integer"
+        },
+        "plan_digest": {
+          "type": "boolean"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "serve": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "capabilities",
+        "error_codes",
+        "plan_digest",
+        "schema_version",
+        "serve"
+      ],
+      "type": "object"
+    },
     "Detection": {
       "properties": {
         "api_version": {
@@ -1414,6 +1447,13 @@
   "properties": {
     "bundled": {
       "$ref": "#/$defs/BundledSummary"
+    },
+    "contract": {
+      "$ref": "#/$defs/Contract"
+    },
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
     },
     "domains": {
       "$ref": "#/$defs/DomainsReport"

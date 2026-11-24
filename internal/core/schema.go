@@ -19,7 +19,7 @@ import (
 // OpenRung) forces its lists non-null. Closed sets that may grow (states, kinds, statuses) are plain
 // strings: a new value is additive, so a schema enum would break a client that generates one.
 // The schemas are open (no additionalProperties: false) because a new field is additive too.
-// schema_version is added to every root, as ReportJSON adds it to the output.
+// schema_version is added to every root, as ReportJSON adds it to the output, and so is the optional demo flag.
 
 // SchemaSpec names one schema: the Go type, and the commands whose --json output it describes.
 type SchemaSpec struct {
@@ -68,6 +68,7 @@ func SchemaDoc(s SchemaSpec) (map[string]any, error) {
 	}
 	props := root["properties"].(map[string]any)
 	props["schema_version"] = map[string]any{"const": SchemaVersion}
+	props["demo"] = map[string]any{"type": "boolean", "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise"}
 	req := append(stringsOf(root["required"]), "schema_version")
 	sort.Strings(req)
 	root["required"] = dedup(req)
