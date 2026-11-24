@@ -463,7 +463,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `quota.go`: Claude and Codex quota gauges
 - [x] `core`: `DomainSessions`, `SessionsReport`, `SessionProvider`, `Providers.Sessions`
 - [x] `cli`: `abacus sessions [--json]`
-- [ ] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
+- [x] `tui`: sessions tab (table, context bars, token sparklines, ports, detail viewport)
 - [ ] `tui`: golden tests for the sessions tab
 - [ ] shipping: push the branch and open the pull request
 
@@ -659,3 +659,10 @@ One line per completed item: what it did and how it was verified.
   draining read and `app.Build` registers the provider. Tests pin the drain past one budget, the
   partial-read reason, the CLI text/JSON shape, staleness, control-character sanitizing, the
   not-connected row, and the registry wiring. Review residuals are recorded in Open questions.
+- sessions tab — `go build ./...`, `go vet ./...`, `go test ./...`; adds `DomainSessions` to
+  `DomainOrder`, a polling tab over the typed report (session table, context bars, per-turn
+  sparkline, children, ports including orphans, quota gauges and a scrollable detail), carries
+  `TokenHistory` into `agents.Session`, and makes `:sessions` reach the tab. Verified at 140 and
+  40 columns with section tests for the happy frame, empty and disappearing selections, polling
+  overlap/hidden tabs, transient and first-read failures, stale quota, data sentinels and
+  hostile text; golden scenarios are the next item.

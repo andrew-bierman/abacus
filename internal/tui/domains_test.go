@@ -20,14 +20,16 @@ func chrome(m tea.Model) []string {
 	return []string{ls[0], ls[1], ls[len(ls)-1]}
 }
 
-func domainNames() []string { return []string{"Board", "Tasks", "Leases", "Queues", "Doctor"} }
+func domainNames() []string {
+	return []string{"Board", "Tasks", "Leases", "Queues", "Sessions", "Doctor"}
+}
 
 // Domain language only: no nav, header or footer text names a tool, on any tab, at any width,
 // whether the providers are connected or not.
 func TestNavHeaderAndFooterNeverNameATool(t *testing.T) {
 	for _, sc := range append(scenarios(), scenario{name: "none", tab: "Board", build: func(*testing.T, Theme) tea.Model { return New(nil, WithTheme(asciiTheme())) }}) {
 		for _, w := range []int{40, 60, 80, 120} {
-			for _, k := range []string{"1", "2", "3", "4", "5"} {
+			for _, k := range []string{"1", "2", "3", "4", "5", "6"} {
 				m := sized(sc.build(t, asciiTheme()), w, 30)
 				m = press(m, k)
 				for _, l := range chrome(m) {
@@ -58,12 +60,20 @@ func TestNavListsEveryDomainEvenWithNoProvider(t *testing.T) {
 }
 
 func TestEveryDomainWithoutAProviderSaysNotConnectedAndHowToConnect(t *testing.T) {
-	for i, d := range []string{"Board", "Tasks", "Leases", "Queues"} {
+	for i, tc := range []struct {
+		domain, tab string
+		howTo       bool // Sessions is built in: there is nothing to install or point at
+	}{
+		{"Board", "1", true}, {"Tasks", "2", true}, {"Leases", "3", true}, {"Queues", "4", true}, {"Sessions", "5", false},
+	} {
 		m := sized(New(nil, WithTheme(asciiTheme())), 100, 30)
-		m = press(m, fmt.Sprint(i+1))
+		m = press(m, tc.tab)
 		v := m.View()
-		if !strings.Contains(v, d) || !strings.Contains(v, "not connected") || !strings.Contains(v, "how to connect") {
-			t.Errorf("%s:\n%s", d, v)
+		if !strings.Contains(v, tc.domain) || !strings.Contains(v, "not connected") {
+			t.Errorf("%s (tab %d):\n%s", tc.domain, i+1, v)
+		}
+		if got := strings.Contains(v, "how to connect"); got != tc.howTo {
+			t.Errorf("%s: how-to-connect visible=%v, want %v:\n%s", tc.domain, got, tc.howTo, v)
 		}
 	}
 }
@@ -502,12 +512,13 @@ func TestDomainBodiesNameNoToolOutsideFixMessages(t *testing.T) {
 	}
 	for name, mk := range build {
 		for _, w := range []int{60, 80, 120} {
-			for _, k := range []string{"1", "2", "3", "4"} { // the four domains; Doctor is the one place providers are named
-				m := press(sized(mk(), w, 40), k)
+			for i := range core.DomainOrder {
+				tab := fmt.Sprint(i + 1)
+				m := press(sized(mk(), w, 40), tab)
 				for _, l := range outsideAllowlist(m.View()) {
 					for _, bad := range banned {
 						if strings.Contains(l, bad) {
-							t.Errorf("%s tab %s w=%d: %q names %q", name, k, w, l, bad)
+							t.Errorf("%s tab %s w=%d: %q names %q", name, tab, w, l, bad)
 						}
 					}
 				}

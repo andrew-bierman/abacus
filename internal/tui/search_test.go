@@ -25,6 +25,7 @@ const (
 	tabTasks
 	tabLeases
 	tabQueues
+	tabSessions
 	tabDoctor
 )
 

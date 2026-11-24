@@ -58,6 +58,7 @@ var commands = []Command{
 	{Name: "board", Group: "tabs", Kind: ActGoTab, Tab: "Board", Desc: "go to the Board tab"},
 	{Name: "leases", Aliases: []string{"lease"}, Group: "tabs", Kind: ActGoTab, Tab: "Leases", Desc: "go to the Leases tab"},
 	{Name: "queues", Aliases: []string{"queue"}, Group: "tabs", Kind: ActGoTab, Tab: "Queues", Desc: "go to the Queues tab"},
+	{Name: "sessions", Aliases: []string{"session"}, Group: "tabs", Kind: ActGoTab, Tab: "Sessions", Desc: "go to the Sessions tab"},
 	{Name: "doctor", Group: "tabs", Kind: ActGoTab, Tab: "Doctor", Desc: "go to the Doctor tab"},
 	{Name: "list", Aliases: []string{"ls"}, Group: "views", Kind: ActGoView, Tab: "Tasks", View: "list", Desc: "Tasks: the flat list"},
 	{Name: "tree", Group: "views", Kind: ActGoView, Tab: "Tasks", View: "tree", Desc: "Tasks: epics and their children"},

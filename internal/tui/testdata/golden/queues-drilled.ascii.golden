@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  Tasks  Leases  [Queues]  Doctor
+ [Queues]  4/6
 ╭─ ▸ Run ──────────────────────────────╮
 │ T-1 (running)                        │
 │                                      │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  Tasks  Leases  [Queues]  Doctor
+ [Queues]  4/6
 ────────────────────────────────────────
 ╭─ ▸ Run ──────────────────────────────╮
 │ T-1 (running)                        │
@@ -43,7 +43,7 @@
 
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor
 ╭─ ▸ Run ──────────────────────────────────────────────────────────────────────╮
 │ T-1 (running)                                                                │
 │                                                                              │
@@ -56,7 +56,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
 === 80x30 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Run ──────────────────────────────────────────────────────────────────────╮
 │ T-1 (running)                                                                │
@@ -87,7 +87,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · / filter …
 === 120x12 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │
 │   T-2  ◐ deferred             deferred  operators-mac  -        n/a  │ │                                             │
@@ -100,7 +100,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · o open session
 === 120x30 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · demo data ───────────────────────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │ T-1 (running)                               │

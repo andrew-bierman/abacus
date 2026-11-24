@@ -1,5 +1,5 @@
 === 40x12 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 Keys
 
   tab/→         next tab
@@ -12,7 +12,7 @@ Keys
   ↕ +15 more
 ?/esc close · ↑/↓ scroll
 === 40x30 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ────────────────────────────────────────
 ╭─ ▸ Keys ─────────────────────────────╮
 │ tab/→         next tab               │
@@ -43,7 +43,7 @@ Keys
 
 ?/esc close · ↑/↓ scroll
 === 80x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor
 Keys
 
   tab/→         next tab
@@ -56,7 +56,7 @@ Keys
   ↕ +15 more
 ?/esc close · ↑/↓ scroll
 === 80x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Keys ─────────────────────────────────────────────────────────────────────╮
 │ tab/→         next tab                                                       │
@@ -72,7 +72,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 │ r             refresh                                                        │
 │                                                                              │
 │ Commands (after :, tab completes)                                            │
-│ Go to a tab   tasks board leases queues doctor                               │
+│ Go to a tab   tasks board leases queues sessions doctor                      │
 │ Tasks views   list tree kanban graph insights                                │
 │ search TEXT   search every tab, optionally for TEXT                          │
 │ filter QUERY  filter the Tasks list (no query clears it)                     │
@@ -87,7 +87,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 ?/esc close · ↑/↓ scroll
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 Keys
 
   tab/→         next tab
@@ -100,7 +100,7 @@ Keys
   ↕ +14 more
 ?/esc close · ↑/↓ scroll
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Keys ─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ tab/→         next tab                                                                                               │
@@ -115,7 +115,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 │ r             refresh                                                                                                │
 │                                                                                                                      │
 │ Commands (after :, tab completes)                                                                                    │
-│ Go to a tab   tasks board leases queues doctor                                                                       │
+│ Go to a tab   tasks board leases queues sessions doctor                                                              │
 │ Tasks views   list tree kanban graph insights                                                                        │
 │ search TEXT   search every tab, optionally for TEXT                                                                  │
 │ filter QUERY  filter the Tasks list (no query clears it)                                                             │

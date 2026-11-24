@@ -19,7 +19,7 @@ func TestHeaderContextAppearsFromOneHundredColumnsAndNeverMovesTheTabs(t *testin
 		if lipgloss.Width(h) != w {
 			t.Errorf("%d: the tab bar row is %d wide", w, lipgloss.Width(h))
 		}
-		if !strings.HasPrefix(h, "abacus   Board  [Tasks]  Leases  Queues  Doctor") {
+		if !strings.HasPrefix(h, "abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor") {
 			t.Errorf("%d: the tab bar is not intact at the left: %q", w, h)
 		}
 		if !strings.HasSuffix(strings.TrimRight(h, " "), "fleet · 14 tasks · 3 ready") {
@@ -36,7 +36,7 @@ func TestHeaderContextAppearsFromOneHundredColumnsAndNeverMovesTheTabs(t *testin
 
 func TestHeaderContextIsRightAlignedAndTheSameOnEveryTab(t *testing.T) {
 	var ctx []string
-	for _, k := range []string{"1", "2", "3", "4", "5"} {
+	for _, k := range []string{"1", "2", "3", "4", "5", "6"} {
 		h := head(press(pm(t, 120, 32), k))
 		i := strings.Index(h, "fleet")
 		if i < 0 {

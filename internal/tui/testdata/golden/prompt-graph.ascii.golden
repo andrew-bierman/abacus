@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
  List  Kanban [Graph] Insights
 focus ac-12 · depth 2 · blocking links
 ╭─ ▸ Graph · ac-12 ────────────────────╮
@@ -12,7 +12,7 @@ focus ac-12 · depth 2 · blocking links
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
  List  Kanban [Graph] Insights
 focus ac-12 · depth 2 · blocking links
@@ -43,7 +43,7 @@ focus ac-12 · depth 2 · blocking links
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor
  List  Kanban [Graph] Insights                                14 tasks · 3 ready
 focus ac-12 · depth 2 · blocking links
 ╭─ ▸ Graph · ac-12 ────────────────────────────────────────────────────────────╮
@@ -56,7 +56,7 @@ focus ac-12 · depth 2 · blocking links
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                14 tasks · 3 ready
 focus ac-12 · depth 2 · blocking links
@@ -87,7 +87,7 @@ focus ac-12 · depth 2 · blocking links
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth…
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
  List  Kanban [Graph] Insights                                                                        14 tasks · 3 ready
 focus ac-12 · depth 2 · blocking links
 ╭─ ▸ Graph · ac-12 ───────────────────────────────────────────────────────────────╮ ╭─ Chain ──────────────────────────╮
@@ -100,7 +100,7 @@ focus ac-12 · depth 2 · blocking links
 ╰─────────────────────────────────────────────────────────────────────────────────╯ ╰──────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling · v view …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                                                        14 tasks · 3 ready
 focus ac-12 · depth 2 · blocking links
@@ -131,7 +131,7 @@ focus ac-12 · depth 2 · blocking links
 ╰─────────────────────────────────────────────────────────────────────────────────╯ ╰──────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · g whole · enter open · [ ] depth · ↑/↓ move · h/l sibling · v view …
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights            14 tasks · 3 ready
 focus ac-12 · depth 2 · blocking links
@@ -156,7 +156,7 @@ focus ac-12 · depth 2 · blocking links
 ╰──────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · g whole …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor                 fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  List  Kanban [Graph] Insights                                                    14 tasks · 3 ready
 focus ac-12 · depth 2 · blocking links

@@ -89,7 +89,7 @@ func TestDoctorRefreshKeyIsIgnoredWhileARunIsPending(t *testing.T) {
 	c.Checks = []core.Check{{Name: "bin", Status: core.StatusOK}}
 	var m tea.Model = New(entriesFor2(c), WithTheme(asciiTheme()))
 	m = sized(m, 80, 20)
-	m, cmd := m.Update(runeKey("5"))
+	m, cmd := m.Update(runeKey("6"))
 	m = runCmd(m, cmd) // first open: one doctor run
 	if c.doctors.Load() != 1 {
 		t.Fatalf("first open ran doctor %d times", c.doctors.Load())

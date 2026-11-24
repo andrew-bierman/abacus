@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -231,11 +232,11 @@ func TestDemoSessionJumpKeysOnlyShowTheCommand(t *testing.T) {
 func TestWorkspaceKeyIsUnboundElsewhere(t *testing.T) {
 	rec := &wsRecorder{}
 	m := demoWorkspaceModel(t, asciiTheme(), rec, 100, 32)
-	for _, tab := range []string{"1", "4", "5"} { // Board, Queues (o, not w), Doctor
-		m = press(m, tab)
+	for _, tab := range []int{tabBoard, tabQueues, tabSessions, tabDoctor} { // Queues owns o, not w
+		m = press(m, fmt.Sprint(tab+1))
 		before := m.View()
 		if after := press(m, "w").View(); after != before {
-			t.Errorf("tab %s: w changed the screen", tab)
+			t.Errorf("tab %d: w changed the screen", tab+1)
 		}
 	}
 	m = press(m, "?")

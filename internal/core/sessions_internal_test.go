@@ -35,12 +35,15 @@ func TestSessionsReadOrderRotatesAndCoversEverySession(t *testing.T) {
 
 func TestSessionsMergeKeepsTheCPUExecutionAndEmptyFields(t *testing.T) {
 	s := agents.Session{Title: "project", State: agents.StateExecuting}
-	mergeStored(&s, agents.StoredSession{State: agents.StateWaiting, Tokens: agents.Tokens{Input: 3}})
+	mergeStored(&s, agents.StoredSession{State: agents.StateWaiting, Tokens: agents.Tokens{Input: 3}, TokenHistory: []int64{3, 5}})
 	if s.State != agents.StateExecuting {
 		t.Errorf("state = %q, want the CPU delta to win", s.State)
 	}
 	if s.Title != "project" || s.Tokens.Input != 3 {
 		t.Errorf("session = %+v", s)
+	}
+	if want := []int64{3, 5}; len(s.TokenHistory) != len(want) || s.TokenHistory[0] != want[0] || s.TokenHistory[1] != want[1] {
+		t.Errorf("token history = %v, want the sparkline series the tab draws", s.TokenHistory)
 	}
 	s.State = agents.StateWaiting
 	mergeStored(&s, agents.StoredSession{State: agents.StateThinking})

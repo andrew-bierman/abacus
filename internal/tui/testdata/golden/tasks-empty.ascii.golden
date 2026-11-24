@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 [List] Kanban  Graph  Insights
 [open] / to f… 0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  [Tasks]  Leases  Queues  Doctor
+ [Tasks]  2/6
 ────────────────────────────────────────
 [List] Kanban  Graph  Insights
 [open] / to f… 0 of 0 · sort: priority ↑
@@ -43,7 +43,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor
 [List] Kanban  Graph  Insights                                 0 tasks · 0 ready
 [open] / to filter                                     0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────────────╮
@@ -56,7 +56,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view …
 === 80x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                 0 tasks · 0 ready
 [open] / to filter                                     0 of 0 · sort: priority ↑
@@ -87,7 +87,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view …
 === 120x12 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                                fleet · 0 tasks · 0 ready
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor                                      fleet · 0 tasks · 0 ready
 [List] Kanban  Graph  Insights                                                                         0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
@@ -100,7 +100,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view · f quick filter · g graph · ↑/↓ move …
 === 120x30 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                                                fleet · 0 tasks · 0 ready
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor                                      fleet · 0 tasks · 0 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                                         0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
@@ -131,7 +131,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · s/S sort · v view · f quick filter · g graph · ↑/↓ move …
 === 60x24 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights             0 tasks · 0 ready
 [open] / to filter                 0 of 0 · sort: priority ↑
@@ -156,7 +156,7 @@ abacus   Board  [Tasks]  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter …
 === 100x32 ===
-abacus   Board  [Tasks]  Leases  Queues  Doctor                            fleet · 0 tasks · 0 ready
+abacus   Board  [Tasks]  Leases  Queues  Sessions  Doctor                  fleet · 0 tasks · 0 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 [List] Kanban  Graph  Insights                                                     0 tasks · 0 ready
 [open] / to filter                                                         0 of 0 · sort: priority ↑

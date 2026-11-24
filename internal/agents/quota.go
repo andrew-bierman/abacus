@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -25,6 +26,18 @@ const (
 	// allocation.
 	maxClaudeQuotaBytes = 64 << 10
 )
+
+// WindowLength names a quota window from its recorded minutes: whole days, whole hours, then
+// minutes. Both front-ends label the same two slots, so the rule lives here once.
+func WindowLength(minutes int64) string {
+	switch {
+	case minutes%(24*60) == 0:
+		return strconv.FormatInt(minutes/(24*60), 10) + "d"
+	case minutes%60 == 0:
+		return strconv.FormatInt(minutes/60, 10) + "h"
+	}
+	return strconv.FormatInt(minutes, 10) + "m"
+}
 
 // QuotaWindow is one account rate-limit window. UsedPercent is how much of the window is
 // spent, not how much is left, because both harnesses report it that way. WindowMinutes is

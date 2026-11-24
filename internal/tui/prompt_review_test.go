@@ -218,7 +218,7 @@ func TestPromptWritesNothingButLayoutState(t *testing.T) {
 	dir := t.TempDir()
 	m := layoutModel(t, filepath.Join(dir, "tree.json"))
 	for _, c := range core.Commands() {
-		for _, tab := range []string{"1", "2", "3", "4", "5"} {
+		for _, tab := range []string{"1", "2", "3", "4", "5", "6"} {
 			m = press(m, tab)
 			m = cmd(m, c.Name)
 			for range 3 {
@@ -239,7 +239,7 @@ func TestPromptWritesNothingButLayoutState(t *testing.T) {
 func TestViewCommandsWorkFromEveryTab(t *testing.T) {
 	want := map[string]taskViewID{"kanban": viewKanban, "graph": viewGraph, "insights": viewInsights, "list": viewList, "tree": viewList}
 	for line, view := range want {
-		for _, from := range []string{"1", "2", "3", "4", "5"} {
+		for _, from := range []string{"1", "2", "3", "4", "5", "6"} {
 			m := cmd(press(pm(t, 100, 32), from), line)
 			s := tasksSec(m)
 			if activeTab(m) != "Tasks" || s.list.cur != view || prm(m) != nil {

@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  Tasks  Leases  [Queues]  Doctor
+ [Queues]  4/6
 ╭─ ▸ Runs 3 · tracker subset · demo … ─╮
 │ no live daemon, no phases or queue   │
 │ ▸ T-1  ● running                     │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- Board  Tasks  Leases  [Queues]  Doctor
+ [Queues]  4/6
 ────────────────────────────────────────
 ╭─ ▸ Runs 3 · tracker subset · demo … ─╮
 │ no live daemon, no phases or queue   │
@@ -43,7 +43,7 @@
 
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────────────╮
 │ no live daemon, no phases or queue                                           │
 │ ▸ T-1  ● running              gating    operators-mac  general  30s          │
@@ -56,7 +56,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 80x30 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────────────╮
 │ no live daemon, no phases or queue                                           │
@@ -87,7 +87,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
 === 120x12 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ no live daemon, no phases or queue                                   │ │ T-1 (running)                               │
 │ ▸ T-1  ● running              gating    operators-mac  general  30s  │ │                                             │
@@ -100,7 +100,7 @@ abacus   Board  Tasks  Leases  [Queues]  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · o open session
 === 120x30 ===
-abacus   Board  Tasks  Leases  [Queues]  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  Leases  [Queues]  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Runs 3 · tracker subset · demo data ──────────────────────────────╮ ╭─ Run ───────────────────────────────────────╮
 │ no live daemon, no phases or queue                                   │ │ T-1 (running)                               │

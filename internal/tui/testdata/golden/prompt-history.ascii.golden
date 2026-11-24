@@ -1,5 +1,5 @@
 === 40x12 ===
- Board  Tasks  [Leases]  Queues  Doctor
+ [Leases]  3/6
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
 │ ▸ (held)   dm-zoj  bot-schedul…  12m │
 │   (held)   dm-00h  agent-noteb…   3m │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 :leases▏                       esc close
 === 40x30 ===
- Board  Tasks  [Leases]  Queues  Doctor
+ [Leases]  3/6
 ────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─╮
 │ ▸ (held)   dm-zoj  bot-schedul…  12m │
@@ -43,7 +43,7 @@
 
 :leases▏                       esc close
 === 80x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Sessions  Doctor
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
 │ ▸ (held)   dm-zoj  bot-scheduler-01                                      12m │
 │   (held)   dm-00h  agent-notebook-1                                       3m │
@@ -56,7 +56,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 :leases▏                                     tab complete · enter go · esc close
 === 80x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────────────╮
 │ ▸ (held)   dm-zoj  bot-scheduler-01                                      12m │
@@ -87,7 +87,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 :leases▏                                     tab complete · enter go · esc close
 === 120x12 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  [Leases]  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)   dm-zoj  bot-scheduler-01                              12m │ │ dm-zoj (held)                               │
 │   (held)   dm-00h  agent-notebook-1                               3m │ │                                             │
@@ -100,7 +100,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 :leases▏                                                                             tab complete · enter go · esc close
 === 120x30 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  [Leases]  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────────────────╮ ╭─ Lease ─────────────────────────────────────╮
 │ ▸ (held)   dm-zoj  bot-scheduler-01                              12m │ │ dm-zoj (held)                               │
@@ -131,7 +131,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor                                 
 
 :leases▏                                                                             tab complete · enter go · esc close
 === 60x24 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor
+abacus   Board  Tasks  [Leases]  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────╮
 │ ▸ (held)   dm-zoj  bot-scheduler-01                  12m │
@@ -156,7 +156,7 @@ abacus   Board  Tasks  [Leases]  Queues  Doctor
 
 :leases▏                 tab complete · enter go · esc close
 === 100x32 ===
-abacus   Board  Tasks  [Leases]  Queues  Doctor                           fleet · 14 tasks · 3 ready
+abacus   Board  Tasks  [Leases]  Queues  Sessions  Doctor                 fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Leases · 2 held, 1 stale, 1 free ─────────────────────╮ ╭─ Lease ─────────────────────────────╮
 │ ▸ (held)   dm-zoj  bot-scheduler-01                  12m │ │ dm-zoj (held)                       │

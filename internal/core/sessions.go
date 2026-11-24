@@ -482,6 +482,7 @@ func mergeStored(sess *agents.Session, st agents.StoredSession) {
 	}
 	sess.Tokens = st.Tokens
 	sess.Context = st.Context
+	sess.TokenHistory = st.TokenHistory
 	if !st.Updated.IsZero() {
 		sess.LastActive = st.Updated
 	}

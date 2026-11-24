@@ -175,6 +175,10 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 		if lm, ok := p.Queues.(*lambe.Module); ok {
 			return newLambeSection(lm, handoff)
 		}
+	case core.DomainSessions:
+		if p.Sessions != nil {
+			return newSessionsSection(p.Sessions.Sessions)
+		}
 	}
 	h, ok := p.Missing[d]
 	if !ok { // a provider exists but this front-end has no renderer for it

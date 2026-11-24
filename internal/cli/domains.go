@@ -170,17 +170,7 @@ func quotaWindow(fallbackMinutes int64, w *agents.QuotaWindow) string {
 	if minutes <= 0 {
 		minutes = fallbackMinutes
 	}
-	return fmt.Sprintf("  %s %.0f%%", windowLength(minutes), w.UsedPercent)
-}
-
-func windowLength(minutes int64) string {
-	switch {
-	case minutes%(24*60) == 0:
-		return strconv.FormatInt(minutes/(24*60), 10) + "d"
-	case minutes%60 == 0:
-		return strconv.FormatInt(minutes/60, 10) + "h"
-	}
-	return strconv.FormatInt(minutes, 10) + "m"
+	return fmt.Sprintf("  %s %.0f%%", agents.WindowLength(minutes), w.UsedPercent)
 }
 
 func portNumbers(ports []agents.Port) []string {

@@ -1,5 +1,5 @@
 === 40x12 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ╭─ ▸ Thread ───────────────────────────╮
 │ #15 in dev/web by ada Nov 22 20:12   │
 │ checkout times out for carts over 40 │
@@ -12,7 +12,7 @@
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
- [Board]  Tasks  Leases  Queues  Doctor
+ [Board]  1/6
 ────────────────────────────────────────
 ╭─ ▸ Thread ───────────────────────────╮
 │ #15 in dev/web by ada Nov 22 20:12   │
@@ -43,7 +43,7 @@
 
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor
 ╭─ ▸ Thread ───────────────────────────────────────────────────────────────────╮
 │ #15 in dev/web by ada Nov 22 20:12                                           │
 │ checkout times out for carts over 40 items, started after the 14:02 deploy   │
@@ -56,7 +56,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh
 === 80x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Thread ───────────────────────────────────────────────────────────────────╮
 │ #15 in dev/web by ada Nov 22 20:12                                           │
@@ -87,7 +87,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor
 
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh
 === 120x12 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
 │ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │
 │                                                                      │ │ checkout times out for carts over 40 items, │
@@ -100,7 +100,7 @@ abacus   [Board]  Tasks  Leases  Queues  Doctor                                 
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
 === 120x30 ===
-abacus   [Board]  Tasks  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+abacus   [Board]  Tasks  Leases  Queues  Sessions  Doctor                                     fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
 │ 4 channels, 2 recent threads, 2 open tasks                           │ │ #15 in dev/web by ada Nov 22 20:12          │

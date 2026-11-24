@@ -35,7 +35,7 @@ func footer(m tea.Model) string { l := lines(m); return l[len(l)-1] }
 func tasksSec(m tea.Model) *tasksSection { return secAt(m, tabTasks).(*tasksSection) }
 
 func TestPromptOpensOnEveryTabAndCloses(t *testing.T) {
-	for i, tab := range []string{"Board", "Tasks", "Leases", "Queues", "Doctor"} {
+	for i, tab := range []string{"Board", "Tasks", "Leases", "Queues", "Sessions", "Doctor"} {
 		m := press(pm(t, 100, 32), string(rune('1'+i)))
 		m = press(m, ":")
 		if prm(m) == nil {
@@ -52,8 +52,8 @@ func TestPromptOpensOnEveryTabAndCloses(t *testing.T) {
 }
 
 func TestPromptJumpsToTabs(t *testing.T) {
-	for line, want := range map[string]string{"board": "Board", "tasks": "Tasks", "leases": "Leases", "queues": "Queues", "doctor": "Doctor", "lease": "Leases", "TASKS": "Tasks"} {
-		m := cmd(press(pm(t, 100, 32), "5"), line)
+	for line, want := range map[string]string{"board": "Board", "tasks": "Tasks", "leases": "Leases", "queues": "Queues", "sessions": "Sessions", "doctor": "Doctor", "lease": "Leases", "TASKS": "Tasks"} {
+		m := cmd(press(pm(t, 100, 32), "6"), line)
 		if activeTab(m) != want || prm(m) != nil {
 			t.Errorf(":%s -> tab %s, prompt open %v", line, activeTab(m), prm(m) != nil)
 		}
@@ -299,13 +299,13 @@ func TestPromptHistory(t *testing.T) {
 func TestPromptCapturesEveryKey(t *testing.T) {
 	m := press(pm(t, 100, 32), "3")
 	m = press(m, ":")
-	for _, k := range []string{"q", "1", "5", "?", "j", "/", "n", "x", "o", "r", "y", "d", "g"} {
+	for _, k := range []string{"q", "1", "5", "6", "?", "j", "/", "n", "x", "o", "r", "y", "d", "g"} {
 		m = press(m, k)
 		if activeTab(m) != "Leases" || prm(m) == nil {
 			t.Fatalf("%q leaked out of the prompt (tab %s, open %v)", k, activeTab(m), prm(m) != nil)
 		}
 	}
-	if string(prm(m).text) != "q15?j/nxoryd"+"g" {
+	if string(prm(m).text) != "q156?j/nxoryd"+"g" {
 		t.Errorf("typed %q", string(prm(m).text))
 	}
 	if m.(*Model).showHelp {
@@ -407,7 +407,7 @@ func TestPromptReachesNoWriter(t *testing.T) {
 	}
 	lines = append(lines, "close ac-12", "claim ac-12", "delete ac-12", "y", "yes", "apply", "x", "bd close ac-12", "tasks; y", "search close ac-12", "filter status:closed")
 	for _, l := range lines {
-		for _, tab := range []string{"1", "2", "3", "4", "5"} {
+		for _, tab := range []string{"1", "2", "3", "4", "5", "6"} {
 			m = press(m, tab)
 			m = cmd(m, l)
 			for _, k := range []string{"esc", "esc", "esc"} {

@@ -18,7 +18,7 @@ const (
 )
 
 // DomainOrder is the navigation order.
-var DomainOrder = []DomainID{DomainBoard, DomainTasks, DomainLeases, DomainQueues}
+var DomainOrder = []DomainID{DomainBoard, DomainTasks, DomainLeases, DomainQueues, DomainSessions}
 
 // Title is the user-facing name of a domain.
 func (d DomainID) Title() string {

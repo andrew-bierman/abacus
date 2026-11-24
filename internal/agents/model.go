@@ -156,6 +156,9 @@ type Session struct {
 	Tokens  Tokens    `json:"tokens"`
 	Context Context   `json:"context"`
 	Git     GitStatus `json:"git"`
+	// TokenHistory is one point per assistant response, oldest first. It is what a tab draws
+	// as the per-turn sparkline; empty means the harness does not record per-turn usage.
+	TokenHistory []int64 `json:"token_history,omitempty"`
 
 	Children []Child `json:"children,omitempty"`
 	Ports    []Port  `json:"ports,omitempty"`
