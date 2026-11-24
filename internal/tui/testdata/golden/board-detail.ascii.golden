@@ -6,8 +6,8 @@
 │ ops                                  │
 │                                      │
 │ Recent threads                       │
-│   #15  dev/web  ada  checkout times… │
-│ ▸ #2   dev      ada  deploys are gr… │
+│    #15  dev/web  ada  15h  checkout… │
+│ ▸  #2   dev      ada  16h  deploys … │
 │   ↕ +7 more                          │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
@@ -23,12 +23,12 @@
 │ ops                                  │
 │                                      │
 │ Recent threads                       │
-│   #15  dev/web  ada  checkout times… │
-│ ▸ #2   dev      ada  deploys are gr… │
+│    #15  dev/web  ada  15h  checkout… │
+│ ▸  #2   dev      ada  16h  deploys … │
 │                                      │
 │ Tasks                                │
-│   #16  claimed  codex via…  fix CVE… │
-│   #6   ready    -           review … │
+│    #16  claimed  codex vi…  fix CVE… │
+│    #6   ready    -          review … │
 ╰──────────────────────────────────────╯
 
 
@@ -50,8 +50,8 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ dev/web (3) · work (3) · dev (1) · ops                                       │
 │                                                                              │
 │ Recent threads                                                               │
-│   #15  dev/web  ada  checkout times out for carts over 40 items, started af… │
-│ ▸ #2   dev      ada  deploys are green again                                 │
+│    #15  dev/web  ada  15h  checkout times out for carts over 40 items, star… │
+│ ▸  #2   dev      ada  16h  deploys are green again                           │
 │   ↕ +5 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · enter details …
@@ -65,12 +65,12 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ dev/web (3) · work (3) · dev (1) · ops                                       │
 │                                                                              │
 │ Recent threads                                                               │
-│   #15  dev/web  ada  checkout times out for carts over 40 items, started af… │
-│ ▸ #2   dev      ada  deploys are green again                                 │
+│    #15  dev/web  ada  15h  checkout times out for carts over 40 items, star… │
+│ ▸  #2   dev      ada  16h  deploys are green again                           │
 │                                                                              │
 │ Tasks                                                                        │
-│   #16  claimed  codex via ada  fix CVE-123 in acme/web                       │
-│   #6   ready    -              review the fix                                │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web                      │
+│    #6   ready    -              review the fix                               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -94,11 +94,11 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │ dev/web (3) · work (3) · dev (1) · ops                               │ │ no replies                                  │
 │                                                                      │ │                                             │
 │ Recent threads                                                       │ │                                             │
-│   #15  dev/web  ada  checkout times out for carts over 40 items, st… │ │                                             │
-│ ▸ #2   dev      ada  deploys are green again                         │ │                                             │
+│    #15  dev/web  ada  15h  checkout times out for carts over 40 ite… │ │                                             │
+│ ▸  #2   dev      ada  16h  deploys are green again                   │ │                                             │
 │   ↕ +5 more                                                          │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -109,12 +109,12 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │ dev/web (3) · work (3) · dev (1) · ops                               │ │                                             │
 │                                                                      │ │                                             │
 │ Recent threads                                                       │ │                                             │
-│   #15  dev/web  ada  checkout times out for carts over 40 items, st… │ │                                             │
-│ ▸ #2   dev      ada  deploys are green again                         │ │                                             │
+│    #15  dev/web  ada  15h  checkout times out for carts over 40 ite… │ │                                             │
+│ ▸  #2   dev      ada  16h  deploys are green again                   │ │                                             │
 │                                                                      │ │                                             │
 │ Tasks                                                                │ │                                             │
-│   #16  claimed  codex via ada  fix CVE-123 in acme/web               │ │                                             │
-│   #6   ready    -              review the fix                        │ │                                             │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │                                             │
+│    #6   ready    -              review the fix                       │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 
 
@@ -129,4 +129,4 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll

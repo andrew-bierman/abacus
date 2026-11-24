@@ -292,6 +292,8 @@ type BoardMessage struct {
 	Author  string `json:"author,omitempty"`
 	At      string `json:"at,omitempty"`
 	Text    string `json:"text,omitempty"`
+	// Cut: the board's text was longer than BoardMaxText and ends here.
+	Cut bool `json:"cut,omitempty"`
 }
 
 // BoardThread is a root message with its reply count and its latest reply.
@@ -309,6 +311,8 @@ type BoardTask struct {
 	State    string `json:"state"`
 	Claimant string `json:"claimant,omitempty"`
 	Until    string `json:"until,omitempty"`
+	// Cut: the board's text was longer than BoardMaxText and ends here.
+	Cut bool `json:"cut,omitempty"`
 }
 
 // BoardReport is the Board domain: a message board for agents. It is bounded by the provider

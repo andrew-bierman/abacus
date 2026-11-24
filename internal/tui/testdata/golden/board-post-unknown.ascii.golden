@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Result unknown ───────────────────╮
+│ result unknown: the board did not    │
+│ answer (the board did not answer in  │
+│ time); it may have been posted.      │
+│ Refresh the Board before trying      │
+│ again                                │
+│                                      │
+│ abacus did not retry and will not    │
+│   ↕ +14 more                         │
+╰──────────────────────────────────────╯
+r refresh · esc back · q quit · ? help …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Result unknown ───────────────────╮
+│ result unknown: the board did not    │
+│ answer (the board did not answer in  │
+│ time); it may have been posted.      │
+│ Refresh the Board before trying      │
+│ again                                │
+│                                      │
+│ abacus did not retry and will not    │
+│ guess. Refresh the board and look    │
+│ for your message before posting      │
+│ again.                               │
+│                                      │
+│ Editing this draft again and sending │
+│ it unchanged reuses the same key, so │
+│ the board takes it at most once, at  │
+│ any time. If you change the text,    │
+│ the channel or the message, it is a  │
+│ new post: look for the first one     │
+│ before sending it.                   │
+│                                      │
+│ enter refresh and look · e edit      │
+│ again · esc back                     │
+╰──────────────────────────────────────╯
+
+
+
+
+r refresh · esc back · q quit · ? help …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Result unknown ───────────────────────────────────────────────────────────╮
+│ result unknown: the board did not answer (the board did not answer in time); │
+│ it may have been posted. Refresh the Board before trying again               │
+│                                                                              │
+│ abacus did not retry and will not guess. Refresh the board and look for your │
+│ message before posting again.                                                │
+│                                                                              │
+│ Editing this draft again and sending it unchanged reuses the same key, so    │
+│   ↕ +5 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+r refresh · esc back · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Result unknown ───────────────────────────────────────────────────────────╮
+│ result unknown: the board did not answer (the board did not answer in time); │
+│ it may have been posted. Refresh the Board before trying again               │
+│                                                                              │
+│ abacus did not retry and will not guess. Refresh the board and look for your │
+│ message before posting again.                                                │
+│                                                                              │
+│ Editing this draft again and sending it unchanged reuses the same key, so    │
+│ the board takes it at most once, at any time. If you change the text, the    │
+│ channel or the message, it is a new post: look for the first one before      │
+│ sending it.                                                                  │
+│                                                                              │
+│ enter refresh and look · e edit again · esc back                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+r refresh · esc back · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Result unknown ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ result unknown: the board did not answer (the board did not answer in time); it may have been posted. Refresh the    │
+│ Board before trying again                                                                                            │
+│                                                                                                                      │
+│ abacus did not retry and will not guess. Refresh the board and look for your message before posting again.           │
+│                                                                                                                      │
+│ Editing this draft again and sending it unchanged reuses the same key, so the board takes it at most once, at any    │
+│ time. If you change the text, the channel or the message, it is a new post: look for the first one before sending    │
+│   ↕ +3 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+r refresh · esc back · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Result unknown ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ result unknown: the board did not answer (the board did not answer in time); it may have been posted. Refresh the    │
+│ Board before trying again                                                                                            │
+│                                                                                                                      │
+│ abacus did not retry and will not guess. Refresh the board and look for your message before posting again.           │
+│                                                                                                                      │
+│ Editing this draft again and sending it unchanged reuses the same key, so the board takes it at most once, at any    │
+│ time. If you change the text, the channel or the message, it is a new post: look for the first one before sending    │
+│ it.                                                                                                                  │
+│                                                                                                                      │
+│ enter refresh and look · e edit again · esc back                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+r refresh · esc back · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Result unknown ───────────────────────────────────────╮
+│ result unknown: the board did not answer (the board did  │
+│ not answer in time); it may have been posted. Refresh    │
+│ the Board before trying again                            │
+│                                                          │
+│ abacus did not retry and will not guess. Refresh the     │
+│ board and look for your message before posting again.    │
+│                                                          │
+│ Editing this draft again and sending it unchanged reuses │
+│ the same key, so the board takes it at most once, at any │
+│ time. If you change the text, the channel or the         │
+│ message, it is a new post: look for the first one before │
+│ sending it.                                              │
+│                                                          │
+│ enter refresh and look · e edit again · esc back         │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+r refresh · esc back · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Result unknown ───────────────────────────────────────────────────────────────────────────────╮
+│ result unknown: the board did not answer (the board did not answer in time); it may have been    │
+│ posted. Refresh the Board before trying again                                                    │
+│                                                                                                  │
+│ abacus did not retry and will not guess. Refresh the board and look for your message before      │
+│ posting again.                                                                                   │
+│                                                                                                  │
+│ Editing this draft again and sending it unchanged reuses the same key, so the board takes it at  │
+│ most once, at any time. If you change the text, the channel or the message, it is a new post:    │
+│ look for the first one before sending it.                                                        │
+│                                                                                                  │
+│ enter refresh and look · e edit again · esc back                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+r refresh · esc back · q quit · ? help · tab/→ next tab

@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Board ────────────────────────────╮
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1)     │
+│ +181 more channels                   │
+│                                      │
+│ Recent threads                       │
+│ ▸  #15  dev/web  ada  15h  checkout… │
+│   ↕ +10 more                         │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────╮
+│ 184 channels, 2 recent threads, 2    │
+│ open tasks                           │
+│ only the first 200 channels are      │
+│ listed; threads are shown for the 3  │
+│ most recently active channels        │
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1)     │
+│ +181 more channels                   │
+│                                      │
+│ Recent threads                       │
+│ ▸  #15  dev/web  ada  15h  checkout… │
+│    #2   dev      ada  16h  deploys … │
+│                                      │
+│ Tasks                                │
+│    #16  claimed  codex vi…  fix CVE… │
+│    #6   ready    -          review … │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops · team/channel-000                    │
+│ +179 more channels                                                           │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts over 40 items, star… │
+│   ↕ +8 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 184 channels, 2 recent threads, 2 open tasks                                 │
+│ only the first 200 channels are listed; threads are shown for the 3 most     │
+│ recently active channels                                                     │
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops · team/channel-000                    │
+│ +179 more channels                                                           │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts over 40 items, star… │
+│    #2   dev      ada  16h  deploys are green again                           │
+│                                                                              │
+│ Tasks                                                                        │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web                      │
+│    #6   ready    -              review the fix                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│                                                                      │ │ #15 in dev/web by ada Nov 22 20:12          │
+│ Channels                                                             │ │ checkout times out for carts over 40 items, │
+│ dev/web (3) · work (3) · dev (1) · ops · team/channel-000            │ │ started after the 14:02 deploy              │
+│ +179 more channels                                                   │ │ 2 replies, latest:                          │
+│                                                                      │ │ #17 by ada/claude Nov 22 20:14              │
+│ Recent threads                                                       │ │ rolled back to d4e5f6; watching the error   │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts over 40 ite… │ │ rate                                        │
+│   ↕ +8 more                                                          │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 184 channels, 2 recent threads, 2 open tasks                         │ │ #15 in dev/web by ada Nov 22 20:12          │
+│ only the first 200 channels are listed; threads are shown for the 3  │ │ checkout times out for carts over 40 items, │
+│ most recently active channels                                        │ │ started after the 14:02 deploy              │
+│                                                                      │ │ 2 replies, latest:                          │
+│ Channels                                                             │ │ #17 by ada/claude Nov 22 20:14              │
+│ dev/web (3) · work (3) · dev (1) · ops · team/channel-000            │ │ rolled back to d4e5f6; watching the error   │
+│ +179 more channels                                                   │ │ rate                                        │
+│                                                                      │ │                                             │
+│ Recent threads                                                       │ │                                             │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts over 40 ite… │ │                                             │
+│    #2   dev      ada  16h  deploys are green again                   │ │                                             │
+│                                                                      │ │                                             │
+│ Tasks                                                                │ │                                             │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │                                             │
+│    #6   ready    -              review the fix                       │ │                                             │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮
+│ 184 channels, 2 recent threads, 2 open tasks             │
+│ only the first 200 channels are listed; threads are      │
+│ shown for the 3 most recently active channels            │
+│                                                          │
+│ Channels                                                 │
+│ dev/web (3) · work (3) · dev (1) · ops                   │
+│ +180 more channels                                       │
+│                                                          │
+│ Recent threads                                           │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts… │
+│    #2   dev      ada  16h  deploys are green again       │
+│                                                          │
+│ Tasks                                                    │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │
+│    #6   ready    -              review the fix           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread…
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────╮
+│ 184 channels, 2 recent threads, 2 open tasks             │ │ #15 in dev/web by ada Nov 22 20:12  │
+│ only the first 200 channels are listed; threads are      │ │ checkout times out for carts over   │
+│ shown for the 3 most recently active channels            │ │ 40 items, started after the 14:02   │
+│                                                          │ │ deploy                              │
+│ Channels                                                 │ │ 2 replies, latest:                  │
+│ dev/web (3) · work (3) · dev (1) · ops                   │ │ #17 by ada/claude Nov 22 20:14      │
+│ +180 more channels                                       │ │ rolled back to d4e5f6; watching the │
+│                                                          │ │ error rate                          │
+│ Recent threads                                           │ │                                     │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts… │ │                                     │
+│    #2   dev      ada  16h  deploys are green again       │ │                                     │
+│                                                          │ │                                     │
+│ Tasks                                                    │ │                                     │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │ │                                     │
+│    #6   ready    -              review the fix           │ │                                     │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh …

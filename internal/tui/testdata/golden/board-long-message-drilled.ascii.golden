@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Thread ───────────────────────────╮
+│ on and on                            │
+│ line 01 of a long message that goes  │
+│ on and on                            │
+│ line 02 of a long message that goes  │
+│ on and on                            │
+│ line 03 of a long message that goes  │
+│ on and on                            │
+│ ↕ 3-9 of 87: pgup/pgdn               │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Thread ───────────────────────────╮
+│ on and on                            │
+│ line 01 of a long message that goes  │
+│ on and on                            │
+│ line 02 of a long message that goes  │
+│ on and on                            │
+│ line 03 of a long message that goes  │
+│ on and on                            │
+│ line 04 of a long message that goes  │
+│ on and on                            │
+│ line 05 of a long message that goes  │
+│ on and on                            │
+│ line 06 of a long message that goes  │
+│ on and on                            │
+│ line 07 of a long message that goes  │
+│ on and on                            │
+│ line 08 of a long message that goes  │
+│ on and on                            │
+│ line 09 of a long message that goes  │
+│ on and on                            │
+│ line 10 of a long message that goes  │
+│ on and on                            │
+│ line 11 of a long message that goes  │
+│ on and on                            │
+│ line 12 of a long message that goes  │
+│ ↕ 3-26 of 87: pgup/pgdn              │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Thread ───────────────────────────────────────────────────────────────────╮
+│ line 01 of a long message that goes on and on                                │
+│ line 02 of a long message that goes on and on                                │
+│ line 03 of a long message that goes on and on                                │
+│ line 04 of a long message that goes on and on                                │
+│ line 05 of a long message that goes on and on                                │
+│ line 06 of a long message that goes on and on                                │
+│ line 07 of a long message that goes on and on                                │
+│ ↕ 3-9 of 46: pgup/pgdn                                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Thread ───────────────────────────────────────────────────────────────────╮
+│ line 01 of a long message that goes on and on                                │
+│ line 02 of a long message that goes on and on                                │
+│ line 03 of a long message that goes on and on                                │
+│ line 04 of a long message that goes on and on                                │
+│ line 05 of a long message that goes on and on                                │
+│ line 06 of a long message that goes on and on                                │
+│ line 07 of a long message that goes on and on                                │
+│ line 08 of a long message that goes on and on                                │
+│ line 09 of a long message that goes on and on                                │
+│ line 10 of a long message that goes on and on                                │
+│ line 11 of a long message that goes on and on                                │
+│ line 12 of a long message that goes on and on                                │
+│ line 13 of a long message that goes on and on                                │
+│ line 14 of a long message that goes on and on                                │
+│ line 15 of a long message that goes on and on                                │
+│ line 16 of a long message that goes on and on                                │
+│ line 17 of a long message that goes on and on                                │
+│ line 18 of a long message that goes on and on                                │
+│ line 19 of a long message that goes on and on                                │
+│ line 20 of a long message that goes on and on                                │
+│ line 21 of a long message that goes on and on                                │
+│ line 22 of a long message that goes on and on                                │
+│ line 23 of a long message that goes on and on                                │
+│ line 24 of a long message that goes on and on                                │
+│ ↕ 3-26 of 46: pgup/pgdn                                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ on                                          │
+│                                                                      │ │ line 01 of a long message that goes on and  │
+│ Channels                                                             │ │ on                                          │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ line 02 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│ Recent threads                                                       │ │ line 03 of a long message that goes on and  │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ on                                          │
+│   ↕ +5 more                                                          │ │ ↕ 3-9 of 87: pgup/pgdn                      │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ on                                          │
+│                                                                      │ │ line 01 of a long message that goes on and  │
+│ Channels                                                             │ │ on                                          │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ line 02 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│ Recent threads                                                       │ │ line 03 of a long message that goes on and  │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ on                                          │
+│    #2   dev      ada  16h  deploys are green again                   │ │ line 04 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│ Tasks                                                                │ │ line 05 of a long message that goes on and  │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │ on                                          │
+│    #6   ready    -              review the fix                       │ │ line 06 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 07 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 08 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 09 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 10 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 11 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 12 of a long message that goes on and  │
+│                                                                      │ │ ↕ 3-26 of 87: pgup/pgdn                     │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Thread ───────────────────────────────────────────────╮
+│ line 01 of a long message that goes on and on            │
+│ line 02 of a long message that goes on and on            │
+│ line 03 of a long message that goes on and on            │
+│ line 04 of a long message that goes on and on            │
+│ line 05 of a long message that goes on and on            │
+│ line 06 of a long message that goes on and on            │
+│ line 07 of a long message that goes on and on            │
+│ line 08 of a long message that goes on and on            │
+│ line 09 of a long message that goes on and on            │
+│ line 10 of a long message that goes on and on            │
+│ line 11 of a long message that goes on and on            │
+│ line 12 of a long message that goes on and on            │
+│ line 13 of a long message that goes on and on            │
+│ line 14 of a long message that goes on and on            │
+│ line 15 of a long message that goes on and on            │
+│ line 16 of a long message that goes on and on            │
+│ line 17 of a long message that goes on and on            │
+│ line 18 of a long message that goes on and on            │
+│ ↕ 3-20 of 46: pgup/pgdn                                  │
+╰──────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread…
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks               │ │ on and on                           │
+│                                                          │ │ line 01 of a long message that goes │
+│ Channels                                                 │ │ on and on                           │
+│ dev/web (3) · work (3) · dev (1) · ops                   │ │ line 02 of a long message that goes │
+│                                                          │ │ on and on                           │
+│ Recent threads                                           │ │ line 03 of a long message that goes │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message th… │ │ on and on                           │
+│    #2   dev      ada  16h  deploys are green again       │ │ line 04 of a long message that goes │
+│                                                          │ │ on and on                           │
+│ Tasks                                                    │ │ line 05 of a long message that goes │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │ │ on and on                           │
+│    #6   ready    -              review the fix           │ │ line 06 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 07 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 08 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 09 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 10 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 11 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 12 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 13 of a long message that goes │
+│                                                          │ │ ↕ 3-28 of 87: pgup/pgdn             │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh …

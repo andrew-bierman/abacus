@@ -314,6 +314,8 @@ func TestReadAllowlist(t *testing.T) {
 		{"--help"}, {"--version"},
 		{"channels", "list", "--json", "--limit", "50"},
 		{"channels", "list", "--json", "--limit", "50", "--url", url},
+		{"channels", "list", "--json", "--limit", "50", "--after", "team/ch05"},
+		{"channels", "list", "--json", "--limit", "50", "--after", "c.8f2a.2", "--url", url},
 		{"read", "dev/web", "--json", "--limit", "5"},
 		{"read", "17", "--json"},
 		{"read", "msg_8d9ca1cd-4c78_1", "--json"},
@@ -337,6 +339,14 @@ func TestReadAllowlist(t *testing.T) {
 		{"channels", "list", "--json", "--limit", "5", "--url", "ftp://x"},      // a bad url is not stripped
 		{"channels", "list", "--json", "--limit", "5", "--url", "http://u:p@h"}, // credentials in the url
 		{"channels", "list", "--json", "--limit", "5", "--scope", "team"},
+		{"channels", "list", "--json", "--limit", "5", "--after", "-x"},        // a cursor is never an option
+		{"channels", "list", "--json", "--limit", "5", "--after", "a b"},       // nor has whitespace
+		{"channels", "list", "--json", "--limit", "5", "--after", ""},          // nor is empty
+		{"channels", "list", "--json", "--limit", "0", "--after", "team/ch05"}, // the limit rules still apply
+		{"channels", "list", "--json", "--after", "team/ch05", "--limit", "5"}, // order is part of the match
+		{"read", "dev", "--json", "--limit", "5", "--after", "team/ch05"},      // paging is for the channel list only
+		{"read", "a//b", "--json", "--limit", "5"}, {"read", "a/../b", "--json", "--limit", "5"}, {"read", "/a", "--json", "--limit", "5"}, {"read", "a/", "--json", "--limit", "5"},
+		{"channels", "list", "--json", "--limit", "5", "--after", "a//b"}, {"channels", "list", "--json", "--limit", "5", "--after", "a/../b"}, {"channels", "list", "--json", "--limit", "5", "--after", "a/"},
 		{"read", "-x", "--json", "--limit", "5"}, {"read", "dev;rm", "--json", "--limit", "5"}, {"read", "dev", "--json"}, // a channel read needs --limit
 		{"tasks", "--json"}, {"tasks", "--json", "--limit", "20", "--state", "all"}, {"tasks", "--json", "--limit", "500"},
 		{"read", "dev", "--json", "--limit", "500"},
@@ -741,7 +751,7 @@ func TestTruncationIsNamedButDoesNotDegrade(t *testing.T) {
 	if err != nil || r.Reason != "" {
 		t.Fatalf("truncation is not a failure: %+v %v", r.Header, err)
 	}
-	for _, want := range []string{"first 50 channels", "3 most recently active", "first 20 tasks"} {
+	for _, want := range []string{"only the first 4 channels are listed", "3 most recently active", "first 20 tasks"} {
 		if !strings.Contains(r.Truncated, want) {
 			t.Errorf("Truncated %q misses %q", r.Truncated, want)
 		}
@@ -850,5 +860,220 @@ func TestDoctorSaysWhenTheConfiguredURLIsUnusable(t *testing.T) {
 	}
 	if !warn {
 		t.Fatal("Doctor must say why the URL is not used")
+	}
+}
+
+// ---- channel paging, text bound, failure reasons (real CLI output, see testdata/README.md) ----
+
+const pagedKey = "channels list --json --limit 50"
+
+func pagedRuns(t *testing.T) *fakeRun {
+	f := helpRuns(t)
+	f.out[pagedKey] = fx(t, "channels-page1.json")
+	f.out[pagedKey+" --after team/ch05"] = fx(t, "channels-page2.json")
+	f.out[pagedKey+" --after team/ch10"] = fx(t, "channels-page3.json")
+	f.out["tasks --json --limit 20"] = fx(t, "tasks.json")
+	for _, c := range []string{"team/ch12", "team/ch11", "team/ch10"} {
+		f.out["read "+c+" --json --limit 5"] = `{"threads":[],"cursor":"1"}`
+	}
+	return f
+}
+
+func TestChannelsBeyondOnePageAreListedByFollowingTheCursor(t *testing.T) {
+	f := pagedRuns(t)
+	r, err := readyModule(t, f, Options{}).Board(context.Background())
+	if err != nil || len(r.Channels) != 12 || strings.Contains(r.Truncated, "only the first") || r.Reason != "" {
+		t.Fatalf("12 channels over three pages, all listed and nothing truncated: %d %q %+v %v", len(r.Channels), r.Truncated, r.Header, err)
+	}
+	pages := 0
+	for _, c := range f.calls {
+		if strings.Contains(c, "channels list") {
+			pages++
+		}
+	}
+	if pages != 3 {
+		t.Fatalf("one call per page: %d", pages)
+	}
+}
+
+// pagesThatNeverEnd answers every page with a new cursor.
+type pagesThatNeverEnd struct {
+	fakeRun
+	pages int
+}
+
+func (p *pagesThatNeverEnd) RunSplit(ctx context.Context, bin string, args ...string) ([]byte, []byte, int, error) {
+	if len(args) > 1 && args[0] == "channels" {
+		p.pages++
+		return []byte(fmt.Sprintf(`{"channels":[{"path":"c%d","lastIndex":%d}],"next":"cur%d"}`, p.pages, p.pages, p.pages)), nil, 0, nil
+	}
+	if len(args) > 0 && args[0] == "read" {
+		return []byte(`{"threads":[]}`), nil, 0, nil
+	}
+	if len(args) > 0 && args[0] == "tasks" {
+		return []byte(`{"tasks":[]}`), nil, 0, nil
+	}
+	return p.fakeRun.RunSplit(ctx, bin, args...)
+}
+
+func TestChannelPagingStopsAtTheCapAndSaysSo(t *testing.T) {
+	p := &pagesThatNeverEnd{fakeRun: *helpRuns(t)}
+	m := New(Options{Runner: p, LookPath: look("board")})
+	m.Detect(context.Background())
+	r, err := m.Board(context.Background())
+	if err != nil || p.pages != maxChannelPages || len(r.Channels) != maxChannelPages || !strings.Contains(r.Truncated, "only the first 4 channels are listed") {
+		t.Fatalf("pages=%d channels=%d trunc=%q err=%v", p.pages, len(r.Channels), r.Truncated, err)
+	}
+}
+
+func TestACursorThatComesRoundAgainEndsThePaging(t *testing.T) {
+	f := helpRuns(t)
+	// the real board restarts from the first page on a cursor it does not know
+	f.out[pagedKey] = fx(t, "channels-page1.json")
+	f.out[pagedKey+" --after team/ch05"] = fx(t, "channels-page1.json")
+	f.out["tasks --json --limit 20"] = fx(t, "tasks.json")
+	for _, c := range []string{"team/ch01", "team/ch02", "team/ch03"} {
+		f.out["read "+c+" --json --limit 5"] = `{"threads":[]}`
+	}
+	r, err := readyModule(t, f, Options{}).Board(context.Background())
+	pages := 0
+	for _, c := range f.calls {
+		if strings.Contains(c, "channels list") {
+			pages++
+		}
+	}
+	if err != nil || !strings.Contains(r.Truncated, "only the first 5 channels are listed") || pages != 2 || len(r.Channels) != 5 {
+		t.Fatalf("%q %v pages=%d channels=%d (a repeated page adds nothing)", r.Truncated, err, pages, len(r.Channels))
+	}
+}
+
+func TestACursorThatCannotBePassedOnStopsThePaging(t *testing.T) {
+	f := helpRuns(t)
+	f.out[pagedKey] = `{"channels":[{"path":"a","lastIndex":1}],"next":"--serve"}`
+	f.out["tasks --json --limit 20"] = fx(t, "tasks.json")
+	f.out["read a --json --limit 5"] = `{"threads":[]}`
+	r, err := readyModule(t, f, Options{}).Board(context.Background())
+	if err != nil || !strings.Contains(r.Truncated, "only the first 1 channels") {
+		t.Fatalf("%q %v", r.Truncated, err)
+	}
+	for _, c := range f.calls {
+		if strings.Contains(c, "--serve") {
+			t.Fatalf("a cursor that looks like an option was passed on: %s", c)
+		}
+	}
+}
+
+func TestALaterChannelPageFailingKeepsWhatWasReadAndNamesIt(t *testing.T) {
+	f := pagedRuns(t)
+	k := pagedKey + " --after team/ch05"
+	f.out[k], f.errs[k], f.exit[k] = "", fx(t, "err-unreachable.stderr.json"), 1
+	for _, c := range []string{"team/ch05", "team/ch04", "team/ch03"} {
+		f.out["read "+c+" --json --limit 5"] = `{"threads":[]}`
+	}
+	r, err := readyModule(t, f, Options{}).Board(context.Background())
+	if err != nil || len(r.Channels) != 5 || !strings.Contains(r.Truncated, "next page could not be read") {
+		t.Fatalf("%d %q %v", len(r.Channels), r.Truncated, err)
+	}
+}
+
+func TestDescribeFindsAChannelOnALaterPage(t *testing.T) {
+	m := readyModule(t, pagedRuns(t), Options{})
+	got := m.Describe(context.Background(), core.BoardChange{Op: core.BoardPost, Channel: "team/ch11", Text: "x"})
+	if len(got) != 1 || got[0] != "existing channel team/ch11" {
+		t.Fatalf("%v", got)
+	}
+}
+
+func TestLongMessageTextIsCutAndMarked(t *testing.T) {
+	long := strings.Repeat("é", core.BoardMaxText+50)
+	f := helpRuns(t)
+	f.out[pagedKey] = `{"channels":[{"path":"a","lastIndex":1}]}`
+	f.out["read a --json --limit 5"] = `{"threads":[{"message":{"id":"1","channel":"a","text":"` + long + `"},"replies":0,"last":null},{"message":{"id":"2","channel":"a","text":"` + strings.Repeat("x", core.BoardMaxText) + `"},"replies":0,"last":null}]}`
+	f.out["tasks --json --limit 20"] = `{"tasks":[{"message":{"id":"3","channel":"a","text":"` + long + `","task":{"state":"ready"}},"replies":0,"last":null}]}`
+	r, err := readyModule(t, f, Options{}).Board(context.Background())
+	if err != nil || len(r.Threads) != 2 || len(r.Tasks) != 1 {
+		t.Fatalf("%+v %v", r.Header, err)
+	}
+	for _, th := range r.Threads {
+		cut := th.Root.ID == "1"
+		if th.Root.Cut != cut || len([]rune(th.Root.Text)) > core.BoardMaxText {
+			t.Errorf("thread %s: cut=%v len=%d", th.Root.ID, th.Root.Cut, len([]rune(th.Root.Text)))
+		}
+	}
+	if !r.Tasks[0].Cut || len([]rune(r.Tasks[0].Text)) != core.BoardMaxText {
+		t.Errorf("task: cut=%v len=%d", r.Tasks[0].Cut, len([]rune(r.Tasks[0].Text)))
+	}
+}
+
+func TestEveryCapturedFailureReasonHasAPlainState(t *testing.T) {
+	cases := []struct {
+		fixture, exitWant string
+		connected         bool // false: not connected (a setup step), true: a read failure
+		want              string
+	}{
+		{"err-no-board.stderr.json", "", false, core.BoardNotSetUpReason},
+		{"err-login-required.stderr.json", "", false, core.BoardNotSignedInReason},
+		{"err-unreachable.stderr.json", "", true, "could not reach the board"},
+	}
+	for _, c := range cases {
+		f := helpRuns(t)
+		k := "channels list --json --limit 50"
+		f.out[k], f.errs[k], f.exit[k] = "", fx(t, c.fixture), 1
+		_, err := readyModule(t, f, Options{}).Board(context.Background())
+		var nc *core.NotConnectedError
+		switch {
+		case err == nil:
+			t.Errorf("%s: no error", c.fixture)
+		case errors.As(err, &nc) == c.connected:
+			t.Errorf("%s: wrong kind of state: %v", c.fixture, err)
+		case !strings.Contains(err.Error(), c.want) && !(nc != nil && nc.Reason == c.want):
+			t.Errorf("%s: %v", c.fixture, err)
+		}
+	}
+	m := readyModule(t, helpRuns(t), Options{})
+	for reason, want := range map[string]string{
+		"timeout": "could not reach the board", "board_outdated": "older than", "lockout": "locked out", "not_available": "does not offer", "canceled": "canceled",
+	} {
+		err := m.classify(1, []byte(`{"status":"error","reason":"`+reason+`","message":"raw text that must not be shown"}`))
+		if err == nil || !strings.Contains(err.Error(), want) || strings.Contains(err.Error(), "raw text") || strings.Contains(err.Error(), "\n") {
+			t.Errorf("%s: %v", reason, err)
+		}
+	}
+}
+
+func TestAnOwnDeadlineIsATimeoutInOnePlainLineAndAParentCancelStaysACancel(t *testing.T) {
+	f := helpRuns(t)
+	f.err["channels"] = fmt.Errorf("%w: %w", core.ErrCanceled, context.DeadlineExceeded) // how the runner reports the module's own deadline
+	m := readyModule(t, f, Options{Timeout: time.Second})
+	_, err := m.Board(context.Background())
+	if !errors.Is(err, core.ErrTimedOut) || err.Error() != "the board did not answer in time" {
+		t.Fatalf("%v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := m.Board(ctx); !errors.Is(err, core.ErrCanceled) || errors.Is(err, core.ErrTimedOut) {
+		t.Fatalf("a cancel from above is not a timeout: %v", err)
+	}
+}
+
+func TestACallersExpiredDeadlineIsATimeoutAndAPartialChannelListSaysItRanOutOfTime(t *testing.T) {
+	f := helpRuns(t)
+	f.err["channels"] = fmt.Errorf("%w: %w", core.ErrCanceled, context.DeadlineExceeded)
+	m := readyModule(t, f, Options{Timeout: time.Minute})
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancel()
+	if _, err := m.Board(ctx); !errors.Is(err, core.ErrTimedOut) || err.Error() != "the board did not answer in time" {
+		t.Fatalf("the TUI's own deadline is a timeout, not a cancel: %v", err)
+	}
+	// page 2 runs out of time: the first page stays, and the note says why
+	g := pagedRuns(t)
+	k := pagedKey + " --after team/ch05"
+	g.err[k] = core.ErrTimedOut
+	for _, c := range []string{"team/ch05", "team/ch04", "team/ch03"} {
+		g.out["read "+c+" --json --limit 5"] = `{"threads":[]}`
+	}
+	r, err := readyModule(t, g, Options{}).Board(context.Background())
+	if err != nil || len(r.Channels) != 5 || !strings.Contains(r.Truncated, "next page ran out of time") {
+		t.Fatalf("%d %q %v", len(r.Channels), r.Truncated, err)
 	}
 }

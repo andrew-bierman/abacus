@@ -54,7 +54,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh …
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · esc back · r refresh …
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
@@ -95,10 +95,10 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │ dev/web (3) · work (3) · dev (1) · ops                               │ │ 2 replies, latest:                          │
 │                                                                      │ │ #17 by ada/claude Nov 22 20:14              │
 │ Recent threads                                                       │ │ rolled back to d4e5f6; watching the error   │
-│ ▸ #15  dev/web  ada  checkout times out for carts over 40 items, st… │ │ rate                                        │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts over 40 ite… │ │ rate                                        │
 │   ↕ +5 more                                                          │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -109,12 +109,12 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │ dev/web (3) · work (3) · dev (1) · ops                               │ │ 2 replies, latest:                          │
 │                                                                      │ │ #17 by ada/claude Nov 22 20:14              │
 │ Recent threads                                                       │ │ rolled back to d4e5f6; watching the error   │
-│ ▸ #15  dev/web  ada  checkout times out for carts over 40 items, st… │ │ rate                                        │
-│   #2   dev      ada  deploys are green again                         │ │                                             │
+│ ▸  #15  dev/web  ada  15h  checkout times out for carts over 40 ite… │ │ rate                                        │
+│    #2   dev      ada  16h  deploys are green again                   │ │                                             │
 │                                                                      │ │                                             │
 │ Tasks                                                                │ │                                             │
-│   #16  claimed  codex via ada  fix CVE-123 in acme/web               │ │                                             │
-│   #6   ready    -              review the fix                        │ │                                             │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │                                             │
+│    #6   ready    -              review the fix                       │ │                                             │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 
 
@@ -129,4 +129,4 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 
 
 
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh · pgup/pgdn scroll

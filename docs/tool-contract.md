@@ -134,8 +134,8 @@ output (`internal/board/testdata`). Provides the Board domain (read) and Board p
   binary with a token-free environment. Lookup: `ABACUS_BOARD_BIN`, else the built-in `board`. The
   unrelated npm package `vb` is never looked for or run.
 - Read argvs, element by element, optionally followed by `--url URL`: `channels list --json
-  --limit N`, `read CHANNEL --json --limit N`, `read ID --json`, `tasks --json --limit N`
-  (N 1-100). One Board read is at most 1 + 3 + 1 calls. Never `serve`, `tail`, `wait`, `inspect`
+  --limit N [--after CURSOR]`, `read CHANNEL --json --limit N`, `read ID --json`, `tasks --json --limit N`
+  (N 1-100). One Board read is at most 4 + 3 + 1 calls (up to 4 channel pages, followed by the cursor; a cursor that repeats, or cannot be passed on, ends the walk). Never `serve`, `tail`, `wait`, `inspect`
   (except the explicit-keypress handoff), `whoami` or any other write verb.
 - Write argvs: `post CHANNEL --json [--url URL] --idempotency-key abacus-HEX16 -- TEXT` and
   `reply ID --json [...] -- TEXT`; the text follows `--` so it can never be an option.
@@ -145,10 +145,24 @@ output (`internal/board/testdata`). Provides the Board domain (read) and Board p
 - Truncation: more than 50 channels, threads shown for only the 3 most recently active channels,
   and a full page of 20 tasks are named in `truncated`; this does not make the domain degraded.
   A stdout answer over 4 MiB is cut off and the part is reported in `reason`.
+- Names and limits, checked against the isolated local board (0.54.0): a channel is segments joined by single
+  "/", each starting with a letter or digit; the board takes only lower-case letters, digits, "_" and "-"
+  (upper case, ".", "a//b", "a/../b", "/a", "a/", "./a" and "a/-b" are refused as "invalid channel path"),
+  so abacus refuses the structural ones before the confirm screen and leaves the rest to the board
+  ("not applied"). A message is at most 10,000 UTF-16 code units (10,000 CJK characters pass, 5,001 emoji do
+  not; it is not a byte limit); abacus caps a post at 4,000 characters (at most 8,000 units) and cuts a
+  longer message it reads at 4,000, marked `cut`. A channel list pages by a cursor that is the last channel
+  path on the local board; an unknown cursor restarts at the first page (abacus stops on a repeated cursor).
+- Idempotency key (writes): the TUI makes a random nonce when a draft is opened, and the key is
+  derived from (board, op, destination, text, nonce). The same draft retried after an unknown outcome
+  reuses the key at any time; changing the text, channel or target (or opening a new draft) gives a new
+  one. The command line keeps no draft, so its key uses a ten-minute clock bucket: best effort, not
+  across a bucket boundary.
 - Unknown outcome (writes): a timeout, cancel, runner error, `network_error`/`timeout` reason,
   unreadable stdout or an exit with no failure document is "result unknown"; permission_denied,
   login_required, missing_scope, channel_not_found and validation errors are "not applied".
-  Only `missing_scope` and `network_error` were captured from the real 0.54.0 CLI.
+  Captured from the real 0.54.0 CLI: `missing_scope`, `login_required`, `network_error`, `channel_not_found`. `timeout` never
+  appears: the CLI has no client deadline, so a stalled board is cut by abacus's own deadline (a timeout, result unknown for writes).
 - Environment passed on (BOARD_URL is never inherited; credentials only reach an https or
   loopback target): `HOME`, `PATH`, `TMPDIR`, `USER`, `LANG`, `LC_*`, `TERM`, `NO_COLOR`,
   the XDG dirs, `BOARD_URL`, `BOARD_NAME`, `BOARD_TOKEN`, `VERCEL_AUTH_TOKEN`, `VERCEL_ORG_ID`,

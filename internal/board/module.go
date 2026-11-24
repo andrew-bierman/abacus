@@ -26,7 +26,8 @@ import (
 
 // Bounds of one Board read: a few channels, a few threads each, one page of open tasks.
 const (
-	maxChannels       = 50
+	maxChannels       = 50 // one page of the channel list
+	maxChannelPages   = 4  // pages followed: at most maxChannels*maxChannelPages channels are listed
 	readChannels      = 3
 	threadsPerChannel = 5
 	maxTasks          = 20
@@ -248,7 +249,7 @@ func (m *Module) Status(ctx context.Context) core.Status {
 // trailing `--url U`):
 //
 //	--help | --version
-//	channels list --json --limit N
+//	channels list --json --limit N [--after CURSOR]
 //	read <channel> --json --limit N
 //	read <id> --json
 //	tasks --json --limit N
@@ -265,6 +266,8 @@ func allowedRead(a []string) bool {
 		return a[0] == "--help" || a[0] == "--version"
 	case len(a) == 5 && a[0] == "channels" && a[1] == "list" && a[2] == "--json" && a[3] == "--limit":
 		return n(a[4])
+	case len(a) == 7 && a[0] == "channels" && a[1] == "list" && a[2] == "--json" && a[3] == "--limit" && a[5] == "--after":
+		return n(a[4]) && core.BoardCursorRE.MatchString(a[6])
 	case len(a) == 5 && a[0] == "read" && a[2] == "--json" && a[3] == "--limit":
 		return core.BoardChannelRE.MatchString(a[1]) && n(a[4])
 	case len(a) == 3 && a[0] == "read" && a[2] == "--json":
@@ -338,10 +341,22 @@ func (m *Module) call(ctx context.Context, argv []string, ok func([]string) bool
 	if err := m.ensure(ctx); err != nil {
 		return nil, nil, 0, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, m.o.Timeout)
+	parent := ctx
+	ctx, cancel := context.WithTimeout(parent, m.o.Timeout)
 	defer cancel()
-	return m.o.Runner.RunSplit(ctx, m.Bin(), argv...)
+	out, errOut, exit, err = m.o.Runner.RunSplit(ctx, m.Bin(), argv...)
+	// The runner sees this deadline as its parent's, so it calls our own timeout a cancel.
+	if errors.Is(err, core.ErrCanceled) && !errors.Is(parent.Err(), context.Canceled) { // our deadline, or the caller's: only a cancel is a cancel
+		err = fmt.Errorf("%w after %s", core.ErrTimedOut, m.o.Timeout)
+	}
+	return out, errOut, exit, err
 }
+
+// timedOut is a read that ran out of time, in the one plain line the Board shows.
+type timedOut struct{}
+
+func (timedOut) Error() string        { return "the board did not answer in time" }
+func (timedOut) Is(target error) bool { return target == core.ErrTimedOut }
 
 // run runs one allowlisted read argv and decodes stdout into into (nil: ignore it). A non-zero
 // exit becomes an error classified from the failure document.
@@ -351,7 +366,10 @@ func (m *Module) run(ctx context.Context, argv []string, into any, ok func([]str
 	case errors.Is(err, core.ErrOutputTooLarge):
 		return errors.New("the answer was too large and was cut off")
 	case err != nil:
-		if errors.Is(err, core.ErrTimedOut) || errors.Is(err, core.ErrCanceled) || strings.HasPrefix(err.Error(), "refused:") {
+		if errors.Is(err, core.ErrTimedOut) {
+			return timedOut{}
+		}
+		if errors.Is(err, core.ErrCanceled) || strings.HasPrefix(err.Error(), "refused:") {
 			return err
 		}
 		return fmt.Errorf("could not run: %s", m.clean(err.Error()))
@@ -366,6 +384,12 @@ func (m *Module) run(ctx context.Context, argv []string, into any, ok func([]str
 
 // classify turns a failed run into the right state: no board / not signed in is "not
 // connected" with the exact next step; anything else is a plain error (degraded).
+//
+// Captured from the real 0.54.0 CLI against an isolated local board (testdata/err-*.stderr.json):
+// missing_scope (exit 2), login_required (exit 1: --scope with no Vercel login), network_error
+// (exit 1: nothing listening) and channel_not_found (exit 1). `timeout` was NOT seen: the CLI has no
+// client deadline (a stalled board hangs it), so the only timeout is abacus's own, core.ErrTimedOut.
+// The other reasons below are in the CLI's source but were not triggered.
 func (m *Module) classify(exit int, stderr []byte) error {
 	var f failure
 	if json.Unmarshal(stderr, &f) != nil || f.Reason == "" {
@@ -378,6 +402,14 @@ func (m *Module) classify(exit int, stderr []byte) error {
 		return &core.NotConnectedError{Reason: core.BoardNotSignedInReason, HowToConnect: core.BoardNotSignedIn}
 	case "network_error", "timeout":
 		return errors.New("could not reach the board")
+	case "board_outdated":
+		return errors.New("the board is older than this version of abacus can read")
+	case "lockout":
+		return errors.New("the board is locked out for now: wait a bit, then press r")
+	case "not_available":
+		return errors.New("the board does not offer that")
+	case "canceled":
+		return errors.New("the board request was canceled")
 	}
 	msg := f.Message
 	if msg == "" {
@@ -419,14 +451,16 @@ type threadJSON struct {
 	Last    *messageJSON `json:"last"`
 }
 
+type channelJSON struct {
+	Path      string `json:"path"`
+	LastIndex int    `json:"lastIndex"`
+	Messages  int    `json:"messages"`
+	Threads   int    `json:"threads"`
+}
+
 type channelsDoc struct {
-	Channels *[]struct {
-		Path      string `json:"path"`
-		LastIndex int    `json:"lastIndex"`
-		Messages  int    `json:"messages"`
-		Threads   int    `json:"threads"`
-	} `json:"channels"`
-	Next *string `json:"next"`
+	Channels *[]channelJSON `json:"channels"`
+	Next     *string        `json:"next"`
 }
 
 type threadsDoc struct {
@@ -438,12 +472,21 @@ type threadDoc struct {
 	Replies []messageJSON `json:"replies"`
 }
 
+// bound cuts text to core.BoardMaxText runes and says whether it did.
+func bound(text string) (string, bool) {
+	if r := []rune(text); len(r) > core.BoardMaxText {
+		return string(r[:core.BoardMaxText]), true
+	}
+	return text, false
+}
+
 func (m *Module) message(j messageJSON) core.BoardMessage {
 	text := j.Text
 	if j.Deleted {
 		text = "(deleted)"
 	}
-	b := core.BoardMessage{ID: m.clean(j.ID), Channel: m.clean(j.Channel), At: m.clean(j.CreatedAt), Text: m.cleanText(text)}
+	text, cut := bound(text)
+	b := core.BoardMessage{ID: m.clean(j.ID), Channel: m.clean(j.Channel), At: m.clean(j.CreatedAt), Text: m.cleanText(text), Cut: cut}
 	if a := j.Author; a != nil {
 		b.Author = m.clean(a.Handle)
 		if b.Author == "" {
@@ -472,21 +515,16 @@ func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 		return core.BoardReport{}, &core.NotConnectedError{Reason: "board_url is not usable: " + m.clean(m.o.URLErr), HowToConnect: "Fix it with: abacus config set board_url <url> (or clear it with an empty value)"}
 	}
 	r := core.BoardReport{Header: core.Header{Source: core.SourceLive}}
-	var cd channelsDoc
-	err := m.run(ctx, m.argv("channels", "list", "--json", "--limit", strconv.Itoa(maxChannels)), &cd, allowedRead)
-	if err == nil {
-		err = validChannels(cd)
-	}
+	chans, more, err := m.listChannels(ctx)
 	if err != nil {
 		m.setErr(err)
 		return core.BoardReport{}, err
 	}
-	chans := *cd.Channels
 	// Newest activity first where the board says (a team board lists names only: keep its order).
 	sort.SliceStable(chans, func(i, j int) bool { return chans[i].LastIndex > chans[j].LastIndex })
 	var trunc []string
-	if cd.Next != nil {
-		trunc = append(trunc, fmt.Sprintf("only the first %d channels are listed", maxChannels))
+	if more != "" {
+		trunc = append(trunc, more)
 	}
 	if len(chans) > readChannels {
 		trunc = append(trunc, fmt.Sprintf("threads are shown for the %d most recently active channels", readChannels))
@@ -524,7 +562,8 @@ func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 		why = append(why, "tasks could not be read")
 	} else {
 		for _, t := range *tk.Tasks {
-			bt := core.BoardTask{ID: m.clean(t.Message.ID), Channel: m.clean(t.Message.Channel), Text: m.cleanText(t.Message.Text), State: "unknown"}
+			text, cut := bound(t.Message.Text)
+			bt := core.BoardTask{ID: m.clean(t.Message.ID), Channel: m.clean(t.Message.Channel), Text: m.cleanText(text), Cut: cut, State: "unknown"}
 			if x := t.Message.Task; x != nil {
 				bt.State = m.clean(x.State)
 				if x.Claim != nil {
@@ -544,6 +583,49 @@ func (m *Module) Board(ctx context.Context) (core.BoardReport, error) {
 		m.setErr(errors.New(r.Reason))
 	}
 	return r, nil
+}
+
+// listChannels reads the channel list a page at a time, following the cursor up to
+// maxChannelPages pages. A first page that cannot be read is an error; a later page that cannot is
+// named in more (the channels read so far stay). more is also set when the cap stopped the walk.
+func (m *Module) listChannels(ctx context.Context) (chans []channelJSON, more string, err error) {
+	after, seen, have := "", map[string]bool{}, map[string]bool{}
+	for page := 0; page < maxChannelPages; page++ {
+		argv := []string{"channels", "list", "--json", "--limit", strconv.Itoa(maxChannels)}
+		if after != "" {
+			argv = append(argv, "--after", after)
+		}
+		var cd channelsDoc
+		err := m.run(ctx, m.argv(argv...), &cd, allowedRead)
+		if err == nil {
+			err = validChannels(cd)
+		}
+		if err != nil {
+			if page == 0 {
+				return nil, "", err
+			}
+			why := "could not be read"
+			if errors.Is(err, core.ErrTimedOut) {
+				why = "ran out of time"
+			}
+			return chans, fmt.Sprintf("only the first %d channels are listed: the next page %s", len(chans), why), nil
+		}
+		for _, c := range *cd.Channels { // a page the board repeats adds nothing
+			if !have[c.Path] {
+				have[c.Path] = true
+				chans = append(chans, c)
+			}
+		}
+		switch {
+		case cd.Next == nil || *cd.Next == "":
+			return chans, "", nil
+		case seen[*cd.Next] || !core.BoardCursorRE.MatchString(*cd.Next): // a cursor that came round again (the board restarts on one it does not know), or one that cannot be passed on
+			return chans, fmt.Sprintf("only the first %d channels are listed", len(chans)), nil
+		}
+		after = *cd.Next
+		seen[after] = true
+	}
+	return chans, fmt.Sprintf("only the first %d channels are listed", len(chans)), nil
 }
 
 // validChannels is the shape check: a channel list with a blank path is not a board.
@@ -652,17 +734,17 @@ func (m *Module) Describe(ctx context.Context, ch core.BoardChange) []string {
 		first, _, _ := strings.Cut(msg.Text, "\n")
 		return []string{fmt.Sprintf("replying to message %s in channel %s, by %s: %q", msg.ID, orUnknown(msg.Channel), orUnknown(msg.Author), first)}
 	case core.BoardPost:
-		var cd channelsDoc
-		if err := m.run(ctx, m.argv("channels", "list", "--json", "--limit", strconv.Itoa(maxChannels)), &cd, allowedRead); err != nil || validChannels(cd) != nil {
+		chans, more, err := m.listChannels(ctx)
+		if err != nil {
 			return []string{"could not check whether channel " + ch.Channel + " exists." + still}
 		}
-		for _, c := range *cd.Channels {
+		for _, c := range chans {
 			if c.Path == ch.Channel {
 				return []string{"existing channel " + ch.Channel}
 			}
 		}
-		if cd.Next != nil {
-			return []string{"channel " + ch.Channel + " is not among the first " + strconv.Itoa(maxChannels) + " channels: it may be new."}
+		if more != "" {
+			return []string{"channel " + ch.Channel + " is not among the first " + strconv.Itoa(len(chans)) + " channels: it may be new."}
 		}
 		return []string{"NEW channel " + ch.Channel + ": this post creates it"}
 	}

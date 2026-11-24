@@ -9,7 +9,7 @@ Keys
   :             command
   ?             help
   q             quit
-  ↕ +15 more
+  ↕ +16 more
 ?/esc close · ↑/↓ scroll
 === 40x30 ===
  [Board]  1/6
@@ -26,6 +26,7 @@ Keys
 │ ↑/↓           move                   │
 │ enter         details                │
 │ r             refresh                │
+│ pgup/pgdn     scroll                 │
 │                                      │
 │ Commands (after :, tab completes)    │
 │ Go to a tab   tasks board leases qu… │
@@ -40,7 +41,6 @@ Keys
 ╰──────────────────────────────────────╯
 
 
-
 ?/esc close · ↑/↓ scroll
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
@@ -53,7 +53,7 @@ Keys
   :             command
   ?             help
   q             quit
-  ↕ +15 more
+  ↕ +16 more
 ?/esc close · ↑/↓ scroll
 === 80x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
@@ -70,6 +70,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ ↑/↓           move                                                           │
 │ enter         details                                                        │
 │ r             refresh                                                        │
+│ pgup/pgdn     scroll                                                         │
 │                                                                              │
 │ Commands (after :, tab completes)                                            │
 │ Go to a tab   tasks board leases queues agents doctor                        │
@@ -84,7 +85,6 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 
-
 ?/esc close · ↑/↓ scroll
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
@@ -97,7 +97,7 @@ Keys
   :             command
   ?             help
   q             quit
-  ↕ +14 more
+  ↕ +15 more
 ?/esc close · ↑/↓ scroll
 === 120x30 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                                       fleet · 14 tasks · 3 ready
@@ -113,6 +113,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │                                                                                                                      │
 │ ↑/↓           move                                                                                                   │
 │ r             refresh                                                                                                │
+│ pgup/pgdn     scroll                                                                                                 │
 │                                                                                                                      │
 │ Commands (after :, tab completes)                                                                                    │
 │ Go to a tab   tasks board leases queues agents doctor                                                                │
@@ -125,7 +126,6 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 │                                                                                                                      │
 │ ? or esc closes                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 

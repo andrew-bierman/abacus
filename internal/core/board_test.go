@@ -270,3 +270,87 @@ func TestSanitizeTextKeepsNewlinesAndDropsTheRest(t *testing.T) {
 		t.Fatalf("%q", got)
 	}
 }
+
+func TestDraftKeyIsStableAcrossTheClockAndChangesWithTheDraft(t *testing.T) {
+	now := time.Date(2026, 11, 22, 12, 9, 59, 0, time.UTC) // two seconds before a ten-minute boundary
+	defer core.SetBoardClockForTest(func() time.Time { return now })()
+	w := &fakeBoardWriter{}
+	key := func(ch core.BoardChange) string {
+		p, err := core.PlanBoardChange(w, ch)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if p.Key != p.Argv[3] {
+			t.Fatalf("the plan names the key that is in the argv: %q vs %q", p.Key, p.Argv[3])
+		}
+		return p.Key
+	}
+	draft := core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hello", Nonce: "n1"}
+	k := key(draft)
+	now = now.Add(2 * time.Second) // across the boundary
+	if key(draft) != k {
+		t.Fatal("the same draft retried across a clock boundary must reuse the key")
+	}
+	now = now.Add(48 * time.Hour)
+	if key(draft) != k {
+		t.Fatal("and at any later time")
+	}
+	for name, other := range map[string]core.BoardChange{
+		"text":    {Op: core.BoardPost, Channel: "dev", Text: "hello!", Nonce: "n1"},
+		"channel": {Op: core.BoardPost, Channel: "dev2", Text: "hello", Nonce: "n1"},
+		"nonce":   {Op: core.BoardPost, Channel: "dev", Text: "hello", Nonce: "n2"},
+		"target":  {Op: core.BoardReply, ID: "7", Text: "hello", Nonce: "n1"},
+	} {
+		if key(other) == k {
+			t.Errorf("a different %s must get a different key", name)
+		}
+	}
+	// without a nonce the key is clock-bucketed and the screen does not promise more than that
+	cli := core.BoardChange{Op: core.BoardPost, Channel: "dev", Text: "hello"}
+	p, _ := core.PlanBoardChange(w, cli)
+	if got := strings.Join(p.Lines, "\n"); !strings.Contains(got, "not across a ten-minute clock boundary") || strings.Contains(got, "at most once") {
+		t.Fatalf("the command line's key promise is the weaker one:\n%s", got)
+	}
+	p, _ = core.PlanBoardChange(w, draft)
+	if got := strings.Join(p.Lines, "\n"); !strings.Contains(got, "retry of this same draft reuses it") {
+		t.Fatalf("%s", got)
+	}
+}
+
+func TestBoardChannelAndCursorPathsRefuseWhatTheBoardTreatsAsAPath(t *testing.T) {
+	good := []string{"dev", "dev/web", "a-b", "a_b", "a/b/c", "work.2", "Team/Ch-1", "a-/b", "x/y.z/w", strings.Repeat("a", 128)}
+	bad := []string{"", "a//b", "a/../b", "..", "../a", "a/..", "/a", "a/", "./a", "a/.", "a..b", "a/-b", "-a", "_a", ".a", "a.", "a./b", "a b", "a\nb", "a;b", strings.Repeat("a", 129), "dev/", "//"}
+	for _, c := range good {
+		if !core.BoardChannelRE.MatchString(c) {
+			t.Errorf("channel %q must be accepted", c)
+		}
+	}
+	for _, c := range bad {
+		if core.BoardChannelRE.MatchString(c) {
+			t.Errorf("channel %q must be refused", c)
+		}
+	}
+	for _, c := range []string{"team/ch05", "c.8f2a.2", "a=b+c:d", strings.Repeat("a", 160)} {
+		if !core.BoardCursorRE.MatchString(c) {
+			t.Errorf("cursor %q must be accepted", c)
+		}
+	}
+	for _, c := range []string{"", "-x", "a//b", "a/../b", "/a", "a/", "a b", "a..b", strings.Repeat("a", 161)} {
+		if core.BoardCursorRE.MatchString(c) {
+			t.Errorf("cursor %q must be refused", c)
+		}
+	}
+	if _, err := core.PlanBoardChange(&fakeBoardWriter{}, core.BoardChange{Op: core.BoardPost, Channel: "a//b", Text: "x"}); err == nil {
+		t.Fatal("a post to a path the board refuses is stopped before the confirm screen")
+	}
+}
+
+// The local board 0.54.0 refuses a message over 10,000 UTF-16 code units (checked: 10,000 CJK
+// characters and 5,000 emoji pass, 5,001 emoji do not; it is not a byte limit). A rune is at most two
+// units, so the rune cap must stay at or under half of that.
+func TestTheMessageCapIsWithinTheBoardsLimitInItsOwnUnits(t *testing.T) {
+	const boardLimitUTF16 = 10000
+	if 2*core.BoardMaxText > boardLimitUTF16 {
+		t.Fatalf("%d runes can be %d UTF-16 units, over the board's %d", core.BoardMaxText, 2*core.BoardMaxText, boardLimitUTF16)
+	}
+}

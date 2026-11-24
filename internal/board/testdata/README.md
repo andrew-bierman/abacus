@@ -20,6 +20,15 @@ control characters in its text). The only edit is that the OS user name was repl
 - `err-*.stderr.json`: the failure document the CLI prints on stderr with `--json` (`no board`
   exit 2, `unreachable` exit 1, `channel not found` exit 1). stdout is empty in those cases.
 
+- `err-login-required.stderr.json`: `channels list --json --scope acme` with no Vercel login (exit 1,
+  no network needed). Captured 2026-11-24 from the same 0.54.0 binary, isolated `HOME`/`XDG_*`.
+- `channels-page1.json`, `channels-page2.json`, `channels-page3.json`: `channels list --json --limit 5`
+  and `--after <next>` on a local board with 12 channels (`team/ch01`..`team/ch12`). The cursor is the
+  last channel path there; an unknown cursor restarts at the first page; `next` is `null` on the last page.
+- No `timeout` failure document exists to capture: the CLI has no client deadline (against a listener
+  that never answers it was still waiting after 100 s), so a stalled board is cut by abacus's own
+  deadline (`TestRealBoardCliAStalledBoardIsCutByAbacusDeadline`).
+
 Note: the CLI's failure document has `reason` (not `class`), `message`, `next[]` and sometimes
 `hint`; abacus branches on `reason`.
 

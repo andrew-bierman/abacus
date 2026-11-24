@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Confirm this reply ───────────────╮
+│   reply in the thread of message 15  │
+│   text: "on it"                      │
+│   board:                             │
+│   http://127.0.0.1:4100/api/board    │
+│   (board_url (config))               │
+│   idempotency key: abacus-           │
+│   803bf93ff9cfd4da (a retry of this  │
+│ ↕ lines 1-7 of 19: j/k or pgup/pgdn… │
+╰──────────────────────────────────────╯
+pgup/pgdn scroll · n/esc edit · q quit …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Confirm this reply ───────────────╮
+│   reply in the thread of message 15  │
+│   text: "on it"                      │
+│   board:                             │
+│   http://127.0.0.1:4100/api/board    │
+│   (board_url (config))               │
+│   idempotency key: abacus-           │
+│   803bf93ff9cfd4da (a retry of this  │
+│   same draft reuses it, so the board │
+│   takes it at most once)             │
+│   existing channel dev               │
+│   If the board does not answer,      │
+│   abacus cannot tell whether this    │
+│   landed: it will say "result        │
+│   unknown", never "not applied".     │
+│                                      │
+│ exact command:                       │
+│   board reply 15 --json --           │
+│   idempotency-key abacus-            │
+│   803bf93ff9cfd4da -- "on it"        │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit…
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Confirm this reply ───────────────────────────────────────────────────────╮
+│   reply in the thread of message 15                                          │
+│   text: "on it"                                                              │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                │
+│   idempotency key: abacus-803bf93ff9cfd4da (a retry of this same draft       │
+│   reuses it, so the board takes it at most once)                             │
+│   existing channel dev                                                       │
+│   If the board does not answer, abacus cannot tell whether this landed: it   │
+│ ↕ lines 1-7 of 11: j/k or pgup/pgdn to read all of it                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this reply ───────────────────────────────────────────────────────╮
+│   reply in the thread of message 15                                          │
+│   text: "on it"                                                              │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                │
+│   idempotency key: abacus-803bf93ff9cfd4da (a retry of this same draft       │
+│   reuses it, so the board takes it at most once)                             │
+│   existing channel dev                                                       │
+│   If the board does not answer, abacus cannot tell whether this landed: it   │
+│   will say "result unknown", never "not applied".                            │
+│                                                                              │
+│ exact command:                                                               │
+│   board reply 15 --json --idempotency-key abacus-803bf93ff9cfd4da -- "on it" │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Confirm this reply ───────────────────────────────────────────────────────────────────────────────────────────────╮
+│   reply in the thread of message 15                                                                                  │
+│   text: "on it"                                                                                                      │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                                                        │
+│   idempotency key: abacus-803bf93ff9cfd4da (a retry of this same draft reuses it, so the board takes it at most      │
+│   once)                                                                                                              │
+│   existing channel dev                                                                                               │
+│   If the board does not answer, abacus cannot tell whether this landed: it will say "result unknown", never "not     │
+│ ↕ lines 1-7 of 11: j/k or pgup/pgdn to read all of it                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this reply ───────────────────────────────────────────────────────────────────────────────────────────────╮
+│   reply in the thread of message 15                                                                                  │
+│   text: "on it"                                                                                                      │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                                                        │
+│   idempotency key: abacus-803bf93ff9cfd4da (a retry of this same draft reuses it, so the board takes it at most      │
+│   once)                                                                                                              │
+│   existing channel dev                                                                                               │
+│   If the board does not answer, abacus cannot tell whether this landed: it will say "result unknown", never "not     │
+│   applied".                                                                                                          │
+│                                                                                                                      │
+│ exact command:                                                                                                       │
+│   board reply 15 --json --idempotency-key abacus-803bf93ff9cfd4da -- "on it"                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this reply ───────────────────────────────────╮
+│   reply in the thread of message 15                      │
+│   text: "on it"                                          │
+│   board: http://127.0.0.1:4100/api/board (board_url      │
+│   (config))                                              │
+│   idempotency key: abacus-803bf93ff9cfd4da (a retry of   │
+│   this same draft reuses it, so the board takes it at    │
+│   most once)                                             │
+│   existing channel dev                                   │
+│   If the board does not answer, abacus cannot tell       │
+│   whether this landed: it will say "result unknown",     │
+│   never "not applied".                                   │
+│                                                          │
+│ exact command:                                           │
+│   board reply 15 --json --idempotency-key abacus-        │
+│   803bf93ff9cfd4da -- "on it"                            │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help …
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm this reply ───────────────────────────────────────────────────────────────────────────╮
+│   reply in the thread of message 15                                                              │
+│   text: "on it"                                                                                  │
+│   board: http://127.0.0.1:4100/api/board (board_url (config))                                    │
+│   idempotency key: abacus-803bf93ff9cfd4da (a retry of this same draft reuses it, so the board   │
+│   takes it at most once)                                                                         │
+│   existing channel dev                                                                           │
+│   If the board does not answer, abacus cannot tell whether this landed: it will say "result      │
+│   unknown", never "not applied".                                                                 │
+│                                                                                                  │
+│ exact command:                                                                                   │
+│   board reply 15 --json --idempotency-key abacus-803bf93ff9cfd4da -- "on it"                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · pgup/pgdn scroll · n/esc edit · q quit · ? help · tab/→ next tab

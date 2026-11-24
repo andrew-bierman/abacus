@@ -1,0 +1,190 @@
+=== 40x12 ===
+ [Board]  1/6
+╭─ ▸ Board ────────────────────────────╮
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1) ·   │
+│ ops                                  │
+│                                      │
+│ Recent threads                       │
+│ ▸  #15  dev/web  ada  15h  line 00 … │
+│   ↕ +7 more                          │
+╰──────────────────────────────────────╯
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ [Board]  1/6
+────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open │
+│ tasks                                │
+│                                      │
+│ Channels                             │
+│ dev/web (3) · work (3) · dev (1) ·   │
+│ ops                                  │
+│                                      │
+│ Recent threads                       │
+│ ▸  #15  dev/web  ada  15h  line 00 … │
+│    #2   dev      ada  16h  deploys … │
+│                                      │
+│ Tasks                                │
+│    #16  claimed  codex vi…  fix CVE… │
+│    #6   ready    -          review … │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                                   │
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops                                       │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on and on     │
+│   ↕ +5 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 80x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                                   │
+│                                                                              │
+│ Channels                                                                     │
+│ dev/web (3) · work (3) · dev (1) · ops                                       │
+│                                                                              │
+│ Recent threads                                                               │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on and on     │
+│    #2   dev      ada  16h  deploys are green again                           │
+│                                                                              │
+│ Tasks                                                                        │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web                      │
+│    #6   ready    -              review the fix                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ mov…
+=== 120x12 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ line 00 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│ Channels                                                             │ │ line 01 of a long message that goes on and  │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ on                                          │
+│                                                                      │ │ line 02 of a long message that goes on and  │
+│ Recent threads                                                       │ │ on                                          │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ line 03 of a long message that goes on and  │
+│   ↕ +5 more                                                          │ │ ↕ 2-8 of 87: pgup/pgdn                      │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 120x30 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks                           │ │ line 00 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│ Channels                                                             │ │ line 01 of a long message that goes on and  │
+│ dev/web (3) · work (3) · dev (1) · ops                               │ │ on                                          │
+│                                                                      │ │ line 02 of a long message that goes on and  │
+│ Recent threads                                                       │ │ on                                          │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message that goes on a… │ │ line 03 of a long message that goes on and  │
+│    #2   dev      ada  16h  deploys are green again                   │ │ on                                          │
+│                                                                      │ │ line 04 of a long message that goes on and  │
+│ Tasks                                                                │ │ on                                          │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web              │ │ line 05 of a long message that goes on and  │
+│    #6   ready    -              review the fix                       │ │ on                                          │
+│                                                                      │ │ line 06 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 07 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 08 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 09 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 10 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ line 11 of a long message that goes on and  │
+│                                                                      │ │ on                                          │
+│                                                                      │ │ ↕ 2-25 of 87: pgup/pgdn                     │
+╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh · pgup/pgdn scroll
+=== 60x24 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks               │
+│                                                          │
+│ Channels                                                 │
+│ dev/web (3) · work (3) · dev (1) · ops                   │
+│                                                          │
+│ Recent threads                                           │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message th… │
+│    #2   dev      ada  16h  deploys are green again       │
+│                                                          │
+│ Tasks                                                    │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │
+│    #6   ready    -              review the fix           │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · n new thread…
+=== 100x32 ===
+abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Thread ────────────────────────────╮
+│ 4 channels, 2 recent threads, 2 open tasks               │ │ line 00 of a long message that goes │
+│                                                          │ │ on and on                           │
+│ Channels                                                 │ │ line 01 of a long message that goes │
+│ dev/web (3) · work (3) · dev (1) · ops                   │ │ on and on                           │
+│                                                          │ │ line 02 of a long message that goes │
+│ Recent threads                                           │ │ on and on                           │
+│ ▸  #15  dev/web  ada  15h  line 00 of a long message th… │ │ line 03 of a long message that goes │
+│    #2   dev      ada  16h  deploys are green again       │ │ on and on                           │
+│                                                          │ │ line 04 of a long message that goes │
+│ Tasks                                                    │ │ on and on                           │
+│    #16  claimed  codex via ada  fix CVE-123 in acme/web  │ │ line 05 of a long message that goes │
+│    #6   ready    -              review the fix           │ │ on and on                           │
+│                                                          │ │ line 06 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 07 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 08 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 09 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 10 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 11 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ line 12 of a long message that goes │
+│                                                          │ │ on and on                           │
+│                                                          │ │ ↕ 2-27 of 87: pgup/pgdn             │
+╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · n new thread · c reply · ↑/↓ move · r refresh …

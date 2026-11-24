@@ -191,7 +191,7 @@ func domainSection(d core.DomainID, p core.Providers, handoff func([]string) tea
 	switch d {
 	case core.DomainBoard:
 		if p.Board != nil {
-			return newBoardSection(p.Board)
+			return newBoardSection(p.Board).withWriter(p.BoardWriter, cfg.audit)
 		}
 	case core.DomainTasks:
 		if p.Tasks != nil {
