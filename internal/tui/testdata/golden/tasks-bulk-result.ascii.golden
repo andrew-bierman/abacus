@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Batch result ─────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed  │
+│                                      │
+│ applied  ac-15  lease holder column  │
+│ skipped  ac-12  wire the lease       │
+│ heartbeat                            │
+│     ac-12 is now blocked (it was     │
+│     in_progress): nothing was        │
+│   ↕ +5 more                          │
+╰──────────────────────────────────────╯
+esc back · ↑/↓ scroll · q quit · ? help…
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Batch result ─────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed  │
+│                                      │
+│ applied  ac-15  lease holder column  │
+│ skipped  ac-12  wire the lease       │
+│ heartbeat                            │
+│     ac-12 is now blocked (it was     │
+│     in_progress): nothing was        │
+│     written                          │
+│ failed   ac-20                       │
+│     bd refused the change            │
+│                                      │
+│ batch batch-0a1b2c3d4e5f · esc clos… │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+esc back · ↑/↓ scroll · q quit · ? help…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Batch result ─────────────────────────────────────────────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed                                          │
+│                                                                              │
+│ applied  ac-15  lease holder column                                          │
+│ skipped  ac-12  wire the lease heartbeat                                     │
+│     ac-12 is now blocked (it was in_progress): nothing was written           │
+│ failed   ac-20                                                               │
+│     bd refused the change                                                    │
+│   ↕ +2 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+esc back · ↑/↓ scroll · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Batch result ─────────────────────────────────────────────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed                                          │
+│                                                                              │
+│ applied  ac-15  lease holder column                                          │
+│ skipped  ac-12  wire the lease heartbeat                                     │
+│     ac-12 is now blocked (it was in_progress): nothing was written           │
+│ failed   ac-20                                                               │
+│     bd refused the change                                                    │
+│                                                                              │
+│ batch batch-0a1b2c3d4e5f · esc closes                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+esc back · ↑/↓ scroll · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Batch result ─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed                                                                                  │
+│                                                                                                                      │
+│ applied  ac-15  lease holder column                                                                                  │
+│ skipped  ac-12  wire the lease heartbeat                                                                             │
+│     ac-12 is now blocked (it was in_progress): nothing was written                                                   │
+│ failed   ac-20                                                                                                       │
+│     bd refused the change                                                                                            │
+│   ↕ +2 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+esc back · ↑/↓ scroll · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Batch result ─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed                                                                                  │
+│                                                                                                                      │
+│ applied  ac-15  lease holder column                                                                                  │
+│ skipped  ac-12  wire the lease heartbeat                                                                             │
+│     ac-12 is now blocked (it was in_progress): nothing was written                                                   │
+│ failed   ac-20                                                                                                       │
+│     bd refused the change                                                                                            │
+│                                                                                                                      │
+│ batch batch-0a1b2c3d4e5f · esc closes                                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+esc back · ↑/↓ scroll · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Batch result ─────────────────────────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed                      │
+│                                                          │
+│ applied  ac-15  lease holder column                      │
+│ skipped  ac-12  wire the lease heartbeat                 │
+│     ac-12 is now blocked (it was in_progress): nothing   │
+│     was written                                          │
+│ failed   ac-20                                           │
+│     bd refused the change                                │
+│                                                          │
+│ batch batch-0a1b2c3d4e5f · esc closes                    │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+esc back · ↑/↓ scroll · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Batch result ─────────────────────────────────────────────────────────────────────────────────╮
+│ 1 of 3 applied, 1 skipped, 1 failed                                                              │
+│                                                                                                  │
+│ applied  ac-15  lease holder column                                                              │
+│ skipped  ac-12  wire the lease heartbeat                                                         │
+│     ac-12 is now blocked (it was in_progress): nothing was written                               │
+│ failed   ac-20                                                                                   │
+│     bd refused the change                                                                        │
+│                                                                                                  │
+│ batch batch-0a1b2c3d4e5f · esc closes                                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+esc back · ↑/↓ scroll · q quit · ? help · tab/→ next tab

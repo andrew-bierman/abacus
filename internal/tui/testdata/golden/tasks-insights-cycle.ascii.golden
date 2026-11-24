@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+ List  Kanban  Graph [Insights]
+╭─ ▸ Insights · graph analysis ────────╮
+│ Critical path · impact depth         │
+│   critical path skipped: the graph   │
+│   has a dependency cycle             │
+│                                      │
+│ Cycles  1                            │
+│ ▸ ac-20 → ac-21 → ac-20              │
+╰──────────────────────────────────────╯
+
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+ List  Kanban  Graph [Insights]
+╭─ ▸ Insights · graph analysis ────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████▓▓▓▓▓▓░░░····· │
+│ 14 tasks: 6 open · 3 in progress · 2 │
+│ blocked · 1 deferred · 2 closed      │
+│ 3 actionable · 4 blocked · 1 cycle · │
+│ ready 3                              │
+│ Critical path · impact depth         │
+│   critical path skipped: the graph   │
+│   has a dependency cycle             │
+│                                      │
+│ Cycles  1                            │
+│ ▸ ac-20 → ac-21 → ac-20              │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List  Kanban  Graph [Insights]                               14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                 │
+│                                                                              │
+│ Cycles  1                                                                    │
+│ ▸ ac-20 → ac-21 → ac-20                                                      │
+│   ↕ +2 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view · enter open task …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                               14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                 │
+│ Critical path · impact depth                                                 │
+│   critical path skipped: the graph has a dependency cycle                    │
+│                                                                              │
+│ Cycles  1                                                                    │
+│ ▸ ac-20 → ac-21 → ac-20                                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+ List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                                                         │
+│                                                                                                                      │
+│ Cycles  1                                                                                                            │
+│ ▸ ac-20 → ac-21 → ac-20                                                                                              │
+│   ↕ +2 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                                                         │
+│ Critical path · impact depth                                                                                         │
+│   critical path skipped: the graph has a dependency cycle                                                            │
+│                                                                                                                      │
+│ Cycles  1                                                                                                            │
+│ ▸ ac-20 → ac-21 → ac-20                                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]           14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                 │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1         │
+│ deferred · 2 closed                                      │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3             │
+│ Critical path · impact depth                             │
+│   critical path skipped: the graph has a dependency      │
+│   cycle                                                  │
+│                                                          │
+│ Cycles  1                                                │
+│ ▸ ac-20 → ac-21 → ac-20                                  │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                                                   14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                         │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                             │
+│ 3 actionable · 4 blocked · 1 cycle · ready 3                                                     │
+│ Critical path · impact depth                                                                     │
+│   critical path skipped: the graph has a dependency cycle                                        │
+│                                                                                                  │
+│ Cycles  1                                                                                        │
+│ ▸ ac-20 → ac-21 → ac-20                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort …

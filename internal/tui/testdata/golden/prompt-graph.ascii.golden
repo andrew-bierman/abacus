@@ -6,7 +6,7 @@ focus ac-12 · depth 2 · blocking links
 │ blocked by                           │
 │   nothing                            │
 │                                      │
-│ ▸ ◐ ac-12 wire the lease heart… →1 * │
+│ ▸ ◐ ac-12 wire the lease hear… →1 *^ │
 │                                      │
 │   ↕ +6 more                          │
 ╰──────────────────────────────────────╯
@@ -20,10 +20,10 @@ focus ac-12 · depth 2 · blocking links
 │ blocked by                           │
 │   nothing                            │
 │                                      │
-│ ▸ ◐ ac-12 wire the lease heart… →1 * │
+│ ▸ ◐ ac-12 wire the lease hear… →1 *^ │
 │                                      │
 │ blocks                               │
-│   ○ ac-09 queue attention dige… ⊘1 * │
+│   ○ ac-09 queue attention dig… ⊘1 *^ │
 │                                      │
 │ longest chain (2):                   │
 │ ac-12 → ac-09                        │
@@ -50,7 +50,7 @@ focus ac-12 · depth 2 · blocking links
 │ blocked by                                                                   │
 │   nothing                                                                    │
 │                                                                              │
-│ ▸ ◐ ac-12 wire the lease heartbeat                                      →1 * │
+│ ▸ ◐ ac-12 wire the lease heartbeat                                     →1 *^ │
 │                                                                              │
 │   ↕ +6 more                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -64,10 +64,10 @@ focus ac-12 · depth 2 · blocking links
 │ blocked by                                                                   │
 │   nothing                                                                    │
 │                                                                              │
-│ ▸ ◐ ac-12 wire the lease heartbeat                                      →1 * │
+│ ▸ ◐ ac-12 wire the lease heartbeat                                     →1 *^ │
 │                                                                              │
 │ blocks                                                                       │
-│   ○ ac-09 queue attention digest                                        ⊘1 * │
+│   ○ ac-09 queue attention digest                                       ⊘1 *^ │
 │                                                                              │
 │ longest chain (2):                                                           │
 │ ac-12 → ac-09                                                                │
@@ -92,7 +92,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                         
 focus ac-12 · depth 2 · blocking links
 ╭─ ▸ Graph · ac-12 ───────────────────────────────────────────────────────────────╮ ╭─ Chain ──────────────────────────╮
 │                           ╔═════════════════════════╗                           │ │ longest chain (2):               │
-│                           ║ ◐ ac-12 wire the lea… * ║                           │ │ ac-12 → ac-09                    │
+│                           ║ ◐ ac-12 wire the le… *^ ║                           │ │ ac-12 → ac-09                    │
 │                           ╚════════════╤════════════╝                           │ │                                  │
 │                                        │                                        │ │ cycle ac-20 → ac-21 → ac-20      │
 │                                        │                                        │ │                                  │
@@ -106,12 +106,12 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                         
 focus ac-12 · depth 2 · blocking links
 ╭─ ▸ Graph · ac-12 ───────────────────────────────────────────────────────────────╮ ╭─ Chain ──────────────────────────╮
 │                           ╔═════════════════════════╗                           │ │ longest chain (2):               │
-│                           ║ ◐ ac-12 wire the lea… * ║                           │ │ ac-12 → ac-09                    │
+│                           ║ ◐ ac-12 wire the le… *^ ║                           │ │ ac-12 → ac-09                    │
 │                           ╚════════════╤════════════╝                           │ │                                  │
 │                                        │                                        │ │ cycle ac-20 → ac-21 → ac-20      │
 │                                        │                                        │ │                                  │
 │                           ┌────────────┴────────────┐                           │ │ blockers open: 0                 │
-│                           │ ○ ac-09 queue attent… * │                           │ │ freed when closed: 1             │
+│                           │ ○ ac-09 queue atten… *^ │                           │ │ freed when closed: 1             │
 │                           └─────────────────────────┘                           │ │                                  │
 │                                                                                 │ │ ○ open ◐ active ● blocked        │
 │                                                                                 │ │ ✓ closed ◇ deferred              │
@@ -139,10 +139,10 @@ focus ac-12 · depth 2 · blocking links
 │ blocked by                                               │
 │   nothing                                                │
 │                                                          │
-│ ▸ ◐ ac-12 wire the lease heartbeat                  →1 * │
+│ ▸ ◐ ac-12 wire the lease heartbeat                 →1 *^ │
 │                                                          │
 │ blocks                                                   │
-│   ○ ac-09 queue attention digest                    ⊘1 * │
+│   ○ ac-09 queue attention digest                   ⊘1 *^ │
 │                                                          │
 │ longest chain (2):                                       │
 │ ac-12 → ac-09                                            │
@@ -162,12 +162,12 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet 
 focus ac-12 · depth 2 · blocking links
 ╭─ ▸ Graph · ac-12 ──────────────────────────────────────────────╮ ╭─ Chain ───────────────────────╮
 │                  ╔═════════════════════════╗                   │ │ longest chain (2):            │
-│                  ║ ◐ ac-12 wire the lea… * ║                   │ │ ac-12 → ac-09                 │
+│                  ║ ◐ ac-12 wire the le… *^ ║                   │ │ ac-12 → ac-09                 │
 │                  ╚════════════╤════════════╝                   │ │                               │
 │                               │                                │ │ cycle ac-20 → ac-21 → ac-20   │
 │                               │                                │ │                               │
 │                  ┌────────────┴────────────┐                   │ │ blockers open: 0              │
-│                  │ ○ ac-09 queue attent… * │                   │ │ freed when closed: 1          │
+│                  │ ○ ac-09 queue atten… *^ │                   │ │ freed when closed: 1          │
 │                  └─────────────────────────┘                   │ │                               │
 │                                                                │ │ ○ open ◐ active ● blocked     │
 │                                                                │ │ ✓ closed ◇ deferred           │

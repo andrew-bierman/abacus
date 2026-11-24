@@ -23,10 +23,16 @@ func TasksReport() core.TasksReport {
 // InsightsReport is the demo graph analysis for Tasks.
 func InsightsReport() core.InsightsReport {
 	return core.InsightsReport{Header: core.Header{Source: core.SourceGraph, State: core.Connected}, TotalActionable: 3, TotalBlocked: 4,
-		TopPicks:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
-		Blockers:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}},
-		CriticalPath: []core.Ranked{{ID: "ac-12", Value: 3}, {ID: "ac-09", Value: 2}},
-		Cycles:       [][]string{{"ac-20", "ac-21", "ac-20"}}}
+		TopPicks: []core.Pick{
+			{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2, Reasons: []string{"P0 bug in progress", "unblocks the queue attention digest"}},
+			{ID: "ac-15", Title: "lease holder column", Unblocks: 1, Reasons: []string{"P1 and ready", "unblocks the stale lease warning"}},
+			{ID: "ac-30", Title: "saved filters", Reasons: []string{"ready, nothing waits on it"}}},
+		Blockers:     []core.Pick{{ID: "ac-12", Title: "wire the lease heartbeat", Unblocks: 2}, {ID: "ac-15", Title: "lease holder column", Unblocks: 1}},
+		Bottlenecks:  []core.Ranked{{ID: "ac-12", Value: 4.5}, {ID: "ac-15", Value: 2}, {ID: "ac-09", Value: 0.5}},
+		CriticalPath: []core.Ranked{{ID: "ac-12", Value: 3}, {ID: "ac-09", Value: 2}, {ID: "ac-15", Value: 2}, {ID: "ac-16", Value: 1}},
+		Influencers:  []core.Ranked{{ID: "ac-12", Value: 0.61}, {ID: "ac-09", Value: 0.42}, {ID: "ac-15", Value: 0.35}},
+		Cycles:       [][]string{{"ac-20", "ac-21", "ac-20"}},
+		Tracks:       []core.Track{{ID: "track-A", Items: []string{"ac-12", "ac-09"}}, {ID: "track-B", Items: []string{"ac-15", "ac-16"}}}}
 }
 
 // LeasesReport is the demo lease table.

@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm 2 changes ────────────────╮
+│ assign mei to 2 tasks                │
+│   left out: ac-15 (already assigned  │
+│   to mei)                            │
+│                                      │
+│ each task is read again right before │
+│ its own write; one that changed is   │
+│ skipped                              │
+│   ↕ +11 more                         │
+╰──────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+╭─ ▸ Confirm 2 changes ────────────────╮
+│ assign mei to 2 tasks                │
+│   left out: ac-15 (already assigned  │
+│   to mei)                            │
+│                                      │
+│ each task is read again right before │
+│ its own write; one that changed is   │
+│ skipped                              │
+│                                      │
+│   ac-12  wire the lease heartbeat    │
+│   (assignee ada -> mei)              │
+│     command: bd assign ac-12 --      │
+│     assignee=mei --if-assignee=ada   │
+│   ac-09  queue attention digest      │
+│   (assignee nobody -> mei)           │
+│     command: bd assign ac-09 --      │
+│     assignee=mei --if-assignee=      │
+│                                      │
+│ y applies all 2 · n or esc cancels   │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? hel…
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────╮
+│ assign mei to 2 tasks                                                        │
+│   left out: ac-15 (already assigned to mei)                                  │
+│                                                                              │
+│ each task is read again right before its own write; one that changed is      │
+│ skipped                                                                      │
+│                                                                              │
+│   ac-12  wire the lease heartbeat  (assignee ada -> mei)                     │
+│   ↕ +5 more                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────╮
+│ assign mei to 2 tasks                                                        │
+│   left out: ac-15 (already assigned to mei)                                  │
+│                                                                              │
+│ each task is read again right before its own write; one that changed is      │
+│ skipped                                                                      │
+│                                                                              │
+│   ac-12  wire the lease heartbeat  (assignee ada -> mei)                     │
+│     command: bd assign ac-12 --assignee=mei --if-assignee=ada                │
+│   ac-09  queue attention digest  (assignee nobody -> mei)                    │
+│     command: bd assign ac-09 --assignee=mei --if-assignee=                   │
+│                                                                              │
+│ y applies all 2 · n or esc cancels                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ assign mei to 2 tasks                                                                                                │
+│   left out: ac-15 (already assigned to mei)                                                                          │
+│                                                                                                                      │
+│ each task is read again right before its own write; one that changed is skipped                                      │
+│                                                                                                                      │
+│   ac-12  wire the lease heartbeat  (assignee ada -> mei)                                                             │
+│     command: bd assign ac-12 --assignee=mei --if-assignee=ada                                                        │
+│   ↕ +4 more                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+↑/↓ scroll · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ assign mei to 2 tasks                                                                                                │
+│   left out: ac-15 (already assigned to mei)                                                                          │
+│                                                                                                                      │
+│ each task is read again right before its own write; one that changed is skipped                                      │
+│                                                                                                                      │
+│   ac-12  wire the lease heartbeat  (assignee ada -> mei)                                                             │
+│     command: bd assign ac-12 --assignee=mei --if-assignee=ada                                                        │
+│   ac-09  queue attention digest  (assignee nobody -> mei)                                                            │
+│     command: bd assign ac-09 --assignee=mei --if-assignee=                                                           │
+│                                                                                                                      │
+│ y applies all 2 · n or esc cancels                                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 2 changes ────────────────────────────────────╮
+│ assign mei to 2 tasks                                    │
+│   left out: ac-15 (already assigned to mei)              │
+│                                                          │
+│ each task is read again right before its own write; one  │
+│ that changed is skipped                                  │
+│                                                          │
+│   ac-12  wire the lease heartbeat  (assignee ada -> mei) │
+│     command: bd assign ac-12 --assignee=mei --if-        │
+│     assignee=ada                                         │
+│   ac-09  queue attention digest  (assignee nobody ->     │
+│   mei)                                                   │
+│     command: bd assign ac-09 --assignee=mei --if-        │
+│     assignee=                                            │
+│                                                          │
+│ y applies all 2 · n or esc cancels                       │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ ▸ Confirm 2 changes ────────────────────────────────────────────────────────────────────────────╮
+│ assign mei to 2 tasks                                                                            │
+│   left out: ac-15 (already assigned to mei)                                                      │
+│                                                                                                  │
+│ each task is read again right before its own write; one that changed is skipped                  │
+│                                                                                                  │
+│   ac-12  wire the lease heartbeat  (assignee ada -> mei)                                         │
+│     command: bd assign ac-12 --assignee=mei --if-assignee=ada                                    │
+│   ac-09  queue attention digest  (assignee nobody -> mei)                                        │
+│     command: bd assign ac-09 --assignee=mei --if-assignee=                                       │
+│                                                                                                  │
+│ y applies all 2 · n or esc cancels                                                               │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+y apply · n/esc cancel · q quit · ? help · tab/→ next tab

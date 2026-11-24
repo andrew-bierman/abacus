@@ -71,6 +71,7 @@ func (s *tasksSection) setSnapshot(snap core.TaskSnapshot) {
 	l := &s.list
 	l.view = taskview.Build(snap, nowFn())
 	s.loadTree(snap)
+	defer s.pruneMarks() // after the view is built: a task the tracker no longer has cannot stay marked
 	l.readAt, l.fallback, l.depsUnknown, l.warnings = snap.ReadAt, snap.DepsUnknown, snap.DepsUnknown, snap.Warnings
 	if !l.presetSet { // until the user picks one: all for a recent-changes list, else open
 		l.preset = taskview.DefaultPreset(snap)
@@ -130,6 +131,8 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 		return nil, true
 	}
 	switch {
+	case l.cur == viewList && !s.inDetail() && key.Matches(k, keyMark, keyMarkRange, keyMarkFlip, keyUnmark):
+		return nil, s.markKey(k)
 	case key.Matches(k, keyView):
 		n := len(taskViews)
 		d := 1
@@ -145,6 +148,11 @@ func (s *tasksSection) listKey(k tea.KeyMsg) (tea.Cmd, bool) {
 	}
 	if l.cur == viewGraph {
 		if cmd, ok := s.graphKeys(k); ok {
+			return cmd, true
+		}
+	}
+	if l.cur == viewInsights {
+		if cmd, ok := s.insKey(k); ok {
 			return cmd, true
 		}
 	}
@@ -301,6 +309,9 @@ func (s *tasksSection) listBindings() []key.Binding {
 	if l.cur == viewKanban {
 		return s.kanbanBindings()
 	}
+	if l.cur == viewInsights {
+		return s.insBindings()
+	}
 	if l.cur != viewList {
 		return []key.Binding{keyView}
 	}
@@ -418,12 +429,21 @@ func (s *tasksSection) listLines(iw int) ([]string, int) {
 	}
 	widths := tb.fitRows(max(iw-2, 1), append([][]string{hdr}, styled...))
 	lines := []string{"  " + th.Text(KindMuted, tb.row(widths, hdr))}
-	for i := range rows {
+	for i, r := range rows {
+		marked := s.mk.set[r.ID]
 		if i == s.cursor {
-			lines = append(lines, th.Selected.Render(padTo(trunc("▸ "+tb.row(widths, plain[i]), iw), iw)))
+			lead := "▸ "
+			if marked {
+				lead = "▸+"
+			}
+			lines = append(lines, th.Selected.Render(padTo(trunc(lead+tb.row(widths, plain[i]), iw), iw)))
 			continue
 		}
-		lines = append(lines, "  "+tb.row(widths, styled[i]))
+		lead := "  "
+		if marked {
+			lead = th.Text(KindAccent, "+") + " "
+		}
+		lines = append(lines, lead+tb.row(widths, styled[i]))
 	}
 	return lines, s.cursor + 1
 }
@@ -483,6 +503,9 @@ func (s *tasksSection) listView() string {
 		title += " · " + th.Text(KindWarn, "stale "+taskview.Age(seen, nowFn()))
 	}
 	if m := s.changedMarker(); m != "" {
+		title += " · " + th.Text(KindAccent, m)
+	}
+	if m := s.marksTitle(); m != "" {
 		title += " · " + th.Text(KindAccent, m)
 	}
 	iw := g.listInner()

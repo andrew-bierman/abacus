@@ -191,6 +191,7 @@ func (s *tasksSection) resetForTracker() {
 	s.list.tree.store = old.tree.store
 	s.list.sort, s.list.preset, s.list.presetSet = old.sort, old.preset, old.presetSet
 	s.listNav = listNav{}
+	s.mk = marksState{}
 	s.graph = graphState{}
 	s.insights, s.err, s.loaded, s.report = nil, nil, false, core.TasksReport{}
 	// A read of the old tracker may still be in flight: snapBusy stays, so the refresh below marks it

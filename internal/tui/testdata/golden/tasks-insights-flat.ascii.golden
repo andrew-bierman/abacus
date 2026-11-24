@@ -1,0 +1,190 @@
+=== 40x12 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+ List  Kanban  Graph [Insights]
+╭─ ▸ Insights · graph analysis ────────╮
+│ nothing to rank yet: no open task    │
+│ depends on another                   │
+╰──────────────────────────────────────╯
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 40x30 ===
+ Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────
+ List  Kanban  Graph [Insights]
+╭─ ▸ Insights · graph analysis ────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████▓▓▓▓▓▓░░░····· │
+│ 14 tasks: 6 open · 3 in progress · 2 │
+│ blocked · 1 deferred · 2 closed      │
+│ 3 actionable · 0 blocked · 0 cycles  │
+│ · ready 3                            │
+│ nothing to rank yet: no open task    │
+│ depends on another                   │
+╰──────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab …
+=== 80x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+ List  Kanban  Graph [Insights]                               14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ 3 actionable · 0 blocked · 0 cycles · ready 3                                │
+│ nothing to rank yet: no open task depends on another                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task …
+=== 80x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                               14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                     │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed         │
+│ 3 actionable · 0 blocked · 0 cycles · ready 3                                │
+│ nothing to rank yet: no open task depends on another                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task …
+=== 120x12 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+ List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ 3 actionable · 0 blocked · 0 cycles · ready 3                                                                        │
+│ nothing to rank yet: no open task depends on another                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
+=== 120x30 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                                               fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                                                                       14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                                             │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                                                 │
+│ 3 actionable · 0 blocked · 0 cycles · ready 3                                                                        │
+│ nothing to rank yet: no open task depends on another                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort · ↑/↓ move · n new …
+=== 60x24 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor
+────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]           14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                 │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1         │
+│ deferred · 2 closed                                      │
+│ 3 actionable · 0 blocked · 0 cycles · ready 3            │
+│ nothing to rank yet: no open task depends on another     │
+╰──────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view …
+=== 100x32 ===
+abacus   Board  [Tasks]  Leases  Queues  Doctor                           fleet · 14 tasks · 3 ready
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ List  Kanban  Graph [Insights]                                                   14 tasks · 3 ready
+╭─ ▸ Insights · graph analysis ────────────────────────────────────────────────────────────────────╮
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█████████▓▓▓▓▓▓░░░······                                                         │
+│ 14 tasks: 6 open · 3 in progress · 2 blocked · 1 deferred · 2 closed                             │
+│ 3 actionable · 0 blocked · 0 cycles · ready 3                                                    │
+│ nothing to rank yet: no open task depends on another                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · v view · enter open task · g graph · s/S sort …
