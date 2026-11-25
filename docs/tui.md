@@ -491,12 +491,15 @@ detected provider.
 The Doctor tab (the one place providers are listed by name) leads with "Ready" or "Needs attention",
 one line per area, a "Built-in tools: 5 of 5 ready" line (a development build says "Development
 build: tools are not built in; build with make build" instead), and each tool with where it was
-found (`built in`, `override`, `demo`; `bundled` or `PATH` in a development build; or `unavailable`
+found (`built in` or `override`; `bundled` or `PATH` in a development build; or `unavailable`
 for a built-in copy that cannot be set up) and its version, then the detailed checks.
 "Ready" needs bd, lambe and beads-lease usable; the Board CLI, also built in, never blocks it. It runs `core.DoctorReport` on every visit and on `r` (ignored while a
 run is pending; a report from an older run is dropped); it is never
 polled because doctor shells out to each tool. Lambe polls every 5 seconds (not in demo), Tasks
 checks every 5 seconds while its tab is shown (see "Live refresh"), other modules every 30 seconds.
+
+In demo mode, Doctor explains that the workspace uses sample data and points to `abacus doctor`
+for live checks. It does not probe tools or connections.
 
 ## Theme and NO_COLOR
 
