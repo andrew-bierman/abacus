@@ -71,7 +71,7 @@ func renderTaskHistory(w io.Writer, r core.TaskHistoryReport) {
 	for _, e := range r.Events {
 		at := "-"
 		if !e.At.IsZero() {
-			at = e.At.Format(time.DateTime) + "Z"
+			at = e.At.UTC().Format(time.DateTime) + "Z"
 		}
 		line := fmt.Sprintf("%s  %-16s %s", at, e.Kind, dash(e.Actor))
 		if e.Detail != "" {

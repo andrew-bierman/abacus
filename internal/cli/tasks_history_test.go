@@ -70,6 +70,54 @@ func TestTasksHistoryJSON(t *testing.T) {
 	}
 }
 
+type offsetHistoryMod struct {
+	*modtest.Fake
+	at time.Time
+}
+
+func (m offsetHistoryMod) History(_ context.Context, id string, _ int) (core.TaskHistoryReport, error) {
+	return core.TaskHistoryReport{
+		ID: id, Events: []core.TaskHistoryEvent{{At: m.at, Kind: "created"}},
+	}, nil
+}
+
+func TestTasksHistoryTextAndJSONAgreeOnUTCInstant(t *testing.T) {
+	at := time.Date(2026, 11, 23, 23, 58, 47, 0, time.FixedZone("UTC-05", -5*60*60))
+	mods := []core.Module{offsetHistoryMod{
+		Fake: &modtest.Fake{IDStr: "bd", Det: core.Detection{State: core.Ready, Version: "1"}},
+		at:   at,
+	}}
+
+	code, text, errOut := runTasks(t, mods, "tasks", "history", "hs-1", "--limit", "1")
+	if code != 0 || errOut != "" {
+		t.Fatalf("text: code %d err %q", code, errOut)
+	}
+	_, event, found := strings.Cut(text, "\n")
+	stamp, _, separated := strings.Cut(event, "  ")
+	if !found || !separated {
+		t.Fatalf("missing event timestamp in %q", text)
+	}
+	textAt, err := time.Parse(time.DateTime+"Z", stamp)
+	if err != nil {
+		t.Fatalf("parse text timestamp %q: %v", stamp, err)
+	}
+
+	code, output, errOut := runTasks(t, mods, "tasks", "history", "hs-1", "--limit", "1", "--json")
+	if code != 0 || errOut != "" {
+		t.Fatalf("JSON: code %d err %q", code, errOut)
+	}
+	var report core.TaskHistoryReport
+	if err := json.Unmarshal([]byte(output), &report); err != nil {
+		t.Fatalf("parse JSON history: %v", err)
+	}
+	if len(report.Events) != 1 || !report.Events[0].At.Equal(at) {
+		t.Fatalf("JSON history should contain one event at %s: %s", at, output)
+	}
+	if !textAt.Equal(report.Events[0].At) {
+		t.Errorf("text timestamp %s differs from JSON instant %s", stamp, report.Events[0].At.UTC())
+	}
+}
+
 func TestTasksHistoryErrors(t *testing.T) {
 	var asked []string
 	for _, c := range []struct {
