@@ -80,6 +80,12 @@ var harnesses = []HarnessSpec{
 		Roots:    rootsOf(PiSessionsPath),
 		Kind:     KindJSONL,
 	},
+	{
+		Name:     HarnessQwen,
+		Binaries: []string{"qwen"},
+		Roots:    rootsOf(QwenSessionsPath),
+		Kind:     KindJSONL,
+	},
 }
 
 // harnessByBinary is the executable lookup discovery uses. Deriving it from the registry means a

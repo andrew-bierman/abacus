@@ -50,6 +50,11 @@ var registryContracts = map[Harness]registryContract{
 		kind:     KindJSONL,
 		root:     PiSessionsPath,
 	},
+	HarnessQwen: {
+		binaries: []string{"qwen"},
+		kind:     KindJSONL,
+		root:     QwenSessionsPath,
+	},
 }
 
 func TestHarnessRegistryMatchesContract(t *testing.T) {

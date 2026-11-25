@@ -583,6 +583,47 @@ func TestSessionsJoinsCopilotSession(t *testing.T) {
 	}
 }
 
+// TestSessionsJoinsQwenTranscript covers the Qwen arm of the join: the sanitized project
+// directory holds the session, and its records supply the title, model, tokens and window.
+func TestSessionsJoinsQwenTranscript(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/atelier"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	// A relocated root proves SessionsOptions.QwenRoot is plumbed, not just the default.
+	root := filepath.Join(home, ".qwen", "relocated")
+	path := filepath.Join(root, "-home-dev-atelier", "chats", "7f3c9a1b2d4e4f6089ab01cd23ef4567.jsonl")
+	writeFile(t, path, strings.Join([]string{
+		`{"type":"user","uuid":"u1","sessionId":"7f3c9a1b2d4e4f6089ab01cd23ef4567","cwd":"/home/dev/atelier","timestamp":"2026-11-24T09:00:01Z","provenance":"real_user","message":{"role":"user","parts":[{"text":"tidy the atelier"}]}}`,
+		`{"type":"assistant","uuid":"u2","sessionId":"7f3c9a1b2d4e4f6089ab01cd23ef4567","cwd":"/home/dev/atelier","timestamp":"2026-11-24T09:00:02Z","provenance":"assistant_output","model":"fixture-labs/qwen-1","contextWindowSize":200000,"usageMetadata":{"promptTokenCount":120,"candidatesTokenCount":30,"cachedContentTokenCount":20},"message":{"role":"model","parts":[{"text":"done"}]}}`,
+	}, "\n")+"\n")
+	setMtime(t, path, started.Add(time.Minute))
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{8000: {PID: 8000, PPID: 1, Name: "qwen", Started: started}},
+		cwds:  map[int]string{8000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		QwenRoot: root,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "tidy the atelier" || got.Model != "fixture-labs/qwen-1" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 100, Output: 30, CacheRead: 20}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.Context != (agents.Context{Used: 120, Limit: 200_000}) {
+		t.Errorf("context = %+v, want the prompt tokens and recorded window", got.Context)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the response", got.State)
+	}
+}
+
 // TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted pins the `since` argument: an
 // older transcript in the same project is not this process's session.
 func TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted(t *testing.T) {

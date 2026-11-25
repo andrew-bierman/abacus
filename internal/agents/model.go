@@ -27,6 +27,7 @@ const (
 	HarnessGrok     Harness = "grok"
 	HarnessOpenCode Harness = "opencode"
 	HarnessPi       Harness = "pi"
+	HarnessQwen     Harness = "qwen"
 )
 
 // State is what a live session is doing. It is derived, never read from a single field:

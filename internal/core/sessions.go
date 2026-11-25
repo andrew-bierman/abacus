@@ -116,6 +116,7 @@ type SessionsOptions struct {
 	CopilotRoot string
 	GeminiRoot  string
 	GrokRoot    string
+	QwenRoot    string
 	// ClaudeConfigDirs are the directories whose rate-limit hooks are read. Empty means
 	// CLAUDE_CONFIG_DIR when set, then ~/.claude.
 	ClaudeConfigDirs []string
@@ -139,6 +140,7 @@ type Sessions struct {
 	gemini    agents.GeminiStore
 	grok      agents.GrokStore
 	pi        agents.PiStore
+	qwen      agents.QwenStore
 	opencode  agents.OpenCodeStore
 	git       agents.Git
 	// drains is every JSONL store, in one place: a new harness joins here and the drain's three
@@ -199,6 +201,9 @@ func NewSessions(o SessionsOptions) *Sessions {
 	if o.GrokRoot == "" {
 		o.GrokRoot = agents.GrokSessionsPathFrom(o.Home, o.Getenv)
 	}
+	if o.QwenRoot == "" {
+		o.QwenRoot = agents.QwenSessionsPathFrom(o.Home, o.Getenv)
+	}
 	// The kernel reports a process's open file by its resolved path, so a symlinked store root
 	// would not prefix-match the rollout. Resolve it once; a missing root keeps its name.
 	if real, err := filepath.EvalSymlinks(o.CodexRoot); err == nil {
@@ -224,10 +229,11 @@ func NewSessions(o SessionsOptions) *Sessions {
 		gemini:     agents.GeminiStore{Root: o.GeminiRoot},
 		grok:       agents.GrokStore{Root: o.GrokRoot},
 		pi:         agents.PiStore{Root: o.PiRoot},
+		qwen:       agents.QwenStore{Root: o.QwenRoot},
 		opencode:   agents.OpenCodeStore{Path: o.OpenCodeDB},
 		git:        agents.Git{Runner: o.Runner, Now: o.Now},
 	}
-	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.copilot, &s.gemini, &s.grok, &s.pi}
+	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.copilot, &s.gemini, &s.grok, &s.pi, &s.qwen}
 	return s
 }
 
@@ -446,6 +452,8 @@ func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, open map[
 		return s.transcriptFor(&s.grok, sess)
 	case agents.HarnessPi:
 		return s.transcriptFor(&s.pi, sess)
+	case agents.HarnessQwen:
+		return s.transcriptFor(&s.qwen, sess)
 	case agents.HarnessCodex:
 		path, ok := s.rolloutFor(ctx, sess.PID)
 		if !ok {

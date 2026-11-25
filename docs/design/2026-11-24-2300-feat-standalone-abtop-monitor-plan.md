@@ -75,7 +75,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `grok` adapter (verified against the store on this machine)
 - [x] `gemini` adapter (documented-only until a real session exists)
 - [x] `copilot` adapter
-- [ ] `qwen` adapter
+- [x] `qwen` adapter
 - [ ] `hermes` adapter (SQLite)
 - [ ] process-only adapters (`Kind: none`) for the remaining CLIs, so they appear with ports
 - [ ] `cmd/abtop` scaffold: entry point, terminal setup, `--once` and `--json`
@@ -181,3 +181,37 @@ One line per completed item: what it did and how it was verified.
   stores (`session-store.db`, `data.db`), `session.shutdown.tokenDetails` and OTel exports are
   not read, `readCopilotStartCWD` bypasses the JSONL line cap, and the mod-time/dir helpers
   duplicate Gemini/Grok pending a package-wide refactor.
+- `qwen` adapter — added `internal/agents/qwen.go` with `QwenStore` over
+  `$QWEN_HOME|~/.qwen/projects/<sanitized cwd>/chats/<sessionId>.jsonl`, with `QWEN_RUNTIME_DIR`
+  taking precedence because it relocates Qwen's runtime base. The reader follows Qwen's
+  ChatRecord grammar: `type` user/assistant/tool_result/system, `timestamp`, `cwd`, `sessionId`,
+  `message.parts`, `model`, `usageMetadata` (prompt includes cached content), `contextWindowSize`,
+  `systemPayload.displayText|customTitle|parentSessionId`, and `provenance`; user records whose
+  subtype is a notification, cron, agent message or goal event are not turns, and a subtype-less
+  record with a non-user provenance is rejected by provenance. Additive per-response usage with
+  the cache split out of input, per-response history, the latest prompt as the context fill, a
+  display-projected title, `parent_session` lineage, and a `turn_result` system record that closes
+  an aborted or refused turn. Path resolution sanitizes the cwd exactly as `sanitizeCwd` does,
+  adopts the newest session at or after process start, ignores `chats/archive` and the
+  `.ledger.jsonl`/`.pr.json` sidecars, and skips a candidate whose first record names another
+  project when two cwds sanitize to one directory (a candidate whose first record is not yet
+  written is kept, because it may be the live session starting). The first-record cache is keyed
+  by file identity so an append does not force a reread. Registered `HarnessQwen` and joined it
+  in `internal/core/sessions.go`. **Verified against Qwen Code's upstream
+  `sessionService.ts`, `chatRecordingService.ts`, `config/storage.ts` and `utils/paths.ts` plus
+  synthetic fixtures with invented names; there is no real Qwen session store on this machine, so
+  this is documented-only.** Tests pin record folding, the cache split, context fill, the display
+  projection, custom-title and parent records, notification/cron/agent/goal exclusion, provenance
+  rejection, mid-turn titles, `turn_result` for completed/cancelled/error, sanitized-directory
+  resolution, the collision guard, incomplete heads, sidecars and archive exclusion, both env
+  overrides, head-cache identity across appends, and the core join. `go build ./...`,
+  `go vet ./...` and `go test ./...` pass; the review applied the `turn_result` fix and the
+  provenance-gate test, rejected the `agent_mention` turn claim on upstream evidence, and
+  deferred three package-wide refactors (`sameDir` consolidation, transcript-scan extraction,
+  `trimCopilotOldest` naming) that the residuals already track. Residuals: no live transcript;
+  `~` and relative `QWEN_HOME`/`QWEN_RUNTIME_DIR` are not expanded and a settings-based
+  `runtimeOutputDir` is not modelled, so such a store is missed; the join assumes the process cwd
+  equals Qwen's project root; the unreadable-head fallback can cross-attribute in a sanitize
+  collision; `thoughtsTokenCount` and `toolUsePromptTokenCount` are unread, so output undercounts
+  reasoning (as in the Gemini mapping); and a later upstream payload rename would degrade
+  title/parent/state silently.
