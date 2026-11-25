@@ -13,7 +13,7 @@ execution: code
 
 - **Objective:** Someone running abacus in any terminal from 40x12 to a 200x60 window sees a polished, readable cockpit for their agent fleet: every tab is laid out for the space it has, nothing overflows the terminal, identifying fields (ids, states, thread numbers) are never clipped, and the same information is available to a future native app from the same core.
 - **Means:** Shared layout and theme primitives in `internal/tui`, applied tab by tab (KTD1, KTD2, KTD3); the optional workspace layer lives in core behind a provider interface (KTD6).
-- **Authority:** the owner's directions in this session (beautiful, perfect, fully responsive; strong core with the TUI as a tasteful layer; optional strong Rex support; strong tests; pre-1.0 versions), then the handoff rules at `~/Code/_handoff/abacus-handoff.md` (safety, write gate, review gate), then this plan.
+- **Authority:** the owner's directions in this session (beautiful, perfect, fully responsive; strong core with the TUI as a tasteful layer; optional strong Rex support; strong tests; pre-1.0 versions), then the existing safety, write, and review rules, then this plan.
 - **Stop conditions:** stop and report if any test or command would run `bd`, `bv`, `lambe`, `beads-lease`, `board`, `rex` or `rex-tui` against real data or a live session; if a redesign step needs to change an existing keybinding or write-gate behavior (the additive workspace jump key `w` in U13 is expected); or if a guard test (architecture, theme, tool names) has to be weakened rather than satisfied.
 - **Execution profile:** four PRs in order, each a draft PR against `main`, independently reviewed, merged by the agent (the owner authorized it), with a CHANGELOG entry and a pre-1.0 version note. The owner runs `./bin/abacus tui --demo` from `main` after each merge. Linux is the verification target; macOS and Windows are assumed to follow because the code is pure Go with no terminal-specific calls added.
 - **Finishes and ships:** the agent implements, reviews, merges and rebuilds `bin/abacus`; publishing a release stays an owner action.
@@ -155,7 +155,7 @@ Heights: under 16 rows drops the header rule (today's value); 24 and up adds the
 - Repo research: breakpoints and chrome tests, golden harness and sizes, guard tests, available libraries, reusable helpers (`internal/tui/layout.go`, `model.go`, `golden_test.go`, `theme_test.go`, `internal/core/arch_test.go`, `domains_test.go`).
 - External research: Lip Gloss and ratatui layout idioms, `split()` as a pure property-testable helper, `GetHorizontalFrameSize()` budgeting, minimum-size screen, lazygit's portrait breakpoint (width 84 or less, height 46 or more) as the one verified breakpoint; the rest of the breakpoint and palette values are recommendations, not verified facts. Lip Gloss v2 note under KTD2.
 - Beads libraries: b9s v1.3.6 (MIT), bv v0.27.0 (license rider), steveyegge/beads v1.3.4 (MIT); full matrix in the research dossier.
-- Rex: `~/Code/rex-rune/vendor/rexrs/codegen/help.json` (API revision 13), Lambe's `internal/surface/rex` and `docs/research/deep-rex.md`; the `rex` CLI source is not checked out locally.
+- Rex: `vendor/rexrs/codegen/help.json` in the Rex checkout (API revision 13), Lambe's `internal/surface/rex` and `docs/research/deep-rex.md`; the `rex` CLI source is not checked out locally.
 
 ---
 

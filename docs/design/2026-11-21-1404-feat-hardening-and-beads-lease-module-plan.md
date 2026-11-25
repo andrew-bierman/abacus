@@ -9,7 +9,7 @@ execution: code
 
 # Abacus Hardening, Typed Core Surface and beads-lease Module - Plan
 
-**Target repo:** `abacus` (`~/Code/abacus`, private `andrew-bierman/abacus`). This plan stacks on the shipped skeleton (draft PR #1) and does not modify Lambe or beads-lease code. `beads-lease` is `andrew-bierman/beads-lease`, read from a local clone at `<beads-lease checkout>`.
+**Target repo:** `abacus`. This plan stacks on the shipped skeleton (draft PR #1) and does not modify Lambe or beads-lease code. The beads-lease checkout is a read-only reference.
 
 ## Goal Capsule
 

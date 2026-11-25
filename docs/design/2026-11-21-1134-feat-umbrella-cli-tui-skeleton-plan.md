@@ -9,7 +9,7 @@ execution: code
 
 # Umbrella CLI/TUI for the Beads Tool Family (Walking Skeleton) - Plan
 
-**Target repo:** `beaddeck` (working name, local-only, `~/Code/beaddeck`). Lambe lives at `~/Code/lambe` and is read, never modified, by this plan.
+**Target repo:** `beaddeck` (working name for Abacus). This plan uses Lambe as a read-only reference.
 
 ## Goal Capsule
 
@@ -276,5 +276,5 @@ beaddeck/
 - No production daemon, state, binary, or Beads data was read or written; no app was launched or focused.
 - Dead-end or experimental code from abandoned approaches is removed from the diff.
 - The brand constant and module path are the only places the working name is defined.
-- Lambe gap issues are filed and linked, and nothing in `~/Code/lambe` changed.
+- Lambe gap issues are filed and linked, and Lambe source remains untouched.
 - Any PR is a draft; commits use gitmoji and conventional prefixes.
