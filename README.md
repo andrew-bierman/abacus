@@ -13,6 +13,8 @@ tar -xzf abacus_0.6.0_linux_amd64.tar.gz
 ./abacus_0.6.0_linux_amd64/abacus tui --demo
 ```
 
+On macOS, download the `darwin_arm64` archive for Apple silicon or `darwin_amd64` for Intel. Extract it and run `./abacus tui --demo` from the extracted directory. If Gatekeeper blocks the executable from the official release, verify the archive against `SHA256SUMS` before clearing quarantine with `xattr -d com.apple.quarantine ./abacus`.
+
 The demo uses fixture data, so you can explore without connecting any services. Press `Tab` to switch views, `?` for help, and `q` to quit. Move the `abacus` executable onto your `PATH` for the commands below.
 
 ## Connect your workspace
