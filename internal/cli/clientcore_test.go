@@ -321,3 +321,51 @@ func TestBulkWithAnUnknownResultCarriesTheErrorObject(t *testing.T) {
 		t.Errorf("exit %d %s", code, o.String())
 	}
 }
+
+// Demo mode shows the steps of a first run, with their plans: `setup --demo --dry-run` is what a client shows in
+// its setup sheet. It is a report only: applying (or a y at the prompt) is refused, and nothing is audited.
+func TestSetupDemoShowsTheFirstRunStepsAsPlans(t *testing.T) {
+	au := &memAudit{}
+	for _, args := range [][]string{{"setup", "--demo", "--json"}, {"setup", "--demo", "--dry-run", "--json"}} {
+		code, out, errOut, _ := runOpts(t, nil, au, args...)
+		var rep core.SetupReport
+		if code != 0 || json.Unmarshal([]byte(out), &rep) != nil || !hasDemo(t, out) {
+			t.Fatalf("%v: %d %q %s", args, code, errOut, out)
+		}
+		states := map[core.StepID]core.StepState{}
+		for _, s := range rep.Steps {
+			states[s.Step] = s.State
+			if s.State == core.StepNeeded && (len(s.Lines) == 0 || s.Command == "") {
+				t.Errorf("%s has no plan: %+v", s.Step, s)
+			}
+		}
+		if states[core.StepWorkspace] != core.StepNeeded || states[core.StepQueues] != core.StepBlocked || states[core.StepActor] != core.StepNeeded {
+			t.Errorf("%v: %v", args, states)
+		}
+		if rep.PlanDigest != core.DemoDigest(core.SetupDigest(core.DemoSetupStepPlans())) {
+			t.Errorf("%v: the digest is not a demo digest", args)
+		}
+	}
+	for _, args := range [][]string{{"setup", "--demo"}, {"setup", "--demo", "--dry-run"}} {
+		code, out, errOut, _ := runOpts(t, nil, au, args...)
+		if code != 0 || errOut != "" {
+			t.Errorf("%v: exit %d, stderr %q", args, code, errOut)
+		}
+		for _, want := range []string{"preview-only", "needed", "blocked", "example command:"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("%v: missing %q in %q", args, want, out)
+			}
+		}
+		for _, omit := range []string{"run `abacus setup", "setup --yes", "change it any time"} {
+			if strings.Contains(out, omit) {
+				t.Errorf("%v: unexpected %q in %q", args, omit, out)
+			}
+		}
+	}
+	if code, _, errOut, _ := runOpts(t, nil, au, "setup", "--demo", "--yes"); code != 1 || !strings.Contains(errOut, "demo data cannot be changed") {
+		t.Errorf("--yes: %d %q", code, errOut)
+	}
+	if au.n != 0 {
+		t.Errorf("%d audit records in demo mode", au.n)
+	}
+}

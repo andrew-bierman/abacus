@@ -67,13 +67,13 @@ func (f *fixture) withActorGuide() {
 	}
 }
 
-// ---- demo mode: every plan is made and marked, apply (and config set) is refused ----
+// ---- demo mode: every plan is made and marked, apply is refused ----
 
 // Every plan.* method is listed here with a call that plans on the fixture, and says what demo mode does with
 // it; a new plan method that is not classified fails the test, so it cannot reach demo mode unconsidered.
 var demoPlanCalls = map[string]struct {
 	params  any
-	refused bool // no plan to show: refused in demo mode, as the command is
+	refused bool // no plan to show: refused in demo mode (none now: every plan method has a demo plan)
 }{
 	"plan.task.create":       {map[string]any{"title": "x"}, false},
 	"plan.task.update":       {map[string]any{"id": "ac-12", "title": "x"}, false},
@@ -90,7 +90,7 @@ var demoPlanCalls = map[string]struct {
 	"plan.board.post":        {map[string]any{"channel": "dev", "text": "x"}, false},
 	"plan.board.reply":       {map[string]any{"id": "2", "text": "x"}, false},
 	"plan.setup":             {map[string]any{"step": "actor"}, false},
-	"plan.config.set":        {map[string]any{"key": "actor", "value": "mei"}, true},
+	"plan.config.set":        {map[string]any{"key": "actor", "value": "mei"}, false},
 }
 
 func TestDemoModePlansEveryWriteAndRefusesApply(t *testing.T) {

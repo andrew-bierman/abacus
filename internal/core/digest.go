@@ -152,7 +152,7 @@ func (p SetupPlan) Digest() string {
 // reason), and the exact argv its plan would run (nil when it has no plan: done, blocked or unavailable).
 type SetupStepPlan struct {
 	Step    StepID
-	State   string
+	State   StepState
 	Message string
 	Argv    []string
 }
@@ -162,7 +162,7 @@ func (s *Setup) SetupStepPlans(ctx context.Context) []SetupStepPlan {
 	var out []SetupStepPlan
 	for _, st := range s.Steps(ctx) {
 		sp := SetupStepPlan{Step: st.Step, State: st.State, Message: st.Message}
-		if st.State == "needed" || st.State == "repair" {
+		if st.State == StepNeeded || st.State == StepRepairing {
 			if p, err := s.Plan(st.Step); err == nil {
 				sp.Argv = p.Argv
 			}
@@ -181,7 +181,7 @@ func SetupDigest(steps []SetupStepPlan) string {
 	for _, st := range steps {
 		targets = append(targets, string(st.Step))
 		argv = append(argv, append([]string{string(st.Step)}, st.Argv...))
-		guards[string(st.Step)+".state"] = st.State
+		guards[string(st.Step)+".state"] = string(st.State)
 		guards[string(st.Step)+".message"] = st.Message
 	}
 	return PlanDigest("setup", "setup", targets, argv, guards)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -373,5 +374,71 @@ func TestACorruptConfigIsReportedInTheStepResult(t *testing.T) {
 	msg, err := e.s.Apply(context.Background(), p.Confirm())
 	if err != nil || !strings.Contains(msg, "config.json.corrupt") {
 		t.Fatalf("%q %v", msg, err)
+	}
+}
+
+// The setup step states are a closed set: the contract (docs/schema/v1, tool-contract.md) lists exactly these,
+// and a new one is a schema change, so adding a constant without updating them fails here.
+func TestStepStatesAreTheDocumentedClosedSet(t *testing.T) {
+	got := []string{}
+	for _, s := range core.StepStates {
+		got = append(got, string(s))
+	}
+	if want := []string{"done", "needed", "blocked", "unavailable", "repair"}; strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("StepStates = %v, want %v", got, want)
+	}
+	if v := core.StepState("").SchemaValues(); strings.Join(v, ",") != strings.Join(got, ",") {
+		t.Errorf("SchemaValues = %v", v)
+	}
+}
+
+// The demo steps use only the closed set, offer a plan exactly for the needed ones and never read anything.
+func TestDemoSetupStepsAndPlans(t *testing.T) {
+	steps := core.DemoSetupSteps()
+	if len(steps) == 0 {
+		t.Fatal("no demo steps")
+	}
+	seen := map[core.StepState]bool{}
+	for _, s := range steps {
+		if !slices.Contains(core.StepStates, s.State) {
+			t.Errorf("%s: state %q is not in the closed set", s.Step, s.State)
+		}
+		seen[s.State] = true
+		lines, argv, digest, ok := core.DemoSetupPlan(s.Step)
+		if ok != (s.State == core.StepNeeded) || (ok && (len(lines) == 0 || len(argv) == 0 || len(digest) != 64)) {
+			t.Errorf("%s (%s): plan %v %v %v", s.Step, s.State, lines, argv, ok)
+		}
+	}
+	if !seen[core.StepNeeded] || !seen[core.StepBlocked] {
+		t.Errorf("the demo should show a needed and a blocked step: %v", seen)
+	}
+	if _, _, _, ok := core.DemoSetupPlan(core.StepRepair); ok {
+		t.Error("the demo has no repair")
+	}
+	// the review digest moves when a step's state does
+	plans := core.DemoSetupStepPlans()
+	d := core.SetupDigest(plans)
+	plans[0].State = core.StepDone
+	if core.SetupDigest(plans) == d {
+		t.Error("the digest ignores the state")
+	}
+}
+
+func TestConfigListValue(t *testing.T) {
+	v, err := core.ConfigListValue("agent_command", []string{"claude", "a & <b> {task_id}"})
+	if err != nil || v != `["claude","a & <b> {task_id}"]` {
+		t.Fatalf("%q %v", v, err)
+	}
+	var c core.Config
+	if err := c.Set("agent_command", v); err != nil || len(c.AgentCommand) != 2 {
+		t.Errorf("round trip: %v %+v", err, c)
+	}
+	for _, bad := range []struct {
+		key   string
+		words []string
+	}{{"agent_command", nil}, {"agent_command", []string{}}, {"agent_command", []string{"", "x"}}, {"agent_command", []string{"x", "{nope}"}}, {"actor", []string{"mei"}}, {"lambe_config", []string{"/x"}}} {
+		if _, err := core.ConfigListValue(bad.key, bad.words); err == nil {
+			t.Errorf("%s %v was accepted", bad.key, bad.words)
+		}
 	}
 }

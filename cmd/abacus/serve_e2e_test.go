@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -111,7 +112,7 @@ func TestServeOverARealPipe(t *testing.T) {
 	if r := p.read(t); !strings.Contains(string(r["result"]), `"channels"`) {
 		t.Fatalf("%s", r["result"])
 	}
-	// demo mode makes plans, flagged demo, and refuses to apply them (or to set config): nothing is audited
+	// demo mode makes plans, flagged demo, and refuses to apply them (settings and setup steps too): nothing is audited
 	p.send(`{"jsonrpc":"2.0","id":3,"method":"plan.task.close","params":{"id":"ac-12"}}`)
 	r := p.read(t)
 	var plan struct {
@@ -125,9 +126,21 @@ func TestServeOverARealPipe(t *testing.T) {
 	if r := p.read(t); !strings.Contains(string(r["error"]), `"code":"refused"`) {
 		t.Fatalf("%s", r["error"])
 	}
-	p.send(`{"jsonrpc":"2.0","id":6,"method":"plan.config.set","params":{"key":"actor","value":"mei"}}`)
-	if r := p.read(t); !strings.Contains(string(r["error"]), `"code":"refused"`) {
-		t.Fatalf("%s", r["error"])
+	// the settings and the setup steps are demo plans too, and applying them is refused
+	for i, call := range []string{`"plan.config.set","params":{"key":"actor","value":"mei"}`, `"plan.setup","params":{"step":"actor"}`} {
+		p.send(`{"jsonrpc":"2.0","id":` + strconv.Itoa(6+i*10) + `,"method":` + call + `}`)
+		r := p.read(t)
+		var pl struct {
+			PlanID string `json:"plan_id"`
+			Demo   bool   `json:"demo"`
+		}
+		if err := json.Unmarshal(r["result"], &pl); err != nil || !pl.Demo || pl.PlanID == "" {
+			t.Fatalf("%s: %s %s", call, r["result"], r["error"])
+		}
+		p.send(`{"jsonrpc":"2.0","id":` + strconv.Itoa(7+i*10) + `,"method":"apply","params":{"plan_id":"` + pl.PlanID + `"}}`)
+		if r := p.read(t); !strings.Contains(string(r["error"]), `"code":"refused"`) {
+			t.Fatalf("%s", r["error"])
+		}
 	}
 	if audit, _ := filepath.Glob(filepath.Join(p.home, "s", "abacus", "*")); len(audit) != 0 {
 		t.Errorf("demo mode audited: %v", audit)

@@ -315,14 +315,37 @@ func (s *Setup) suggest() string {
 	return SuggestActor()
 }
 
+// StepState is where a setup step stands. It is a closed set: a new value would be a schema_version change.
+type StepState string
+
+const (
+	StepDone        StepState = "done"        // nothing to do
+	StepNeeded      StepState = "needed"      // a plan is available (setup applies it)
+	StepBlocked     StepState = "blocked"     // needed, but cannot be planned yet (the message says why)
+	StepUnavailable StepState = "unavailable" // abacus's own tool for this is not here
+	StepRepairing   StepState = "repair"      // a half-created workspace: only `setup --repair` applies it
+)
+
+// StepStates is every StepState, in the order the schema and the docs list them.
+var StepStates = []StepState{StepDone, StepNeeded, StepBlocked, StepUnavailable, StepRepairing}
+
+// SchemaValues makes the schema a closed enum (see SchemaEnum).
+func (StepState) SchemaValues() []string {
+	out := make([]string, len(StepStates))
+	for i, s := range StepStates {
+		out[i] = string(s)
+	}
+	return out
+}
+
 // StepInfo is one step as `abacus setup` reports it.
 type StepInfo struct {
-	Step    StepID   `json:"step"`
-	Domain  DomainID `json:"domain"`
-	State   string   `json:"state"` // done, needed, blocked, unavailable
-	Message string   `json:"message"`
-	Lines   []string `json:"plan,omitempty"`
-	Command string   `json:"command,omitempty"`
+	Step    StepID    `json:"step"`
+	Domain  DomainID  `json:"domain"`
+	State   StepState `json:"state"`
+	Message string    `json:"message"`
+	Lines   []string  `json:"plan,omitempty"`
+	Command string    `json:"command,omitempty"`
 }
 
 // StepOrder is the order steps are offered in: the workspace first, since Queues needs it.
@@ -336,25 +359,25 @@ func (s *Setup) Steps(ctx context.Context) []StepInfo {
 	var out []StepInfo
 	for _, id := range StepOrder {
 		d := stepDomain[id]
-		info := StepInfo{Step: id, Domain: d, State: "done", Message: d.Title() + " is set up"}
+		info := StepInfo{Step: id, Domain: d, State: StepDone, Message: d.Title() + " is set up"}
 		g := s.Guide(ctx, d)
 		switch {
 		case s.guiders[d] == nil:
-			info.State, info.Message = "unavailable", d.Title()+": abacus's own tool for this is unavailable (see `abacus doctor`)"
+			info.State, info.Message = StepUnavailable, d.Title()+": abacus's own tool for this is unavailable (see `abacus doctor`)"
 		case g == nil:
 		case g.Step == StepRepair: // never part of `setup --yes`: only `setup --repair` applies it
-			info.Step, info.State, info.Message = StepRepair, "repair", g.CLILine()
+			info.Step, info.State, info.Message = StepRepair, StepRepairing, g.CLILine()
 			if p, err := s.Plan(StepRepair); err != nil {
-				info.State, info.Message = "blocked", g.Message+": "+err.Error()
+				info.State, info.Message = StepBlocked, g.Message+": "+err.Error()
 			} else {
 				info.Lines, info.Command = p.Lines, DisplayArgv(p.Argv)
 			}
 		default:
 			info.Message = g.CLILine()
 			if p, err := s.Plan(id); err != nil {
-				info.State, info.Message = "blocked", g.Message+": "+err.Error()
+				info.State, info.Message = StepBlocked, g.Message+": "+err.Error()
 			} else {
-				info.State, info.Lines, info.Command = "needed", p.Lines, DisplayArgv(p.Argv)
+				info.State, info.Lines, info.Command = StepNeeded, p.Lines, DisplayArgv(p.Argv)
 			}
 		}
 		out = append(out, info)

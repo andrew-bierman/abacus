@@ -358,6 +358,10 @@ func TestServeTranscriptsValidateAgainstTheSchemas(t *testing.T) {
 				name = "serve-applied"
 			case doc["placements"] != nil:
 				name = "workspace"
+			case doc["rows"] != nil && doc["removed"] != nil:
+				name = "serve-tasks-since"
+			case doc["steps"] != nil && doc["plan_digest"] != nil:
+				name = "setup"
 			}
 			if name == "" {
 				continue
@@ -369,7 +373,7 @@ func TestServeTranscriptsValidateAgainstTheSchemas(t *testing.T) {
 			}
 		}
 	}
-	for _, n := range []string{"serve-initialize", "serve-plan", "serve-applied", "serve-error", "workspace"} {
+	for _, n := range []string{"serve-initialize", "serve-plan", "serve-applied", "serve-error", "workspace", "serve-tasks-since", "setup"} {
 		if seen[n] == 0 {
 			t.Errorf("no transcript line validated against %s", n)
 		}
