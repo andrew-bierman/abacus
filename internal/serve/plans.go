@@ -20,7 +20,8 @@ type ended int
 const (
 	endedApplied   ended = iota + 1 // claimed by an apply (single use)
 	endedUnwritten                  // claimed, then refused before anything was written
-	endedExpired                    // too old, or pushed out by newer plans
+	endedExpired                    // too old (past its time to live)
+	endedEvicted                    // pushed out by newer plans
 	endedCancelled                  // plan.cancel
 )
 
@@ -39,12 +40,18 @@ type planStore struct {
 	mu           sync.Mutex
 	live         map[string]*heldPlan
 	order        []string
-	ended        map[string]ended
+	ended        map[string]endedPlan
 	endedOrder   []string
 	appliedOrder []string
 	max          int
 	ttl          time.Duration
 	now          func() time.Time
+}
+
+// endedPlan is how a plan ended and, for an expired one, when it stopped being appliable.
+type endedPlan struct {
+	why     ended
+	expires time.Time
 }
 
 // maxEnded bounds the memory of plans that ended otherwise (expired, cancelled, refused before a write);
@@ -56,7 +63,7 @@ const (
 )
 
 func newPlanStore(max int, ttl time.Duration, now func() time.Time) *planStore {
-	return &planStore{live: map[string]*heldPlan{}, ended: map[string]ended{}, max: max, ttl: ttl, now: now}
+	return &planStore{live: map[string]*heldPlan{}, ended: map[string]endedPlan{}, max: max, ttl: ttl, now: now}
 }
 
 func newPlanID() string {
@@ -69,6 +76,10 @@ func newPlanID() string {
 
 // end moves a plan out of the live set. Callers hold mu.
 func (p *planStore) end(id string, why ended) {
+	var expires time.Time
+	if h := p.live[id]; h != nil {
+		expires = h.expires
+	}
 	delete(p.live, id)
 	for i, o := range p.order {
 		if o == id {
@@ -91,7 +102,7 @@ func (p *planStore) end(id string, why ended) {
 			}
 		}
 	}
-	p.ended[id] = why
+	p.ended[id] = endedPlan{why, expires}
 }
 
 // add holds a plan, expiring the old ones and pushing out the oldest when full.
@@ -105,7 +116,7 @@ func (p *planStore) add(h *heldPlan) (expires time.Time) {
 		}
 	}
 	for len(p.live) >= p.max {
-		p.end(p.order[0], endedExpired)
+		p.end(p.order[0], endedEvicted)
 	}
 	h.expires = now.Add(p.ttl)
 	p.live[h.id] = h
@@ -120,25 +131,38 @@ func (p *planStore) take(id, expect string) (*heldPlan, error) {
 	defer p.mu.Unlock()
 	h := p.live[id]
 	if h == nil {
-		switch p.ended[id] {
+		e := p.ended[id]
+		switch e.why {
 		case endedApplied:
 			return nil, &apiError{rpc: rpcServer, code: core.CodeAlreadyApplied, msg: "this plan was already applied (a plan is single use)", planID: id, outcome: "already_applied"}
 		case endedUnwritten:
 			return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: "this plan was refused when it was applied and nothing was written: plan again", planID: id, outcome: "changed"}
+		case endedEvicted:
+			return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: "this plan is no longer held (newer plans pushed it out): plan again", planID: id, outcome: "changed"}
 		case endedExpired:
-			return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: "this plan is no longer held (it expired): plan again", planID: id, outcome: "changed"}
+			return nil, p.expired(id, "", e.expires)
 		}
 		return nil, &apiError{rpc: rpcServer, code: core.CodeNotFound, msg: "no such plan", planID: id, outcome: "not_applied"}
 	}
 	if !p.now().Before(h.expires) {
 		p.end(id, endedExpired)
-		return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: fmt.Sprintf("this plan expired after %s: plan again", p.ttl), planID: id, digest: h.digest, outcome: "changed"}
+		return nil, p.expired(id, h.digest, h.expires)
 	}
 	if expect != "" && expect != h.digest {
 		return nil, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: fmt.Sprintf("the plan you reviewed (%s) is not the plan held under this id (%s): nothing was written", expect[:12], h.digest[:12]), planID: id, digest: h.digest, outcome: "changed"}
 	}
 	p.end(id, endedApplied)
 	return h, nil
+}
+
+// expired is the answer for a plan past its time to live: its own code, so a client can say "this review
+// timed out" and plan again, with when it stopped being appliable.
+func (p *planStore) expired(id, digest string, at time.Time) *apiError {
+	e := &apiError{rpc: rpcServer, code: core.CodeExpired, msg: fmt.Sprintf("this plan expired after %s: nothing was written, plan again", p.ttl), planID: id, digest: digest, outcome: "expired"}
+	if !at.IsZero() {
+		e.expiresAt = at.UTC().Format(time.RFC3339)
+	}
+	return e
 }
 
 // unwritten records that a claimed plan was refused before anything was written.

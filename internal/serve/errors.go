@@ -26,6 +26,8 @@ type apiError struct {
 	code                    core.ErrorCode
 	msg                     string
 	planID, digest, outcome string
+	expiresAt               string // an expired plan: when it stopped being appliable
+	retryAfterMS            int    // busy: how long to wait
 }
 
 func (e *apiError) Error() string { return e.msg }
@@ -33,7 +35,7 @@ func (e *apiError) Error() string { return e.msg }
 // data is the error.data object: core's error body plus what concerns a plan.
 func (e *apiError) data() core.ServeErrorData {
 	b := core.NewErrorDoc(e.code, e.msg).Error
-	return core.ServeErrorData{ErrorBody: b, PlanID: e.planID, PlanDigest: e.digest, Outcome: e.outcome}
+	return core.ServeErrorData{ErrorBody: b, PlanID: e.planID, PlanDigest: e.digest, Outcome: e.outcome, ExpiresAt: e.expiresAt, RetryAfterMS: e.retryAfterMS}
 }
 
 func usageErr(format string, a ...any) *apiError {
@@ -81,6 +83,8 @@ func outcomeOf(code core.ErrorCode) string {
 		return "already_applied"
 	case core.CodeChanged:
 		return "changed"
+	case core.CodeExpired:
+		return "expired"
 	}
 	return "not_applied"
 }

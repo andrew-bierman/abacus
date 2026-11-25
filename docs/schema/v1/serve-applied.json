@@ -117,6 +117,21 @@
       ],
       "type": "object"
     },
+    "ServeStepResult": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "step"
+      ],
+      "type": "object"
+    },
     "TaskResult": {
       "properties": {
         "id": {
@@ -144,6 +159,9 @@
     "bulk": {
       "$ref": "#/$defs/BulkReport"
     },
+    "config": {
+      "$ref": "#/$defs/ServeStepResult"
+    },
     "demo": {
       "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
       "type": "boolean"
@@ -162,6 +180,9 @@
     },
     "schema_version": {
       "const": 1
+    },
+    "setup": {
+      "$ref": "#/$defs/ServeStepResult"
     },
     "task": {
       "$ref": "#/$defs/TaskResult"

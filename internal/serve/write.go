@@ -51,6 +51,9 @@ type taskParams struct {
 }
 
 func (e *Engine) hold(h *heldPlan, p core.ServePlan) core.ServePlan {
+	if e.cfg.Demo { // a demo review can never stand in for a real one
+		h.digest = core.DemoDigest(h.digest)
+	}
 	h.id = newPlanID()
 	p.PlanID, p.PlanDigest, p.Kind = h.id, h.digest, h.kind
 	h.expires = e.plans.add(h)
@@ -444,6 +447,14 @@ func (e *Engine) apply(ctx context.Context, raw json.RawMessage) (any, error) {
 	case <-ctx.Done(): // before the claim: nothing was written and the plan is still held
 		return nil, ctx.Err()
 	}
+	// Having waited for the turn, look again before claiming anything: a request that ended (or a server that
+	// began shutting down) while it waited must not write, and its plan stays held.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if e.closing.Load() {
+		return nil, failErr(core.CodeRefused, "the server is shutting down: nothing was written and the plan was not claimed")
+	}
 	h, err := e.plans.take(id, expect)
 	if err != nil {
 		return nil, err
@@ -477,6 +488,9 @@ func (e *Engine) apply(ctx context.Context, raw json.RawMessage) (any, error) {
 // panicked a result unknown) is still a result unknown with the plan named, never a bare internal error,
 // because the plan is spent and the write may have been sent.
 func (e *Engine) runHeld(ctx context.Context, h *heldPlan) (res *core.ServeApplied, wrote bool, err error) {
+	if err := ctx.Err(); err != nil { // ended between the claim and the write: nothing was sent
+		return nil, false, fromErr(err)
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			res, wrote = nil, true
@@ -484,4 +498,102 @@ func (e *Engine) runHeld(ctx context.Context, h *heldPlan) (res *core.ServeAppli
 		}
 	}()
 	return h.apply(ctx)
+}
+
+// setupSteps are the steps plan.setup takes: the ones `setup` applies, and the repair it applies on its own.
+var setupSteps = []core.StepID{core.StepWorkspace, core.StepQueues, core.StepActor, core.StepRepair}
+
+// setupOffered says whether `setup` would offer the step now: needed, or for a half-made workspace repair.
+func setupOffered(ctx context.Context, s *core.Setup, step core.StepID) bool {
+	for _, si := range s.Steps(ctx) {
+		if si.Step == step && (si.State == "needed" || si.State == "repair") {
+			return true
+		}
+	}
+	return false
+}
+
+// planSetup plans one first-run setup step, as the TUI does: the exact command, nothing run. At apply the
+// step is planned again and must be the same plan, then core's setup gate checks its own preconditions, audits
+// the attempt before anything runs and records the outcome.
+func (e *Engine) planSetup(ctx context.Context, raw json.RawMessage) (any, error) {
+	var p struct {
+		Step string `json:"step"`
+	}
+	if err := decodeParams(raw, &p); err != nil {
+		return nil, err
+	}
+	step := core.StepID(p.Step)
+	if !slices.Contains(setupSteps, step) {
+		return nil, usageErr("step is one of workspace, queues, actor, repair")
+	}
+	s := e.newSetup(e.entries(ctx))
+	if !setupOffered(ctx, s, step) {
+		return nil, failErr(core.CodeRefused, "setup %s: there is nothing to do for this step now (see setup.state)", step)
+	}
+	plan, err := s.Plan(step)
+	if err != nil {
+		return nil, failErr(core.CodeRefused, "setup %s: %s", step, core.Sanitize(err.Error()))
+	}
+	h := &heldPlan{kind: "setup", digest: plan.Digest()}
+	want := plan.Digest()
+	h.apply = func(ctx context.Context) (*core.ServeApplied, bool, error) {
+		if now, err := s.Plan(step); err != nil || now.Digest() != want || !setupOffered(ctx, s, step) { // the state it was planned against moved
+			return nil, false, fromErr(core.Stale("setup " + string(step) + " no longer fits the state it was planned against"))
+		}
+		msg, err := s.Apply(ctx, plan.Confirm())
+		if err != nil {
+			var ae *core.AuditError
+			return nil, !errors.As(err, &ae), gateErr(err, h.id, h.digest)
+		}
+		return &core.ServeApplied{PlanID: h.id, PlanDigest: h.digest, Kind: "setup", Outcome: "applied", Setup: &core.ServeStepResult{Step: string(step), Message: core.Sanitize(msg)}}, true, nil
+	}
+	return e.hold(h, core.ServePlan{Op: string(step), Lines: plan.Lines, Argv: plan.Argv}), nil
+}
+
+// planConfigSet plans `config set KEY VALUE`: the value is checked as the command checks it, and the plan is
+// guarded by the value the key has now. Not available on demo data, as `config set` is not.
+func (e *Engine) planConfigSet(_ context.Context, raw json.RawMessage) (any, error) {
+	var p struct {
+		Key   string  `json:"key"`
+		Value *string `json:"value"`
+	}
+	if err := decodeParams(raw, &p); err != nil {
+		return nil, err
+	}
+	if p.Key == "" || p.Value == nil {
+		return nil, usageErr("plan.config.set needs a key and a value (%s)", strings.Join(core.ConfigKeys, ", "))
+	}
+	st := e.cfg.Config
+	if st.Path == "" {
+		path, err := core.DefaultConfigPath()
+		if err != nil {
+			return nil, fromErr(err)
+		}
+		st = core.ConfigStore{Path: path}
+	}
+	plan, err := core.PlanConfigSet(st, p.Key, *p.Value)
+	if err != nil {
+		return nil, usageErr("%v", err)
+	}
+	h := &heldPlan{kind: "config", digest: plan.Digest()}
+	h.apply = func(ctx context.Context) (*core.ServeApplied, bool, error) {
+		note, wrote, err := core.ApplyConfigSet(ctx, st, e.audit(), plan.Confirm())
+		if err != nil {
+			if !wrote { // refused before the attempt was recorded: nothing happened
+				var ae *core.AuditError
+				if errors.As(err, &ae) {
+					return nil, false, gateErr(err, h.id, h.digest)
+				}
+				return nil, false, fromErr(err)
+			}
+			return nil, true, gateErr(err, h.id, h.digest)
+		}
+		msg := p.Key + " set"
+		if note != "" {
+			msg += ": " + note
+		}
+		return &core.ServeApplied{PlanID: h.id, PlanDigest: h.digest, Kind: "config", Outcome: "applied", Config: &core.ServeStepResult{Step: p.Key, Message: core.Sanitize(msg)}}, true, nil
+	}
+	return e.hold(h, core.ServePlan{Op: "set " + p.Key, Lines: plan.Lines, Argv: plan.Argv}), nil
 }

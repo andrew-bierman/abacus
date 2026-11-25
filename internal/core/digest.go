@@ -186,3 +186,10 @@ func SetupDigest(steps []SetupStepPlan) string {
 	}
 	return PlanDigest("setup", "setup", targets, argv, guards)
 }
+
+// DemoDigest is the plan digest a client sees in demo mode: never equal to the digest of the same plan
+// made against a real tracker, so a demo review cannot stand in for a real one (--expect-digest).
+func DemoDigest(digest string) string {
+	sum := sha256.Sum256([]byte("abacus-demo-plan\x00" + digest))
+	return hex.EncodeToString(sum[:])
+}

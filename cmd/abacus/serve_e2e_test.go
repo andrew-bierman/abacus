@@ -111,8 +111,21 @@ func TestServeOverARealPipe(t *testing.T) {
 	if r := p.read(t); !strings.Contains(string(r["result"]), `"channels"`) {
 		t.Fatalf("%s", r["result"])
 	}
-	// demo mode serves reads only: a plan is refused, and nothing is audited
+	// demo mode makes plans, flagged demo, and refuses to apply them (or to set config): nothing is audited
 	p.send(`{"jsonrpc":"2.0","id":3,"method":"plan.task.close","params":{"id":"ac-12"}}`)
+	r := p.read(t)
+	var plan struct {
+		PlanID string `json:"plan_id"`
+		Demo   bool   `json:"demo"`
+	}
+	if err := json.Unmarshal(r["result"], &plan); err != nil || !plan.Demo || plan.PlanID == "" {
+		t.Fatalf("%s %s", r["result"], r["error"])
+	}
+	p.send(`{"jsonrpc":"2.0","id":4,"method":"apply","params":{"plan_id":"` + plan.PlanID + `"}}`)
+	if r := p.read(t); !strings.Contains(string(r["error"]), `"code":"refused"`) {
+		t.Fatalf("%s", r["error"])
+	}
+	p.send(`{"jsonrpc":"2.0","id":6,"method":"plan.config.set","params":{"key":"actor","value":"mei"}}`)
 	if r := p.read(t); !strings.Contains(string(r["error"]), `"code":"refused"`) {
 		t.Fatalf("%s", r["error"])
 	}

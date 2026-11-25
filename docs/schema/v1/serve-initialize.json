@@ -1,5 +1,38 @@
 {
   "$defs": {
+    "Contract": {
+      "properties": {
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "error_codes": {
+          "type": "integer"
+        },
+        "plan_digest": {
+          "type": "boolean"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "serve": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "capabilities",
+        "error_codes",
+        "plan_digest",
+        "schema_version",
+        "serve"
+      ],
+      "type": "object"
+    },
     "ServeCapabilities": {
       "properties": {
         "limits": {
@@ -58,6 +91,9 @@
         "max_plans": {
           "type": "integer"
         },
+        "max_queued": {
+          "type": "integer"
+        },
         "max_request_bytes": {
           "type": "integer"
         },
@@ -74,6 +110,7 @@
         "max_depth",
         "max_in_flight",
         "max_plans",
+        "max_queued",
         "max_request_bytes",
         "max_response_bytes",
         "plan_ttl_seconds"
@@ -89,6 +126,9 @@
     },
     "capabilities": {
       "$ref": "#/$defs/ServeCapabilities"
+    },
+    "contract": {
+      "$ref": "#/$defs/Contract"
     },
     "demo": {
       "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",

@@ -59,7 +59,7 @@
   },
   "contract": {
     "schema_version": 1,
-    "error_codes": 1,
+    "error_codes": 2,
     "plan_digest": true,
     "serve": true,
     "capabilities": [

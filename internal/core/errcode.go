@@ -40,13 +40,19 @@ const (
 	CodeTimeout ErrorCode = "timeout"
 	// CodeUnsupported: this build or provider does not offer the thing asked for.
 	CodeUnsupported ErrorCode = "unsupported"
+	// CodeExpired: the plan was held too long and is no longer appliable (serve: past its time to live).
+	// Nothing was written; plan again.
+	CodeExpired ErrorCode = "expired"
+	// CodeBusy: the server has more requests than it will take at once (serve). Nothing ran; try again
+	// after retry_after_ms.
+	CodeBusy ErrorCode = "busy"
 	// CodeFailed: anything else that failed.
 	CodeFailed ErrorCode = "failed"
 )
 
 // ErrorCodes is the whole closed set, in documentation order.
 var ErrorCodes = []ErrorCode{CodeUsage, CodeNotConnected, CodeNeedsSetup, CodeNotFound, CodeRefused, CodeChanged,
-	CodeAlreadyApplied, CodeUnknownOutcome, CodeAppliedMismatch, CodeAuditFailed, CodeTimeout, CodeUnsupported, CodeFailed}
+	CodeAlreadyApplied, CodeUnknownOutcome, CodeAppliedMismatch, CodeAuditFailed, CodeTimeout, CodeUnsupported, CodeExpired, CodeBusy, CodeFailed}
 
 // ErrorBody is the error of a failed command in the JSON error document `{schema_version, error}`.
 type ErrorBody struct {
@@ -68,7 +74,7 @@ type ErrorDoc struct {
 func NewErrorDoc(code ErrorCode, msg string) ErrorDoc {
 	b := ErrorBody{Code: code, Message: Sanitize(msg)}
 	b.UnknownOutcome = code == CodeUnknownOutcome
-	b.Retryable = code == CodeTimeout || code == CodeChanged
+	b.Retryable = code == CodeTimeout || code == CodeChanged || code == CodeExpired || code == CodeBusy
 	return ErrorDoc{Error: b}
 }
 

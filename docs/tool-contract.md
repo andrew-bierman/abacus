@@ -65,8 +65,7 @@ document on stdout, so a client never matches prose:
 {"schema_version": 1, "error": {"code": "not_connected", "message": "tasks: not connected. ...", "retryable": true, "unknown_outcome": true}}
 ```
 
-`retryable` and `unknown_outcome` are omitted when false. `retryable` is true only for `timeout` and
-`changed` (run it again, after re-planning for `changed`); `unknown_outcome` is true only for
+`retryable` and `unknown_outcome` are omitted when false. `retryable` is true only for `timeout`, `changed`, `expired` and `busy` (run it again, after re-planning for `changed` and `expired`, after `retry_after_ms` for `busy`); `unknown_outcome` is true only for
 `unknown_outcome`: the write may have happened, so show "result unknown", offer a refresh and never a
 retry. `message` is the human sentence (control characters removed); do not parse it.
 
@@ -87,6 +86,8 @@ The set is closed and typed in core (`core.ErrorCode`); a client treats a code i
 | `audit_failed` | 1 | the audit log could not be written, so the write was blocked (fail closed) |
 | `timeout` | 1 | a read ran out of time or was cancelled |
 | `unsupported` | 1 | the provider does not offer what the command needs (for example it cannot read the task first) |
+| `expired` | 1 | serve only: a held plan outlived its time to live (`plan_ttl_seconds`) and was not applied; nothing was written, plan again. The error carries `expires_at` |
+| `busy` | 1 | serve only: more requests than the server takes at once (in flight plus its queue); nothing ran. The error carries `retry_after_ms` |
 | `failed` | 1 | anything else that failed |
 
 A failing command that already prints its own result document is exempt from the error document and
@@ -421,8 +422,8 @@ closed set and `source` says how it was learned.
   first signal, so a second SIGINT or SIGTERM kills the process. Outside an apply (reads, the confirm prompt) the default behavior stays,
   so a prompt can still be interrupted. A write that had already finished when the signal arrived reports its real result.
 - **`version --json` `contract`** lets a client feature-detect:
-  `{"schema_version": 1, "error_codes": 1, "plan_digest": true, "serve": true, "capabilities": ["bulk", "demo", "history", "reopen", "schema", "serve", "tracker"]}`.
-  `error_codes` is the version of the closed code set (bumped when a code is added), `plan_digest` says every
+  `{"schema_version": 1, "error_codes": 2, "plan_digest": true, "serve": true, "capabilities": ["bulk", "demo", "history", "reopen", "schema", "serve", "tracker"]}`.
+  `error_codes` is the version of the closed code set (bumped when a code is added: 2 added `expired` and `busy`), `plan_digest` says every
   write has `plan_digest` and `--expect-digest`, `serve` says `abacus serve --stdio` exists in this build, and
   `capabilities` lists optional features, sorted. A client treats a capability it does not know as absent.
 
@@ -600,8 +601,12 @@ a random per-run value, normalized in its golden.
 message per line on stdin and stdout, no network port. Its read methods return the documents above (same
 bytes as the command's `--json`, on one line), its errors carry the closed codes of "Errors: stable codes" in
 `error.data`, and its writes are the plan and apply of "Plan digests" with a server-held single-use plan id.
-The protocol, limits and the notification rules are in `docs/serve-protocol.md`; the extra messages have
-schemas in `docs/schema/v1` (`serve-initialize`, `serve-plan`, `serve-applied`, `serve-error`).
+`initialize` also returns this document's `contract` (the one `version --json` prints), so a client needs no
+second process. The protocol, limits and the notification rules are in `docs/serve-protocol.md`; the extra
+messages have schemas in `docs/schema/v1` (`serve-initialize`, `serve-plan`, `serve-applied`, `serve-error`).
+Serve plans everything the gate offers, setup steps and `config set` included (`plan.setup`,
+`plan.config.set`); in demo mode every plan except `config set` is made and flagged `"demo": true` with a
+demo digest, and `apply` is refused, as the effects table above says for the commands.
 
 ## Clients
 

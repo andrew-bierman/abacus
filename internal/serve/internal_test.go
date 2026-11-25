@@ -3,6 +3,8 @@ package serve
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 func TestMaxDepthIgnoresBracketsInStrings(t *testing.T) {
@@ -133,7 +136,9 @@ func TestPlanStoreExpiryAndEviction(t *testing.T) {
 	d := strings.Repeat("a", 64)
 	st.add(held("p1", d))
 	*now = now.Add(time.Minute) // exactly the TTL: expired
-	if _, err := st.take("p1", ""); codeOf(err) != core.CodeChanged {
+	_, err := st.take("p1", "")
+	var ae *apiError
+	if codeOf(err) != core.CodeExpired || !errors.As(err, &ae) || ae.expiresAt != "2026-01-01T00:01:00Z" {
 		t.Fatalf("expired: %v", err)
 	}
 	st.add(held("p2", d))
@@ -227,7 +232,7 @@ func TestNotifyNeverBlocksAndCoalesces(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		for i := 0; i < 100000; i++ {
-			if !s.notify("tasks", "x") {
+			if !s.notify(core.ServeNotice{Topic: "tasks", Reason: "x"}) {
 				t.Error("a first notification was refused")
 			}
 		}
@@ -241,16 +246,75 @@ func TestNotifyNeverBlocksAndCoalesces(t *testing.T) {
 	if n := len(s.out); n != 1 {
 		t.Fatalf("%d queued for one topic", n)
 	}
-	if !s.notify("workspace", "x") || len(s.out) != 2 {
+	if !s.notify(core.ServeNotice{Topic: "workspace", Reason: "x"}) || len(s.out) != 2 {
 		t.Fatal("a second topic gets its own slot")
 	}
 	for len(s.out) < cap(s.out) { // fill the queue with responses
 		s.out <- outMsg{b: []byte("{}")}
 	}
-	if s.notify("engine", "x") {
+	if s.notify(core.ServeNotice{Topic: "engine", Reason: "x"}) {
 		t.Fatal("a notification that did not fit must say so (the watcher retries), not vanish")
 	}
 	if s.seq["engine"] != 0 {
 		t.Fatal("a refused notification used a sequence number")
+	}
+}
+
+// Changes that arrive while a notification waits are merged into it, so a client that refetches only the
+// listed ids misses none; anything unknown, or too many, makes it "full".
+func TestNotifyMergesWhatArrivesWhileOneIsQueued(t *testing.T) {
+	s := New(Config{})
+	ids := func(a ...string) core.ServeNotice {
+		return core.ServeNotice{Topic: "tasks", Reason: "x", Kind: "ids", ChangedIDs: a, Fingerprint: "f" + strings.Join(a, "")}
+	}
+	s.notify(ids("b"))
+	s.notify(ids("a", "b"))
+	n := *s.pendingN["tasks"]
+	if n.Kind != "ids" || !slices.Equal(n.ChangedIDs, []string{"a", "b"}) || n.Fingerprint != "fab" || n.Seq != 1 || len(s.out) != 1 {
+		t.Fatalf("merged: %+v (%d queued)", n, len(s.out))
+	}
+	s.notify(core.ServeNotice{Topic: "tasks", Reason: "x"}) // ids unknown: refetch everything
+	if n := *s.pendingN["tasks"]; n.Kind != "full" || n.ChangedIDs != nil || n.Seq != 1 {
+		t.Fatalf("full: %+v", n)
+	}
+	s.notify(ids("c")) // and it stays full
+	if n := *s.pendingN["tasks"]; n.Kind != "full" || n.ChangedIDs != nil {
+		t.Fatalf("full again: %+v", n)
+	}
+	// too many ids is "full" too, whether it arrives alone or by merging
+	many := func(from, n int) []string {
+		out := make([]string, n)
+		for i := range out {
+			out[i] = fmt.Sprintf("t-%04d", from+i)
+		}
+		return out
+	}
+	s.notify(core.ServeNotice{Topic: "workspace", Kind: "ids", ChangedIDs: many(0, maxNoticeIDs+1)})
+	if n := *s.pendingN["workspace"]; n.Kind != "full" || n.ChangedIDs != nil {
+		t.Fatalf("a single oversized notice: %+v", n)
+	}
+	s.notify(core.ServeNotice{Topic: "agents", Kind: "ids", ChangedIDs: many(0, maxNoticeIDs)})
+	s.notify(core.ServeNotice{Topic: "agents", Kind: "ids", ChangedIDs: many(maxNoticeIDs, 1)})
+	if n := *s.pendingN["agents"]; n.Kind != "full" || n.ChangedIDs != nil {
+		t.Fatalf("a merge past the bound: %+v", n)
+	}
+	// what is written is what was merged, and the next change opens a new notification
+	b := noticeBytes(core.ServeNotice{Topic: "agents", Seq: 7, Kind: "ids", ChangedIDs: []string{"a"}, Fingerprint: "f"})
+	if string(b) != `{"jsonrpc":"2.0","method":"agents.changed","params":{"topic":"agents","seq":7,"kind":"ids","fingerprint":"f","changed_ids":["a"]}}` {
+		t.Errorf("%s", b)
+	}
+}
+
+func TestChangedIDsCollectsNothingPastTheCap(t *testing.T) {
+	many := make([]string, maxNoticeIDs+1)
+	for i := range many {
+		many[i] = fmt.Sprintf("t-%d", i)
+	}
+	if ids, ok := changedIDs(taskview.Change{Added: many}); ok || ids != nil {
+		t.Errorf("past the cap: %d ids, %v", len(ids), ok)
+	}
+	ids, ok := changedIDs(taskview.Change{Added: []string{"b"}, Changed: []string{"c"}, Removed: []string{"a"}})
+	if !ok || !slices.Equal(ids, []string{"a", "b", "c"}) {
+		t.Errorf("%v %v", ids, ok)
 	}
 }

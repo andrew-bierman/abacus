@@ -29,9 +29,13 @@ abacus serve --stdio [--demo] [--tracker DIR] [--all] [--lambe-config FILE]
 - stdout carries only protocol lines. stderr gets the first-run "preparing" notice and, when something
   goes wrong, one plain line (a handler failed, the client stopped reading). It never carries a request, a
   parameter or a result: task text, tokens and argv values are not logged.
-- `--demo` (or `ABACUS_DEMO=1`) serves invented fixture data: every result carries `"demo": true`, and every
-  `plan.*` and `apply` is refused (`refused`, "demo data cannot be changed"), as a command refuses a write on
-  demo data. `--tracker DIR` selects the tracker as on the other commands (not with demo). `version --json`
+- `--demo` (or `ABACUS_DEMO=1`) serves invented fixture data: every result carries `"demo": true`. Every
+  `plan.*` works against the demo data (so a client can show and screenshot its confirm sheets) and returns a
+  plan flagged `"demo": true` whose `plan_digest` is the demo digest: the one `--demo --dry-run` prints, never
+  equal to a real plan's. `apply` is always refused (`refused`, "demo data cannot be changed", nothing written,
+  nothing audited), and so is `plan.config.set` (a command with no plan to show, like `config set --demo`). The
+  effects table of the commands decides which: `plan.setup` is a plan, as `setup --dry-run` is. A held demo plan
+  can be cancelled like any other. `--tracker DIR` selects the tracker as on the other commands (not with demo). `version --json`
   reports `contract.serve: true` and the `serve` capability.
 
 ## Framing and limits
@@ -45,10 +49,11 @@ request. The server never writes a pretty-printed or multi-line message.
 | Request line | 1 MiB | the line is read to its end and thrown away (never buffered past the limit), error -32600 `usage` with id `null`; the server keeps serving |
 | Nesting | 32 levels | -32600 `usage` |
 | Result | 16 MiB | the request fails with `failed` and says to narrow it (a query, a smaller limit) |
-| Requests in flight | 8 | the next one is refused at once with `refused` ("too many requests in flight"), never queued without bound |
+| Requests in flight | 8 | the next ones wait for a slot, strictly in arrival order (a first-in, first-out queue), up to the queue bound (next row); a deadline or a cancel reaches a waiting request |
+| Requests queued | 32 | past in-flight plus queued, the request is refused at once with `busy` and `retry_after_ms` (nothing ran) |
 | Plans held | 64 | the oldest is pushed out; applying it gives `changed` |
 | Plans remembered | 16384 applied ids, 1024 others (expired, cancelled, refused) | past the bound an old id is `not_found` instead of `already_applied` or `changed` |
-| Plan age | 10 minutes | applying it gives `changed` |
+| Plan age | 10 minutes | applying it gives `expired`, with `expires_at` |
 | Deadline | 30 s default, 10 min most | see "Deadlines" |
 
 All of them are announced in `initialize`'s `capabilities.limits`.
@@ -71,8 +76,9 @@ A failed request is a JSON-RPC error: `error: {code, message, data}`.
 - `error.data` is the error object every failing command prints (`{code, message, retryable?,
   unknown_outcome?}`, the closed set of `docs/tool-contract.md` "Errors: stable codes": `usage`,
   `not_connected`, `needs_setup`, `not_found`, `refused`, `changed`, `already_applied`,
-  `unknown_outcome`, `applied_mismatch`, `audit_failed`, `timeout`, `unsupported`, `failed`), plus, for a
-  write, `plan_id`, `plan_digest` and `outcome` (below). Schema: `serve-error.json` (`schema_version` is
+  `unknown_outcome`, `applied_mismatch`, `audit_failed`, `timeout`, `unsupported`, `expired`, `busy`, `failed`),
+  plus, for a write, `plan_id`, `plan_digest` and `outcome` (below), `expires_at` for `expired` and
+  `retry_after_ms` for `busy`. Schema: `serve-error.json` (`schema_version` is
   not repeated there). A code a client does not know means `failed`.
 
 | Situation | `data.code` |
@@ -81,12 +87,14 @@ A failed request is a JSON-RPC error: `error: {code, message, data}`.
 | a read cancelled by the client, over its deadline, or cut by shutdown | `timeout` (retryable) |
 | a domain the call needs is not connected | `not_connected` (the message says how to connect) |
 | the task, message or plan id does not exist | `not_found` |
-| the plan no longer fits (task moved, plan expired, digest differs) | `changed` (retryable: plan again) |
+| the plan no longer fits (task moved, pushed out by newer plans, digest differs) | `changed` (retryable: plan again) |
+| the plan outlived its time to live (`limits.plan_ttl_seconds`) | `expired` (retryable: plan again; `data.expires_at` says when) |
 | the plan was already used | `already_applied` |
 | a write may or may not have happened | `unknown_outcome` (`unknown_outcome: true`, never retryable) |
 | the write landed but is not what was asked | `applied_mismatch` |
 | the audit log could not be written, so the write was blocked | `audit_failed` |
-| too many requests in flight, a repeat board post, a request before `initialize` | `refused` |
+| a repeat board post, a request before `initialize`, a demo write, a setup step that is not offered | `refused` |
+| in flight and queue are both full | `busy` (retryable after `data.retry_after_ms`; nothing ran) |
 
 A domain that is not connected is not an error for the read that reports it (`board`, `leases`,
 `queues`, `tasks.summary`, `agents`, `status`): the report says `state: "not-connected"` with
@@ -105,11 +113,15 @@ needs it to answer (`tasks.list`, `tasks.show`, a plan).
 
 `protocol_version` is required and must be 1 (else `unsupported`, and the gate stays shut). The result
 (`serve-initialize.json`) carries `schema_version` (the report contract this server prints),
-`abacus_version`, and `capabilities`: every method name, the notifications, the subscribable topics and
-the limits. A client treats a method missing from `methods` as unavailable.
+`abacus_version`, `capabilities` (every method name, the notifications, the subscribable topics and the
+limits, among them `max_in_flight`, `max_queued`, `plan_ttl_seconds` and `max_request_bytes`, the longest
+request line) and `contract`: the same section `version --json` prints (`schema_version`, `error_codes`,
+`plan_digest`, `serve`, `capabilities`), so a client feature-detects from the handshake with no second process.
+A client treats a method missing from `methods` as unavailable.
 
 `shutdown` (no params): the server stops accepting requests (new ones get `refused`), cancels reads in
-flight, lets a write in flight finish for up to 5 seconds (past that it is cancelled, and a cancelled
+flight and every request still waiting for a slot (a waiting `apply` is cancelled with its plan unclaimed),
+refuses an `apply` that holds a slot but has not started writing (`refused`, plan unclaimed), lets a write in flight finish for up to 5 seconds (past that it is cancelled, and a cancelled
 write is `unknown_outcome`), answers every request in flight, then answers `shutdown` with `{}` plus
 `schema_version`, stops its watchers and exits 0. End of input does the same without the answer.
 
@@ -187,6 +199,8 @@ that is not one of the verb's own is refused.
 | `plan.tasks.bulk` | `ids` (at most 25, whole ids), `op` (`close`, `status`, `priority`, `label-add`, `label-remove`, `assign`), `value`, `clear` | `tasks bulk` |
 | `plan.board.post` | `channel`, `text`, `again` | `board post` |
 | `plan.board.reply` | `id`, `text`, `again` | `board reply` |
+| `plan.setup` | `step` (`workspace`, `queues`, `actor`, `repair`) | one `setup` step, only when `setup.state` offers it (needed, or repair for a half-made workspace); else `refused` |
+| `plan.config.set` | `key`, `value` | `config set KEY VALUE` (same validation; refused in demo mode) |
 | `plan.cancel` | `plan_id` | discards a held plan: `{plan_id, cancelled: true}` |
 
 Planning runs nothing and writes nothing (it reads the task or tracker it needs, as the commands do). A
@@ -197,7 +211,7 @@ change core refuses (a bad id, a status out of the set, a control character in a
 The result is `serve-plan.json`:
 
 ```
-{"plan_id":"plan_...", "plan_digest":"<64 hex>", "kind":"task|bulk|board", "op":"priority",
+{"plan_id":"plan_...", "plan_digest":"<64 hex>", "kind":"task|bulk|board|setup|config", "op":"priority",
  "lines":["set the priority of task ac-12", ...], "context":[...], "argv":["bd","priority","ac-12","--priority=3"],
  "items":[...], "skipped":[...], "expires_at":"2026-11-24T09:10:00Z", "schema_version":1}
 ```
@@ -217,7 +231,7 @@ match for every verb.
 3. The plan is **claimed**: removed from the held set in one atomic step, so a second `apply` of the
    same id (concurrent or later) gets `already_applied` and nothing runs. A digest that is not the
    plan's is `changed` (nothing written, nothing audited, the plan stays held: the client had a different
-   one). An expired or pushed-out plan is `changed`; an id never issued, or cancelled, is `not_found`.
+   one). A plan past its time to live is `expired` (with `expires_at`) and one pushed out by newer plans is `changed`; an id never issued, or cancelled, is `not_found`.
    If the request is cancelled or runs out of time after the claim but before the write (the re-read in
    step 4), the answer is `timeout` carrying `plan_id` and `outcome`, and says nothing was written and the
    plan is spent: plan again.
@@ -228,7 +242,8 @@ match for every verb.
    `audit_failed`, nothing ran, the plan is spent as in step 4), then the one allowlisted argv, then
    the outcome (`ok`, `error`, `unknown`, `applied-mismatch`).
 
-Success is `serve-applied.json`: `{plan_id, plan_digest, kind, outcome: "applied", task | board | bulk}`.
+Success is `serve-applied.json`: `{plan_id, plan_digest, kind, outcome: "applied", task | board | bulk | setup | config}`
+(`setup` and `config` are `{step, message}`: the step or key and its one-line result).
 Every failure after the claim carries the plan and what became of it in `data`:
 
 | `data.outcome` | `data.code` | Meaning | The client |
@@ -254,24 +269,50 @@ What the protocol does not give: it does not make two *different* processes unab
 change. The id's single use holds inside one server; across processes the digest, the audit log and the
 tracker's own guards remain the backstops, as for the command line.
 
-Not exposed: `setup` and `setup --repair` (the setup state is readable; applying it stays a command),
-`config set`, `rex layout` and the workspace actions (focus, run, split), `tasks delete` and everything
-else the gate never offered.
+`plan.setup` and `plan.config.set` go through the same gate. A setup plan holds one step, planned as `setup`
+plans it (its `plan_digest` is the digest of that step's plan, the one `setup --repair --dry-run` prints for a
+repair); at apply the step is planned again and must be the same plan and still offered, then core's setup
+gate re-checks its own preconditions, writes the attempt to the audit log before anything runs and records the
+outcome. A config plan is guarded by the value the key has when it is planned: if the key moved, apply is
+`changed` and nothing is written or audited (the comparison is made again under the config file's lock, so a
+concurrent change is never overwritten); the attempt and outcome are audited for every key: the key, and for
+`agent_command` the argv "work on this" will run, for `actor`, `tracker_dir` and `board_url` the new value
+(sanitized, at most 120 bytes), where the command line audits `agent_command` only. The
+commands `setup` and `config set` are unchanged.
+
+Not exposed: `rex layout` and the workspace actions (focus, run, split), `tasks delete` and everything else
+the gate never offered.
 
 ## Notifications
 
 A client subscribes to topics; the server sends a notification when something changed. A notification says
-that, never what: refetch. Losing one costs one refetch, and the server never queues them without
-bound.
+that, and at most which ids; it never carries the data: refetch. Losing one costs one refetch, and the server
+never queues them without bound.
 
-`subscribe {topics: [...]}` and `unsubscribe {topics: [...]}` (topics: `tasks`, `workspace`) answer
+`subscribe {topics: [...]}` and `unsubscribe {topics: [...]}` (topics: `tasks`, `workspace`, `agents`) answer
 `{active: [...], unavailable: {topic: reason}}`. Subscribing twice is harmless (one watcher per topic).
 
 | Notification | Params | When |
 |---|---|---|
-| `tasks.changed` | `{topic, seq, reason}` | the tracker's change fingerprint moved (`reason: "fingerprint"`), or, for a tracker with no cheap fingerprint, a full read differs from the last (`"snapshot"`) |
-| `workspace.changed` | `{topic, seq, reason}` | the terminal workspace's own event feed reported a relevant change |
-| `engine.degraded` | `{topic: "engine", seq, reason}` | the tracker could not be checked three times in a row (once per episode), or a provider panicked in a watcher (that watcher stops: subscribe again) |
+| `tasks.changed` | `{topic, seq, reason, kind, fingerprint?, changed_ids?}` | the tracker's change fingerprint moved (`reason: "fingerprint"`), or, for a tracker with no cheap fingerprint, a full read differs from the last (`"snapshot"`) |
+| `workspace.changed` | `{topic, seq, reason, kind}` | the terminal workspace's own event feed reported a relevant change |
+| `agents.changed` | `{topic, seq, reason, kind, fingerprint, changed_ids}` | a poll (every 30 seconds) found an agent that appeared, went, or changed state, task, branch, model or session; token and activity figures are not compared |
+| `engine.degraded` | `{topic: "engine", seq, reason, kind}` | the tracker could not be checked three times in a row (once per episode), or a provider panicked in a watcher (that watcher stops: subscribe again) |
+
+`kind` says how much to refetch. `"full"` (the default, and the only one for `workspace` and `engine`): refetch
+the topic, as before; a client that ignores the other fields does exactly that. `"ids"`: only the tasks (or
+agents) in `changed_ids` were added, changed or removed, so refetch those (`tasks.show`, or one `agents` read)
+and drop any that no longer exists. `fingerprint` is an opaque token of the state the notice is about: compare
+it, never parse it. `tasks.changed` is `"ids"` when the tracker can be read whole and the two reads differ in
+some task; otherwise (the fingerprint moved but no task did, a read failed, or this is the first change) it is
+`"full"`. While a notification waits to be written, later changes are merged into it (their ids are added,
+and an unknown one makes it `"full"`); a notice that would list more than 256 ids is `"full"`. So a client that
+refetches only the listed ids misses nothing.
+
+Both watchers take their baseline at once, when `subscribe` starts them, so a change in the first interval is
+reported. The agents watcher skips a poll whose report carries a note or is not connected (a feed failed: its
+agents are missing, not gone) and keeps its baseline. The tasks watcher keeps at most 5000 tasks to compare by
+id; a bigger tracker is watched by a digest of it and every change is `"full"`.
 
 The tasks watcher is the TUI's live refresh without the screen (`taskview.Poller`): a check every 5
 seconds, one at a time, a longer wait (up to 60 seconds) after a slow or failed one; the first look is a
@@ -296,7 +337,9 @@ request.
 - Reports follow `schema_version` 1 of `docs/tool-contract.md`, so a client written against the command's
   `--json` output decodes the same documents here. Key naming is mixed by origin and not renamed.
 - `docs/schema/v1` has `serve-initialize`, `serve-plan`, `serve-applied`, `serve-error` and `workspace`
-  beside the report schemas; `abacus schema` prints them.
+  beside the report schemas; `abacus schema` prints them. Notification params are not schema files; the
+  table above is their contract.
 - The golden transcripts in `internal/serve/testdata` record whole conversations (handshake and
-  malformed input, plan and apply and single use and digest mismatch, an unknown outcome) and are
+  malformed input, plan and apply and single use and digest mismatch, an unknown outcome, config and setup
+  plans with an expired one, demo plans) and are
   validated against those schemas by a test.

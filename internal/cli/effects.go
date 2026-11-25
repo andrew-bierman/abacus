@@ -67,7 +67,7 @@ var (
 )
 
 // serve is long-lived and classified as reads here so that `serve --demo` starts: the server itself enforces
-// demo mode (Config.Demo), serving reads and refusing every plan and apply. Without --demo its writes go
+// demo mode (Config.Demo): reads and plans are served, flagged demo, and apply (and config set) is refused. Without --demo its writes go
 // through the same gate as the commands'.
 var effects = func() map[string]effectRule {
 	m := map[string]effectRule{}
