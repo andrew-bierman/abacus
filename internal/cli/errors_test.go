@@ -167,3 +167,35 @@ func TestErrorDocumentFollowsTheRealJSONFlag(t *testing.T) {
 		}
 	}
 }
+
+func TestUsageErrorFollowsLastParsedJSONFlag(t *testing.T) {
+	_, _, wantStderr := run(t, nil, "tasks", "list", "--nope")
+	if !strings.Contains(wantStderr, "flag provided but not defined: -nope") {
+		t.Fatalf("missing flag diagnostic in stderr: %q", wantStderr)
+	}
+
+	for _, c := range []struct {
+		name  string
+		flags []string
+		json  bool
+	}{
+		{"false last", []string{"--json", "--json=false", "--nope"}, false},
+		{"true last", []string{"--json=false", "--json", "--nope"}, true},
+		{"fallback before any JSON flag is parsed", []string{"--nope", "--json"}, true},
+		{"parsed false before a later unparsed true", []string{"--json=false", "--nope", "--json"}, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			code, out, stderr := run(t, nil, append([]string{"tasks", "list"}, c.flags...)...)
+			if code != core.ExitUsage || stderr != wantStderr {
+				t.Fatalf("exit=%d stderr=%q, want exit=%d stderr=%q", code, stderr, core.ExitUsage, wantStderr)
+			}
+			if c.json {
+				if got := errorCode(out); got != "usage" {
+					t.Errorf("want exactly one schema-1 usage document, got %q", out)
+				}
+			} else if out != "" {
+				t.Errorf("want empty stdout, got %q", out)
+			}
+		})
+	}
+}

@@ -23,8 +23,8 @@ type sink struct {
 	buf  bytes.Buffer // the first part of what was written: its first line is the default message
 	code core.ErrorCode
 	msg  string
-	// json is the value of --json as the command's own flag parsing read it, when it got that far.
-	json, registered bool
+	// json is the last value successfully parsed for --json, and jsonSet records whether parsing reached it.
+	json, jsonSet, registered bool
 }
 
 func (s *sink) Write(p []byte) (int, error) {
@@ -99,7 +99,7 @@ func (f *jsonFlag) Set(v string) error {
 	}
 	*f.p = b
 	if f.s != nil {
-		f.s.json = b
+		f.s.json, f.s.jsonSet = b, true
 	}
 	return nil
 }
@@ -127,7 +127,14 @@ func wantsJSON(args []string) bool {
 
 // finishError prints the error document when a command failed without printing a document of its own.
 func finishError(args []string, code int, s *sink, o *counter) {
-	if code == core.ExitOK || o.n > 0 || !(s.json || ((!s.registered || code == core.ExitUsage) && wantsJSON(args))) {
+	if code == core.ExitOK || o.n > 0 {
+		return
+	}
+	json := s.json
+	if !s.jsonSet && (!s.registered || code == core.ExitUsage) {
+		json = wantsJSON(args)
+	}
+	if !json {
 		return
 	}
 	ec, msg := s.code, s.msg
