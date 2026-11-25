@@ -19,5 +19,4 @@ TMPDIR="$HOME/.cache/abacus-release-acceptance/tmp" \
 ```
 
 The default Go suite skips this test when both environment variables are unset.
-This local acceptance check is separate from the GitHub packaging and license
-checks in #71 and #74. It uses demo fixtures and consumes local files only.
+The check uses demo fixtures and reads an existing archive from disk.
