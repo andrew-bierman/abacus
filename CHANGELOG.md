@@ -130,6 +130,7 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Fixed
 
+- Sidecar tool discovery refuses files and directories whose ownership cannot be verified.
 - The footer hints no longer end in a word cut in half ("H/L move car..."): hints that do not fit are
   dropped whole and an ellipsis says so. The Board confirm screen keeps "y apply" and "n/esc edit" ahead
   of the scroll hint when the footer is narrow.
