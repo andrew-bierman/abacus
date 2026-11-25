@@ -152,7 +152,7 @@ func runSetup(rest []string, d Deps) int {
 		}
 		jsonOut(d.Out, rep)
 	} else {
-		renderSetup(d.Out, steps, results, yes || dry, canAsk)
+		renderSetup(d.Out, steps, results, demoRun(d), canAsk)
 	}
 	if failed {
 		return core.ExitFail
@@ -193,11 +193,17 @@ func orEmpty(r io.Reader) io.Reader {
 	return r
 }
 
-func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPrompt, canAsk bool) {
-	needed := 0
+func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, demo, canAsk bool) {
+	remaining, needed, unavailable := 0, 0, 0
 	for _, st := range steps {
-		if st.State == core.StepNeeded || st.State == core.StepBlocked || st.State == core.StepRepairing {
+		if st.State != core.StepDone {
+			remaining++
+		}
+		switch st.State {
+		case core.StepNeeded:
 			needed++
+		case core.StepUnavailable:
+			unavailable++
 		}
 	}
 	for _, r := range results {
@@ -207,12 +213,19 @@ func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPr
 			fmt.Fprintf(w, "%s: %s\n", r.Step, r.Error)
 		}
 	}
-	if needed == 0 {
+	switch {
+	case demo:
+		fmt.Fprintln(w, "Fixture setup demo (preview-only):")
+	case remaining == 0:
 		fmt.Fprintln(w, "Nothing left to set up.")
-	} else {
-		fmt.Fprintf(w, "%d step(s) to set up:\n", needed)
+	default:
+		fmt.Fprintf(w, "%d step(s) remaining:\n", remaining)
 	}
 	for _, st := range steps {
+		if demo {
+			renderDemoSetupStep(w, st)
+			continue
+		}
 		fmt.Fprintf(w, "  %-11s %s\n", st.State, st.Message)
 		for _, l := range st.Lines {
 			fmt.Fprintf(w, "              %s\n", l)
@@ -221,8 +234,28 @@ func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPr
 			fmt.Fprintf(w, "              command: %s\n", st.Command)
 		}
 	}
-	if needed > 0 && !canAsk {
-		fmt.Fprintln(w, "Run `"+brand.Name+" setup --yes` to apply the steps above, or press the key shown in the TUI.")
+	if unavailable > 0 {
+		fmt.Fprintln(w, "Live setup needs a provider-capable build or configured tools for the unavailable steps.")
+		fmt.Fprintf(w, "Try the preview-only fixture demo with `%s setup --demo --dry-run`.\n", brand.Name)
+	}
+	if !demo && needed > 0 && !canAsk {
+		fmt.Fprintf(w, "Run `%s setup --yes` to apply available steps, or press the key shown in the TUI.\n", brand.Name)
+	}
+}
+
+func renderDemoSetupStep(w io.Writer, st core.StepInfo) {
+	var message string
+	switch st.Step {
+	case core.StepWorkspace:
+		message = "Create a fleet workspace"
+	case core.StepQueues:
+		message = "Configure Queues after the fleet workspace exists"
+	case core.StepActor:
+		message = "Choose an actor name for Leases"
+	}
+	fmt.Fprintf(w, "  %-11s %s\n", st.State, message)
+	if st.Command != "" {
+		fmt.Fprintf(w, "              example command: %s\n", st.Command)
 	}
 }
 

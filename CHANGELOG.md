@@ -55,6 +55,11 @@ may change behavior, and patch versions are fixes and small additions.
 - Serve: a request past `max_in_flight` used to be refused with `refused`; it now queues first (see above), and
   the refusal is `busy`. Expired plans were `changed`; they are `expired`.
 
+### Fixed
+
+- Setup text reports unavailable and blocked steps as remaining work, explains the tools needed for live setup,
+  and points to a preview-only fixture demo.
+
 ## [0.6.0] - 2026-11-24
 
 ### Added

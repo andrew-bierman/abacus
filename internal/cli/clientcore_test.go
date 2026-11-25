@@ -346,9 +346,21 @@ func TestSetupDemoShowsTheFirstRunStepsAsPlans(t *testing.T) {
 			t.Errorf("%v: the digest is not a demo digest", args)
 		}
 	}
-	// the text report says what is needed, and the same --expect-digest rule holds
-	if code, out, _, _ := runOpts(t, nil, au, "setup", "--demo", "--dry-run"); code != 0 || !strings.Contains(out, "needed") || !strings.Contains(out, "blocked") {
-		t.Errorf("text: %d %s", code, out)
+	for _, args := range [][]string{{"setup", "--demo"}, {"setup", "--demo", "--dry-run"}} {
+		code, out, errOut, _ := runOpts(t, nil, au, args...)
+		if code != 0 || errOut != "" {
+			t.Errorf("%v: exit %d, stderr %q", args, code, errOut)
+		}
+		for _, want := range []string{"preview-only", "needed", "blocked", "example command:"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("%v: missing %q in %q", args, want, out)
+			}
+		}
+		for _, omit := range []string{"run `abacus setup", "setup --yes", "change it any time"} {
+			if strings.Contains(out, omit) {
+				t.Errorf("%v: unexpected %q in %q", args, omit, out)
+			}
+		}
 	}
 	if code, _, errOut, _ := runOpts(t, nil, au, "setup", "--demo", "--yes"); code != 1 || !strings.Contains(errOut, "demo data cannot be changed") {
 		t.Errorf("--yes: %d %q", code, errOut)
