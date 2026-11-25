@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -56,7 +57,7 @@ func wantsHelp(args []string) bool {
 }
 
 // runHelp answers `help [command...]`, `-h` and `--help` anywhere a command ends: usage on stdout, exit 0.
-// A command without its own text falls through to its flag listing (printed to stdout too).
+// Known commands without custom usage use their flag parser to print help.
 func runHelp(args []string, d Deps) (int, bool) {
 	words := args
 	if len(words) > 0 && words[0] == "help" {
@@ -74,6 +75,12 @@ func runHelp(args []string, d Deps) (int, bool) {
 			fmt.Fprintln(d.Out, t)
 			return core.ExitOK, true
 		}
+	}
+	if slices.Contains(topCommands, words[0]) {
+		// Pass only --help so parsing stops before the command can do any work.
+		d.Err = d.Out
+		dispatch([]string{words[0], "--help"}, d)
+		return core.ExitOK, true
 	}
 	return 0, false
 }
