@@ -17,7 +17,7 @@ monitor supplied them, `orphan_ports[]` and `token_rate`.
 
 | Field | Meaning |
 | --- | --- |
-| `id`, `harness`, `pid`, `session_id` | `claude-code`, `codex`, `opencode`, `gemini-cli`, `aider`; the id is harness plus pid, else harness plus session |
+| `id`, `harness`, `pid`, `session_id` | `claude-code`, `codex`, `opencode`, `gemini-cli`, `aider`, `pi`; the id is harness plus pid, else harness plus session |
 | `repo`, `branch`, `worktree`, `cwd` | from the directory's own git files (`.git`, `HEAD`, `commondir`); `worktree` is set only for a linked worktree |
 | `state` | `running`, `idle`, `waiting` (wants a person), `error`, `stopped`, `unknown`: a closed set, anything else becomes `unknown` |
 | `source`, `sources` | how `state` was learned and every source that saw the agent (below) |
@@ -68,6 +68,11 @@ process list itself could not be read it is not called stopped.
 
 ## Sources
 
+A process named only `pi` or `aider` (names common enough to be something else) is listed only when
+something corroborates it: pi's session folder for its directory exists, or aider's history files are in
+its directory. A package path in its arguments (`@mariozechner/pi-coding-agent`, `aider-chat`) is enough
+by itself.
+
 **Native** (always there, in this process, no helper and no daemon):
 
 - *Processes*: the process list through `gopsutil` (BSD-3-Clause, maintained), keeping processes whose
@@ -85,7 +90,7 @@ process list itself could not be read it is not called stopped.
   created, so nothing is ever written next to OpenCode's data. The price is that rows still in OpenCode's
   write-ahead log are invisible until it checkpoints, so a live session can lag; its state is therefore
   read with the same age rules as a transcript (a `busy` stamp older than three minutes is `unknown`, never
-  `running`). The newest 50 sessions of the last 7 days are read; a session with a parent is a subagent and
+  `running`). A database over 2 GiB is not opened (a note says so); text columns are cut inside SQLite (title and model 400, directory 1024 characters). The newest 50 sessions of the last 7 days are read; a session with a parent is a subagent and
   not an agent of its own. The table must have `id`, `directory` and `time_updated`; every other column is
   optional, so a layout change costs a field and a different file reads as "nothing here". Any other
   failure (a corrupt file, a torn read) is a note. The column names come from OpenCode's own schema as
@@ -93,19 +98,27 @@ process list itself could not be read it is not called stopped.
   what is read, and a real one should be looked at before relying on `state`.
 - *Rate limits*: Codex writes the account's limits into its session files (a `token_count` event); the
   newest read wins and the window length decides which slot it fills, so a free plan's 30-day window is
-  never drawn as 5 hours. A limit named for one model is not the account's and is ignored. Claude Code
+  never drawn as 5 hours. A read dated in the future (past two minutes of clock skew) is as untrustworthy as one with no time and is stale too. A limit named for one model is not the account's and is ignored. Claude Code
   keeps its limits out of its files; they are read from `~/.claude/abtop-rate-limits.json` only when a
   status-line hook has written one (the live monitor reads the same file, and abacus creates nothing).
   Every entry older than ten minutes, or with no time, is `stale`: the tab draws it dim with no reset
   countdown, since the window may have rolled over. One entry per harness is kept, the most recently
   updated winning when two sources saw the same account.
-- *Uncommitted files*: for an agent that runs inside a repository, one `git status --porcelain=v1`
-  with the fixed argv `--no-optional-locks -c core.fsmonitor=false -C DIR status --porcelain=v1`, a 3 second
-  deadline, a 2 MiB output cap and an environment cut to what git needs to find its files. `core.fsmonitor`
-  is switched off on the command line because a repository's own configuration can make git run a program
-  there (a test with a hostile repository checks it never does). Only an absolute directory that already
-  has a repository is asked (so git is there to run), at most 24 directories per read, four at a time,
-  each answer reused for 15 seconds. No git, a failure or a timeout is `git` absent.
+- *Uncommitted files*: for an agent that runs inside a repository, `git status --porcelain=v1` after a
+  read-only `git config --name-only --get-regexp` that finds the filter names in effect. This is the one
+  place abacus runs a program in a directory a repository controls, so exactly what is switched off, on
+  the command line (which beats the repository's own configuration): `core.fsmonitor` and
+  `core.untrackedCache`; submodules are not inspected (`--ignore-submodules=all`; the fsmonitor override
+  is also what stops a submodule's own fsmonitor, as it travels to the status git starts there); and every content filter the configuration defines
+  (`filter.NAME.clean`, `.smudge` and `.process` set empty), since a `.gitattributes` line can make git run
+  a filter to compare a file with the index. A filter name that is not plain text makes the count
+  unknown. Also: `GIT_ATTR_NOSYSTEM`, `core.attributesFile=/dev/null`, no optional lock, an environment cut
+  to what git needs, a 3 second deadline and a 2 MiB output cap. Not switched off: git itself, the user's
+  global configuration, and the repository's own `.gitattributes` (its filters are emptied, not its
+  attributes). `status` runs no hooks, textconv or `diff.external`. Only an absolute directory that
+  already has a repository is asked, at most 24 directories per read, four at a time, each answer reused
+  for 15 seconds. No git, a failure or a timeout is `git` absent. Real hostile-repository tests (a filter
+  with `.gitattributes`, a submodule's own fsmonitor, the repository's fsmonitor) check that none runs.
 - *Terminals*: `tmux list-panes -a` (one fixed read-only argv, short deadline, scrubbed environment).
   The agent's process, or an ancestor, is matched to a pane's process. Every pane id is validated
   before it is put in a command line a person copies. `cmux surface` and `rex session` exist as

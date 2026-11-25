@@ -470,7 +470,8 @@ func spark(pts []int64, w int) string {
 	blocks := []rune("▁▂▃▄▅▆▇█")
 	out := make([]rune, len(pts))
 	for i, v := range pts {
-		out[i] = blocks[min(len(blocks)-1, int(v*int64(len(blocks)-1)/top))]
+		// float64: a point near the int64 limit must not overflow the scale (nor index below zero)
+		out[i] = blocks[max(0, min(len(blocks)-1, int(float64(v)/float64(top)*float64(len(blocks)-1))))]
 	}
 	return string(out)
 }

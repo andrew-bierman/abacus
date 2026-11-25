@@ -171,6 +171,7 @@ func (l *Local) Agents(ctx context.Context) ([]core.Agent, core.AgentsExtra, err
 		}
 		aps = kept
 	}
+	aps = l.corroborated(aps)
 	sc.agents = len(aps)
 	panes, _ := l.o.Panes(ctx) // no multiplexer is normal
 	byPID := map[int]Proc{}
@@ -458,6 +459,9 @@ func (l *Local) piSessionsFor(ctx context.Context, sc *scan, aps []agentProc, b 
 // openCodeWindow is how far back the session database is asked for rows.
 const openCodeWindow = 7 * 24 * time.Hour
 
+// maxOpenCodeDB is the largest database file that is opened (2 GiB).
+const maxOpenCodeDB = 2 << 30
+
 // openCodeSessionsFor reads OpenCode's session database when there is one: a regular file only,
 // opened read-only, bounded to the newest rows. A subagent's own session (one with a parent) is not an
 // agent of its own. A database this build cannot read is a note, not a failure.
@@ -467,7 +471,12 @@ func (l *Local) openCodeSessionsFor(ctx context.Context, sc *scan, now time.Time
 		return out
 	}
 	name := rel(l.o.OpenCodeDB)
-	if fi, err := fs.Stat(l.o.FS, name); err != nil || !fi.Mode().IsRegular() {
+	fi, err := fs.Stat(l.o.FS, name)
+	if err != nil || !fi.Mode().IsRegular() {
+		return out
+	}
+	if fi.Size() > maxOpenCodeDB {
+		sc.notes = append(sc.notes, "the OpenCode session database is too large to read")
 		return out
 	}
 	sc.dirs = append(sc.dirs, "OpenCode")
@@ -570,4 +579,39 @@ func (l *Local) fillDirty(ctx context.Context, list []core.Agent) {
 			list[i].Git = &g
 		}
 	}
+}
+
+// aiderFiles are what aider leaves in the directory it ran in.
+var aiderFiles = []string{".aider.chat.history.md", ".aider.input.history", ".aider.tags.cache.v4"}
+
+// corroborated drops a process that was matched by a bare, common executable name ("pi", "aider")
+// unless something else says it is that agent: pi's session folder for its directory exists, or aider's
+// history files are there. Without the file system nothing can be corroborated and such a process is
+// not listed; a process named by its package path (a strong match) is kept as it is.
+func (l *Local) corroborated(aps []agentProc) []agentProc {
+	out := aps[:0:0]
+	for _, p := range aps {
+		if !p.Weak || l.vouched(p) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func (l *Local) vouched(p agentProc) bool {
+	if l.o.FS == nil || !path.IsAbs(p.Cwd) {
+		return false
+	}
+	switch p.Harness {
+	case core.HarnessPi:
+		fi, err := fs.Stat(l.o.FS, path.Join(l.piSessions(), encodePiDir(p.Cwd)))
+		return err == nil && fi.IsDir()
+	case core.HarnessAider:
+		for _, f := range aiderFiles {
+			if fi, err := fs.Stat(l.o.FS, rel(path.Join(p.Cwd, f))); err == nil && fi.Mode().IsRegular() {
+				return true
+			}
+		}
+	}
+	return false
 }

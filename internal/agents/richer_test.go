@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -366,11 +368,19 @@ func TestParseDirty(t *testing.T) {
 	}
 }
 
-func TestDirtyArgvIsReadOnlyAndDisablesRepositoryPrograms(t *testing.T) {
-	argv := dirtyArgv("/work/x")
-	want := []string{"--no-optional-locks", "-c", "core.fsmonitor=false", "-C", "/work/x", "status", "--porcelain=v1"}
-	if !slices.Equal(argv, want) {
-		t.Fatalf("%v", argv)
+func TestDirtyArgvDisablesWhatARepositoryCouldMakeGitRun(t *testing.T) {
+	argv, ok := dirtyArgv("/work/x", []byte("filter.lfs.clean\nfilter.lfs.smudge\nfilter.a.b.process\n"))
+	joined := " " + strings.Join(argv, " ") + " "
+	for _, want := range []string{" core.fsmonitor=false ", " core.untrackedCache=false ", " filter.lfs.clean= ", " filter.lfs.smudge= ", " filter.lfs.process= ", " filter.a.b.clean= ", " filter.a.b.process= ", " --ignore-submodules=all ", " --no-optional-locks ", " status --porcelain=v1 "} {
+		if !ok || !strings.Contains(joined, want) {
+			t.Fatalf("missing %q in %v", want, argv)
+		}
+	}
+	if _, ok := dirtyArgv("/work/x", []byte("filter.we ird.clean\n")); ok {
+		t.Fatal("a filter name that is not plain text cannot be neutralized, so the count is unknown")
+	}
+	if _, ok := dirtyArgv("/work/x", []byte("filter.x.clean=evil\n")); ok {
+		t.Fatal("anything but a key name is refused")
 	}
 }
 
@@ -543,3 +553,259 @@ func TestOpenCodeReaderLeavesALiveWriteAheadDatabaseUntouched(t *testing.T) {
 		t.Fatalf("rows still in the log are not seen (the documented lag): %+v", rows)
 	}
 }
+
+// hostileRepo makes a repository in a temp directory, with every command it runs for setup using a
+// private HOME. run executes git there (and, for setup, may itself run the repository's programs: the
+// caller removes the marker afterwards).
+func hostileRepo(t *testing.T) (dir string, run func(args ...string) string) {
+	t.Helper()
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("no git in this environment")
+	}
+	dir = t.TempDir()
+	env := []string{"HOME=" + t.TempDir(), "GIT_CONFIG_NOSYSTEM=1", "PATH=" + os.Getenv("PATH"), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t"}
+	run = func(args ...string) string {
+		c := exec.Command(git, append([]string{"-C", dir}, args...)...)
+		c.Env = env
+		out, err := c.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+		return string(out)
+	}
+	run("init", "-q")
+	return dir, run
+}
+
+func markerScript(t *testing.T) (script, marker string) {
+	t.Helper()
+	marker = filepath.Join(t.TempDir(), "ran")
+	script = filepath.Join(t.TempDir(), "evil.sh")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\ntouch "+marker+"\ncat\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	return script, marker
+}
+
+func TestGitDirtyNeverRunsARepositoryFilter(t *testing.T) {
+	dir, run := hostileRepo(t)
+	script, marker := markerScript(t)
+	run("config", "filter.x.clean", script)
+	run("config", "filter.x.process", script)
+	if err := os.WriteFile(filepath.Join(dir, ".gitattributes"), []byte("* filter=x\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f := filepath.Join(dir, "a.txt")
+	if err := os.WriteFile(f, []byte("a"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	run("add", ".")
+	os.Remove(marker)
+	// same content, newer stat: this is what makes git run the clean filter to compare it with the index
+	later := time.Now().Add(time.Hour)
+	if err := os.Chtimes(f, later, later); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := gitDirty(context.Background(), dir); !ok {
+		t.Fatal("a repository with a filter is still counted")
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("the repository's own filter program ran")
+	}
+}
+
+func TestGitDirtyNeverRunsASubmodulesFsmonitor(t *testing.T) {
+	dir, run := hostileRepo(t)
+	script, marker := markerScript(t)
+	sub, subRun := t.TempDir(), (func(args ...string) string)(nil)
+	_ = subRun
+	git, _ := exec.LookPath("git")
+	sc := func(args ...string) {
+		c := exec.Command(git, append([]string{"-C", sub}, args...)...)
+		c.Env = []string{"HOME=" + t.TempDir(), "PATH=" + os.Getenv("PATH"), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t"}
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("%v %s", err, out)
+		}
+	}
+	sc("init", "-q")
+	if err := os.WriteFile(filepath.Join(sub, "s.txt"), []byte("s"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sc("add", ".")
+	sc("commit", "-q", "-m", "s")
+	run("-c", "protocol.file.allow=always", "submodule", "add", "-q", sub, "inner")
+	run("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "add the submodule")
+	// a tracked file changed inside the submodule: this is what makes git start a status there
+	if err := os.WriteFile(filepath.Join(dir, "inner", "s.txt"), []byte("changed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := exec.Command(git, "-C", filepath.Join(dir, "inner"), "config", "core.fsmonitor", script)
+	if out, err := c.CombinedOutput(); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	os.Remove(marker)
+	if _, ok := gitDirty(context.Background(), dir); !ok {
+		t.Fatal("a repository with a submodule is still counted")
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("a submodule's own fsmonitor program ran")
+	}
+}
+
+// ---- review fixes ----
+
+func TestABareCommonNameIsNotAnAgentWithoutCorroboration(t *testing.T) {
+	start := now.Add(-time.Hour).Unix()
+	procs := []Proc{
+		{PID: 1, PPID: 0, Name: "pi", Args: []string{"pi", "--version"}, Cwd: "/work/none", StartUnix: start},                           // nothing vouches
+		{PID: 2, PPID: 0, Name: "aider", Args: []string{"aider"}, Cwd: "/work/none", StartUnix: start},                                  // nothing vouches
+		{PID: 3, PPID: 0, Name: "aider", Args: []string{"aider"}, Cwd: "/work/ai", StartUnix: start},                                    // its history file is there
+		{PID: 4, PPID: 0, Name: "python3", Args: []string{"python3", "/x/aider-chat/aider/main.py"}, Cwd: "/work/zz", StartUnix: start}, // strong: package path
+		{PID: 5, PPID: 0, Name: "pi", Args: []string{"pi"}, Cwd: "/work/pi", StartUnix: start},                                          // its session folder is there
+	}
+	fsys := fstest.MapFS{
+		"work/ai/.aider.chat.history.md":                {Data: []byte("x")},
+		"home/u/.pi/agent/sessions/--work-pi--/s.jsonl": file(`{"type":"session","id":"p"}`+"\n", time.Minute),
+	}
+	got, _, _ := newLocal(fsys, procs, nil, nil).Agents(context.Background())
+	var pids []int
+	for _, a := range got {
+		pids = append(pids, a.PID)
+	}
+	slices.Sort(pids)
+	if !slices.Equal(pids, []int{3, 4, 5}) {
+		t.Fatalf("listed %v, want 3 4 5", pids)
+	}
+	if id, weak := harnessMatch(Proc{Name: "pi"}); id != core.HarnessPi || !weak {
+		t.Fatal("a bare name is a weak match")
+	}
+	if _, weak := harnessMatch(Proc{Name: "node", Args: []string{"node", "/x/@mariozechner/pi-coding-agent/cli.js"}}); weak {
+		t.Fatal("a package path is strong")
+	}
+}
+
+func TestExtremeTokenFiguresNeverOverflowOrPanic(t *testing.T) {
+	huge := []string{"9223372036854775807", "-9223372036854775808", "4000000000000000000", "1e30", "-1", "0"}
+	for _, a := range huge {
+		for _, b := range huge {
+			claude := `{"type":"assistant","message":{"id":"m","usage":{"input_tokens":` + a + `,"output_tokens":` + b + `,"cache_read_input_tokens":` + a + `,"cache_creation_input_tokens":` + b + `},"content":[]}}`
+			codex := `{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":` + a + `},"last_token_usage":{"input_tokens":` + a + `,"cached_input_tokens":` + b + `,"output_tokens":` + b + `},"model_context_window":` + a + `}}}`
+			pi := `{"type":"message","message":{"role":"assistant","usage":{"input":` + a + `,"output":` + b + `,"cacheRead":` + a + `,"cacheWrite":` + b + `}}}`
+			for _, s := range []session{parseClaude(lines(claude, claude)), parseCodex(nil, lines(codex, codex)), parsePi(nil, lines(pi))} {
+				for _, v := range s.Turns {
+					if v < 0 || v > core.MaxTokenCount*4 {
+						t.Fatalf("point %d from %s/%s", v, a, b)
+					}
+				}
+				if s.Context != nil && (*s.Context < 0 || *s.Context > core.MaxTokenCount*4) {
+					t.Fatalf("context %d", *s.Context)
+				}
+				// whatever the reader kept, the door makes it safe
+				c := core.Agent{Harness: "h", TurnTokens: s.Turns, ContextTokens: s.Context, ContextWindow: s.Window, Tokens: s.Tokens}.Clean()
+				for _, v := range c.TurnTokens {
+					if v < 0 || v > core.MaxTokenCount {
+						t.Fatal("clean let a point through")
+					}
+				}
+			}
+			o := opencodeSession{Input: mustInt(a), Output: mustInt(b), CacheWrite: mustInt(a)}.asSession()
+			if o.Tokens != nil && (*o.Tokens < 0 || *o.Tokens > core.MaxTokenCount*3) {
+				t.Fatalf("opencode tokens %d", *o.Tokens)
+			}
+		}
+	}
+}
+
+func mustInt(s string) int64 {
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 1 << 62
+	}
+	return n
+}
+
+func TestOpenCodePathsWithURICharactersOpen(t *testing.T) {
+	ms := itoa(now.UnixMilli())
+	for _, name := range []string{"a?b", "a#b", "a%20b", "a&b=c", "a b", "100%", "q?mode=rw&x=1"} {
+		dir := filepath.Join(t.TempDir(), name)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Skip("file system refuses this name:", err)
+		}
+		p := filepath.Join(dir, "opencode.db")
+		u := url.URL{Scheme: "file", Path: p} // the driver cuts a plain path at '?': even the fixture needs a URI
+		db, err := sql.Open("sqlite", u.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, q := range []string{`CREATE TABLE session_v2 (id TEXT, directory TEXT, time_updated INTEGER)`, `INSERT INTO session_v2 VALUES ('a','/w',` + ms + `)`} {
+			if _, err := db.Exec(q); err != nil {
+				t.Fatal(name, err)
+			}
+		}
+		db.Close()
+		rows, err := readOpenCodeDB(context.Background(), p, now.Add(-time.Hour), 5)
+		if err != nil || len(rows) != 1 {
+			t.Errorf("%q: %v %v", name, err, rows)
+		}
+	}
+}
+
+func TestOpenCodeTextColumnsAreBoundedAndTheFileSizeIsCapped(t *testing.T) {
+	ms := itoa(now.UnixMilli())
+	long := strings.Repeat("é", 100_000)
+	p := makeOpenCodeDB(t, ocDDL, `INSERT INTO session_v2 VALUES ('`+long+`','','`+long+`','`+long+`','/`+long+`',1,1,1,1,0,`+ms+`,0,0,0)`)
+	rows, err := readOpenCodeDB(context.Background(), p, now.Add(-time.Hour), 5)
+	if err != nil || len(rows) != 1 {
+		t.Fatal(err)
+	}
+	r := rows[0]
+	if len([]rune(r.Title)) > 400 || len([]rune(r.Dir)) > 1024 || len([]rune(r.ID)) > 200 || len([]rune(r.Model)) > 400 {
+		t.Fatalf("unbounded: %d %d %d %d", len(r.Title), len(r.Dir), len(r.ID), len(r.Model))
+	}
+	// a database file larger than the cap is not opened at all
+	called := false
+	l := newLocal(fstest.MapFS{"home/u/.local/share/opencode/opencode.db": &fstest.MapFile{Data: []byte("x"), ModTime: now}}, nil, nil, nil)
+	l.o.OpenCode = func(context.Context, string, time.Time, int) ([]opencodeSession, error) {
+		called = true
+		return nil, nil
+	}
+	if _, _, err := l.Agents(context.Background()); err != nil || !called {
+		t.Fatalf("a normal size is read: %v %v", err, called)
+	}
+	called = false
+	big := &sizedFS{FS: fstest.MapFS{"home/u/.local/share/opencode/opencode.db": &fstest.MapFile{Data: []byte("x"), ModTime: now}}, name: "home/u/.local/share/opencode/opencode.db", size: maxOpenCodeDB + 1}
+	l = newLocal(nil, nil, nil, nil)
+	l.o.FS = big
+	l.o.OpenCode = func(context.Context, string, time.Time, int) ([]opencodeSession, error) {
+		called = true
+		return nil, nil
+	}
+	_, _, err = l.Agents(context.Background())
+	if called || err == nil || !strings.Contains(err.Error(), "too large") {
+		t.Fatalf("an oversized database is refused with a note: called=%v err=%v", called, err)
+	}
+}
+
+// sizedFS reports a fixed size for one file, so a 2 GiB database need not exist.
+type sizedFS struct {
+	FS   fstest.MapFS
+	name string
+	size int64
+}
+
+func (s *sizedFS) Open(n string) (fs.File, error) { return s.FS.Open(n) }
+func (s *sizedFS) Stat(n string) (fs.FileInfo, error) {
+	fi, err := s.FS.Stat(n)
+	if err == nil && n == s.name {
+		return sizeInfo{fi, s.size}, nil
+	}
+	return fi, err
+}
+
+type sizeInfo struct {
+	fs.FileInfo
+	n int64
+}
+
+func (s sizeInfo) Size() int64 { return s.n }

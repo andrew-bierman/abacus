@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -306,7 +307,7 @@ func TestRateLimitsKeepOneEntryPerHarnessTheNewestWins(t *testing.T) {
 	for _, c := range []struct {
 		at   string
 		want bool
-	}{{ts(time.Minute), false}, {ts(10 * time.Minute), false}, {ts(10*time.Minute + time.Second), true}, {"", true}, {"junk", true}} {
+	}{{ts(time.Minute), false}, {ts(10 * time.Minute), false}, {ts(10*time.Minute + time.Second), true}, {"", true}, {"junk", true}, {now.Add(time.Minute).Format(time.RFC3339), false}, {now.Add(3 * time.Minute).Format(time.RFC3339), true}, {now.Add(240 * time.Hour).Format(time.RFC3339), true}} {
 		if got := core.RateLimitStale(c.at, now); got != c.want {
 			t.Errorf("%q: stale %v, want %v", c.at, got, c.want)
 		}
@@ -346,5 +347,29 @@ func TestCleanDerivesContextAndBoundsSeries(t *testing.T) {
 	m := core.MergeAgents([]core.Agent{{Harness: "h", PID: 1, Source: core.EvidenceProcess, Git: &core.AgentGit{Modified: 2}}}, []core.Agent{{Harness: "h", PID: 1, Source: core.EvidenceMonitor, TurnTokens: []int64{3}, ContextTokens: &used, ContextWindow: &win}})
 	if len(m) != 1 || m[0].Git == nil || m[0].Git.Modified != 2 || len(m[0].TurnTokens) != 1 || m[0].ContextPct == nil {
 		t.Fatalf("every feed's new fields survive the merge: %+v", m)
+	}
+}
+
+func TestCleanDropsOutOfRangeTokenFigures(t *testing.T) {
+	over, neg, ok := int64(core.MaxTokenCount+1), int64(-5), int64(core.MaxTokenCount)
+	c := core.Agent{TurnTokens: []int64{1, over}, ContextTokens: &over, ContextWindow: &over, Tokens: &neg}.Clean()
+	if c.TurnTokens != nil || c.ContextTokens != nil || c.ContextWindow != nil || c.Tokens != nil {
+		t.Fatalf("%+v", c)
+	}
+	if c := (core.Agent{TurnTokens: []int64{ok}, ContextTokens: &ok, Tokens: &ok}).Clean(); c.TurnTokens == nil || c.ContextTokens == nil || c.Tokens == nil {
+		t.Fatal("the bound itself is allowed")
+	}
+	nan, big := math.NaN(), 1e12
+	for _, v := range []*float64{&nan, &big} {
+		if c := (core.Agent{CostUSD: v}).Clean(); c.CostUSD != nil {
+			t.Fatal("an absurd cost is unknown")
+		}
+	}
+	// no mix of extreme values may panic the door
+	vals := []int64{math.MinInt64, -1, 0, 1, math.MaxInt64}
+	for _, a := range vals {
+		for _, b := range vals {
+			core.Agent{TurnTokens: []int64{a, b}, ContextTokens: &a, ContextWindow: &b, Tokens: &a}.Clean()
+		}
 	}
 }

@@ -176,6 +176,11 @@ type AgentGit struct {
 // maxTurnPoints bounds the per-turn token series of one agent.
 const maxTurnPoints = 120
 
+// MaxTokenCount bounds any token figure a feed reports (a trillion): a larger or negative one is a
+// feed's bug or a hostile file, never data, and is unknown. It keeps every sum and scale in a front end
+// far from overflow.
+const MaxTokenCount = 1_000_000_000_000
+
 // Agent is one coding agent. Pointer fields are nil when unknown (nil is never zero).
 type Agent struct {
 	ID           string     `json:"id"`
@@ -265,6 +270,9 @@ type RateLimit struct {
 // RateLimitStaleAfter is how old a rate-limit read may be before it is marked stale.
 const RateLimitStaleAfter = 10 * time.Minute
 
+// rateLimitSkew is how far ahead of this machine's clock a read's time may be before it is distrusted.
+const rateLimitSkew = 2 * time.Minute
+
 // WindowLabel names a window from its length in minutes ("5h", "7d", "30d", "90m"); def is used
 // when the source did not say.
 func WindowLabel(minutes int64, def string) string {
@@ -289,7 +297,8 @@ func (l RateLimit) updated() time.Time {
 // feed marks its own entries with it, using its own clock, so a feed under test is deterministic.
 func RateLimitStale(updatedAt string, now time.Time) bool {
 	t, err := time.Parse(time.RFC3339, updatedAt)
-	return err != nil || now.Sub(t) > RateLimitStaleAfter
+	// a time in the future (beyond clock skew) is as untrustworthy as no time
+	return err != nil || now.Sub(t) > RateLimitStaleAfter || t.Sub(now) > rateLimitSkew
 }
 
 // mergeRateLimits keeps one entry per harness (two feeds may both see one account): the one updated
@@ -399,11 +408,17 @@ func (a Agent) Clean() Agent {
 			a.ContextPct = nil
 		}
 	}
-	if a.ContextTokens != nil && *a.ContextTokens < 0 {
+	if a.ContextTokens != nil && (*a.ContextTokens < 0 || *a.ContextTokens > MaxTokenCount) {
 		a.ContextTokens = nil
 	}
-	if a.ContextWindow != nil && *a.ContextWindow <= 0 {
+	if a.ContextWindow != nil && (*a.ContextWindow <= 0 || *a.ContextWindow > MaxTokenCount) {
 		a.ContextWindow = nil
+	}
+	if c := a.CostUSD; c != nil && (*c < 0 || *c != *c || *c > 1e9) {
+		a.CostUSD = nil
+	}
+	if a.Tokens != nil && (*a.Tokens < 0 || *a.Tokens > MaxTokenCount) {
+		a.Tokens = nil
 	}
 	if a.ContextPct == nil && a.ContextTokens != nil && a.ContextWindow != nil {
 		if v := float64(*a.ContextTokens) / float64(*a.ContextWindow) * 100; v <= 100 {
@@ -432,7 +447,7 @@ func cleanTurns(in []int64) []int64 {
 		in = in[len(in)-maxTurnPoints:]
 	}
 	for _, v := range in {
-		if v < 0 {
+		if v < 0 || v > MaxTokenCount {
 			return nil
 		}
 	}

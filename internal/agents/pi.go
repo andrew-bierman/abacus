@@ -115,10 +115,10 @@ func parsePi(head []byte, lines [][]byte) session {
 				s.End = endDone
 			}
 			// A response that never reached the provider reports zero usage: not a turn.
-			if u := m.Usage; u != nil && u.Input+u.Output+u.CacheRead+u.CacheWrite > 0 {
-				ctx := u.Input + u.CacheRead + u.CacheWrite
+			if u := m.Usage; u != nil && tok(u.Input)+tok(u.Output)+tok(u.CacheRead)+tok(u.CacheWrite) > 0 {
+				ctx := tok(u.Input) + tok(u.CacheRead) + tok(u.CacheWrite)
 				s.Context = &ctx
-				s.push(u.Input + u.Output + u.CacheWrite)
+				s.push(tok(u.Input) + tok(u.Output) + tok(u.CacheWrite))
 			}
 		}
 	}

@@ -283,14 +283,18 @@ func TestPackageUntouchedArchivePasses(t *testing.T) {
 }
 
 // unpack packages linux-amd64 and returns the extracted archive root.
-func (r *rig) unpack() string {
+func (r *rig) unpack() string { return r.unpackFor("linux-amd64") }
+
+// unpackFor packages one platform and unpacks its archive.
+func (r *rig) unpackFor(platform string) string {
 	r.t.Helper()
-	if out, err := r.pkg("--platforms", "linux-amd64"); err != nil {
+	if out, err := r.pkg("--platforms", platform); err != nil {
 		r.t.Fatalf("%v\n%s", err, out)
 	}
+	name := "abacus_0.0.1_" + strings.ReplaceAll(platform, "-", "_")
 	dir := r.t.TempDir()
-	must(r.t, exec.Command("tar", "-xzf", filepath.Join(r.out, "abacus_0.0.1_linux_amd64.tar.gz"), "-C", dir).Run())
-	return filepath.Join(dir, "abacus_0.0.1_linux_amd64")
+	must(r.t, exec.Command("tar", "-xzf", filepath.Join(r.out, name+".tar.gz"), "-C", dir).Run())
+	return filepath.Join(dir, name)
 }
 
 func realLinkedPin(t *testing.T) (module, version, licenseSHA string) {
@@ -667,6 +671,43 @@ func TestEveryLinkedModuleHasANoticeAndAPermissiveLicense(t *testing.T) {
 			}
 			if p[0] == "linux" && p[1] == "amd64" && !strings.Contains(string(notices), "### "+path+" "+vd[0]) {
 				t.Errorf("the notices have no entry for %s %s", path, vd[0])
+			}
+		}
+	}
+}
+
+// The notices of each platform name exactly the modules linked there: the SQLite driver's transitive
+// modules (uuid, go-humanize, bigfft, libc, mathutil, memory) everywhere, go-strftime and purego only on
+// darwin, numcpus only on linux.
+func TestNoticesNameTheTransitiveModulesOfEachPlatform(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go is not installed")
+	}
+	everywhere := []string{"modernc.org/sqlite", "modernc.org/libc", "modernc.org/mathutil", "modernc.org/memory", "github.com/google/uuid", "github.com/dustin/go-humanize", "github.com/remyoudompheng/bigfft"}
+	for _, c := range []struct {
+		platform, goos, goarch string
+		only, never            []string
+	}{
+		{"linux-amd64", "linux", "amd64", []string{"github.com/tklauser/numcpus"}, []string{"github.com/ncruces/go-strftime", "github.com/ebitengine/purego"}},
+		{"darwin-arm64", "darwin", "arm64", []string{"github.com/ncruces/go-strftime", "github.com/ebitengine/purego"}, []string{"github.com/tklauser/numcpus"}},
+	} {
+		b, err := os.ReadFile(filepath.Join(newRig(t, nil).unpackFor(c.platform), "THIRD_PARTY_NOTICES.md"))
+		must(t, err)
+		notices := string(b)
+		linked := linkedModules(t, c.goos, c.goarch)
+		for _, m := range append(append([]string(nil), everywhere...), c.only...) {
+			v, ok := linked[m]
+			if !ok {
+				t.Errorf("%s: %s is not linked, but the test expects it", c.platform, m)
+				continue
+			}
+			if !strings.Contains(notices, "### "+m+" "+v[0]) {
+				t.Errorf("%s: the notices have no entry for %s %s", c.platform, m, v[0])
+			}
+		}
+		for _, m := range c.never {
+			if strings.Contains(notices, "### "+m+" ") {
+				t.Errorf("%s: the notices name %s, which is not linked there", c.platform, m)
 			}
 		}
 	}

@@ -70,9 +70,20 @@ var helperArgs = map[string]bool{"--chrome-native-host": true, "mcp-server": tru
 // harnessOf names the harness a process is, "" when it is none. Names are matched exactly and in
 // lower case: the desktop apps ("Codex", "Claude") are not the command-line agents.
 func harnessOf(p Proc) string {
+	id, _ := harnessMatch(p)
+	return id
+}
+
+// weakName is a harness whose executable name alone ("pi", "aider") is too common to call a process an
+// agent: such a match must be corroborated (see Local.corroborated) or it is dropped.
+func weakName(id string) bool { return id == core.HarnessPi || id == core.HarnessAider }
+
+// harnessMatch is harnessOf plus whether the match rests on the bare executable name of a weakName
+// harness (a package path or a known runtime argument is a strong match).
+func harnessMatch(p Proc) (id string, weak bool) {
 	for _, a := range p.Args[:min(len(p.Args), 4)] {
 		if helperArgs[a] {
-			return ""
+			return "", false
 		}
 	}
 	names := []string{strings.TrimSuffix(filepath.Base(p.Name), ".exe")}
@@ -83,7 +94,7 @@ func harnessOf(p Proc) string {
 		for _, n := range r.names {
 			for _, have := range names {
 				if have == n {
-					return r.id
+					return r.id, weakName(r.id)
 				}
 			}
 		}
@@ -93,27 +104,29 @@ func harnessOf(p Proc) string {
 		for _, r := range harnessRules {
 			for _, f := range r.frags {
 				if strings.Contains(head, f) {
-					return r.id
+					return r.id, false
 				}
 			}
 		}
 	}
-	return ""
+	return "", false
 }
 
 // agentProc is a process recognized as a harness.
 type agentProc struct {
 	Proc
 	Harness string
+	Weak    bool // matched by a bare, common executable name only
 }
 
 // harnessProcs are the processes that are agents. A process whose parent is a process of the same
 // harness is a helper of it, not another agent.
 func harnessProcs(all []Proc) []agentProc {
 	byPID := map[int]string{}
+	weak := map[int]bool{}
 	for _, p := range all {
-		if h := harnessOf(p); h != "" {
-			byPID[p.PID] = h
+		if h, w := harnessMatch(p); h != "" {
+			byPID[p.PID], weak[p.PID] = h, w
 		}
 	}
 	var out []agentProc
@@ -122,7 +135,7 @@ func harnessProcs(all []Proc) []agentProc {
 		if h == "" || byPID[p.PPID] == h || p.PID == p.PPID {
 			continue
 		}
-		out = append(out, agentProc{p, h})
+		out = append(out, agentProc{p, h, weak[p.PID]})
 	}
 	return out
 }

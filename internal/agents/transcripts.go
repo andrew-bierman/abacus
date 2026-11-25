@@ -53,6 +53,10 @@ type session struct {
 	Cost            *float64
 }
 
+// tok clamps a token figure from a file we do not control into 0..core.MaxTokenCount, so no sum of a few
+// of them can overflow.
+func tok(v int64) int64 { return max(0, min(v, core.MaxTokenCount)) }
+
 // maxTurns bounds what one read keeps of the per-turn series (core keeps the newest 120 anyway).
 const maxTurns = 200
 
@@ -241,10 +245,10 @@ func parseClaude(lines [][]byte) session {
 			if m := l.Message.Model; m != "" && !strings.HasPrefix(m, "<") {
 				s.Model = m
 			}
-			if u := l.Message.Usage; u != nil && u.Input+u.Output+u.CacheRead+u.CacheCreate > 0 {
-				ctx := u.Input + u.CacheRead + u.CacheCreate
+			if u := l.Message.Usage; u != nil && tok(u.Input)+tok(u.Output)+tok(u.CacheRead)+tok(u.CacheCreate) > 0 {
+				ctx := tok(u.Input) + tok(u.CacheRead) + tok(u.CacheCreate)
 				s.Context = &ctx
-				pt := u.Input + u.Output + u.CacheCreate
+				pt := tok(u.Input) + tok(u.Output) + tok(u.CacheCreate)
 				if l.Message.ID != "" && l.Message.ID == lastMsg && len(s.Turns) > 0 {
 					s.Turns[len(s.Turns)-1] = pt
 				} else {
@@ -332,15 +336,15 @@ func parseCodex(head []byte, lines [][]byte) session {
 				if t != nil {
 					s.Tokens = t
 				}
-				if w := p.Info.Window; w > 0 {
+				if w := p.Info.Window; w > 0 && w <= core.MaxTokenCount {
 					s.Window = &w
 				}
 				// Compaction writes a token_count whose last usage is zero: a marker, not a response.
-				if u := p.Info.Last; u.Input+u.Output > 0 {
-					ctx := u.Input
+				if u := p.Info.Last; tok(u.Input)+tok(u.Output) > 0 {
+					ctx := tok(u.Input)
 					s.Context = &ctx
 					if t == nil || prevTotal == nil || *t != *prevTotal {
-						s.push(max(0, u.Input-u.Cached) + u.Output)
+						s.push(max(0, tok(u.Input)-tok(u.Cached)) + tok(u.Output))
 					}
 				}
 				if t != nil {

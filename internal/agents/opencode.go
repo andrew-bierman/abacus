@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -38,6 +39,7 @@ var (
 		"tokens_input": "0", "tokens_output": "0", "tokens_cache_write": "0",
 		"time_busy": "0", "time_idle": "0", "time_compacting": "0",
 	}
+	openCodeText  = map[string]int{"parent_id": 200, "title": 400, "model": 400} // text columns and their length bound
 	openCodeOrder = []string{"parent_id", "title", "model", "tokens_input", "tokens_output", "tokens_cache_write", "time_busy", "time_idle", "time_compacting"}
 )
 
@@ -47,6 +49,7 @@ var (
 // through the age rules like any other guess. The caller has already checked that the path is a
 // regular file.
 func readOpenCodeDB(ctx context.Context, dbPath string, since time.Time, limit int) ([]opencodeSession, error) {
+	// url.URL escapes '?', '#', '%' and spaces in the path, so a path can never end up in the query part
 	u := url.URL{Scheme: "file", Path: dbPath, RawQuery: "mode=ro&immutable=1&_pragma=query_only(1)"}
 	db, err := sql.Open("sqlite", u.String())
 	if err != nil {
@@ -64,9 +67,13 @@ func readOpenCodeDB(ctx context.Context, dbPath string, since time.Time, limit i
 			return nil, errNoOpenCodeSessions
 		}
 	}
-	sel := []string{"id", "directory", "time_updated"}
+	// Text columns are cut to a bounded length inside SQLite, so a hostile row cannot make one read allocate
+	// a giant string.
+	sel := []string{"substr(CAST(id AS TEXT), 1, 200)", "substr(CAST(directory AS TEXT), 1, 1024)", "time_updated"}
 	for _, c := range openCodeOrder {
-		if have[c] {
+		if have[c] && openCodeText[c] > 0 {
+			sel = append(sel, fmt.Sprintf("substr(CAST(COALESCE(%s, %s) AS TEXT), 1, %d)", c, openCodeOptional[c], openCodeText[c]))
+		} else if have[c] {
 			sel = append(sel, "COALESCE("+c+", "+openCodeOptional[c]+")")
 		} else {
 			sel = append(sel, openCodeOptional[c])
@@ -144,7 +151,7 @@ func openCodeModel(raw string) string {
 // way it last moved; they are read like a transcript's last record (age decides how far to trust them).
 func (o opencodeSession) asSession() session {
 	s := session{ID: o.ID, Cwd: o.Dir, Model: o.Model, Task: o.Title, ModTime: o.Updated, Cost: o.Cost}
-	if t := o.Input + o.Output + o.CacheWrite; t > 0 {
+	if t := tok(o.Input) + tok(o.Output) + tok(o.CacheWrite); t > 0 {
 		s.Tokens = &t
 	}
 	if o.Compacting > 0 || o.Busy > o.Idle {
