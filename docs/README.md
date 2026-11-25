@@ -1,16 +1,21 @@
-# Documentation
+# Abacus documentation
 
-- [Tool contract](tool-contract.md): what abacus requires of each provider tool, the typed
-  reports, and the safety rules for reads and writes.
-- [TUI](tui.md): the terminal interface, its layout and keys.
-- [Agents](agents.md): the running-agents dashboard, where each fact comes from, how a state is
-  inferred, the live monitor, limits and privacy.
-- [Built-in tools](built-in-tools.md): the tools inside the binary, how they are pinned, verified
-  and unpacked, the threat model, and licenses.
-- [Development](development.md): building from source, test isolation and the checks.
-- [Design notes](design/): internal planning and assessment notes, kept for history. They describe
-  intent at the time they were written and can be out of date; the pages above are current.
+## Use Abacus
 
-Project policies are at the repository root: [README](../README.md),
-[CONTRIBUTING](../CONTRIBUTING.md), [SECURITY](../SECURITY.md),
-[CODE_OF_CONDUCT](../CODE_OF_CONDUCT.md), [CHANGELOG](../CHANGELOG.md).
+- [Install and try the demo](../README.md) walks through your first run.
+- [Terminal interface](tui.md) explains the layout, tabs, and keyboard shortcuts.
+- [Agents](agents.md) explains what the dashboard shows, where it gets its data, and what it reads.
+
+## Build an integration
+
+- [Tool contract](tool-contract.md) covers provider commands, typed reports, and how writes are confirmed.
+- [Stdio protocol](serve-protocol.md) describes the JSON-RPC interface for native clients.
+- [Built-in tools](built-in-tools.md) explains which tools ship in the binary and how they are verified.
+
+## Contribute
+
+- [Contributing](../CONTRIBUTING.md) covers setup, isolated tests, and pull requests.
+- [Development reference](development.md) covers packaging and updating contract fixtures.
+- [Security](../SECURITY.md), [Code of Conduct](../CODE_OF_CONDUCT.md), and [Changelog](../CHANGELOG.md).
+
+[Design notes](design/) record past decisions and proposals. Use the guides above for current behavior.
