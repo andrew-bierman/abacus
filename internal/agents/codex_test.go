@@ -658,6 +658,21 @@ func TestCodexTracksNonCustomFunctionCalls(t *testing.T) {
 	}
 }
 
+func TestCodexTurnWithoutAWindowKeepsTheRecordedLimit(t *testing.T) {
+	path := writeCodexRollout(t, t.TempDir(),
+		codexMeta(t, "ses_a", codexTestCWD),
+		codexTokenCount(t,
+			codexCounts{input: 1000, output: 50},
+			codexCounts{input: 1000, output: 50}, 200_000),
+		// Older events carry no model_context_window; a zero must not erase the recorded one.
+		codexEvent(t, "user_message", map[string]any{"message": "keep going"}),
+	)
+
+	if got := readCodex(t, &CodexStore{}, path); got.Context.Limit != 200_000 {
+		t.Errorf("context limit = %d, want the recorded 200k window", got.Context.Limit)
+	}
+}
+
 func TestCodexSessionMetaFallsBackToSessionID(t *testing.T) {
 	cases := map[string]struct {
 		meta map[string]any

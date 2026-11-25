@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -186,21 +185,8 @@ func compileJSONLMapping(m JSONLMapping) jsonlPaths {
 // jsonlMappedFile is the accumulation for one mapped transcript.
 type jsonlMappedFile struct {
 	jsonlCursor
+	jsonlSession
 	paths *jsonlPaths
-
-	id       string
-	dir      string
-	parentID string
-	model    string
-	title    string
-	prompt   string
-	updated  time.Time
-
-	tokens     Tokens
-	history    []int64
-	context    Context
-	sawUsage   bool
-	sawContext bool
 
 	openTurn  bool
 	executing bool
@@ -223,30 +209,28 @@ func (f *jsonlMappedFile) add(line []byte) {
 // meta folds the session facts a record may carry. A forked or resumed transcript can repeat its
 // parent's header, and the first record is this file's own identity.
 func (f *jsonlMappedFile) meta(record map[string]any) {
+	// The identity paths cannot change after the first record, so a later record skips their
+	// path walks instead of paying for a discarded value.
 	if f.id == "" {
 		if v, ok := jsonlLookup(record, f.paths.meta.id); ok {
-			f.id = jsonlString(v)
+			f.setIDIfEmpty(jsonlString(v))
 		}
 	}
 	if f.dir == "" {
 		if v, ok := jsonlLookup(record, f.paths.meta.dir); ok {
-			f.dir = jsonlString(v)
+			f.setDirIfEmpty(jsonlString(v))
 		}
 	}
 	if f.parentID == "" {
 		if v, ok := jsonlLookup(record, f.paths.meta.parent); ok {
-			f.parentID = jsonlString(v)
+			f.setParentIfEmpty(jsonlString(v))
 		}
 	}
 	if v, ok := jsonlLookup(record, f.paths.meta.model); ok {
-		if model := jsonlString(v); model != "" {
-			f.model = model
-		}
+		f.setModel(jsonlString(v))
 	}
 	if v, ok := jsonlLookup(record, f.paths.meta.title); ok {
-		if title := strings.TrimSpace(jsonlString(v)); title != "" {
-			f.title = title
-		}
+		f.setTitle(jsonlString(v))
 	}
 	if v, ok := jsonlLookup(record, f.paths.meta.timestamp); ok {
 		if ts, ok := jsonlTime(v); ok && !ts.IsZero() {
@@ -260,11 +244,7 @@ func (f *jsonlMappedFile) applyRole(record map[string]any, role JSONLRole) {
 	case JSONLRoleUser:
 		f.openTurn = true
 		f.executing = false
-		if f.prompt == "" {
-			if text := jsonlText(record, f.paths.text); text != "" {
-				f.prompt = promptTitle(text)
-			}
-		}
+		f.setPrompt(jsonlText(record, f.paths.text))
 	case JSONLRoleAssistant:
 		f.openTurn = false
 		f.executing = false
@@ -286,30 +266,27 @@ func (f *jsonlMappedFile) usage(t Tokens, role JSONLRole) {
 		current := t.sum()
 		point := current
 		if f.sawUsage {
-			previous := f.tokens
-			if current >= previous.sum() {
-				point = current - previous.sum()
-				delta = t.sub(previous)
+			previous := f.tokens.sum()
+			if current >= previous {
+				point = current - previous
+				delta = t.sub(f.tokens)
 			}
 		}
 		f.tokens = t
 		f.sawUsage = true
 		if role == JSONLRoleAssistant && point > 0 {
-			f.history = appendHistoryPoint(f.history, point)
+			f.addHistory(point)
 		}
+	} else if role == JSONLRoleAssistant {
+		f.addResponseTokens(t)
 	} else {
-		f.tokens = f.tokens.add(t)
-		f.sawUsage = true
-		if role == JSONLRoleAssistant {
-			f.history = appendHistoryPoint(f.history, t.sum())
-		}
+		f.addTokens(t)
 	}
 	if len(f.paths.fill.used) == 0 && role == JSONLRoleAssistant {
 		// The fill is the last response's own prompt tokens, not the session total a
 		// cumulative store reports.
 		if used := delta.prompt(); used > 0 {
-			f.context.Used = used
-			f.sawContext = true
+			f.useContext(used)
 		}
 	}
 }
@@ -317,46 +294,25 @@ func (f *jsonlMappedFile) usage(t Tokens, role JSONLRole) {
 func (f *jsonlMappedFile) contextFields(record map[string]any) {
 	if v, ok := jsonlLookup(record, f.paths.fill.used); ok {
 		if n, ok := jsonlInt(v); ok && n >= 0 {
-			f.context.Used = n
-			f.sawContext = true
+			f.useContext(n)
 		}
 	}
 	if v, ok := jsonlLookup(record, f.paths.fill.limit); ok {
-		if n, ok := jsonlInt(v); ok && n > 0 {
-			f.context.Limit = n
+		if n, ok := jsonlInt(v); ok {
+			f.setContextLimit(n)
 		}
 	}
 }
 
 func (f *jsonlMappedFile) session() StoredSession {
-	title := f.title
-	if title == "" {
-		title = f.prompt
-	}
-	s := StoredSession{
-		ID:           f.id,
-		Dir:          f.dir,
-		ParentID:     f.parentID,
-		Title:        title,
-		Model:        f.model,
-		Tokens:       f.tokens,
-		TokenHistory: slices.Clone(f.history),
-		Updated:      f.updated,
-		State:        StateWaiting,
-	}
-	if s.Updated.IsZero() {
-		s.Updated = f.modTime()
-	}
+	state := StateWaiting
 	switch {
 	case f.executing:
-		s.State = StateExecuting
+		state = StateExecuting
 	case f.openTurn:
-		s.State = StateThinking
+		state = StateThinking
 	}
-	if f.sawUsage || f.sawContext {
-		s.Context = f.context
-	}
-	return s
+	return f.jsonlSession.session(state, f.modTime())
 }
 
 func (p *jsonlPaths) recordRole(record map[string]any) JSONLRole {

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 )
@@ -167,18 +166,9 @@ func encodeClaudePath(cwd string) string {
 // bytes are parsed; it is replaced wholesale when the file behind a path changes.
 type claudeFile struct {
 	jsonlCursor
+	jsonlSession
 
-	id      string
-	dir     string
-	model   string
-	title   string
-	prompt  string
-	tokens  Tokens
-	history []int64
-
-	contextUsed int64
-	maxContext  int64
-	sawUsage    bool
+	maxContext int64
 
 	lastMsgID   string
 	lastUsage   Tokens
@@ -193,26 +183,18 @@ func (c *claudeFile) add(line []byte) {
 	if err := json.Unmarshal(line, &e); err != nil {
 		return
 	}
-	if e.SessionID != "" {
-		c.id = e.SessionID
-	}
-	if e.CWD != "" {
-		c.dir = e.CWD
-	}
+	c.setID(e.SessionID)
+	c.setDir(e.CWD)
 	switch e.Type {
 	case "assistant":
 		c.assistant(e)
 	case "user":
 		c.user(e)
 	case "ai-title":
-		if title := strings.TrimSpace(e.AITitle); title != "" {
-			c.title = title
-		}
+		c.setTitle(e.AITitle)
 	case "summary":
 		// Older Claude Code wrote one summary record per transcript instead of ai-title.
-		if title := strings.TrimSpace(e.Summary); title != "" {
-			c.title = title
-		}
+		c.setTitle(e.Summary)
 	}
 }
 
@@ -224,8 +206,12 @@ func (c *claudeFile) assistant(e claudeEntry) {
 	}
 	// Claude Code marks local, non-model records (a permission notice, "no response
 	// requested") with a bracketed model name, which must not replace the real one.
-	if msg.Model != "" && !strings.HasPrefix(msg.Model, "<") {
-		c.model = msg.Model
+	if !strings.HasPrefix(msg.Model, "<") {
+		c.setModel(msg.Model)
+		if c.sawUsage {
+			// A later record can name a different window without carrying usage.
+			c.setContextLimit(claudeContextLimit(c.model, c.maxContext))
+		}
 	}
 	hasTool := claudeHasToolUse(msg.Content)
 	sameResponse := msg.ID != "" && msg.ID == c.lastMsgID
@@ -253,23 +239,19 @@ func (c *claudeFile) assistant(e claudeEntry) {
 		// Same response again: replace its contribution rather than add a second one. This is
 		// what keeps a split response from doubling the totals, and it also accepts a usage
 		// snapshot that grew while the response streamed.
-		c.tokens = c.tokens.sub(c.lastUsage)
-		if len(c.history) > 0 {
-			c.history = c.history[:len(c.history)-1]
-		}
+		c.discardLastResponse(c.lastUsage)
 	}
-	c.tokens = c.tokens.add(t)
+	c.addResponseTokens(t)
 	c.lastUsage, c.lastCounted = t, true
-	c.sawUsage = true
 
 	// All three are prompt tokens: input excludes cached content, so the prompt the model saw
 	// is their sum.
 	used := t.prompt()
-	c.contextUsed = used
+	c.useContext(used)
 	if used > c.maxContext {
 		c.maxContext = used
 	}
-	c.history = appendHistoryPoint(c.history, t.sum())
+	c.setContextLimit(claudeContextLimit(c.model, c.maxContext))
 }
 
 func (c *claudeFile) user(e claudeEntry) {
@@ -297,36 +279,18 @@ func (c *claudeFile) user(e claudeEntry) {
 	}
 	c.openTurn = true
 	c.hasTool = false
-	if c.prompt == "" {
-		c.prompt = promptTitle(text)
-	}
+	c.setPrompt(text)
 }
 
 func (c *claudeFile) session() StoredSession {
-	title := c.title
-	if title == "" {
-		title = c.prompt
-	}
-	s := StoredSession{
-		ID:           c.id,
-		Dir:          c.dir,
-		Title:        title,
-		Model:        c.model,
-		Tokens:       c.tokens,
-		TokenHistory: slices.Clone(c.history),
-		Updated:      c.modTime(),
-		State:        StateWaiting,
-	}
+	state := StateWaiting
 	switch {
 	case c.openTurn:
-		s.State = StateThinking
+		state = StateThinking
 	case c.hasTool:
-		s.State = StateExecuting
+		state = StateExecuting
 	}
-	if c.sawUsage {
-		s.Context = Context{Used: c.contextUsed, Limit: claudeContextLimit(c.model, c.maxContext)}
-	}
-	return s
+	return c.jsonlSession.session(state, c.modTime())
 }
 
 // claudeContextLimit infers the window, which the transcript does not record: a model marked

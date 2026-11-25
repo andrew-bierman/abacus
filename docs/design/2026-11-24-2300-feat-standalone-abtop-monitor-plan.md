@@ -71,7 +71,7 @@ The loop works the first unchecked item. Tick one per pass.
 
 - [x] `harness.go`: `HarnessSpec` registry; discovery consults it instead of a hardcoded map
 - [x] `jsonl_spec.go`: generic JSONL adapter (dotted-path mapping, additive vs cumulative usage)
-- [ ] port the three existing JSONL readers onto the generic adapter, deleting the duplication
+- [x] port the three existing JSONL readers onto the generic adapter, deleting the duplication
 - [ ] `grok` adapter (verified against the store on this machine)
 - [ ] `gemini` adapter (documented-only until a real session exists)
 - [ ] `copilot` adapter
@@ -123,3 +123,12 @@ One line per completed item: what it did and how it was verified.
   `go test ./...` pass. Review applied the cumulative-fill, block-text and frozen-roles findings;
   residual: no production caller until the next adapter item, and cumulative records that omit a
   counter still replace the whole level.
+- three JSONL readers on the shared accumulation — `internal/agents/jsonl_session.go` now owns
+  identity, additive and response token folding, bounded history, context fill and the
+  `StoredSession` snapshot for the generic adapter, Claude, Codex and pi, so those four no longer
+  repeat the same accumulation code; each format keeps only its own record grammar, state machine,
+  path resolution and Codex quota. Behaviour is pinned by the existing synthetic store fixtures
+  plus new cases for a windowless Codex turn, a Claude model-change window and output-only usage;
+  `go build ./...`, `go vet ./...` and `go test ./...` pass. Review applied the test and comment
+  findings; residual: pi sets `sawUsage` from auxiliary records (the emitted `Context` is unchanged),
+  and the last-wins identity setters and title trim are not separately pinned.

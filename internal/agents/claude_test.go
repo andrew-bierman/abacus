@@ -652,6 +652,35 @@ func TestClaudePathForRechecksTheNewestTranscript(t *testing.T) {
 	}
 }
 
+func TestClaudeTranscriptRecomputesTheWindowWhenTheModelChanges(t *testing.T) {
+	path := writeClaudeTranscript(t, t.TempDir(),
+		claudeUserLine(t, "ses_a", "Promote the window", nil),
+		claudeAssistantLine(t, "ses_a", "msg_1", "claude-sonnet-5-5", "Ok.", "", claudeUsageMap(100, 1, 0, 0)),
+		// A later record can name a larger window without carrying usage of its own.
+		claudeAssistantLine(t, "ses_a", "msg_2", "claude-sonnet-5-5[1m]", "", "", nil),
+	)
+
+	got := readClaude(t, &ClaudeStore{}, path)
+	if got.Context.Limit != 1_000_000 {
+		t.Errorf("context limit = %d, want the model's 1M window", got.Context.Limit)
+	}
+}
+
+func TestClaudeTranscriptKeepsTheWindowWhenUsageOmitsPromptTokens(t *testing.T) {
+	path := writeClaudeTranscript(t, t.TempDir(),
+		claudeUserLine(t, "ses_a", "Count the reply", nil),
+		claudeAssistantLine(t, "ses_a", "msg_1", "claude-haiku-5-5", "Done.", "", claudeUsageMap(0, 5, 0, 0)),
+	)
+
+	got := readClaude(t, &ClaudeStore{}, path)
+	if want := (Tokens{Output: 5}); got.Tokens != want {
+		t.Errorf("tokens = %+v, want %+v", got.Tokens, want)
+	}
+	if got.Context.Limit != 200_000 {
+		t.Errorf("context limit = %d, want the inferred 200k window", got.Context.Limit)
+	}
+}
+
 func TestClaudePathForSkipsSymlinks(t *testing.T) {
 	target := writeClaudeTranscript(t, t.TempDir(), claudeUserLine(t, "ses_a", "Outside", nil))
 	root := t.TempDir()
