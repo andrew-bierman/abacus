@@ -6,6 +6,8 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-24
+
 ### Added
 
 - Agents: richer reads, all additive (`schema_version` stays 1), ported from the parallel sessions work
