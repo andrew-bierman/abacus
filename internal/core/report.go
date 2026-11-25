@@ -54,7 +54,7 @@ type Contract struct {
 }
 
 // ErrorCodesVersion is bumped whenever a code is added to or removed from ErrorCodes.
-const ErrorCodesVersion = 1
+const ErrorCodesVersion = 2
 
 // ServeSupported is true once `abacus serve --stdio` ships.
 const ServeSupported = true

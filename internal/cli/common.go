@@ -2,8 +2,6 @@ package cli
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"os"
@@ -90,8 +88,7 @@ func digestFor(d Deps, digest string) string {
 	if !demoRun(d) {
 		return digest
 	}
-	sum := sha256.Sum256([]byte("abacus-demo-plan\x00" + digest))
-	return hex.EncodeToString(sum[:])
+	return core.DemoDigest(digest)
 }
 
 // interrupted reports whether an interrupt arrived while a write was being applied.
