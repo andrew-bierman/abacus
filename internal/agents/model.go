@@ -25,6 +25,7 @@ const (
 	HarnessCopilot  Harness = "copilot"
 	HarnessGemini   Harness = "gemini"
 	HarnessGrok     Harness = "grok"
+	HarnessHermes   Harness = "hermes"
 	HarnessOpenCode Harness = "opencode"
 	HarnessPi       Harness = "pi"
 	HarnessQwen     Harness = "qwen"

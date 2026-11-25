@@ -290,6 +290,146 @@ func TestSessionsJoinsOpenCodeByDirectory(t *testing.T) {
 	}
 }
 
+// newHermesDB builds the state.db subset the reader uses, with invented rows.
+func newHermesDB(t *testing.T, sessionID, title, model, dir string, updated time.Time, in, out, cacheRead, cacheWrite int64) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "state.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`
+		CREATE TABLE sessions (
+			id TEXT PRIMARY KEY, source TEXT NOT NULL, model TEXT, parent_session_id TEXT,
+			started_at REAL NOT NULL, ended_at REAL, input_tokens INTEGER DEFAULT 0,
+			output_tokens INTEGER DEFAULT 0, cache_read_tokens INTEGER DEFAULT 0,
+			cache_write_tokens INTEGER DEFAULT 0, cwd TEXT, estimated_cost_usd REAL,
+			actual_cost_usd REAL, title TEXT, last_activity_at REAL,
+			last_activity_description TEXT);
+		CREATE TABLE messages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, role TEXT NOT NULL,
+			content TEXT, tool_calls TEXT, timestamp REAL NOT NULL, token_count INTEGER,
+			active INTEGER NOT NULL DEFAULT 1);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO sessions (id, source, model, started_at, cwd,
+		input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, title, last_activity_at)
+		VALUES (?, 'cli', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sessionID, model, float64(updated.Add(-time.Hour).Unix()), dir, in, out, cacheRead, cacheWrite,
+		title, float64(updated.Unix())); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO messages (session_id, role, content, timestamp)
+		VALUES (?, 'user', 'trim the invoice list', ?), (?, 'assistant', 'done', ?)`,
+		sessionID, float64(updated.Add(-2*time.Minute).Unix()),
+		sessionID, float64(updated.Add(-time.Minute).Unix())); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestSessionsJoinsHermesByDirectory(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/shop"
+	updated := time.Date(2026, 11, 24, 9, 30, 0, 0, time.UTC)
+	db := newHermesDB(t, "ses_hermes", "Payment refactor", "anthropic/claude-sonnet-4.6",
+		cwd, updated, 90, 10, 400, 5)
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "hermes", Started: updated.Add(-2 * time.Hour)}},
+		cwds:  map[int]string{4000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		HermesDBs: []string{db},
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Sessions) != 1 {
+		t.Fatalf("sessions = %+v", rep.Sessions)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "Payment refactor" || got.Model != "anthropic/claude-sonnet-4.6" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 90, Output: 10, CacheRead: 400, CacheCreate: 5}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the assistant reply", got.State)
+	}
+	// Hermes records cumulative totals, not a context window or per-turn series.
+	if got.Context != (agents.Context{}) || got.TokenHistory != nil {
+		t.Errorf("context/history = %+v/%v, want the does-not-record sentinel", got.Context, got.TokenHistory)
+	}
+	if len(rep.Unreadable) != 0 {
+		t.Errorf("unreadable = %+v, want a clean read", rep.Unreadable)
+	}
+}
+
+// TestSessionsReportsAPartialHermesStore: one corrupt profile must not hide the sessions and
+// their fields from the profiles that read, and the failure must still be reported.
+func TestSessionsReportsAPartialHermesStore(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/shop"
+	updated := time.Date(2026, 11, 24, 9, 30, 0, 0, time.UTC)
+	good := newHermesDB(t, "ses_hermes", "Payment refactor", "anthropic/claude-sonnet-4.6",
+		cwd, updated, 90, 10, 400, 5)
+	corrupt := filepath.Join(t.TempDir(), "state.db")
+	writeFile(t, corrupt, "not a database")
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "hermes", Started: updated.Add(-2 * time.Hour)}},
+		cwds:  map[int]string{4000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		HermesDBs: []string{good, corrupt},
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Sessions) != 1 {
+		t.Fatalf("sessions = %+v", rep.Sessions)
+	}
+	if got := rep.Sessions[0]; got.Title != "Payment refactor" || got.State != agents.StateWaiting {
+		t.Errorf("session = %+v, want the readable profile's fields to join", got)
+	}
+	if len(rep.Unreadable) != 1 || !strings.Contains(rep.Unreadable[0], "hermes") {
+		t.Fatalf("unreadable = %+v, want the corrupt profile reported", rep.Unreadable)
+	}
+}
+
+// TestSessionsReportsAnUnlistableHermesProfilesDirectory: discovery records the listing failure,
+// so a live Hermes process still appears while the unreadable profiles directory is named.
+func TestSessionsReportsAnUnlistableHermesProfilesDirectory(t *testing.T) {
+	home := t.TempDir()
+	profiles := filepath.Join(home, ".hermes", "profiles")
+	if err := os.MkdirAll(filepath.Dir(profiles), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(profiles, []byte("not a directory"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "hermes"}},
+		cwds:  map[int]string{4000: "/home/dev/shop"},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Sessions) != 1 || rep.Sessions[0].Harness != agents.HarnessHermes {
+		t.Fatalf("sessions = %+v, want the live hermes row", rep.Sessions)
+	}
+	if len(rep.Unreadable) != 1 || !strings.Contains(rep.Unreadable[0], "hermes") {
+		t.Fatalf("unreadable = %+v, want the profiles listing failure reported", rep.Unreadable)
+	}
+}
+
 // TestSessionsKeepsTheLiveSessionWhenAStoreCannotBeRead: one unreadable store is reported,
 // bounded, and never turns the live process table into an empty tab.
 func TestSessionsKeepsTheLiveSessionWhenAStoreCannotBeRead(t *testing.T) {

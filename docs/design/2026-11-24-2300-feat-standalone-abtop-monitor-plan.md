@@ -76,7 +76,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `gemini` adapter (documented-only until a real session exists)
 - [x] `copilot` adapter
 - [x] `qwen` adapter
-- [ ] `hermes` adapter (SQLite)
+- [x] `hermes` adapter (SQLite)
 - [ ] process-only adapters (`Kind: none`) for the remaining CLIs, so they appear with ports
 - [ ] `cmd/abtop` scaffold: entry point, terminal setup, `--once` and `--json`
 - [ ] layout: header, sessions table, detail, ports — abtop's shape in lipgloss
@@ -215,3 +215,22 @@ One line per completed item: what it did and how it was verified.
   collision; `thoughtsTokenCount` and `toolUsePromptTokenCount` are unread, so output undercounts
   reasoning (as in the Gemini mapping); and a later upstream payload rename would degrade
   title/parent/state silently.
+- `hermes` adapter — added `internal/agents/hermes.go` with `HermesStore` over the per-profile
+  `state.db`: `HERMES_HOME` and `profiles/<name>/` discovery (an unlistable profiles directory is
+  reported, a missing one is not), the session window over `last_activity_at`/`started_at` with
+  zero treated as unset, cumulative `sessions` token counters and cost, a title from `sessions.title`
+  or the first active prompt, and state from Hermes' mid-turn activity label or the last active
+  message. Registered `HarnessHermes` and made the database-store join a registered list in
+  `internal/core/sessions.go`, so opencode and Hermes both join by directory and a partial store
+  keeps its readable sessions while the failure is reported in `Unreadable`. **Verified against
+  Hermes Agent's upstream `persistence/sqlite/_schema_ddl.py` and session-storage docs plus
+  synthetic fixtures with invented names; there is no real `state.db` on this machine, so this is
+  documented-only.** Tests pin the schema columns, profile and `HERMES_HOME` discovery, the window
+  and limit, missing/foreign stores, a corrupt profile beside a readable one, an unlistable
+  profiles directory, inactive compressed messages, an unset activity stamp, the state mapping, and
+  the core join. `go build ./...`, `go vet ./...` and `go test ./...` pass. Review applied the
+  `NULLIF` unset-activity fix, partial-profile error plumbing, `os.ReadDir` discovery error, and the
+  inactive-message test; residuals: the `NULLIF` expression no longer matches upstream's
+  `idx_sessions_effective_activity` expression index, a legacy store may lack the deferred message
+  indexes, the SQLite DSN is string-concatenated, opencode's sentinel is still special-cased in the
+  join, and the schema DDL is copied in the agents and core test fixtures.

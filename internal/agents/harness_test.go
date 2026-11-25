@@ -11,49 +11,54 @@ import (
 type registryContract struct {
 	binaries []string
 	kind     HarnessKind
-	root     func(home string) string
+	roots    func(home string) []string
 }
 
 var registryContracts = map[Harness]registryContract{
 	HarnessClaude: {
 		binaries: []string{"claude", "claude-code"},
 		kind:     KindJSONL,
-		root:     ClaudeProjectsPath,
+		roots:    func(home string) []string { return []string{ClaudeProjectsPath(home)} },
 	},
 	HarnessCodex: {
 		binaries: []string{"codex"},
 		kind:     KindJSONL,
-		root:     CodexSessionsPath,
+		roots:    func(home string) []string { return []string{CodexSessionsPath(home)} },
 	},
 	HarnessCopilot: {
 		binaries: []string{"copilot"},
 		kind:     KindJSONL,
-		root:     CopilotSessionsPath,
+		roots:    func(home string) []string { return []string{CopilotSessionsPath(home)} },
 	},
 	HarnessGemini: {
 		binaries: []string{"gemini"},
 		kind:     KindJSONL,
-		root:     GeminiSessionsPath,
+		roots:    func(home string) []string { return []string{GeminiSessionsPath(home)} },
 	},
 	HarnessGrok: {
 		binaries: []string{"grok", "grok-cli"},
 		kind:     KindJSONL,
-		root:     GrokSessionsPath,
+		roots:    func(home string) []string { return []string{GrokSessionsPath(home)} },
+	},
+	HarnessHermes: {
+		binaries: []string{"hermes"},
+		kind:     KindSQLite,
+		roots:    HermesDBPaths,
 	},
 	HarnessOpenCode: {
 		binaries: []string{"opencode", "opencode-cli"},
 		kind:     KindSQLite,
-		root:     OpenCodeDBPath,
+		roots:    func(home string) []string { return []string{OpenCodeDBPath(home)} },
 	},
 	HarnessPi: {
 		binaries: []string{"pi"},
 		kind:     KindJSONL,
-		root:     PiSessionsPath,
+		roots:    func(home string) []string { return []string{PiSessionsPath(home)} },
 	},
 	HarnessQwen: {
 		binaries: []string{"qwen"},
 		kind:     KindJSONL,
-		root:     QwenSessionsPath,
+		roots:    func(home string) []string { return []string{QwenSessionsPath(home)} },
 	},
 }
 
@@ -124,8 +129,8 @@ func TestHarnessRegistryRootsMatchContract(t *testing.T) {
 		if !ok {
 			continue // the registry test reports the unknown declaration
 		}
-		if roots := spec.Roots(home); len(roots) != 1 || roots[0] != want.root(home) {
-			t.Errorf("harness %q roots = %v, want [%q]", spec.Name, roots, want.root(home))
+		if roots := spec.Roots(home); !slices.Equal(roots, want.roots(home)) {
+			t.Errorf("harness %q roots = %v, want %v", spec.Name, roots, want.roots(home))
 		}
 		if roots := spec.Roots(""); len(roots) != 0 {
 			t.Errorf("harness %q roots for an unknown home = %v, want none", spec.Name, roots)

@@ -69,6 +69,12 @@ var harnesses = []HarnessSpec{
 		Kind:     KindJSONL,
 	},
 	{
+		Name:     HarnessHermes,
+		Binaries: []string{"hermes"},
+		Roots:    HermesDBPaths,
+		Kind:     KindSQLite,
+	},
+	{
 		Name:     HarnessOpenCode,
 		Binaries: []string{"opencode", "opencode-cli"},
 		Roots:    rootsOf(OpenCodeDBPath),
