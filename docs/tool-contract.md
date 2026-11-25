@@ -399,9 +399,11 @@ closed set and `source` says how it was learned.
   cockpit uses. Nothing is contacted or read from disk. Every JSON document made this way carries the additive root key
   `"demo": true` (omitted otherwise; every schema in `docs/schema/v1` lists it as an optional boolean). A write verb
   in demo mode is refused with code `refused` and exit 1 before anything is confirmed, run or audited, unless it is a
-  `--dry-run` plan (which works and says `"demo": true`); `setup` is only a report or a `--dry-run` plan. Commands
-  that change something with no plan to show (`config set`, `schema --out DIR`, `rex layout`, even with `--dry-run`)
-  are refused outright. This is one table (`internal/cli/effects.go`) checked before any command runs: a command or
+  `--dry-run` plan (which works and says `"demo": true`); `setup` is only a report or a `--dry-run` plan, and in demo
+  mode the report is the steps of a first run (the workspace and actor `needed` with their plans, queues `blocked`), so
+  a client can show its setup sheet with no tracker. Commands that change something with no plan to show
+  (`config set`, `schema --out DIR`, `rex layout`, even with `--dry-run`) are refused outright (over serve,
+  `plan.config.set` is a demo plan: it is shown, and never applied). This is one table (`internal/cli/effects.go`) checked before any command runs: a command or
   verb that is not in it is refused in demo mode, and a test enumerates every registered command against it. A demo
   `plan_digest` is never equal to a real plan's (it is hashed with a demo marker), so a demo review cannot satisfy
   `--expect-digest` on a real tracker. Behind the
@@ -445,6 +447,14 @@ person confirmed. The plan digest closes that:
   ok or unknown) in the last ten minutes is refused (code `refused`, in a dry run too) unless `--again`, and a
   post made again gets a key the log has never recorded, so the board does not silently drop it. An audit log
   that cannot be read stops a board write.
+- **Setup step states are a closed set.** `setup --json` and `setup.state` give every step a `state`, and it is one of
+  `done` (nothing to do), `needed` (a plan is available and `setup` applies it), `blocked` (needed, but it cannot be
+  planned yet: the message says why, for example Queues before the workspace exists), `unavailable` (abacus's own
+  tool for the step is not here) or `repair` (a half-created workspace: only `setup --repair` applies it, and
+  the step is then `repair`, not `workspace`). Unlike the other state strings of this document, which may
+  grow, this set is closed for `schema_version` 1: the schema (`setup.json`) lists it as an `enum` and
+  the Go type (`core.StepState`) is tested against exactly these five values, so a client can switch on it.
+  A new state would be a `schema_version` change. `step` is `workspace`, `queues`, `actor` or `repair`.
 - The setup digest covers every step, blocked ones included with their reason, and the exact argv each
   planned step would run. With `--expect-digest`, `setup --yes` re-plans each step before running it and does
   not run one whose command differs from the reviewed one, or that was blocked when reviewed and became
@@ -582,7 +592,10 @@ another validates every contract golden against its schema. The schemas follow `
 names and `omitempty` (optional) from the tags, embedded structs flattened, a nil list may be `null`
 unless the field is `omitempty`, `time.Time` is a `date-time` string, and a type with its own marshaler
 (`OpenPlan`, `OpenRung`) has non-null lists. Closed sets that may grow (states, kinds, statuses, error
-codes) are plain strings, never schema enums, so an additive value does not break a generated client.
+codes) are plain strings, never schema enums, so an additive value does not break a generated client. The
+exceptions are sets the contract promises not to grow within `schema_version` 1: the setup step `state` and the
+`kind` of `serve-tasks-since` are schema enums (a Go string type with `SchemaValues`, tested against the
+documented values).
 The schemas are open: an unknown key is additive, not an error. Every root requires `schema_version`
 (1).
 
@@ -603,10 +616,31 @@ bytes as the command's `--json`, on one line), its errors carry the closed codes
 `error.data`, and its writes are the plan and apply of "Plan digests" with a server-held single-use plan id.
 `initialize` also returns this document's `contract` (the one `version --json` prints), so a client needs no
 second process. The protocol, limits and the notification rules are in `docs/serve-protocol.md`; the extra
-messages have schemas in `docs/schema/v1` (`serve-initialize`, `serve-plan`, `serve-applied`, `serve-error`).
+messages have schemas in `docs/schema/v1` (`serve-initialize`, `serve-plan`, `serve-applied`, `serve-error`,
+`serve-tasks-since`).
 Serve plans everything the gate offers, setup steps and `config set` included (`plan.setup`,
-`plan.config.set`); in demo mode every plan except `config set` is made and flagged `"demo": true` with a
-demo digest, and `apply` is refused, as the effects table above says for the commands.
+`plan.config.set`); in demo mode every plan is made and flagged `"demo": true` with a demo digest (the setup
+steps and the settings too, `config set` against an empty settings file), and `apply` is refused. `tasks.since`
+is the one serve read with no command: the task rows that changed since a fingerprint (`delta`), or `full` when
+the fingerprint is unknown or too old, so a client refetches incrementally.
+
+## Settings
+
+`config show --json` and `config get KEY` print the settings file; `config set KEY VALUE` (over serve,
+`plan.config.set {key, value}`) changes one key after the same validation. A value is text on the command line; over
+serve it is text too, and for `agent_command` also a list of strings. Every key and what it takes:
+
+| Key | Value | Notes |
+|---|---|---|
+| `actor` | 1 to 64 characters: letters, digits, `.` `_` `@` `-`, starting with a letter or digit | the name leases are held under; a setup step offers a suggestion |
+| `tracker_dir` | an absolute path, or `""` to clear | the tracker Tasks reads; relative paths are refused |
+| `lambe_config` | an absolute path, or `""` to clear | the Lambe config Queues reads. Editable: set by the setup step for Queues, or by hand; a relative path is refused. The path is only remembered, never read at set time |
+| `board_url` | an `https` URL (`http` only for localhost, `127.0.0.1` or `::1`) with no credentials, query or fragment, or `""` to clear | the board Board reads |
+| `search_history` | `"on"`, `"off"` or `""` (the same as `on`) | `off` keeps no search history; queries are stored in plain text while it is on. Text only: a JSON boolean is `usage`. `config show` prints it as `"on"` or `"off"` (stored as absent for on) |
+| `agent_command` | a JSON list of strings (the program and its arguments, 1 to 16 words, each at most 512 characters, `{task_id}` and `{title}` filled in per word, never in the program word, never split or run by a shell), given as that JSON text or, over serve, as a list; `""` clears | what "work on this" runs; changing it is audited (the argv, an attempt before the write and the outcome after) on the command line and over serve |
+
+`config show --json` returns the typed `Config` (`config-show.json`): the same keys, with `agent_command` as a
+list of strings there. A key that is not in the table is `usage`.
 
 ## Clients
 

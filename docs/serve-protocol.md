@@ -33,9 +33,12 @@ abacus serve --stdio [--demo] [--tracker DIR] [--all] [--lambe-config FILE]
   `plan.*` works against the demo data (so a client can show and screenshot its confirm sheets) and returns a
   plan flagged `"demo": true` whose `plan_digest` is the demo digest: the one `--demo --dry-run` prints, never
   equal to a real plan's. `apply` is always refused (`refused`, "demo data cannot be changed", nothing written,
-  nothing audited), and so is `plan.config.set` (a command with no plan to show, like `config set --demo`). The
-  effects table of the commands decides which: `plan.setup` is a plan, as `setup --dry-run` is. A held demo plan
-  can be cancelled like any other. `--tracker DIR` selects the tracker as on the other commands (not with demo). `version --json`
+  nothing audited). That includes the setup steps and the settings, so a client can show those sheets with no
+  tracker: `setup.state` lists the steps of a first run (the workspace and the actor name `needed`, queues
+  `blocked` until the workspace exists; the same report `setup --demo --json` prints, with its demo digest),
+  `plan.setup` plans a `needed` one (invented lines and display argv; `queues` and `repair` are `refused` as a
+  step that is not offered is), and `plan.config.set` validates the value as `config set` does, against an
+  empty settings file (the real file is never read, written or audited). A held demo plan can be cancelled like any other. `--tracker DIR` selects the tracker as on the other commands (not with demo). `version --json`
   reports `contract.serve: true` and the `serve` capability.
 
 ## Framing and limits
@@ -164,12 +167,34 @@ is described by.
 | `tasks.tree` | the same | `tasks-tree` | `tasks list --tree --json` |
 | `tasks.board` | `query`, `group`, `closed` | `tasks-board` | `tasks board --json` |
 | `tasks.show` | `id` (required) | `tasks-show` | `tasks show ID --json` |
+| `tasks.since` | `fingerprint` (optional) | `serve-tasks-since` | none (see below) |
 | `tasks.graph` | `id` or `whole`, `depth` (1 to 6, default 2) | `tasks-graph` | `tasks graph --json` |
 | `tasks.history` | `id` (required), `limit` | `tasks-history` | `tasks history ID --json` |
 | `search` | `query` (required), `domains`, `limit` | `search` | `search QUERY --json` |
 | `workspace` | none | `workspace` | `status --json`, `domains.workspace` (an empty report when there is none) |
 | `setup.state` | none | `setup` (steps and `plan_digest`; nothing is applied) | `setup --json` |
 | `config.show` | none | `config-show` | `config show --json` |
+
+`tasks.since {fingerprint?}` is the incremental refetch: it returns the task rows that changed since a state
+this server handed out, instead of the whole list. The answer is `{kind, fingerprint, rows, removed, total}`:
+
+- `kind: "delta"`: `rows` are the tasks that are new or differ (the same row `tasks.list` shows, sorted by id) and
+  `removed` the ids that are gone. A row counts as changed when the stored task changed *or* its derived state
+  did (closing a blocker frees the task it held, and changes its epic's done count, though neither was edited);
+  the age is the clock's, not the task's, and is not a change.
+- `kind: "full"`: the `fingerprint` named is empty, unknown (another server, a restart, a typo) or forgotten, or
+  the tracker holds more than 5000 tasks (the watcher's own bound: too many to keep and compare by task).
+  `rows` and `removed` are empty and the client reads `tasks.list` again.
+- `fingerprint` is the opaque token of the state this answer describes: send it back next time (compare it,
+  never parse it). The first call (no fingerprint) is how a client gets its baseline. It is **not** the
+  `fingerprint` of a `tasks.changed` notice (that one is the tracker's own cheap check); a notice says "refetch",
+  and `tasks.since` with the last token is the refetch.
+- The server keeps the last 8 states (one per token it handed out, oldest forgotten first), a digest per task,
+  not the tasks, so a client that falls further behind is told `full`. A tracker over 5000 tasks keeps none, so
+  every answer is `full`. Each call reads the tracker whole, as `tasks.list` does, so it is one read on the
+  `tasks` domain. A second client using the same server shares the tokens.
+- There is no `tasks list --since` in the command line: a command is one process with no earlier state to compare
+  with, so it could only answer "unchanged" or "full".
 
 The provider detection behind the reads is reused for 30 seconds and dropped after a write. There is no
 snapshot id: each request is one read of its domain, as a command is, so two requests can show two
@@ -200,8 +225,16 @@ that is not one of the verb's own is refused.
 | `plan.board.post` | `channel`, `text`, `again` | `board post` |
 | `plan.board.reply` | `id`, `text`, `again` | `board reply` |
 | `plan.setup` | `step` (`workspace`, `queues`, `actor`, `repair`) | one `setup` step, only when `setup.state` offers it (needed, or repair for a half-made workspace); else `refused` |
-| `plan.config.set` | `key`, `value` | `config set KEY VALUE` (same validation; refused in demo mode) |
+| `plan.config.set` | `key`, `value` (text; for `agent_command` also a list of strings) | `config set KEY VALUE` (same validation; a demo plan in demo mode, never applied) |
 | `plan.cancel` | `plan_id` | discards a held plan: `{plan_id, cancelled: true}` |
+
+`plan.config.set`'s `value` is text, as `config set` takes it, and for a key that is an argv (`agent_command`)
+also a JSON list of strings, so a client does not have to encode JSON inside a string: `{"key":"agent_command",
+"value":["claude","Work on {task_id}: {title}"]}` is the plan `config set agent_command '["claude","Work on {task_id}: {title}"]'`
+is, same parser and limits (the list is turned into that text before it is checked, so the digest, the audit
+line and the stored value are the same either way). A list for any other key, an empty list (the text `""`
+clears), words that are not strings, and a number, object, boolean or null are `usage`. The typed values of every
+key are in `docs/tool-contract.md`, "Settings".
 
 Planning runs nothing and writes nothing (it reads the task or tracker it needs, as the commands do). A
 change core refuses (a bad id, a status out of the set, a control character in a comment, a no-op) is a
@@ -336,10 +369,10 @@ request.
   unknown code as `failed`; it treats a method missing from `capabilities.methods` as unavailable.
 - Reports follow `schema_version` 1 of `docs/tool-contract.md`, so a client written against the command's
   `--json` output decodes the same documents here. Key naming is mixed by origin and not renamed.
-- `docs/schema/v1` has `serve-initialize`, `serve-plan`, `serve-applied`, `serve-error` and `workspace`
+- `docs/schema/v1` has `serve-initialize`, `serve-plan`, `serve-applied`, `serve-error`, `serve-tasks-since` and `workspace`
   beside the report schemas; `abacus schema` prints them. Notification params are not schema files; the
   table above is their contract.
 - The golden transcripts in `internal/serve/testdata` record whole conversations (handshake and
   malformed input, plan and apply and single use and digest mismatch, an unknown outcome, config and setup
-  plans with an expired one, demo plans) and are
+  plans with an expired one, demo plans with setup and settings, `tasks.since`) and are
   validated against those schemas by a test.

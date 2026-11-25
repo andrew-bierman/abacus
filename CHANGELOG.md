@@ -8,12 +8,25 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Serve gaps found by the macOS client, all additive (`schema_version` and the protocol version stay 1):
+  - Demo mode offers the setup and settings sheets: `serve --demo` `setup.state` lists the steps of a first run
+    (workspace and actor `needed`, queues `blocked`), `plan.setup` and `plan.config.set` return demo-flagged plans
+    with demo digests, and `apply` stays refused (nothing written, read or audited; `plan.config.set` is no longer
+    refused in demo mode). `abacus setup --demo` and `--demo --dry-run` print the same steps.
+  - The setup step `state` is a closed, documented set: `done`, `needed`, `blocked`, `unavailable`, `repair`. It is
+    a typed Go enum (`core.StepState`) and a JSON-schema `enum` in `docs/schema/v1/setup.json`; a test enumerates it.
+  - `plan.config.set` takes a JSON list of strings for `agent_command` as well as the text form (same parser, same
+    digest), and `docs/tool-contract.md` has a "Settings" table with the typed value of every key (`lambe_config` and
+    `search_history` are editable: a path or `""`, and `on`/`off`/`""`).
+  - New read `tasks.since {fingerprint?}`: the task rows that changed since a fingerprint the server handed out,
+    the ids that were removed, and the new fingerprint, or `full` when the fingerprint is unknown or too old or the
+    tracker holds more than 5000 tasks. A row counts as changed when its derived state moved too (a freed
+    blocker). Schema `serve-tasks-since`; no `tasks list --since`, as one process has no earlier state.
 - `abacus serve --stdio` refinements for native clients, all additive (`schema_version` and the protocol version
   stay 1; `docs/serve-protocol.md`, `docs/tool-contract.md`):
   - Demo mode makes plans: every `plan.*` works against the demo data and returns a plan flagged `"demo": true`
     with the demo digest `--demo --dry-run` prints, so a UI can show and screenshot its confirm sheets. `apply`
-    stays refused (`refused`, nothing written or audited), and so does `plan.config.set`, as `config set --demo`
-    is. A test enumerates every `plan.*` method against that rule.
+    stays refused (`refused`, nothing written or audited). A test enumerates every `plan.*` method against that rule.
   - Notifications carry `kind` (`full` or `ids`), an opaque `fingerprint` and, when known, `changed_ids`, so a
     client refetches only what changed. Changes that arrive while a notification waits are merged into it, a
     notice past 256 ids is `full`, and an unknown change stays `full` (the old behavior). New `agents` topic and
