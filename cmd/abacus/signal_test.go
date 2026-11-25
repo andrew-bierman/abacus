@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -73,6 +74,17 @@ wait
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
+	b, err := os.ReadFile(childPID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil || pid <= 0 {
+		t.Fatalf("invalid fixture child PID %q", b)
+	}
+	if runtime.GOOS == "linux" && !fixtureChildRunning(pid) {
+		t.Fatalf("the tool's child %d was not running before SIGTERM", pid)
+	}
 	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		t.Fatal(err)
 	}
@@ -109,12 +121,21 @@ wait
 	if strings.Join(phases, ",") != "attempt,unknown" {
 		t.Errorf("audit phases %v, want attempt,unknown:\n%s", phases, log)
 	}
-	if b, err := os.ReadFile(childPID); err == nil {
-		pid, _ := strconv.Atoi(strings.TrimSpace(string(b)))
-		time.Sleep(200 * time.Millisecond)
-		if pid > 0 && syscall.Kill(pid, 0) == nil {
-			_ = syscall.Kill(pid, syscall.SIGKILL)
-			t.Errorf("the tool's child %d is still running", pid)
+	time.Sleep(200 * time.Millisecond)
+	if fixtureChildRunning(pid) {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+		t.Errorf("the tool's child %d is still running", pid)
+	}
+}
+
+func fixtureChildRunning(pid int) bool {
+	if runtime.GOOS == "linux" {
+		// Signal zero also succeeds for an exited child that has yet to be reaped.
+		stat, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/stat")
+		// The command name can contain spaces and parentheses. State follows its last ')'.
+		if end := strings.LastIndexByte(string(stat), ')'); err == nil && end >= 0 && end+2 < len(stat) {
+			return stat[end+2] != 'Z' && stat[end+2] != 'X'
 		}
 	}
+	return syscall.Kill(pid, 0) == nil
 }

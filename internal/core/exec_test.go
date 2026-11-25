@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -140,6 +142,13 @@ wait`)
 		cancel()
 		t.Fatal("the command never started its child")
 	}
+	pid := strings.TrimSpace(string(b))
+	if n, err := strconv.Atoi(pid); err != nil || n <= 0 {
+		t.Fatalf("invalid fixture grandchild PID %q", b)
+	}
+	if runtime.GOOS == "linux" && !fixtureGrandchildRunning(pid) {
+		t.Fatalf("the grandchild %s was not running before cancellation", pid)
+	}
 	cancel()
 	select {
 	case err := <-done:
@@ -149,10 +158,21 @@ wait`)
 	case <-time.After(20 * time.Second):
 		t.Fatal("the cancelled command did not return")
 	}
-	pid := strings.TrimSpace(string(b))
 	time.Sleep(200 * time.Millisecond)
-	if err := exec.Command("kill", "-0", pid).Run(); err == nil {
+	if fixtureGrandchildRunning(pid) {
 		exec.Command("kill", "-9", pid).Run()
 		t.Fatalf("the grandchild %s outlived the stopped command", pid)
 	}
+}
+
+func fixtureGrandchildRunning(pid string) bool {
+	if runtime.GOOS == "linux" {
+		// Signal zero also succeeds for an exited child that has yet to be reaped.
+		stat, err := os.ReadFile("/proc/" + pid + "/stat")
+		// The command name can contain spaces and parentheses. State follows its last ')'.
+		if end := strings.LastIndexByte(string(stat), ')'); err == nil && end >= 0 && end+2 < len(stat) {
+			return stat[end+2] != 'Z' && stat[end+2] != 'X'
+		}
+	}
+	return exec.Command("kill", "-0", pid).Run() == nil
 }
