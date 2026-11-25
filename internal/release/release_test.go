@@ -317,6 +317,35 @@ func realLinkedPin(t *testing.T) (module, version, licenseSHA string) {
 	return
 }
 
+func TestLinkedNoticeScopesRiderToBeadsViewerModule(t *testing.T) {
+	if _, err := exec.LookPath("jq"); err != nil {
+		t.Skip("jq is not installed")
+	}
+	manifest := filepath.Join(t.TempDir(), "manifest.json")
+	must(t, os.WriteFile(manifest, []byte(`{
+		"linked_licenses": [
+			{"name":"viewer","module":"github.com/Dicklesworthstone/beads_viewer","version":"v1","license":"MIT"},
+			{"name":"bv","module":"example.com/other","version":"v2","license":"MIT"}
+		]
+	}`), 0o644))
+	for _, tc := range []struct {
+		name      string
+		wantRider bool
+	}{{"viewer", true}, {"bv", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command("bash", "-c", `source "$1"; manifest="$2"; linked_notices_entry "$3"`,
+				"bash", filepath.Join(scriptsDir(t), "lib", "bundle.sh"), manifest, tc.name)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("generate notice: %v\n%s", err, out)
+			}
+			if got := strings.Contains(string(out), "license adds a rider about use with OpenAI and Anthropic products"); got != tc.wantRider {
+				t.Errorf("rider present = %t, want %t in:\n%s", got, tc.wantRider, out)
+			}
+		})
+	}
+}
+
 // The notices must say what is true: bd, lambe and beads-lease are separate programs, bv is a
 // linked library (no bv program ships), and every linked Go module is listed with its license
 // text, ending the file.
