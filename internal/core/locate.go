@@ -61,6 +61,9 @@ type Found struct {
 // currentUID is a seam for tests.
 var currentUID = os.Getuid
 
+// sidecarOwnerUID lets tests exercise filesystems without usable ownership metadata.
+var sidecarOwnerUID = ownerUID
+
 // SetCurrentUIDForTest swaps the uid the owner checks compare against and returns a restore
 // func. Only tests call it.
 func SetCurrentUIDForTest(f func() int) (restore func()) {
@@ -70,8 +73,11 @@ func SetCurrentUIDForTest(f func() int) (restore func()) {
 }
 
 func ownerOK(fi os.FileInfo) (string, bool) {
-	uid, ok := ownerUID(fi)
-	if !ok || uid == 0 || uid == currentUID() {
+	uid, ok := sidecarOwnerUID(fi)
+	if !ok {
+		return "ownership cannot be verified", false
+	}
+	if uid == 0 || uid == currentUID() {
 		return "", true
 	}
 	return fmt.Sprintf("owned by uid %d", uid), false
@@ -86,10 +92,10 @@ func safeDir(dir string) string {
 		return "its directory cannot be read"
 	}
 	if why, ok := ownerOK(di); !ok {
-		return "its directory is " + why
+		return "its directory: " + why
 	}
 	if di.Mode().Perm()&0o022 != 0 {
-		if uid, _ := ownerUID(di); di.Mode()&os.ModeSticky != 0 && uid == 0 {
+		if uid, ok := sidecarOwnerUID(di); di.Mode()&os.ModeSticky != 0 && ok && uid == 0 {
 			return ""
 		}
 		return "its directory is writable by others"
@@ -111,18 +117,19 @@ func safeTool(dir, tool string) (resolved, why string) {
 	if err != nil {
 		return "", ""
 	}
-	switch {
-	case !fi.Mode().IsRegular():
+	if !fi.Mode().IsRegular() {
 		return "", "not a regular file"
+	}
+	if w, ok := ownerOK(fi); !ok {
+		return "", w
+	}
+	switch {
 	case fi.Mode().Perm()&0o111 == 0:
 		return "", "not executable"
 	case fi.Mode().Perm()&0o002 != 0:
 		return "", "world-writable"
 	case fi.Mode().Perm()&0o020 != 0:
 		return "", "group-writable"
-	}
-	if w, ok := ownerOK(fi); !ok {
-		return "", w
 	}
 	for _, d := range []string{filepath.Dir(cand), filepath.Dir(real)} { // the link's and the target's
 		if w := safeDir(d); w != "" {
