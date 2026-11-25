@@ -61,13 +61,14 @@
     "schema_version": 1,
     "error_codes": 1,
     "plan_digest": true,
-    "serve": false,
+    "serve": true,
     "capabilities": [
       "bulk",
       "demo",
       "history",
       "reopen",
       "schema",
+      "serve",
       "tracker"
     ]
   }

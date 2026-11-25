@@ -12,6 +12,9 @@ type Config struct {
 	// Build makes the provider registry. It is called once; detection reruns after EntryTTL.
 	Build   func() *core.Registry
 	Version string
+	// Demo serves invented fixture data: every result says "demo": true, and every plan and apply is
+	// refused (nothing in demo mode can be changed).
+	Demo bool
 	// Audit records every write; nil means the default file audit log. A write whose attempt cannot be
 	// recorded is refused (fail closed), as everywhere.
 	Audit  core.Audit

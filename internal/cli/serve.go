@@ -14,7 +14,7 @@ import (
 	"github.com/andrew-bierman/abacus/internal/serve"
 )
 
-const serveUsage = "usage: abacus serve --stdio [--demo] [--all] [--lambe-config FILE]\n\nA long-lived JSON-RPC 2.0 server for a native client: one request per line on stdin, one response per line on stdout. It listens on no network port, runs only when stdin is a pipe or socket, and writes only through the same plan, confirm, single-use apply and audit gate as the commands. See docs/serve-protocol.md."
+const serveUsage = "usage: abacus serve --stdio [--demo] [--tracker DIR] [--all] [--lambe-config FILE]\n\nA long-lived JSON-RPC 2.0 server for a native client: one request per line on stdin, one response per line on stdout. It listens on no network port, runs only when stdin is a pipe or socket, and writes only through the same plan, confirm, single-use apply and audit gate as the commands. See docs/serve-protocol.md."
 
 // runServe is `abacus serve --stdio`. The engine is the serve package's; this is only the process edge:
 // refuse a terminal or a file on stdin, scrub the environment, ignore SIGPIPE, end on a signal.
@@ -23,7 +23,7 @@ func runServe(rest []string, d Deps) int {
 	fs.SetOutput(d.Err)
 	var o Options
 	stdio := fs.Bool("stdio", false, "serve one client over stdin and stdout (the only transport)")
-	fs.BoolVar(&o.Demo, "demo", false, "serve fixtures instead of the real domains")
+	o.bind(fs, true)
 	fs.BoolVar(&o.AllUsers, "all", false, "include agents run by other users (default: only yours)")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
 	if fs.Parse(rest) != nil {
@@ -32,6 +32,9 @@ func runServe(rest []string, d Deps) int {
 	if fs.NArg() > 0 {
 		fmt.Fprintf(d.Err, "serve: unexpected argument %q\n", core.Sanitize(fs.Arg(0)))
 		return core.ExitUsage
+	}
+	if code, ok := o.resolve(d); !ok {
+		return code
 	}
 	if !*stdio {
 		fmt.Fprintln(d.Err, "serve: needs --stdio (the only transport: there is no network port)")
@@ -45,7 +48,7 @@ func runServe(rest []string, d Deps) int {
 	ignoreSIGPIPE()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	s := serve.New(serve.Config{Build: func() *core.Registry { return d.Build(o) }, Version: d.Version, Audit: d.Audit, Config: d.Config,
+	s := serve.New(serve.Config{Build: func() *core.Registry { return d.Build(o) }, Version: d.Version, Demo: o.Demo, Audit: d.Audit, Config: d.Config,
 		Setup: func(en []core.Entry) *core.Setup { return setupFor(d, en) }, Now: d.Now, Log: d.Err})
 	if err := s.Serve(ctx, d.In, rawOut(d.Out)); err != nil {
 		fmt.Fprintf(d.Err, "serve: %v\n", err)

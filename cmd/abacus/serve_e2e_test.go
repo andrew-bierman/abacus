@@ -111,21 +111,13 @@ func TestServeOverARealPipe(t *testing.T) {
 	if r := p.read(t); !strings.Contains(string(r["result"]), `"channels"`) {
 		t.Fatalf("%s", r["result"])
 	}
-	// a write goes through the real file audit under the isolated state directory
+	// demo mode serves reads only: a plan is refused, and nothing is audited
 	p.send(`{"jsonrpc":"2.0","id":3,"method":"plan.task.close","params":{"id":"ac-12"}}`)
-	var plan struct {
-		PlanID string `json:"plan_id"`
+	if r := p.read(t); !strings.Contains(string(r["error"]), `"code":"refused"`) {
+		t.Fatalf("%s", r["error"])
 	}
-	_ = json.Unmarshal(p.read(t)["result"], &plan)
-	p.send(`{"jsonrpc":"2.0","id":4,"method":"apply","params":{"plan_id":"` + plan.PlanID + `"}}`)
-	if r := p.read(t); !strings.Contains(string(r["result"]), `"outcome":"applied"`) {
-		t.Fatalf("%s %s", r["result"], r["error"])
-	}
-	audit, _ := filepath.Glob(filepath.Join(p.home, "s", "abacus", "*"))
-	if len(audit) == 0 {
-		t.Errorf("no audit log under the isolated state directory")
-	} else if b, _ := os.ReadFile(audit[0]); strings.Count(string(b), "\n") != 2 {
-		t.Errorf("audit: %s", b)
+	if audit, _ := filepath.Glob(filepath.Join(p.home, "s", "abacus", "*")); len(audit) != 0 {
+		t.Errorf("demo mode audited: %v", audit)
 	}
 	p.send(`{"jsonrpc":"2.0","id":5,"method":"shutdown"}`)
 	p.read(t)

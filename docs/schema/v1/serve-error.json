@@ -5,6 +5,10 @@
     "code": {
       "type": "string"
     },
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
+    },
     "message": {
       "type": "string"
     },

@@ -126,6 +126,16 @@ func (e *Engine) methods() map[string]method {
 	for op := range taskFields {
 		m["plan.task."+string(op)] = method{fn: e.planTask(op)}
 	}
+	if e.cfg.Demo { // demo data cannot be changed, not even as a plan: the same refusal as a command's
+		for name, md := range m {
+			if strings.HasPrefix(name, "plan.") || name == "apply" {
+				md.fn = func(context.Context, json.RawMessage) (any, error) {
+					return nil, failErr(core.CodeRefused, "%s: demo data cannot be changed (nothing was written)", name)
+				}
+				m[name] = md
+			}
+		}
+	}
 	return m
 }
 

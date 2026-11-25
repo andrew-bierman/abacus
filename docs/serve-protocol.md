@@ -14,7 +14,7 @@ additive; a breaking change raises the number, and `initialize` is the one place
 ## Running it
 
 ```
-abacus serve --stdio [--demo] [--all] [--lambe-config FILE]
+abacus serve --stdio [--demo] [--tracker DIR] [--all] [--lambe-config FILE]
 ```
 
 - `--stdio` is required: it is the only transport. There is no flag for a port or a socket.
@@ -29,7 +29,10 @@ abacus serve --stdio [--demo] [--all] [--lambe-config FILE]
 - stdout carries only protocol lines. stderr gets the first-run "preparing" notice and, when something
   goes wrong, one plain line (a handler failed, the client stopped reading). It never carries a request, a
   parameter or a result: task text, tokens and argv values are not logged.
-- `--demo` serves invented fixture data and writes nothing real; the tests use it.
+- `--demo` (or `ABACUS_DEMO=1`) serves invented fixture data: every result carries `"demo": true`, and every
+  `plan.*` and `apply` is refused (`refused`, "demo data cannot be changed"), as a command refuses a write on
+  demo data. `--tracker DIR` selects the tracker as on the other commands (not with demo). `version --json`
+  reports `contract.serve: true` and the `serve` capability.
 
 ## Framing and limits
 

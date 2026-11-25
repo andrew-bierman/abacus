@@ -66,9 +66,12 @@ var (
 	rexVerbs    = []string{"layout"}
 )
 
+// serve is long-lived and classified as reads here so that `serve --demo` starts: the server itself enforces
+// demo mode (Config.Demo), serving reads and refusing every plan and apply. Without --demo its writes go
+// through the same gate as the commands'.
 var effects = func() map[string]effectRule {
 	m := map[string]effectRule{}
-	for _, c := range []string{"version", "doctor", "status", "tui", "leases", "queues", "agents", "search", "licenses", "completion", "help", "tasks", "board"} {
+	for _, c := range []string{"version", "doctor", "status", "tui", "leases", "queues", "agents", "search", "licenses", "completion", "help", "tasks", "board", "serve"} {
 		m[c] = effectRule{reads, nil}
 	}
 	m["schema"] = effectRule{changes, anyFlag("out")} // `schema --out DIR` writes files

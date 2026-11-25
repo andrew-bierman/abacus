@@ -59,6 +59,10 @@
       },
       "type": "array"
     },
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
+    },
     "expires_at": {
       "type": "string"
     },

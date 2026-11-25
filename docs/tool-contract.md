@@ -419,7 +419,7 @@ closed set and `source` says how it was learned.
   first signal, so a second SIGINT or SIGTERM kills the process. Outside an apply (reads, the confirm prompt) the default behavior stays,
   so a prompt can still be interrupted. A write that had already finished when the signal arrived reports its real result.
 - **`version --json` `contract`** lets a client feature-detect:
-  `{"schema_version": 1, "error_codes": 1, "plan_digest": true, "serve": false, "capabilities": ["bulk", "demo", "history", "reopen", "schema", "tracker"]}`.
+  `{"schema_version": 1, "error_codes": 1, "plan_digest": true, "serve": true, "capabilities": ["bulk", "demo", "history", "reopen", "schema", "serve", "tracker"]}`.
   `error_codes` is the version of the closed code set (bumped when a code is added), `plan_digest` says every
   write has `plan_digest` and `--expect-digest`, `serve` says `abacus serve --stdio` exists in this build, and
   `capabilities` lists optional features, sorted. A client treats a capability it does not know as absent.

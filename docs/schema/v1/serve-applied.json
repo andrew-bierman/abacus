@@ -49,6 +49,9 @@
         "batch_id": {
           "type": "string"
         },
+        "error": {
+          "$ref": "#/$defs/ErrorBody"
+        },
         "failed": {
           "type": "integer"
         },
@@ -93,6 +96,27 @@
       ],
       "type": "object"
     },
+    "ErrorBody": {
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "unknown_outcome": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
     "TaskResult": {
       "properties": {
         "id": {
@@ -119,6 +143,10 @@
     },
     "bulk": {
       "$ref": "#/$defs/BulkReport"
+    },
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
     },
     "kind": {
       "type": "string"

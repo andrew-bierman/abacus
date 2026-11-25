@@ -591,9 +591,10 @@ func (s *Server) run(ctx context.Context, id json.RawMessage, m method, params j
 	var b []byte
 	var merr error
 	if r, ok := res.(core.Report); ok { // version, doctor and status print the struct as it is (it carries its own schema_version)
+		r.Demo = s.cfg.Demo
 		b, merr = json.Marshal(r)
 	} else {
-		b, merr = core.ReportJSONCompact(res)
+		b, merr = core.ReportJSONCompact(res, s.cfg.Demo)
 	}
 	if merr != nil {
 		s.replyError(id, failErr(core.CodeFailed, "the result could not be encoded"))

@@ -625,3 +625,29 @@ func TestShutdownCancelsReadsAtOnceAndOnlyWritesGetTheGrace(t *testing.T) {
 		t.Errorf("a read in flight held shutdown for %v: only writes get the grace", time.Since(begin))
 	}
 }
+
+// In demo mode the server serves reads (marked "demo": true) and refuses every plan and apply, as the
+// commands refuse a write on demo data.
+func TestDemoModeServesReadsAndRefusesEveryWrite(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Demo = true
+	c := startClient(t, f.cfg)
+	c.init()
+	for _, m := range []string{"version", "board", "tasks.list", "status"} {
+		r := c.call(m, nil)
+		if r.Error != nil || string(mustMap(t, r.Result)["demo"]) != "true" {
+			t.Errorf("%s: %+v %s", m, r.Error, r.Result)
+		}
+	}
+	for method, params := range map[string]any{
+		"plan.task.close": map[string]any{"id": "ac-12"}, "plan.tasks.bulk": map[string]any{"ids": []string{"ac-12"}, "op": "close"},
+		"plan.board.post": map[string]any{"channel": "dev", "text": "x"}, "apply": map[string]any{"plan_id": "plan_" + strings.Repeat("0", 32)},
+	} {
+		if e := c.call(method, params).wantErr(t, core.CodeRefused); !strings.Contains(e.Message, "demo") {
+			t.Errorf("%s: %q", method, e.Message)
+		}
+	}
+	if f.tasks.runs() != 0 || f.board.runs() != 0 || f.audit.phases() != "" {
+		t.Error("demo mode wrote or audited")
+	}
+}
