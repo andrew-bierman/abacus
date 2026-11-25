@@ -26,7 +26,7 @@
 #                                      hash (bun output need not be reproducible) but by its inputs:
 #   tools[].bun_runtime        hand+script  platform -> {asset, sha256, member}: the official bun release
 #                                      archive (github.com/oven-sh/bun) the executable is compiled from.
-#                                      Downloaded with gh and verified fail closed; its bun binary is
+#                                      Downloaded and verified fail closed; its bun binary is
 #                                      passed to `bun build --compile --compile-executable-path` for every
 #                                      target, so the runtime inside the Board CLI is the verified one.
 #   tools[].package, npm_integrity, lockfile, lockfile_sha256, bun_version, entry, runtime_license
@@ -137,12 +137,40 @@ pin_of() {
 # tag_for TOOL VERSION
 tag_for() { expand "$(tool_field "$1" .tag_template)" "$2" x x; }
 
-# fetch_license TOOL VERSION DEST: the license file at the pinned tag, via gh (so private repos work)
+# Public transport skips curl config so local settings cannot attach credentials.
+public_get() {
+  need curl
+  curl -qfsSL --globoff --proto '=https' --proto-redir '=https' "$@"
+}
+
+# download_release_asset REPO TAG ASSET DIR
+download_release_asset() {
+  local repo="$1" tag="$2" asset="$3" dir="$4"
+  if [ "${ABACUS_PUBLIC_DOWNLOADS:-}" = 1 ]; then
+    public_get --remove-on-error -o "$dir/$asset" "https://github.com/$repo/releases/download/$tag/$asset"
+  else
+    need gh
+    gh release download "$tag" -R "$repo" -p "$asset" -D "$dir"
+  fi
+}
+
+# download_tag_file REPO TAG PATH: write the pinned tag's raw file to stdout.
+download_tag_file() {
+  local repo="$1" tag="$2" path="$3"
+  if [ "${ABACUS_PUBLIC_DOWNLOADS:-}" = 1 ]; then
+    public_get "https://raw.githubusercontent.com/$repo/$tag/$path"
+  else
+    need gh
+    gh api -H 'Accept: application/vnd.github.raw' "repos/$repo/contents/$path?ref=$tag"
+  fi
+}
+
+# fetch_license TOOL VERSION DEST
 fetch_license() {
-  need gh
-  gh api -H 'Accept: application/vnd.github.raw' \
-    "repos/$(tool_field "$1" .repo)/contents/$(tool_field "$1" .license_source.path)?ref=$(tag_for "$1" "$2")" >"$3" \
-    || die "$1: cannot fetch the license at $(tag_for "$1" "$2")"
+  local tool="$1" tag
+  tag="$(tag_for "$tool" "$2")"
+  download_tag_file "$(tool_field "$tool" .repo)" "$tag" "$(tool_field "$tool" .license_source.path)" >"$3" \
+    || die "$tool: cannot fetch the license at $tag"
 }
 
 # extract_member ARCHIVE MEMBER DEST
@@ -163,7 +191,7 @@ extract_member() {
   tar -x"$z"Of "$archive" "$listed" >"$dest" || die "cannot read $want from $(basename "$archive")"
 }
 
-# fetch TOOL PLATFORM -> prints the path of the verified asset in $cache (download with gh when it
+# fetch TOOL PLATFORM -> prints the path of the verified asset in $cache (download when it
 # is not cached; fails closed when the manifest has no pin or the sha256 differs from the pin).
 # The caller sets `cache` (download directory).
 fetch() {
@@ -177,9 +205,8 @@ fetch() {
     || die "$tool has no pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
   mkdir -p "$cache/$tool"
   if [ ! -f "$cache/$tool/$asset" ]; then
-    need gh
-    gh release download "$(tag_for "$tool" "$(tool_field "$tool" .version)")" -R "$(tool_field "$tool" .repo)" \
-      -p "$asset" -D "$cache/$tool" || die "cannot download $asset"
+    download_release_asset "$(tool_field "$tool" .repo)" "$(tag_for "$tool" "$(tool_field "$tool" .version)")" \
+      "$asset" "$cache/$tool" || die "cannot download $asset"
   fi
   got="$(sha "$cache/$tool/$asset")"
   [ "$got" = "$want" ] || die "$asset: sha256 $got does not match the pin $want (delete $cache/$tool/$asset to refetch)"
@@ -209,7 +236,7 @@ install_tool() {
 }
 
 # fetch_bun TOOL PLATFORM -> prints the path of the verified bun executable for PLATFORM (the
-# runtime the Board CLI is compiled from): the official release archive, downloaded with gh, its
+# runtime the Board CLI is compiled from): the official release archive, its
 # sha256 checked against the pin (fail closed), only the one named member extracted.
 fetch_bun() {
   local tool="$1" p="$2" asset want member bunv dir zip exe
@@ -220,8 +247,7 @@ fetch_bun() {
   dir="$cache/bun/$bunv-$p"; zip="$dir/$asset"; exe="$dir/bun"
   mkdir -p "$dir"
   if [ ! -f "$zip" ]; then
-    need gh
-    gh release download "bun-v$bunv" -R oven-sh/bun -p "$asset" -D "$dir" || die "$tool: cannot download $asset"
+    download_release_asset oven-sh/bun "bun-v$bunv" "$asset" "$dir" || die "$tool: cannot download $asset"
   fi
   [ "$(sha "$zip")" = "$want" ] || die "$tool: $asset sha256 $(sha "$zip") does not match the pin $want (delete $zip to refetch)"
   need unzip
@@ -298,11 +324,10 @@ board_dependency_licenses() {
 # fetch_runtime_license TOOL: the bun runtime's license text at the pinned tag, checked against its pin.
 fetch_runtime_license() {
   local tool="$1" tmp repo tag path want
-  need gh
   repo="$(tool_field "$tool" .runtime_license.repo)"; tag="$(tool_field "$tool" .runtime_license.tag)"
   path="$(tool_field "$tool" .runtime_license.path)"; want="$(tool_field "$tool" .runtime_license.sha256)"
   tmp="$(mktemp)"
-  gh api -H 'Accept: application/vnd.github.raw' "repos/$repo/contents/$path?ref=$tag" >"$tmp" \
+  download_tag_file "$repo" "$tag" "$path" >"$tmp" \
     || { rm -f "$tmp"; die "$tool: cannot fetch the runtime license from $repo at $tag"; }
   [ "$(sha "$tmp")" = "$want" ] || { rm -f "$tmp"; die "$tool: the runtime license changed from its pin; review it, then re-pin"; }
   cat "$tmp"; rm -f "$tmp"
