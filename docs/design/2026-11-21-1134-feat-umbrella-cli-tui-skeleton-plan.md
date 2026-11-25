@@ -9,7 +9,7 @@ execution: code
 
 # Umbrella CLI/TUI for the Beads Tool Family (Walking Skeleton) - Plan
 
-**Target repo:** `beaddeck` (working name for Abacus). This plan uses Lambe as a read-only reference.
+**Target repo:** Abacus. This early plan uses its original code name, `beaddeck`, in historical examples. Lambe is a read-only reference.
 
 ## Goal Capsule
 
