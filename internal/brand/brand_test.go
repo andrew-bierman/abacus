@@ -8,8 +8,9 @@ import (
 	"testing"
 )
 
-// The product-name literal must live only in this package, so renaming is mechanical.
+// A product name literal must live only in this package, so renaming is mechanical.
 func TestNameLiteralOnlyInBrand(t *testing.T) {
+	names := []string{Name, Monitor}
 	root := filepath.Join("..", "..")
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -30,8 +31,10 @@ func TestNameLiteralOnlyInBrand(t *testing.T) {
 			if strings.HasPrefix(t, "//") || strings.HasPrefix(t, "module ") || strings.Contains(t, "github.com/andrew-bierman/"+Name) {
 				continue
 			}
-			if strings.Contains(t, `"`+Name+`"`) {
-				return &leak{p}
+			for _, name := range names {
+				if strings.Contains(t, `"`+name+`"`) {
+					return &leak{path: p, name: name}
+				}
 			}
 		}
 		return nil
@@ -41,6 +44,11 @@ func TestNameLiteralOnlyInBrand(t *testing.T) {
 	}
 }
 
-type leak struct{ path string }
+type leak struct {
+	path string
+	name string
+}
 
-func (l *leak) Error() string { return "product-name literal outside internal/brand: " + l.path }
+func (l *leak) Error() string {
+	return "product-name literal " + l.name + " outside internal/brand: " + l.path
+}

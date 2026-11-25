@@ -598,6 +598,13 @@ func readSessions(ctx context.Context, entries []Entry) SessionsReport {
 	return readSessionsVia(ctx, entries, func(p SessionProvider, c context.Context) (SessionsReport, error) { return p.Sessions(c) })
 }
 
+// ReadSessions is the bounded Sessions read one frame draws: it never waits on a transcript
+// backlog. A second front-end uses it for its refresh, so a monitor's tick costs what the tab's
+// does; a command that reads once and exits uses ReadDomain, which drains instead.
+func ReadSessions(ctx context.Context, entries []Entry) SessionsReport {
+	return readSessions(ctx, entries)
+}
+
 // readSessionsComplete is the Sessions domain read for a one-shot caller: it asks the provider
 // for a read that drains its transcript stores, and accepts a provider that can only do the
 // tab's bounded read. The tab never reaches it: ReadDomains keeps one bounded pass per tick.

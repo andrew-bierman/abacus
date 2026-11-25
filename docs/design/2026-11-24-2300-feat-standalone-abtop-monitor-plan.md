@@ -78,7 +78,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `qwen` adapter
 - [x] `hermes` adapter (SQLite)
 - [x] process-only adapters (`Kind: none`) for the remaining CLIs, so they appear with ports
-- [ ] `cmd/abtop` scaffold: entry point, terminal setup, `--once` and `--json`
+- [x] `cmd/abtop` scaffold: entry point, terminal setup, `--once` and `--json`
 - [ ] layout: header, sessions table, detail, ports — abtop's shape in lipgloss
 - [ ] host vitals panel (CPU, memory, load) with a history ring
 - [ ] token-rate history and sparkline (200 points)
@@ -242,3 +242,21 @@ One line per completed item: what it did and how it was verified.
   `go build ./...`, `go vet ./...` and `go test ./...` pass. Review applied the roots-contract and
   no-op/child-gap findings; residual: Trae and Qoder have no locally installed binary to cite, and
   Cursor/Amp/Antigravity keep stores that no adapter reads yet.
+- `cmd/abtop` scaffold — added `cmd/abtop/main.go` (a lazy `detectModules` composition edge and
+  `sessionReaders`, so `--once`/`--json` drain through `core.ReadDomain` while a frame uses the
+  tab's bounded `core.ReadSessions`), `internal/abtop` (flags and exit codes for `--once`,
+  `--json`, `--interval`, `--version`; the alternate-screen Bubble Tea program; a plain-text
+  snapshot and the same typed `core.ReportJSON`; one timer per refresh chain; last-good-frame
+  retention when a refresh reports no usable read; a 30s one-shot deadline and an 8s frame
+  deadline), `brand.Monitor`, and the arch-ban entry that keeps logic packages from importing
+  `internal/abtop`. Verified with `go build ./...`, `go vet ./...`, `gofmt -l .`, `go test ./...`,
+  a live `abtop --once`/`--json` on this machine (30 sessions), `abtop --version`, and
+  `abacus sessions --json` (same top-level keys, `schema_version` 1, same session key set). Review
+  (correctness, testing, maintainability, reliability, performance; the independent validator
+  confirmed all five findings) applied the fresh-slice clipping fix, the connected-only idle line
+  plus the connect hint, the unusable-refresh retention, the frame-deadline split, removal of
+  unused model state, the `ReadSessions` un-wrapping, and tests for bounded-vs-complete wiring,
+  busy guards, interval plumbing, stale quota and display fallbacks. Residual: the quota, port and
+  session-name text helpers are a third copy pending the shared-helper refactor; detection is
+  cached per process, so a first-probe failure pins the monitor to not-connected; `--interval`
+  has no floor; and the view is not yet bounded by terminal height (the layout item owns it).
