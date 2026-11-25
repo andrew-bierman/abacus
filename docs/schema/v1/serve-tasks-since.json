@@ -76,13 +76,14 @@
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The --json output of: serve tasks.since",
+  "description": "A full task snapshot or a delta from the requested fingerprint.",
   "properties": {
     "demo": {
       "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
       "type": "boolean"
     },
     "fingerprint": {
+      "description": "Opaque token for the snapshot used to produce this response.",
       "type": "string"
     },
     "kind": {
@@ -96,6 +97,7 @@
       "type": "string"
     },
     "removed": {
+      "description": "IDs removed since the requested fingerprint for delta. Empty for full.",
       "items": {
         "type": "string"
       },
@@ -105,6 +107,7 @@
       ]
     },
     "rows": {
+      "description": "All rows for full, or new and changed rows for delta, sorted by id.",
       "items": {
         "$ref": "#/$defs/TaskRow"
       },

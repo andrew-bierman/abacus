@@ -129,6 +129,8 @@ func TestPlanConfigSetListValueIsValidatedAndOnlyForArgvKeys(t *testing.T) {
 		"unknown holder":   {"key": "agent_command", "value": []string{"claude", "{nope}"}},
 		"list for a text":  {"key": "actor", "value": []string{"mei"}},
 		"list for a path":  {"key": "tracker_dir", "value": []string{"/x"}},
+		"null word":        {"key": "agent_command", "value": []any{"claude", nil}},
+		"null word text":   {"key": "agent_command", "value": `["claude",null]`},
 		"non-string words": {"key": "agent_command", "value": []any{"claude", 1}},
 		"number":           {"key": "actor", "value": 3},
 		"object":           {"key": "agent_command", "value": map[string]any{"a": "b"}},

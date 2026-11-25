@@ -20,7 +20,7 @@ may change behavior, and patch versions are fixes and small additions.
     `search_history` are editable: a path or `""`, and `on`/`off`/`""`).
   - New read `tasks.since {fingerprint?}`: the task rows that changed since a fingerprint the server handed out,
     the ids that were removed, and the new fingerprint, or `full` when the fingerprint is unknown or too old or the
-    tracker holds more than 5000 tasks. A row counts as changed when its derived state moved too (a freed
+    tracker holds more than 5000 tasks. A full response carries all rows with their snapshot fingerprint. A row counts as changed when its derived state moved too (a freed
     blocker). Schema `serve-tasks-since`; no `tasks list --since`, as one process has no earlier state.
 - `abacus serve --stdio` refinements for native clients, all additive (`schema_version` and the protocol version
   stay 1; `docs/serve-protocol.md`, `docs/tool-contract.md`):

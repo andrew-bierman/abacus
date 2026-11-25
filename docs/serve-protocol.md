@@ -184,7 +184,8 @@ this server handed out, instead of the whole list. The answer is `{kind, fingerp
   the age is the clock's, not the task's, and is not a change.
 - `kind: "full"`: the `fingerprint` named is empty, unknown (another server, a restart, a typo) or forgotten, or
   the tracker holds more than 5000 tasks (the watcher's own bound: too many to keep and compare by task).
-  `rows` and `removed` are empty and the client reads `tasks.list` again.
+  Replace the client’s entire task set with `rows`, which contains all tasks sorted by id. `removed` is empty.
+  The rows and fingerprint come from the same snapshot, so initialization requires one call.
 - `fingerprint` is the opaque token of the state this answer describes: send it back next time (compare it,
   never parse it). The first call (no fingerprint) is how a client gets its baseline. It is **not** the
   `fingerprint` of a `tasks.changed` notice (that one is the tracker's own cheap check); a notice says "refetch",

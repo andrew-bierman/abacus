@@ -580,9 +580,9 @@ func configValue(key string, raw json.RawMessage) (string, error) {
 		}
 		return s, nil
 	case raw[0] == '[':
-		var words []string
-		if err := json.Unmarshal(raw, &words); err != nil {
-			return "", usageErr("a list value is a list of strings")
+		words, err := core.ParseAgentCommand(string(raw))
+		if err != nil {
+			return "", usageErr("%v", err)
 		}
 		s, err := core.ConfigListValue(key, words)
 		if err != nil {

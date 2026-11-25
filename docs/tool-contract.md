@@ -622,7 +622,8 @@ Serve plans everything the gate offers, setup steps and `config set` included (`
 `plan.config.set`); in demo mode every plan is made and flagged `"demo": true` with a demo digest (the setup
 steps and the settings too, `config set` against an empty settings file), and `apply` is refused. `tasks.since`
 is the one serve read with no command: the task rows that changed since a fingerprint (`delta`), or `full` when
-the fingerprint is unknown or too old, so a client refetches incrementally.
+the fingerprint is unknown or too old. A `full` response contains every row from the snapshot identified by
+its fingerprint.
 
 ## Settings
 
