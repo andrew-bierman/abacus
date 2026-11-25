@@ -19,8 +19,9 @@ const (
 )
 
 type guideMsg struct {
-	domain core.DomainID
-	g      *core.Guide
+	domain  core.DomainID
+	g       *core.Guide
+	blocked error
 }
 type guideTickMsg struct{ domain core.DomainID }
 type setupAppliedMsg struct {
@@ -46,13 +47,14 @@ type guidedSection struct {
 	inner  section
 	setup  *core.Setup
 
-	guide  *core.Guide
-	active bool // this tab is the visible one: only then is the (possibly slow) probe asked
-	mode   guidedMode
-	plan   core.SetupPlan
-	notice string
-	tickFn func() tea.Cmd // injectable so tests never sleep
-	th     Theme
+	guide   *core.Guide
+	blocked error
+	active  bool // this tab is the visible one: only then is the (possibly slow) probe asked
+	mode    guidedMode
+	plan    core.SetupPlan
+	notice  string
+	tickFn  func() tea.Cmd // injectable so tests never sleep
+	th      Theme
 	geom
 }
 
@@ -101,6 +103,9 @@ func (s *guidedSection) Bindings() []key.Binding {
 	case s.mode == guidedBusy:
 		return nil
 	case s.guide != nil:
+		if s.blocked != nil {
+			return nil
+		}
 		return []key.Binding{s.setupKey()}
 	}
 	return s.inner.Bindings()
@@ -111,7 +116,12 @@ func (s *guidedSection) probe() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 		defer cancel()
-		return guideMsg{domain: d, g: s.setup.Guide(ctx, d)}
+		g := s.setup.Guide(ctx, d)
+		var blocked error
+		if g != nil && g.Step == core.StepQueues {
+			_, blocked = s.setup.Plan(g.Step)
+		}
+		return guideMsg{domain: d, g: g, blocked: blocked}
 	}
 }
 
@@ -141,7 +151,7 @@ func (s *guidedSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case guideMsg:
 		if m.domain == s.domain {
-			s.guide = m.g
+			s.guide, s.blocked = m.g, m.blocked
 		}
 		return s, nil
 	case guideTickMsg:
@@ -240,8 +250,14 @@ func (s *guidedSection) panelLines() []string {
 	}
 	g := s.guide
 	body := []string{th.Badge(KindWarn, "needs setup"), ""}
-	body = append(body, wrap(th.Text(KindAccent, san(guideLine(*g))), inner)...)
-	if g.Detail != "" {
+	if s.blocked != nil {
+		body = append(body, wrap(san(g.Message), inner)...)
+		body = append(body, "")
+		body = append(body, wrap(th.Text(KindAccent, san(s.blocked.Error())), inner)...)
+	} else {
+		body = append(body, wrap(th.Text(KindAccent, san(guideLine(*g))), inner)...)
+	}
+	if s.blocked == nil && g.Detail != "" {
 		body = append(body, "")
 		body = append(body, wrap(th.Text(KindMuted, san(g.Detail)), inner)...)
 	}

@@ -513,7 +513,7 @@ func (s *tasksSection) listView() string {
 	cursorLine := 0
 	switch {
 	case l.rep.Total == 0:
-		list = []string{th.Text(KindMuted, "no tasks yet — press n to add the first one")}
+		list = wrap(th.Text(KindMuted, s.emptyTasksHint()), iw)
 	case len(l.rep.Rows) == 0:
 		list = wrap(th.Text(KindMuted, "no tasks match: esc clears the query, f changes the quick filter"), iw)
 	default:
@@ -550,8 +550,6 @@ func (s *tasksSection) listView() string {
 		}
 		detail, off = scrollWindow(th, dl, l.dOff, rows)
 		l.dOff = off
-	} else {
-		detail = []string{th.Text(KindMuted, "no task selected")}
 	}
 	body := []string{s.strip(w), s.queryLine(w)}
 	body = append(body, g.draw(th, title, list, detailTitle, detail, s.drilled)...)

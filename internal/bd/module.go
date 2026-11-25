@@ -125,7 +125,7 @@ func (m *Module) Guide(context.Context) *core.Guide {
 		return &core.Guide{Domain: core.DomainTasks, Step: core.StepRepair, Message: "Your fleet workspace was only partly created", Action: "repair it (nothing is deleted)",
 			Detail: "The unfinished files in " + m.o.InitDir + " will be moved aside, not deleted, and the workspace created again."}
 	}
-	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No tracker here", Action: "create your fleet workspace (bd init)",
+	return &core.Guide{Domain: core.DomainTasks, Step: core.StepWorkspace, Message: "No Beads tracker found", Action: "create a workspace (bd init)",
 		Detail: "It will be created in " + m.o.InitDir + " and abacus will use it from then on."}
 }
 

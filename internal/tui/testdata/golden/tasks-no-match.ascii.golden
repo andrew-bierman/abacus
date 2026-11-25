@@ -91,7 +91,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                         
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] /zzzzzz                                                                                0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
-│ no tasks match: esc clears the query, f changes the quick filter     │ │ no task selected                            │
+│ no tasks match: esc clears the query, f changes the quick filter     │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -105,7 +105,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                         
 [List] Kanban  Graph  Insights                                                                        14 tasks · 3 ready
 [open] /zzzzzz                                                                                0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
-│ no tasks match: esc clears the query, f changes the quick filter     │ │ no task selected                            │
+│ no tasks match: esc clears the query, f changes the quick filter     │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -161,7 +161,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                   fleet 
 [List] Kanban  Graph  Insights                                                    14 tasks · 3 ready
 [open] /zzzzzz                                                            0 of 14 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ Task ──────────────────────────────╮
-│ no tasks match: esc clears the query, f changes the      │ │ no task selected                    │
+│ no tasks match: esc clears the query, f changes the      │ │                                     │
 │ quick filter                                             │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │

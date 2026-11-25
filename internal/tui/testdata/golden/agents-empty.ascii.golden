@@ -2,8 +2,8 @@
  [Agents]  5/6
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────╮
-│ no agents running                    │
-│                                      │
+│ no agents detected — start a local   │
+│ coding agent                         │
 │                                      │
 │                                      │
 │                                      │
@@ -16,8 +16,8 @@ sort: attention  ~ guessed from files
 ────────────────────────────────────────
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────╮
-│ no agents running                    │
-│                                      │
+│ no agents detected — start a local   │
+│ coding agent                         │
 │                                      │
 │                                      │
 │                                      │
@@ -46,7 +46,7 @@ sort: attention  ~ guessed from files
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────────────╮
-│ no agents running                                                            │
+│ no agents detected — start a local coding agent                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -60,7 +60,7 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────────────╮
-│ no agents running                                                            │
+│ no agents detected — start a local coding agent                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -90,7 +90,7 @@ sort: attention  ~ guessed from files
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
-│ no agents running                                                    │ │ select an agent                             │
+│ no agents detected — start a local coding agent                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -104,7 +104,7 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
-│ no agents running                                                    │ │ select an agent                             │
+│ no agents detected — start a local coding agent                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -135,7 +135,7 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────╮
-│ no agents running                                        │
+│ no agents detected — start a local coding agent          │
 │                                                          │
 │                                                          │
 │                                                          │
@@ -160,7 +160,7 @@ abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0 ─────────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
-│ no agents running                                        │ │ select an agent                     │
+│ no agents detected — start a local coding agent          │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │

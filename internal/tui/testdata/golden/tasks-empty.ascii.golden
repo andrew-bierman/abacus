@@ -3,8 +3,8 @@
 [List] Kanban  Graph  Insights
 [open] / to f… 0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
-│ no tasks yet — press n to add the f… │
-│                                      │
+│ no tasks yet — press n to add the    │
+│ first one                            │
 │                                      │
 │                                      │
 │                                      │
@@ -17,8 +17,8 @@
 [List] Kanban  Graph  Insights
 [open] / to f… 0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────╮
-│ no tasks yet — press n to add the f… │
-│                                      │
+│ no tasks yet — press n to add the    │
+│ first one                            │
 │                                      │
 │                                      │
 │                                      │
@@ -91,7 +91,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                         
 [List] Kanban  Graph  Insights                                                                         0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
-│ no tasks yet — press n to add the first one                          │ │ no task selected                            │
+│ no tasks yet — press n to add the first one                          │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -105,7 +105,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                         
 [List] Kanban  Graph  Insights                                                                         0 tasks · 0 ready
 [open] / to filter                                                                             0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────────────────╮ ╭─ Task ──────────────────────────────────────╮
-│ no tasks yet — press n to add the first one                          │ │ no task selected                            │
+│ no tasks yet — press n to add the first one                          │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -161,7 +161,7 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor                    fleet
 [List] Kanban  Graph  Insights                                                     0 tasks · 0 ready
 [open] / to filter                                                         0 of 0 · sort: priority ↑
 ╭─ ▸ Tasks · fleet ────────────────────────────────────────╮ ╭─ Task ──────────────────────────────╮
-│ no tasks yet — press n to add the first one              │ │ no task selected                    │
+│ no tasks yet — press n to add the first one              │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │

@@ -1,14 +1,14 @@
 === 40x12 ===
  [Board]  1/6
 ╭─ ▸ Board ────────────────────────────╮
-│ (press n)                            │
+│ no channels yet                      │
 │                                      │
 │ Recent threads                       │
 │ no threads yet: press n to start one │
 │                                      │
 │ Tasks                                │
 │ no open tasks                        │
-│   ↕ +5 more                          │
+│   ↕ +4 more                          │
 ╰──────────────────────────────────────╯
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
@@ -19,8 +19,7 @@
 │ tasks                                │
 │                                      │
 │ Channels                             │
-│ none yet: the first post makes one   │
-│ (press n)                            │
+│ no channels yet                      │
 │                                      │
 │ Recent threads                       │
 │ no threads yet: press n to start one │
@@ -28,6 +27,7 @@
 │ Tasks                                │
 │ no open tasks                        │
 ╰──────────────────────────────────────╯
+
 
 
 
@@ -45,7 +45,7 @@
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
-│ none yet: the first post makes one (press n)                                 │
+│ no channels yet                                                              │
 │                                                                              │
 │ Recent threads                                                               │
 │ no threads yet: press n to start one                                         │
@@ -62,7 +62,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ 0 channels, 0 recent threads, 0 open tasks                                   │
 │                                                                              │
 │ Channels                                                                     │
-│ none yet: the first post makes one (press n)                                 │
+│ no channels yet                                                              │
 │                                                                              │
 │ Recent threads                                                               │
 │ no threads yet: press n to start one                                         │
@@ -89,7 +89,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────────────╮
-│ none yet: the first post makes one (press n)                         │ │ nothing selected                            │
+│ no channels yet                                                      │ │                                             │
 │                                                                      │ │                                             │
 │ Recent threads                                                       │ │                                             │
 │ no threads yet: press n to start one                                 │ │                                             │
@@ -103,10 +103,10 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                         
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor                            board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────────────╮
-│ 0 channels, 0 recent threads, 0 open tasks                           │ │ nothing selected                            │
+│ 0 channels, 0 recent threads, 0 open tasks                           │ │                                             │
 │                                                                      │ │                                             │
 │ Channels                                                             │ │                                             │
-│ none yet: the first post makes one (press n)                         │ │                                             │
+│ no channels yet                                                      │ │                                             │
 │                                                                      │ │                                             │
 │ Recent threads                                                       │ │                                             │
 │ no threads yet: press n to start one                                 │ │                                             │
@@ -137,7 +137,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ 0 channels, 0 recent threads, 0 open tasks               │
 │                                                          │
 │ Channels                                                 │
-│ none yet: the first post makes one (press n)             │
+│ no channels yet                                          │
 │                                                          │
 │ Recent threads                                           │
 │ no threads yet: press n to start one                     │
@@ -159,10 +159,10 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor        board http://127.0.0.1:4100/api/board
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────╮
-│ 0 channels, 0 recent threads, 0 open tasks               │ │ nothing selected                    │
+│ 0 channels, 0 recent threads, 0 open tasks               │ │                                     │
 │                                                          │ │                                     │
 │ Channels                                                 │ │                                     │
-│ none yet: the first post makes one (press n)             │ │                                     │
+│ no channels yet                                          │ │                                     │
 │                                                          │ │                                     │
 │ Recent threads                                           │ │                                     │
 │ no threads yet: press n to start one                     │ │                                     │

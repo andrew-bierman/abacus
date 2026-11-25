@@ -24,6 +24,14 @@ func (m *Model) contextLine() core.ContextLine {
 		}
 	}
 	c.Board = m.boardTarget
+	if c.Board == core.BoardTarget("") {
+		for _, t := range m.tabs {
+			if board, ok := t.sec.(*boardSection); ok && (!board.loaded || board.err != nil) {
+				c.Board = ""
+				break
+			}
+		}
+	}
 	return c
 }
 
