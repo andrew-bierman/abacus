@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // DomainID names what the user manages. Providers (the tools) are invisible behind it.
@@ -46,6 +47,9 @@ const (
 	// Degraded is a read from a reduced source, or a ready provider whose read failed.
 	Degraded Connection = "degraded"
 )
+
+// Label is the human spelling of a connection state: the wire value without its hyphens.
+func (c Connection) Label() string { return strings.ReplaceAll(string(c), "-", " ") }
 
 // Provider-neutral source labels: never a tool name.
 const (

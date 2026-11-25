@@ -353,7 +353,7 @@ func TestModelStillTakesADegradedReadThatCarriesSessions(t *testing.T) {
 	}
 }
 
-func TestViewRestoresFullRowsAfterWidening(t *testing.T) {
+func TestNarrowFrameDoesNotPoisonALaterWideFrame(t *testing.T) {
 	m := newModel(nil, time.Second, func() time.Time { return taken })
 	next, _ := m.Update(reportMsg{rep: fixture()})
 	narrow, _ := next.Update(tea.WindowSizeMsg{Width: 20, Height: 40})
@@ -362,7 +362,7 @@ func TestViewRestoresFullRowsAfterWidening(t *testing.T) {
 	}
 	wide, _ := next.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
 	if view := wide.View(); !strings.Contains(view, "invoice totals") || !strings.Contains(view, "claude-sonnet-5") {
-		t.Fatalf("widening did not restore the cached rows:\n%s", view)
+		t.Fatalf("a narrow frame changed what a wide frame draws:\n%s", view)
 	}
 }
 

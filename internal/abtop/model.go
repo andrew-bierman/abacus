@@ -10,15 +10,17 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/brand"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
-// keyQuit and keyReload are the only bindings, and the footer is built from them so the help
-// cannot drift from what a key does.
+// keyQuit, keyReload and the selection keys are the bindings the footer advertises.
 var (
 	keyQuit   = key.NewBinding(key.WithKeys("q", "esc", "ctrl+c"), key.WithHelp("q", "quit"))
 	keyReload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
+	keyUp     = key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("j/k", "select"))
+	keyDown   = key.NewBinding(key.WithKeys("down", "j"))
 )
 
 // reportMsg is one finished read. A read runs off the update loop so a slow store cannot stall
@@ -40,10 +42,14 @@ type model struct {
 	now      func() time.Time
 
 	rep    core.SessionsReport
-	lines  []string
 	err    error
 	loaded bool
 	busy   bool
+	// sel is the row the detail panel draws and selID is that session's stable harness:pid.
+	// An index alone would silently move the detail when a refresh reorders the list, so the
+	// identity is re-found on every read and the index is only the fallback when it is gone.
+	sel   int
+	selID string
 	// ticking is true while one timer is pending, so a manual reload joins the existing chain
 	// instead of adding a second one that would double the refresh rate for the rest of the run.
 	ticking bool
@@ -93,7 +99,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// an empty one: keep the last good report and show the header's reason instead.
 			m.err = errors.New(unusableReason(msg.rep))
 		} else {
-			m.rep, m.lines, m.err, m.loaded = msg.rep, reportLines(msg.rep, m.now()), nil, true
+			m.rep, m.err, m.loaded = msg.rep, nil, true
+			m.reanchorSelection()
 		}
 		if m.ticking {
 			return m, nil
@@ -111,6 +118,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, keyQuit):
 			return m, tea.Quit
+		case key.Matches(msg, keyUp):
+			m.sel = clampSel(m.sel-1, len(m.rep.Sessions))
+			m.rememberSelection()
+		case key.Matches(msg, keyDown):
+			m.sel = clampSel(m.sel+1, len(m.rep.Sessions))
+			m.rememberSelection()
 		case key.Matches(msg, keyReload):
 			if !m.busy {
 				return m, m.fetch()
@@ -120,35 +133,67 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View draws the cached frame. The report is rendered once per read, not once per message, so a
-// resize or keypress does not re-format every session.
+// View redraws from the cached report on every repaint. Panels are clipped to the terminal,
+// so a narrow or short terminal loses detail instead of scrolling the frame away.
 func (m *model) View() string {
-	var lines []string
 	switch {
 	case m.err != nil && !m.loaded:
-		lines = []string{
+		lines := []string{
 			brand.Monitor + "  cannot read the machine",
 			"  " + core.Sanitize(m.err.Error()),
+			"",
+			footerLine,
 		}
+		return strings.Join(clipFrame(lines, m.w, m.h), "\n")
 	case !m.loaded:
-		lines = []string{brand.Monitor + "  reading the machine…"}
-	default:
-		lines = m.lines
-		if m.err != nil {
-			lines = append(append([]string{}, lines...), "", "  read failed: "+core.Sanitize(m.err.Error()))
+		lines := []string{brand.Monitor + "  reading the machine…", "", footerLine}
+		return strings.Join(clipFrame(lines, m.w, m.h), "\n")
+	}
+	notice := ""
+	if m.err != nil {
+		notice = "read failed: " + m.err.Error()
+	}
+	return renderMonitor(m.rep, m.w, m.h, m.sel, m.now(), notice)
+}
+
+func clampSel(sel, n int) int {
+	if n <= 0 {
+		return 0
+	}
+	if sel >= n {
+		return n - 1
+	}
+	if sel < 0 {
+		return 0
+	}
+	return sel
+}
+
+// reanchorSelection keeps the detail on the same session across a refresh that reorders the
+// list, and falls back to the old index only when that session has exited.
+func (m *model) reanchorSelection() {
+	if m.selID != "" {
+		for i, s := range m.rep.Sessions {
+			if sessionKey(s) == m.selID {
+				m.sel = i
+				return
+			}
 		}
 	}
-	lines = append(lines, "", footer())
-	if m.w > 0 {
-		// Clip into a fresh slice: writing the narrowed rows back into m.lines would shrink the
-		// cached frame, so a later wider resize could not restore the full rows.
-		clipped := make([]string, len(lines))
-		for i, line := range lines {
-			clipped[i] = core.ClipRunes(line, m.w)
-		}
-		lines = clipped
+	m.sel = clampSel(m.sel, len(m.rep.Sessions))
+	m.rememberSelection()
+}
+
+func (m *model) rememberSelection() {
+	if m.sel >= 0 && m.sel < len(m.rep.Sessions) {
+		m.selID = sessionKey(m.rep.Sessions[m.sel])
+		return
 	}
-	return strings.Join(lines, "\n")
+	m.selID = ""
+}
+
+func sessionKey(s agents.Session) string {
+	return fmt.Sprintf("%s:%d", s.Harness, s.PID)
 }
 
 // unusable reports say the refresh produced no live machine: the read edge turned a failure into
@@ -170,10 +215,13 @@ func unusableReason(r core.SessionsReport) string {
 	if r.Reason != "" {
 		return r.Reason
 	}
-	return strings.ReplaceAll(string(r.State), "-", " ")
+	return r.State.Label()
 }
 
 func footer() string {
 	q, r := keyQuit.Help(), keyReload.Help()
-	return fmt.Sprintf("%s %s  %s %s", q.Key, q.Desc, r.Key, r.Desc)
+	up := keyUp.Help()
+	return fmt.Sprintf("%s %s  %s %s  %s %s", q.Key, q.Desc, r.Key, r.Desc, up.Key, up.Desc)
 }
+
+var footerLine = footer()

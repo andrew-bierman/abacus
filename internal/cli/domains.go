@@ -26,7 +26,7 @@ func jsonOut(w io.Writer, v any) {
 const cliTimeout = 30 * time.Second
 
 func head(w io.Writer, h core.Header) {
-	line := h.Title + "  " + strings.ReplaceAll(string(h.State), "-", " ")
+	line := h.Title + "  " + h.State.Label()
 	if h.Source != "" {
 		line += "  (" + h.Source + ")"
 	}
@@ -166,11 +166,7 @@ func quotaWindow(fallbackMinutes int64, w *agents.QuotaWindow) string {
 	if w == nil {
 		return ""
 	}
-	minutes := w.WindowMinutes
-	if minutes <= 0 {
-		minutes = fallbackMinutes
-	}
-	return fmt.Sprintf("  %s %.0f%%", agents.WindowLength(minutes), w.UsedPercent)
+	return fmt.Sprintf("  %s %.0f%%", w.Span(fallbackMinutes), w.UsedPercent)
 }
 
 func portNumbers(ports []agents.Port) []string {

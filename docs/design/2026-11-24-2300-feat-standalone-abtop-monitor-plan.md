@@ -79,7 +79,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `hermes` adapter (SQLite)
 - [x] process-only adapters (`Kind: none`) for the remaining CLIs, so they appear with ports
 - [x] `cmd/abtop` scaffold: entry point, terminal setup, `--once` and `--json`
-- [ ] layout: header, sessions table, detail, ports — abtop's shape in lipgloss
+- [x] layout: header, sessions table, detail, ports — abtop's shape in lipgloss
 - [ ] host vitals panel (CPU, memory, load) with a history ring
 - [ ] token-rate history and sparkline (200 points)
 - [ ] per-session memory across the whole process tree
@@ -260,3 +260,20 @@ One line per completed item: what it did and how it was verified.
   session-name text helpers are a third copy pending the shared-helper refactor; detection is
   cached per process, so a first-probe failure pins the monitor to not-connected; `--interval`
   has no floor; and the view is not yet bounded by terminal height (the layout item owns it).
+- layout in lipgloss — added `internal/abtop/view.go`: a header, a sessions table with a
+  stable harness:pid selection, the selected session's detail (context, tokens, per-turn
+  sparkline, children, ports, quota), a live/orphan ports panel, and a footer; panel heights
+  and column priority respond to the terminal and every line is clipped to its box. Empty,
+  loading, too-small and incomplete-read states keep their reasons visible. Selection follows
+  its session across a reordered read and stays inside the list; the table keeps one session
+  row at the minimum height. Moved the connection label to `core.Connection.Label` and the
+  quota-window fallback to `agents.QuotaWindow.Span` so the CLI, tab and monitor share each
+  rule. Tests pin panel content, table-only rows, live-port rows, selection by identity,
+  scroll-to-selection, narrow-column survival, minimum-height row visibility, history/elapsed/
+  reset rendering, hostile transcript text, empty-machine global facts and header parity.
+  `go build ./...`, `go vet ./...`, `gofmt -l .` and `go test ./...` pass. Review applied the
+  table-height, stable-selection, sparkline-width, hostile-text, narrow-column and shared-label
+  findings. Residual: the pure formatter helpers (`compactCount`, `sparkline`, `elapsed` and
+  friends) are still hand-synced with the tab pending the tracked shared-helper extraction; a
+  very short stacked frame can drop the ports panel to keep the selected row and footer; and
+  the golden layout tests remain the next item.

@@ -417,3 +417,16 @@ func TestCodexQuotaAbsentUntilReported(t *testing.T) {
 		t.Errorf("quota = %+v, want nil when no event reported one", q)
 	}
 }
+
+func TestQuotaWindowSpanUsesRecordedLengthOrSlotFallback(t *testing.T) {
+	if got := (&QuotaWindow{WindowMinutes: 30 * 24 * 60}).Span(QuotaShortWindowMinutes); got != "30d" {
+		t.Errorf("recorded 30-day window = %q", got)
+	}
+	if got := (&QuotaWindow{UsedPercent: 5}).Span(QuotaShortWindowMinutes); got != "5h" {
+		t.Errorf("omitted length did not fall back to the slot: %q", got)
+	}
+	var missing *QuotaWindow
+	if got := missing.Span(QuotaLongWindowMinutes); got != "" {
+		t.Errorf("nil window named a length: %q", got)
+	}
+}

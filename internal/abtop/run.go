@@ -12,7 +12,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -155,16 +154,23 @@ func oneShot(d Deps, asJSON bool) int {
 	return core.ExitOK
 }
 
-// reportLines is one plain-text frame of the report. The text snapshot and the monitor's first
-// frame both draw these lines, so the two cannot disagree about what is running.
-func reportLines(r core.SessionsReport, now time.Time) []string {
-	head := r.Summarize()
+// headline is the one-line state a report is called by: the summary when the read is usable,
+// else the connection state. The text snapshot and the full-screen header both use it, so the
+// two front-ends cannot name the same read differently.
+func headline(r core.SessionsReport) (head, source string) {
+	head = r.Summarize()
 	if r.State != core.Connected && r.State != "" {
-		head = strings.ReplaceAll(string(r.State), "-", " ")
+		head = r.State.Label()
 	}
+	return head, r.Source
+}
+
+// reportLines is the plain-text frame behind --once.
+func reportLines(r core.SessionsReport, now time.Time) []string {
+	head, source := headline(r)
 	line := fmt.Sprintf("%s  %s", brand.Monitor, head)
-	if r.Source != "" {
-		line += "  (" + r.Source + ")"
+	if source != "" {
+		line += "  (" + source + ")"
 	}
 	lines := []string{line}
 	if r.Reason != "" {
@@ -196,22 +202,13 @@ func reportLines(r core.SessionsReport, now time.Time) []string {
 }
 
 func sessionRow(s agents.Session) string {
-	name := s.Title
-	if name == "" && s.CWD != "" {
-		name = filepath.Base(s.CWD)
-	}
-	if name == "" {
-		name = fmt.Sprintf("%s:%d", s.Harness, s.PID)
-	}
-	state := s.State
-	if state == "" {
-		state = agents.StateUnknown
-	}
+	name := sessionName(s)
+	state := stateString(s.State)
 	fields := []string{
-		fmt.Sprintf("%-10s", string(state)),
+		fmt.Sprintf("%-10s", state),
 		fmt.Sprintf("%-9s", string(s.Harness)),
 		fmt.Sprintf("%-7d", s.PID),
-		core.Sanitize(name),
+		name,
 	}
 	if s.Model != "" {
 		fields = append(fields, core.Sanitize(s.Model))
@@ -244,11 +241,7 @@ func quotaWindow(w *agents.QuotaWindow, fallbackMinutes int64) string {
 	if w == nil {
 		return ""
 	}
-	minutes := w.WindowMinutes
-	if minutes <= 0 {
-		minutes = fallbackMinutes
-	}
-	return fmt.Sprintf("  %s %.0f%%", agents.WindowLength(minutes), w.UsedPercent)
+	return fmt.Sprintf("  %s %.0f%%", w.Span(fallbackMinutes), w.UsedPercent)
 }
 
 func portNumbers(ports []agents.Port) []string {

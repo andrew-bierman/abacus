@@ -39,6 +39,19 @@ func WindowLength(minutes int64) string {
 	return strconv.FormatInt(minutes, 10) + "m"
 }
 
+// Span names a window from its recorded length, falling back to the slot's documented length
+// when the source did not record one. A nil window names nothing, not a zero-length window.
+func (w *QuotaWindow) Span(fallback int64) string {
+	if w == nil {
+		return ""
+	}
+	minutes := w.WindowMinutes
+	if minutes <= 0 {
+		minutes = fallback
+	}
+	return WindowLength(minutes)
+}
+
 // QuotaWindow is one account rate-limit window. UsedPercent is how much of the window is
 // spent, not how much is left, because both harnesses report it that way. WindowMinutes is
 // the slot's length as the source records it, so a free plan's 30-day window is not drawn as

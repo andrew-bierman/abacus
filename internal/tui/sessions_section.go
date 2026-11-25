@@ -282,7 +282,7 @@ func (s *sessionsSection) quotaSummary(iw int) []string {
 }
 
 func quotaWindowSummary(w *agents.QuotaWindow, fallbackMinutes int64) string {
-	return fmt.Sprintf("%s %.0f%%", windowSpan(w.WindowMinutes, fallbackMinutes), w.UsedPercent)
+	return fmt.Sprintf("%s %.0f%%", w.Span(fallbackMinutes), w.UsedPercent)
 }
 
 func (s *sessionsSection) detailLines(g duoGeom) []string {
@@ -408,7 +408,7 @@ func quotaBlock(th Theme, q agents.Quota) []string {
 		if !stale {
 			kind = percentKind(w.window.UsedPercent)
 		}
-		line := fmt.Sprintf("%-4s %s %.0f%%", windowSpan(w.window.WindowMinutes, w.fallback),
+		line := fmt.Sprintf("%-4s %s %.0f%%", w.window.Span(w.fallback),
 			th.Text(kind, sessionsBar(w.window.UsedPercent, 10)), w.window.UsedPercent)
 		if !stale && !w.window.ResetsAt.IsZero() {
 			line += th.Text(KindMuted, "  resets "+timeLeft(w.window.ResetsAt))
@@ -678,15 +678,6 @@ func rssLabel(kb int64) string {
 		return fmt.Sprintf("%dM", kb/1024)
 	}
 	return fmt.Sprintf("%dK", kb)
-}
-
-// windowSpan names a quota window from its recorded length, falling back to the slot's
-// documented default when the source did not record one.
-func windowSpan(minutes, fallback int64) string {
-	if minutes <= 0 {
-		minutes = fallback
-	}
-	return agents.WindowLength(minutes)
 }
 
 func shortAge(t time.Time) string {
