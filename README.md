@@ -6,14 +6,15 @@ Abacus is a terminal dashboard for developers running Beads-backed coding agents
 
 Download the archive for your platform from [GitHub Releases](https://github.com/andrew-bierman/abacus/releases/latest). Releases provide Linux and macOS archives for amd64 and arm64, along with `SHA256SUMS`.
 
-For Linux amd64 with v0.6.0, run this from the download directory.
+Download `SHA256SUMS` into the same directory as the archive. This Linux amd64 example uses v0.6.0. Change the filename to match the release you downloaded.
 
 ```sh
-tar -xzf abacus_0.6.0_linux_amd64.tar.gz
-./abacus_0.6.0_linux_amd64/abacus tui --demo
+grep '  abacus_0\.6\.0_linux_amd64\.tar\.gz$' SHA256SUMS | sha256sum -c - &&
+  tar -xzf abacus_0.6.0_linux_amd64.tar.gz &&
+  ./abacus_0.6.0_linux_amd64/abacus tui --demo
 ```
 
-On macOS, download the `darwin_arm64` archive for Apple silicon or `darwin_amd64` for Intel. Extract it and run `./abacus tui --demo` from the extracted directory. If Gatekeeper blocks the executable from the official release, verify the archive against `SHA256SUMS` before clearing quarantine with `xattr -d com.apple.quarantine ./abacus`.
+On macOS, download the `darwin_arm64` archive for Apple silicon or `darwin_amd64` for Intel. For example, run `shasum -a 256 abacus_0.6.0_darwin_arm64.tar.gz` and compare the result with the line for that filename in `SHA256SUMS` before extracting. Run `./abacus tui --demo` from the extracted directory. If Gatekeeper blocks the verified executable from the official release, clear quarantine with `xattr -d com.apple.quarantine ./abacus`.
 
 The demo uses fixture data, so you can explore without connecting any services. Press `Tab` to switch views, `?` for help, and `q` to quit. Move the `abacus` executable onto your `PATH` for the commands below.
 
