@@ -1,271 +1,63 @@
-# abacus
+# Abacus
 
-The fleet cockpit for Beads-powered agent fleets. See the board, the tasks, the leases and the
-Symphony queues, and change the tasks that are safe to change, from one terminal tool. The tools
-that supply the data are providers behind each view (see Providers).
+Abacus is a terminal dashboard for developers running Beads-backed coding agents. Browse tasks and their dependencies, see what agents are working on, and check leases, supervisor queues, and Board messages from one place.
 
-## Install
+## Try the demo
 
-abacus is one self-contained file. Every tool it needs (`bd`, Lambe, beads-lease and the Vercel
-Board CLI) is built into it: you never install, fetch or run anything else. Download the archive
-for your platform from the releases page (`abacus_VERSION_OS_ARCH.tar.gz`, for darwin or linux on
-amd64 or arm64), extract it and run the one file; you can move or copy `abacus` anywhere:
+Download the archive for your platform from [GitHub Releases](https://github.com/andrew-bierman/abacus/releases/latest). Releases provide Linux and macOS archives for amd64 and arm64, along with `SHA256SUMS`.
 
-```
-tar -xzf abacus_VERSION_darwin_arm64.tar.gz
-./abacus_VERSION_darwin_arm64/abacus
+Download `SHA256SUMS` into the same directory as the archive. This Linux amd64 example uses v0.6.0. Change the filename to match the release you downloaded.
+
+```sh
+grep '  abacus_0\.6\.0_linux_amd64\.tar\.gz$' SHA256SUMS | sha256sum -c - &&
+  tar -xzf abacus_0.6.0_linux_amd64.tar.gz &&
+  ./abacus_0.6.0_linux_amd64/abacus tui --demo
 ```
 
-The archive holds `abacus`, `LICENSE`, `THIRD_PARTY_NOTICES.md` and `third_party/<tool>/LICENSE`
-and nothing else (`abacus licenses` prints the same notices and license texts from inside the
-binary, so a lone copy of the file still carries them).
+On macOS, download the `darwin_arm64` archive for Apple silicon or `darwin_amd64` for Intel. For example, run `shasum -a 256 abacus_0.6.0_darwin_arm64.tar.gz` and compare the result with the line for that filename in `SHA256SUMS` before extracting. Run `./abacus tui --demo` from the extracted directory. If Gatekeeper blocks the verified executable from the official release, clear quarantine with `xattr -d com.apple.quarantine ./abacus`.
 
-### Supported platforms
+The demo uses fixture data, so you can explore without connecting any services. Press `Tab` to switch views, `?` for help, and `q` to quit. Move the `abacus` executable onto your `PATH` for the commands below.
 
-| Platform | Status |
+## Connect your workspace
+
+```sh
+abacus doctor
+abacus setup --dry-run
+abacus tui
+```
+
+Doctor shows which providers are ready and how to connect the others. Setup previews the managed workspace, lease actor, and queue configuration steps. Use `abacus setup` to review and confirm the steps interactively. Setup leaves starting the queue supervisor to you.
+
+Run Abacus from an existing Beads workspace to use its tracker. For a single command, point it at another tracker with `--tracker /absolute/path/to/workspace`.
+
+| View | What you can do |
 | --- | --- |
-| Linux, amd64 | Release archive; run end to end on Arch Linux (doctor, setup, the TUI in tmux) with an empty `PATH`, the tools coming from the binary itself |
-| Linux, arm64 | Release archive; cross-compiles, not yet run on real hardware |
-| macOS, arm64 and amd64 | Release archive (the primary development platform) |
-| Windows | Not supported yet. It compiles, but its safety checks are not implemented yet; see `docs/design/2026-11-22-1900-plan-windows-support.md` |
+| Board | Read channels and threads, and post or reply with confirmation. Connect using your Vercel Board configuration. |
+| Tasks | Browse, filter, and update Beads tasks. Switch between the list, kanban, dependency graph, and insights. |
+| Leases | See held, stale, and free leases from your coordination hub. |
+| Queues | Inspect Lambe runs, queue history, and items that need attention. |
+| Agents | See local coding agent sessions, repository and branch, and activity details where available. |
+| Doctor | Check provider connections and troubleshoot setup. |
 
-The size is the price of that: the file is about 80 to 90 MB, because the tools are inside it
-(see Built in). On first run abacus unpacks them once into a private folder; later starts
-only check them.
+The release binary bundles Beads, Lambe, beads-lease, the Vercel Board CLI, and the abtop agent monitor. The built-in tools unpack into a private per-user directory on first use. Rex is optional and can connect tasks and runs to terminal sessions. See [built-in tools](docs/built-in-tools.md) and [agent monitoring](docs/agents.md) for details.
 
-On first run each tab that needs one-time setup says so in one line and offers a key for it, and
-shows the exact command before anything happens (see First run below). Press `Tab` to move
-between tabs and `?` for keys.
+## Use Abacus from the CLI
 
-On macOS, a browser-downloaded archive is quarantined by Gatekeeper; clear it once with
-`xattr -dr com.apple.quarantine abacus_VERSION_darwin_arm64`.
-
-## Domains
-
-| Domain | What you see | What you can change today |
-| --- | --- | --- |
-| Board | channels, recent threads and messages, open tasks (a message board for agents, not a kanban) | post a thread or reply, from the Board tab (`n`, `c`) or the command line (`abacus board post\|reply`), each with a confirm step |
-| Tasks | every task, listed, sorted (eight keys), filtered (a query language and quick filters) and shown in full: description, comments, what blocks it and what it blocks, children with progress; a tree of epics and children, a kanban view, a dependency graph and graph insights (next pick, blockers, critical path, cycles) | create, update, close, label, assign, set the priority, add or remove a blocker, comment, move a kanban card, and change up to 25 marked tasks at once (each with a confirm step); first run: create the fleet workspace |
-| Leases | held, stale and free leases | read only |
-| Queues | runs, the queue, what needs attention, history | read only |
-| Agents | every running coding agent (Claude Code, Codex, OpenCode, pi, ...): state, repo and branch, task, uncommitted files, context use, per-turn token sparkline, rate limits (marked stale when old), ports, subagents; where its state came from is always shown | read only (see [docs/agents.md](docs/agents.md)) |
-
-A domain with no provider shows "not connected" and how to connect; it never disappears.
-`abacus tasks|leases|queues|board|agents [--json]` print the same typed reports the TUI renders, and
-`abacus tasks list|show|board|graph|history` print the task list, one task in full, the kanban columns and the dependency graph (`--query`, `--sort`, `--json`) and a task's history, and
-`abacus search "QUERY"` (or `ctrl+k` in the TUI) searches every domain at once. In the TUI, `:` opens a k9s-style command prompt (`:tasks`, `:graph`, `:filter label:ui`, `:search foo`, `:help`) that only navigates, and `d` and `y` describe the selected task or show it as JSON.
-
-## First run
-
-A fresh machine has no tracker, no actor name and no supervisor config. abacus never creates any
-of them silently. Each is a setup step with a plain one-line prompt, a confirm screen that shows
-the exact command, and an audit entry; none starts a daemon.
-
-| Tab | Prompt | Key | What it does |
-| --- | --- | --- | --- |
-| Tasks | No tracker here, press `i` to create your fleet workspace | `i` | `bd init` in `$XDG_DATA_HOME/abacus/workspace` (or `~/.local/share/abacus/workspace`) with the fixed flags `--non-interactive --quiet --skip-agents --skip-hooks --prefix=abacus`; the folder is then remembered in the config |
-| Leases | Leases need an actor name | `s` | saves a suggested actor name (user and machine) in the config; `abacus config set actor NAME` changes it |
-| Queues | Queues need a supervisor config | `s` | `lambe init -non-interactive -config <abacus config dir>/lambe.yaml`, run in the workspace: writes a starter config and a starter WORKFLOW.md and formula there. It starts nothing; you run `lambe run -config ...` yourself. Needs the workspace first |
-
-`abacus setup [--json] [--yes] [--dry-run]` reports the same steps and, with `--yes` (or a `y` at
-the prompt on a terminal), performs them through the same gate. Without input or `--yes` it only
-reports. Leases also need a coordination hub (beads-lease reads one through its `coord`
-wrapper, `BEADS_LEASE_COORD`); abacus cannot create a shared hub, so on a machine without one
-Leases says so plainly and stays out of the way.
-
-Settings live in `$XDG_CONFIG_HOME/abacus/config.json` (written atomically, mode 0600):
-`abacus config show|get KEY|set KEY VALUE|path` with the keys `actor`, `tracker_dir` and
-`lambe_config`. The tracker used by Tasks is chosen in this order: `ABACUS_BD_DIR`, a tracker at
-or above the working directory, `tracker_dir` from the config, an existing managed workspace.
-
-An empty tracker is not an error: Insights reads "no tasks yet" and nothing is analyzed. If the
-analysis fails on a tracker that has tasks, the tab says so in one plain line and the reason is in Doctor.
-
-## Built in
-
-abacus is one self-contained binary: `bd`, Lambe, beads-lease, the Vercel Board CLI and the live
-agent monitor abtop are inside it, pinned and sha256-verified at build time, and unpacked on first use into a private per-user
-folder. Nothing is fetched at run time. Graph analysis comes from
-[beads_viewer](https://github.com/Dicklesworthstone/beads_viewer)'s analysis package, linked in.
-`abacus licenses` prints every notice and license text. How it works, the threat model and how the
-binary is built: [docs/built-in-tools.md](docs/built-in-tools.md).
-
-| Tool | Version | License |
-| --- | --- | --- |
-| [Beads](https://github.com/steveyegge/beads) (`bd`) | 1.3.4 | MIT |
-| [Lambe](https://github.com/andrew-bierman/lambe) | 0.10.1 | GPL-3.0 |
-| [beads-lease](https://github.com/andrew-bierman/beads-lease) | 0.1.0 | MIT |
-| Vercel Board CLI ([`@vercel/board`](https://github.com/vercel/board)) | 0.54.0 | Apache-2.0 |
-| [abtop](https://github.com/graykode/abtop) (optional, Agents) | 0.5.5 | MIT |
-| [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) (linked library) | 0.27.0 | MIT, see its LICENSE |
-| [gopsutil](https://github.com/shirou/gopsutil) (linked library) | 4.26.10 | BSD-3-Clause |
-| [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) (linked library) | 1.63.0 | BSD-3-Clause |
-
-Doctor shows each tool as `built in` with its version. If the tools folder cannot be used it says
-which folder and the one fix; set `ABACUS_TOOLS_DIR` to a writable folder.
-
-## Architecture
-
-`internal/core` holds all the real logic: the domain reports (Board, Tasks, Leases, Queues, Agents),
-provider interfaces and the registry that maps detected providers to domains, the write gate,
-detection, doctor and status aggregation, the typed report JSON (`schema_version`), sanitizing and the exit-code rules.
-Adapters (`internal/lambe`, `internal/beadslease`, `internal/bd`, `internal/rex`) compose the
-tools only through their `--json` CLIs and versioned local APIs. `internal/cli` and `internal/tui` are thin front-ends that only parse
-input and render core's typed reports; a Linux or Swift GUI would be another front-end over
-the same core or the same `--json` output. A test enforces that core, adapters and the CLI
-import no UI library.
-
-## Providers
-
-Providers are invisible in navigation and appear only here, in Doctor and in "how to connect"
-or error messages that help you fix one.
-
-- **Beads (`bd`)**: Tasks reads and writes. Reads always run `--readonly` (the task list is one
-  `bd --readonly export` of the tracker, a fixed argv); writes go through a
-  separate allowlist (create, update, close, and the fixed `init` of the first-run workspace) and
-  the confirm step.
-- **beads-lease**: Leases (read only).
-- **Lambe**: Queues (read only, plus the one confirmed `lambe init` of the first-run setup; demo
-  and a tracker-only fallback exist).
-- **Graph engine** (`internal/graph`): graph insights for Tasks only (the Board is a message board,
-  not a graph), computed in this process with bv's analysis package over the tracker's
-  `.beads/issues.jsonl`. It is not a tool and has no switch: there is no bv program to bundle,
-  find or run.
-- **Agents** (`internal/agents`): native, in this process. It reads the process list and the session
-  files Claude Code, Codex and pi already write (bounded tails, read only), OpenCode's session
-  database (opened read-only and immutable, through a linked pure-Go SQLite driver), the uncommitted-file
-  count of each agent's repository (one fixed read-only `git status`), plus tmux pane ids, and merges
-  them with the optional built-in live monitor's snapshot (one argv, `--json`) by pid or session id.
-  See `docs/agents.md`.
-- **b9s**: an optional extra for its full tree and graph view: press `o` on Tasks to open it in the
-  tracker directory (probes for it first). abacus's own Tasks list and detail do not need it: without
-  it `o` says that b9s is an optional separate program abacus did not find.
-- **Board** (built in): composes the Vercel Board CLI (`@vercel/board`, binary `board`),
-  run as a subprocess only: bounded `channels list`, `read` and `tasks` reads with `--json`,
-  `--limit` and a deadline, behind an argv allowlist and a scrubbed environment (only `HOME`,
-  `PATH`, the XDG dirs, `BOARD_*`, `VERCEL_AUTH_TOKEN`, `VERCEL_ORG_ID`, proxy and CA variables
-  are passed on). It never runs `serve`, `tail` or `wait`. The extracted binary is trusted only
-  after its own `--help`, run with a token-free environment, identifies Vercel Board at 0.54.0 or
-  newer (`ABACUS_BOARD_BIN` overrides the built-in copy). The npm package named `vb` is an
-  unrelated project and is never looked for. Without a board
-  setting it uses the CLI's own default (a linked Vercel project, `BOARD_URL`, or your team's
-  board after `vercel login`); point it elsewhere with `abacus config set board_url URL` or
-  `ABACUS_BOARD_URL` (passed as `--url`), for example a local board from `vb serve`. On the
-  Board tab `o` opens the CLI's local web inspector (`board inspect`) on an explicit keypress;
-  Ctrl-C returns. board-beads is only the beads-backed backend a board can use; abacus needs
-  nothing new from it (board-beads#15 is decided: compose the Vercel CLI).
-- **Rex** (optional): a terminal workspace. When a Rex server is reachable abacus can say which
-  terminal session a run, lease or task lives in; the interface calls this the "workspace" and
-  it is not a fifth tab. abacus composes only the `rex` CLI (reads, `capture`, the `events` change
-  feed, and `focus`, `run`, `split`, `new` and `window new` writes), always with
-  `--autostart=false`, behind exact argv allowlists and a scrubbed environment
-  (`HOME`, `PATH`, the XDG dirs and `REX_*`), and never starts a server or types into a
-  terminal. On a row, `m` brings its terminal forward and `W` opens one running your `agent_command`
-  (`abacus config set agent_command '["prog","Work on {task_id}: {title}"]'`), each after a confirm
-  screen; `abacus rex layout` opens the cockpit tabs. Only this machine and the hosts you list in `ABACUS_REX_HOSTS` are ever contacted
-  (`-S` can open an ssh connection); `ABACUS_REX_PASS_ENV=SSH_AUTH_SOCK` opts in to passing a
-  variable on. Detection is `REX_SESSION`/`REX_SERVER` in the environment, else a short probe; no
-  server is "not connected", not an error, and an absent Rex is invisible in Doctor.
-  `ABACUS_REX_BIN` overrides the lookup. Opening a placement runs only on an explicit keypress
-  and is the existing `rex -S <machine>` handoff, else the command to copy. See
-  `docs/tool-contract.md`.
-
-## Usage
-
-```
-abacus board|tasks|leases|queues|agents [--json]
-abacus tasks list|show|board|graph|history ...   browse (--query, --sort, --json); abacus tasks --help lists every verb
-abacus board post CHANNEL TEXT | reply ID TEXT [--yes] [--dry-run]
-abacus agents  [--harness H] [--state S] [--repo R] [--all] [--json]   every running coding agent
-abacus tasks create [--title T] [--description D] [--priority N] [--type X] [--yes] [--dry-run]
-abacus tasks update ID [--title T] [--description D] [--priority N] [--status S] [--yes] [--dry-run]
-abacus tasks close  ID [--reason R] [--yes] [--dry-run]
-abacus tasks reopen ID [--reason R] [--yes] [--dry-run]   a closed task back to open
-abacus tasks label add|remove ID LABEL [--yes] [--dry-run]
-abacus tasks assign ID NAME | ID --clear [--yes] [--dry-run]
-abacus tasks priority ID 0-4 [--yes] [--dry-run]
-abacus tasks dep add|remove ID --blocked-by OTHER | --blocks OTHER [--yes] [--dry-run]
-abacus tasks comment ID TEXT | ID --text TEXT [--yes] [--dry-run]
-abacus tasks bulk --ids ID,ID,... --op close|status|priority|label-add|label-remove|assign [--value V | --clear] [--yes] [--dry-run] [--json]   up to 25 tasks, one confirm
-abacus search QUERY [--domain D] [--limit N] [--json]   search tasks, board, leases and queues
-abacus tui     [--demo] [--tab NAME]
-abacus <read command> --demo   invented data from the same fixtures as the demo cockpit; also ABACUS_DEMO=1
-abacus tasks|search|status|doctor ... --tracker DIR   use this tracker for one command (wins over ABACUS_BD_DIR)
-abacus rex layout [--new NAME] [--yes] [--dry-run]   open the cockpit tabs in a terminal workspace (optional)
-abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run setup
-abacus setup --repair [--yes] [--dry-run]       fix a half-created workspace (nothing is deleted)
-abacus config  show [--json] | get KEY | set KEY VALUE | path
-abacus schema  [NAME] [--out DIR] [--json]        the JSON Schemas of every --json output (for clients)
-abacus serve   --stdio [--demo] [--all]           a line-delimited JSON-RPC server for a native client (no network port)
-abacus status  [--json] [--lambe-config FILE]     domains plus provider state
-abacus doctor  [--json] [--lambe-config FILE]     leads with ready or needs attention
-abacus version [--json]
-abacus completion bash|zsh|fish                   print a shell completion script
-abacus help [COMMAND]                             (or COMMAND --help) usage for one command, exit 0
+```sh
+abacus tasks list --json
+abacus agents --json
+abacus search "release"
+abacus config show
+abacus tasks --help
 ```
 
-Exit codes: `doctor` exits 1 when a check failed or a provider is broken; a write exits 1 when it
-was not applied or its result is unknown; any command exits 2 on a usage error (including a stray
-positional argument); asking for help (`--help`, `help`) is not an error and exits 0. The domain reads (`board`, `tasks`, `leases`, `queues`) and `status` exit 0
-whatever the connection state: the outcome is in each domain's `state` (`connected`,
-`not-connected`, `degraded`) and `reason`. `status --json` and `doctor --json` keep
-`schema_version` 1; `status --json` gains an additive `domains` section. Every read command's JSON
-carries `schema_version`. A not-connected or degraded domain keeps the same shape (`leases: []`,
-zeroed `counts`). JSON key naming is mixed by origin (`issue` in Queues rows, `id` in Tasks) and is
-not renamed within `schema_version` 1.
+Task changes and Board posts show a plan before confirmation. Use `--dry-run` on a write command to inspect that plan. Leases and queues are read-only views.
 
-`--demo` (or `ABACUS_DEMO=1`) makes every read command (`board`, `tasks` and its views, `leases`, `queues`,
-`agents`, `status`, `doctor`, `setup`, `search`, `version`) answer from invented fixtures: nothing is contacted,
-and the JSON carries `"demo": true`. A write in demo mode is refused (code `refused`, nothing recorded) unless
-it is a `--dry-run` plan. `--tracker DIR` (an absolute folder that holds `.beads`, checked like every tracker
-abacus switches to) picks the tracker for one command without touching the settings. A SIGINT or SIGTERM while a
-write is being applied stops the tool, finishes the audit record as `unknown` and exits 1 with the
-`unknown_outcome` document under `--json`: the result is unknown, never "not applied".
+For integrations, see the [tool contract](docs/tool-contract.md) and the [stdio JSON-RPC protocol](docs/serve-protocol.md). `abacus schema` lists the JSON schemas, and `abacus licenses` prints the bundled notices.
 
-`abacus tasks <verb> --json` prints exactly one JSON document on stdout and nothing else, and needs
-`--yes` or `--dry-run` (it cannot prompt). Any command that fails with `--json` prints one error
-document on stdout, `{"schema_version": 1, "error": {"code", "message", ...}}`, with a stable code
-(`usage`, `not_connected`, `changed`, `unknown_outcome`, `audit_failed`, ...; the list is in
-`docs/tool-contract.md`), and still prints its text on stderr; exit codes are unchanged. A
-write whose result cannot be known (a timeout or cancel) says "result unknown ... refresh before
-retrying", never "not applied", and the audit log records phase `unknown`.
+## Terminal preview
 
-Every write's `--dry-run --json` also prints a `plan_digest`, and every write takes `--expect-digest
-DIGEST`: it applies only if the plan made now has the same digest (same operation, targets, exact
-commands and guards), else it exits 1 with code `changed` and writes nothing. A front end uses it to
-prove that what the user confirmed is what ran.
-
-`abacus serve --stdio` is the long-lived form for a native client (a later SwiftUI app): JSON-RPC 2.0, one
-message per line on stdin and stdout, no network port, and it runs only when stdin is a pipe. It returns the same
-typed reports as the `--json` commands, plans each write and applies it once by a server-held plan id (with the
-same digest check, audit and "result unknown" rules), and pushes a `tasks.changed` notification when the tracker
-moves. See [docs/serve-protocol.md](docs/serve-protocol.md).
-
-Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
-`ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,
-`ABACUS_BEADSLEASE_BIN`, `ABACUS_REX_BIN`, `ABACUS_BOARD_BIN`, `ABACUS_BOARD_URL` (also `abacus config set board_url`; the shell's `BOARD_URL` is used last). A board URL must be https, or http only for a local board, with no query or fragment. The Board JSON no longer has `columns` or `insights` (never populated with Board data): see the CHANGELOG.
-Leases need an actor name: `BEADS_ACTOR` in the environment, or
-`abacus config set actor NAME` (the environment wins).
-
-### Writes
-
-Tasks can be changed, and the Board can be posted to from the command line
-(`abacus board post CHANNEL "TEXT"`, `abacus board reply ID "TEXT"`; `--text` for text that starts
-with `-`; no edit, delete, react, attach or task claim/complete). Every change is planned first (validated, with the exact command), then
-needs an explicit yes: `y` on the TUI confirm screen, or the `[y/N]` prompt (`--yes` skips it,
-`--dry-run` prints the change and the command and runs nothing). A change can be applied once, every
-attempt is appended to an audit log (`$XDG_STATE_HOME/abacus/audit.jsonl`), and if the log cannot be
-written nothing runs. Writes are limited by an allowlist (tasks: create, update, close, label, assign, priority, dependencies, comments, and batches of up to 25 of those; no delete; for the Board only post and reply). A board post carries an idempotency key: in the TUI it follows the draft (so an unchanged retry after an unknown outcome posts at most once, at any time; an edit is a new post), on the command line it uses a ten-minute clock bucket (best effort), is re-read by id afterwards, and anything unclear (timeout, cancel, network error, unreadable answer) is "result unknown", never "not applied". The confirm shows the board URL and where it came from, what a reply answers, and whether a post creates a new channel.
-The first-run setup steps (workspace, actor name, Queues config) go through the same confirm,
-single-use and audit gate. Leases and Queues writes are blocked upstream: see `docs/design/2026-11-21-1700-feat-fleet-domains-plan.md`.
-
-### TUI
-
-`abacus tui` has one tab per domain (Board, Tasks, Leases, Queues, Agents) plus Doctor. A tab whose tool
-needs one-time setup shows a single prompt (see First run) instead of an error. In Queues, Leases and Board, below
-100 columns the list fills the screen and Enter drills into the detail; at 100 and wider the detail
-sits beside the list. This is the 80-column Tasks render with colors off (`NO_COLOR`), from the golden test,
-using data from fixture providers:
+The Tasks tab shows data from fixture providers:
 
 ```
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
