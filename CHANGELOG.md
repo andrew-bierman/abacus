@@ -6,6 +6,36 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Added
+
+- `abacus serve --stdio` refinements for native clients, all additive (`schema_version` and the protocol version
+  stay 1; `docs/serve-protocol.md`, `docs/tool-contract.md`):
+  - Demo mode makes plans: every `plan.*` works against the demo data and returns a plan flagged `"demo": true`
+    with the demo digest `--demo --dry-run` prints, so a UI can show and screenshot its confirm sheets. `apply`
+    stays refused (`refused`, nothing written or audited), and so does `plan.config.set`, as `config set --demo`
+    is. A test enumerates every `plan.*` method against that rule.
+  - Notifications carry `kind` (`full` or `ids`), an opaque `fingerprint` and, when known, `changed_ids`, so a
+    client refetches only what changed. Changes that arrive while a notification waits are merged into it, a
+    notice past 256 ids is `full`, and an unknown change stays `full` (the old behavior). New `agents` topic and
+    `agents.changed` notification from a 30-second poll that ignores token and activity figures.
+  - `initialize` returns the `contract` section `version --json` prints, plus `limits.max_queued`.
+  - The request past `max_in_flight` waits for a slot (in arrival order, under its own deadline, up to 32)
+    instead of being refused; past that it is refused at once with the new `busy` code and `retry_after_ms`.
+  - A plan past its time to live fails with the new `expired` code and `expires_at`, no longer `changed`
+    (`changed` stays for a moved task, a digest mismatch and a plan pushed out by newer ones). The ttl was
+    already announced as `limits.plan_ttl_seconds`.
+  - `plan.setup {step}` and `plan.config.set {key, value}`: setup steps and `config set` as gated plan and
+    apply (same digest, freshness check, audit written before the write and "result unknown" rules). The
+    `setup` and `config set` commands are unchanged. `serve-applied` gains `setup` and `config` results.
+  - Error codes `expired` and `busy` join the closed set (`contract.error_codes` is now 2); a client that does
+    not know a code treats it as `failed`.
+  - `core.DemoDigest` (the demo marker moved out of the CLI), `core.PlanConfigSet` and `core.ApplyConfigSet`.
+
+### Changed
+
+- Serve: a request past `max_in_flight` used to be refused with `refused`; it now queues first (see above), and
+  the refusal is `busy`. Expired plans were `changed`; they are `expired`.
+
 ## [0.6.0] - 2026-11-24
 
 ### Added
