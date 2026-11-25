@@ -3,6 +3,7 @@ package serve_test
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,7 +31,7 @@ func TestTasksSinceUnknownFingerprintIsFullThenDelta(t *testing.T) {
 	c, f := readyClient(t)
 	for _, fp := range []string{"", "nope", "0123456789abcdef0123456789abcdef"} {
 		got := since(t, c, fp)
-		if got.Kind != core.SinceFull || got.Fingerprint == "" || len(got.Rows) != 0 || len(got.Removed) != 0 || got.Total == 0 {
+		if got.Kind != core.SinceFull || got.Fingerprint == "" || len(got.Rows) != got.Total || len(got.Removed) != 0 || got.Total == 0 {
 			t.Fatalf("fingerprint %q: %+v", fp, got)
 		}
 	}
@@ -58,6 +59,35 @@ func TestTasksSinceUnknownFingerprintIsFullThenDelta(t *testing.T) {
 	}
 	if now := since(t, c, d.Fingerprint); now.Kind != core.SinceDelta || len(now.Rows)+len(now.Removed) != 0 {
 		t.Fatalf("settled: %+v", now)
+	}
+}
+
+func TestTasksSinceBaselineSurvivesABA(t *testing.T) {
+	c, f := readyClient(t)
+	base := since(t, c, "")
+	if base.Kind != core.SinceFull || len(base.Rows) != base.Total || len(base.Rows) == 0 {
+		t.Fatalf("baseline: %+v", base)
+	}
+
+	f.tasks.mutate(func(s *core.TaskSnapshot) { s.Issues[0].Title += " (B)" })
+	b := since(t, c, base.Fingerprint)
+	if b.Kind != core.SinceDelta || b.Fingerprint == base.Fingerprint || len(b.Rows) != 1 {
+		t.Fatalf("B: %+v", b)
+	}
+
+	f.tasks.mutate(func(s *core.TaskSnapshot) {
+		s.Issues[0].Title = strings.TrimSuffix(s.Issues[0].Title, " (B)")
+	})
+	a := since(t, c, b.Fingerprint)
+	if a.Kind != core.SinceDelta || a.Fingerprint != base.Fingerprint || len(a.Rows) != 1 {
+		t.Fatalf("return to A: %+v", a)
+	}
+	i := slices.Index(rowIDs(base.Rows), a.Rows[0].ID)
+	if i < 0 || base.Rows[i].Title != a.Rows[0].Title || base.Rows[i].Title == b.Rows[0].Title {
+		t.Fatalf("baseline does not match A for %s", a.Rows[0].ID)
+	}
+	if settled := since(t, c, base.Fingerprint); settled.Kind != core.SinceDelta || len(settled.Rows)+len(settled.Removed) != 0 {
+		t.Fatalf("client still at A: %+v", settled)
 	}
 }
 
@@ -103,7 +133,7 @@ func TestTasksSinceForgetsOldFingerprints(t *testing.T) {
 		f.tasks.mutate(func(s *core.TaskSnapshot) { s.Issues[0].Title += fmt.Sprint(i) })
 		since(t, c, "")
 	}
-	if got := since(t, c, first.Fingerprint); got.Kind != core.SinceFull || len(got.Rows) != 0 {
+	if got := since(t, c, first.Fingerprint); got.Kind != core.SinceFull || len(got.Rows) != got.Total {
 		t.Fatalf("a forgotten fingerprint: %+v", got)
 	}
 }
@@ -120,7 +150,7 @@ func TestTasksSinceOverTheCapIsAlwaysFull(t *testing.T) {
 	if first.Kind != core.SinceFull || first.Total <= 5000 {
 		t.Fatalf("%+v", first)
 	}
-	if again := since(t, c, first.Fingerprint); again.Kind != core.SinceFull || len(again.Rows) != 0 {
+	if again := since(t, c, first.Fingerprint); again.Kind != core.SinceFull || len(again.Rows) != again.Total {
 		t.Fatalf("over the cap the state is not kept: %+v", again)
 	}
 }

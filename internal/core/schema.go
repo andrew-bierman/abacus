@@ -87,6 +87,12 @@ func SchemaDoc(s SchemaSpec) (map[string]any, error) {
 	root["x-abacus-schema"] = SchemaVersion // marks the file as one abacus wrote, so --out only ever replaces its own
 	root["title"] = s.Name
 	root["description"] = "The --json output of: " + s.Commands
+	if s.Type == typeOf[TasksSince]() {
+		root["description"] = "A full task snapshot or a delta from the requested fingerprint."
+		props["fingerprint"].(map[string]any)["description"] = "Opaque token for the snapshot used to produce this response."
+		props["rows"].(map[string]any)["description"] = "All rows for full, or new and changed rows for delta, sorted by id."
+		props["removed"].(map[string]any)["description"] = "IDs removed since the requested fingerprint for delta. Empty for full."
+	}
 	if len(g.defs) > 0 {
 		defs := map[string]any{}
 		for k, v := range g.defs {

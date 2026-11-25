@@ -36,9 +36,17 @@ func ParseAgentCommand(val string) ([]string, error) {
 	if strings.TrimSpace(val) == "" {
 		return nil, nil
 	}
-	var argv []string
-	if err := json.Unmarshal([]byte(val), &argv); err != nil {
-		return nil, errors.New(`agent_command must be a JSON list of words, for example ["claude","Work on {task_id}: {title}"]`)
+	var words []*string
+	const listError = `agent_command must be a JSON list of words, for example ["claude","Work on {task_id}: {title}"]`
+	if err := json.Unmarshal([]byte(val), &words); err != nil {
+		return nil, errors.New(listError)
+	}
+	argv := make([]string, len(words))
+	for i, word := range words {
+		if word == nil {
+			return nil, errors.New(listError)
+		}
+		argv[i] = *word
 	}
 	if err := ValidateAgentCommand(argv); err != nil {
 		return nil, err

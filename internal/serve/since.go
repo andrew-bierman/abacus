@@ -11,7 +11,7 @@ import (
 )
 
 // maxSinceStates is how many states tasks.since remembers (one per fingerprint it handed out, the oldest
-// forgotten first): a client that names an older fingerprint is told "full" and refetches.
+// forgotten first): a client that names an older fingerprint gets a full set of rows.
 const maxSinceStates = 8
 
 type sinceStore struct {
@@ -47,7 +47,7 @@ func (s *sinceStore) put(fp string, st taskview.RowState) {
 // tasksSince answers which task rows changed since a fingerprint this server handed out. The tracker is read
 // whole, as the watcher reads it, and compared with the state kept under that fingerprint; a fingerprint that is
 // empty, unknown (another server, a restart) or forgotten, and a tracker with more than maxWatchTasks tasks (too
-// many to keep and compare by task, the watcher's own bound), answer "full": refetch the list.
+// many to keep and compare by task, the watcher's own bound), answer "full" with all rows from the same view.
 func (e *Engine) tasksSince(ctx context.Context, raw json.RawMessage) (any, error) {
 	var p struct {
 		Fingerprint string `json:"fingerprint"`
@@ -59,20 +59,22 @@ func (e *Engine) tasksSince(ctx context.Context, raw json.RawMessage) (any, erro
 	if err != nil {
 		return nil, err
 	}
-	rep := core.TasksSince{Kind: core.SinceFull, Rows: []core.TaskRow{}, Removed: []string{}, Total: len(snap.Issues), Tracker: snap.Tracker}
+	rep := core.TasksSince{Kind: core.SinceFull, Total: len(snap.Issues), Tracker: snap.Tracker}
 	if !snap.ReadAt.IsZero() {
 		rep.ReadAt = snap.ReadAt.UTC().Format(time.RFC3339)
 	}
 	v := taskview.Build(snap, e.cfg.Now())
 	now := v.State()
 	rep.Fingerprint = now.Fingerprint()
-	if len(snap.Issues) > maxWatchTasks {
-		return rep, nil // not kept: the next call is "full" again
+	var prev taskview.RowState
+	if len(snap.Issues) <= maxWatchTasks {
+		var known bool
+		prev, known = e.since.get(p.Fingerprint)
+		if known {
+			rep.Kind = core.SinceDelta
+		}
+		e.since.put(rep.Fingerprint, now)
 	}
-	if prev, ok := e.since.get(p.Fingerprint); ok {
-		rep.Kind = core.SinceDelta
-		rep.Rows, rep.Removed = v.Since(prev, now)
-	}
-	e.since.put(rep.Fingerprint, now)
+	rep.Rows, rep.Removed = v.Since(prev, now)
 	return rep, nil
 }
