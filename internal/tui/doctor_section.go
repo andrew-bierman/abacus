@@ -23,6 +23,7 @@ type doctorMsg struct {
 // first selection and on `r`, never on a timer, because doctor shells out to each tool.
 type doctorSection struct {
 	entries []core.Entry
+	demo    bool
 	report  core.Report
 	loaded  bool
 	asked   bool
@@ -32,10 +33,13 @@ type doctorSection struct {
 }
 
 func newDoctorSection(entries []core.Entry) *doctorSection {
-	return &doctorSection{entries: entries, linesSection: linesSection{th: DefaultTheme()}}
+	return &doctorSection{entries: entries, demo: isDemo(entries), linesSection: linesSection{th: DefaultTheme()}}
 }
 
 func (s *doctorSection) Bindings() []key.Binding {
+	if s.demo {
+		return moveBindings()
+	}
 	return append(moveBindings(), keyReload)
 }
 
@@ -53,7 +57,7 @@ func (s *doctorSection) fetch() tea.Cmd {
 func (s *doctorSection) Init() tea.Cmd { return nil }
 
 func (s *doctorSection) activate() tea.Cmd {
-	if s.pending { // a run is already in flight
+	if s.demo || s.pending { // a run is already in flight
 		return nil
 	}
 	s.asked = true
@@ -72,7 +76,7 @@ func (s *doctorSection) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s.scrollKey(m, len(s.lines())) {
 			return s, nil
 		}
-		if key.Matches(m, keyReload) && !s.pending {
+		if key.Matches(m, keyReload) && !s.demo && !s.pending {
 			return s, s.fetch()
 		}
 	}
@@ -105,6 +109,13 @@ func stateKindOf(st core.State) Kind {
 
 func (s *doctorSection) lines() []string {
 	th, w := s.th, s.width()
+	if s.demo {
+		width := max(w-panelChromeW, 1)
+		body := wrap("You're exploring sample data.", width)
+		body = append(body, "")
+		body = append(body, wrap("Run abacus doctor outside demo mode to check Tasks, Board, Leases, and Queues.", width)...)
+		return panel(th, "Demo mode", body, w, 0, false)
+	}
 	if !s.loaded {
 		return []string{th.Text(KindMuted, "running doctor…")}
 	}

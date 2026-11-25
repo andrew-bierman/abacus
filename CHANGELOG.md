@@ -54,6 +54,8 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Changed
 
+- The demo Doctor tab explains sample data and points to live diagnostics.
+
 - The README opens with a preview of the Tasks view and links to the demo and workspace setup.
 
 - Serve: a request past `max_in_flight` used to be refused with `refused`; it now queues first (see above), and

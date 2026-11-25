@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -464,20 +463,25 @@ func TestLeasesDrilledAndLongListNeverOverflowAnySize(t *testing.T) {
 	}
 }
 
-// In a demo nothing is missing: every tool Doctor lists says it is demo data.
-func TestDoctorShowsDemoToolsAsDemoNotMissing(t *testing.T) {
+func TestDemoDoctorShowsSampleDataWithoutCheckingTools(t *testing.T) {
 	d := newDoctorSection(demoEntries())
 	d.SetTheme(asciiTheme())
-	var m tea.Model = d
-	m, _ = m.Update(doctorMsg{report: core.DoctorReport(context.Background(), "", demoEntries()), seq: 0})
-	v := sized(m, 120, 60).View()
-	if strings.Contains(v, "missing") {
-		t.Fatalf("a demo has no missing tools:\n%s", v)
+	if d.activate() != nil {
+		t.Fatal("demo Doctor started a live check")
 	}
-	if strings.Count(v, "(demo)") < 4 {
-		t.Fatalf("every demo tool is labelled demo:\n%s", v)
+	m, cmd := sized(d, 120, 30).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	if cmd != nil {
+		t.Fatal("demo Doctor refreshed checks")
 	}
-	if strings.Contains(v, "(demo) demo") {
-		t.Fatalf("the demo badge is not repeated as a version:\n%s", v)
+	view := m.View()
+	for _, want := range []string{"Demo mode", "sample data", "abacus doctor"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("demo Doctor missing %q:\n%s", want, view)
+		}
+	}
+	for _, unwanted := range []string{"Tools", "missing", "Needs attention"} {
+		if strings.Contains(view, unwanted) {
+			t.Errorf("demo Doctor shows %q:\n%s", unwanted, view)
+		}
 	}
 }

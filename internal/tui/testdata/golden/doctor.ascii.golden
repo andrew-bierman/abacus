@@ -1,132 +1,132 @@
 === 40x12 ===
  [Doctor]  6/6
-running doctor…
+╭─ Demo mode ──────────────────────────╮
+│ You're exploring sample data.        │
+│                                      │
+│ Run abacus doctor outside demo mode  │
+│ to check Tasks, Board, Leases, and   │
+│ Queues.                              │
+╰──────────────────────────────────────╯
 
-(Needs attention) 3 to set up, see below
 
-╭─ Areas ──────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in       │
-│         progress, 2 blocked, 3 ready │
-│ Leases  2 held, 1 stale, 1 free      │
-│ Queues  demo data: fixtures, no live │
-  ↕ +37 more
+
 ? help · q quit · tab/→ next tab …
 === 40x30 ===
  [Doctor]  6/6
 ────────────────────────────────────────
-running doctor…
+╭─ Demo mode ──────────────────────────╮
+│ You're exploring sample data.        │
+│                                      │
+│ Run abacus doctor outside demo mode  │
+│ to check Tasks, Board, Leases, and   │
+│ Queues.                              │
+╰──────────────────────────────────────╯
 
-(Needs attention) 3 to set up, see below
 
-╭─ Areas ──────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in       │
-│         progress, 2 blocked, 3 ready │
-│ Leases  2 held, 1 stale, 1 free      │
-│ Queues  demo data: fixtures, no live │
-│         daemon                       │
-│ Board   4 channels, 2 recent         │
-│         threads, 2 open tasks        │
-│ Agents  not-connected                │
-╰──────────────────────────────────────╯
-╭─ Tools ──────────────────────────────╮
-│ Development build: tools are not     │
-│ built in; build with make build      │
-│ board        (found) 0.54.0          │
-│ lambe        (demo)                  │
-│ beads-lease  (found) 1.0.0           │
-│ bd           (found) 1.3.4           │
-│ ghost        (not found)             │
-╰──────────────────────────────────────╯
-╭─ Vercel Board ───────────────────────╮
-│ (ready) 0.54.0                       │
-╰──────────────────────────────────────╯
-  ↕ +20 more
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ? help · q quit · tab/→ next tab …
 === 80x12 ===
 abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]
-running doctor…
+╭─ Demo mode ──────────────────────────────────────────────────────────────────╮
+│ You're exploring sample data.                                                │
+│                                                                              │
+│ Run abacus doctor outside demo mode to check Tasks, Board, Leases, and       │
+│ Queues.                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
-(Needs attention) 3 to set up, see below
 
-╭─ Areas ──────────────────────────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready                  │
-│ Leases  2 held, 1 stale, 1 free                                              │
-│ Queues  demo data: fixtures, no live daemon                                  │
-│ Board   4 channels, 2 recent threads, 2 open tasks                           │
-  ↕ +30 more
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move
 === 80x30 ===
 abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]
 ────────────────────────────────────────────────────────────────────────────────
-running doctor…
+╭─ Demo mode ──────────────────────────────────────────────────────────────────╮
+│ You're exploring sample data.                                                │
+│                                                                              │
+│ Run abacus doctor outside demo mode to check Tasks, Board, Leases, and       │
+│ Queues.                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
-(Needs attention) 3 to set up, see below
 
-╭─ Areas ──────────────────────────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3 ready                  │
-│ Leases  2 held, 1 stale, 1 free                                              │
-│ Queues  demo data: fixtures, no live daemon                                  │
-│ Board   4 channels, 2 recent threads, 2 open tasks                           │
-│ Agents  not-connected                                                        │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Tools ──────────────────────────────────────────────────────────────────────╮
-│ Development build: tools are not built in; build with make build             │
-│ board        (found) 0.54.0                                                  │
-│ lambe        (demo)                                                          │
-│ beads-lease  (found) 1.0.0                                                   │
-│ bd           (found) 1.3.4                                                   │
-│ ghost        (not found)                                                     │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Vercel Board ───────────────────────────────────────────────────────────────╮
-│ (ready) 0.54.0                                                               │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Lambe ──────────────────────────────────────────────────────────────────────╮
-│ (ready) demo                                                                 │
-│ (ok) demo  fixture data, no daemon contacted                                 │
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ↕ +13 more
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move
 === 120x12 ===
 abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]                                       fleet · 14 tasks · 3 ready
-running doctor…
+╭─ Demo mode ──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ You're exploring sample data.                                                                                        │
+│                                                                                                                      │
+│ Run abacus doctor outside demo mode to check Tasks, Board, Leases, and Queues.                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-(Needs attention) 3 to set up, see below
 
-╭─ Areas ─────────────────────────────────────────────────╮ ╭─ Tools ──────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3   │ │ Development build: tools are not built in; build with    │
-│         ready                                           │ │ make build                                               │
-│ Leases  2 held, 1 stale, 1 free                         │ │ board        (found) 0.54.0                              │
-│ Queues  demo data: fixtures, no live daemon             │ │ lambe        (demo)                                      │
-  ↕ +24 more
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move
 === 120x30 ===
 abacus   Board  Tasks  Leases  Queues  Agents  [Doctor]                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-running doctor…
+╭─ Demo mode ──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ You're exploring sample data.                                                                                        │
+│                                                                                                                      │
+│ Run abacus doctor outside demo mode to check Tasks, Board, Leases, and Queues.                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-(Needs attention) 3 to set up, see below
 
-╭─ Areas ─────────────────────────────────────────────────╮ ╭─ Tools ──────────────────────────────────────────────────╮
-│ Tasks   14 tasks: 6 open, 3 in progress, 2 blocked, 3   │ │ Development build: tools are not built in; build with    │
-│         ready                                           │ │ make build                                               │
-│ Leases  2 held, 1 stale, 1 free                         │ │ board        (found) 0.54.0                              │
-│ Queues  demo data: fixtures, no live daemon             │ │ lambe        (demo)                                      │
-│ Board   4 channels, 2 recent threads, 2 open tasks      │ │ beads-lease  (found) 1.0.0                               │
-│ Agents  not-connected                                   │ │ bd           (found) 1.3.4                               │
-│                                                         │ │ ghost        (not found)                                 │
-╰─────────────────────────────────────────────────────────╯ ╰──────────────────────────────────────────────────────────╯
-╭─ Vercel Board ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ (ready) 0.54.0                                                                                                       │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Lambe ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ (ready) demo                                                                                                         │
-│ (ok) demo  fixture data, no daemon contacted                                                                         │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ beads-lease ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ (ready) 1.0.0                                                                                                        │
-│ (ok) hub reachable  fixture                                                                                          │
-│ (warn) lease schema   newer minor version                                                                            │
-│     fix: upgrade beads-lease                                                                                         │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-  ↕ +7 more
-? help · q quit · tab/→ next tab · : command · ↑/↓ move · r refresh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+? help · q quit · tab/→ next tab · : command · ↑/↓ move
