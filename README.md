@@ -6,9 +6,11 @@ Abacus is a terminal dashboard for developers running Beads-backed coding agents
 
 Download the archive for your platform from [GitHub Releases](https://github.com/andrew-bierman/abacus/releases/latest). Releases provide Linux and macOS archives for amd64 and arm64, along with `SHA256SUMS`.
 
-Download `SHA256SUMS` into the same directory as the archive. This Linux amd64 example uses v0.6.0. Change the filename to match the release you downloaded.
+On Linux x86-64, run these commands in an empty directory with the GitHub CLI installed. While the repository is private, sign in with a GitHub account that has access.
 
 ```sh
+gh release download v0.6.0 --repo andrew-bierman/abacus \
+  --pattern abacus_0.6.0_linux_amd64.tar.gz --pattern SHA256SUMS &&
 grep '  abacus_0\.6\.0_linux_amd64\.tar\.gz$' SHA256SUMS | sha256sum -c - &&
   tar -xzf abacus_0.6.0_linux_amd64.tar.gz &&
   ./abacus_0.6.0_linux_amd64/abacus tui --demo
@@ -16,19 +18,21 @@ grep '  abacus_0\.6\.0_linux_amd64\.tar\.gz$' SHA256SUMS | sha256sum -c - &&
 
 On macOS, download the `darwin_arm64` archive for Apple silicon or `darwin_amd64` for Intel. For example, run `shasum -a 256 abacus_0.6.0_darwin_arm64.tar.gz` and compare the result with the line for that filename in `SHA256SUMS` before extracting. Run `./abacus tui --demo` from the extracted directory. If Gatekeeper blocks the verified executable from the official release, clear quarantine with `xattr -d com.apple.quarantine ./abacus`.
 
-The demo uses fixture data, so you can explore without connecting any services. Press `Tab` to switch views, `?` for help, and `q` to quit. Move the `abacus` executable onto your `PATH` for the commands below.
+The demo uses sample data and needs no services. Press `Tab` to switch views, `?` for help, and `q` to quit.
 
 ## Connect your workspace
 
+From the extracted directory, preview setup and then review and confirm the changes interactively:
+
 ```sh
-abacus doctor
-abacus setup --dry-run
-abacus tui
+./abacus setup --dry-run
+./abacus setup
+./abacus tui --tab tasks
 ```
 
-Doctor shows which providers are ready and how to connect the others. Setup previews the managed workspace, lease actor, and queue configuration steps. Use `abacus setup` to review and confirm the steps interactively. Setup leaves starting the queue supervisor to you.
+Setup can create a local Beads workspace and configure a lease actor and queues. Start the queue supervisor separately if you need it. Run `./abacus doctor` to check tools and connections. On a fresh install it can report that a connection needs setup even when the bundled tools are ready.
 
-Run Abacus from an existing Beads workspace to use its tracker. For a single command, point it at another tracker with `--tracker /absolute/path/to/workspace`.
+To open an existing Beads tracker, run Abacus from its workspace or pass `--tracker` with the workspace path. Add the executable to your `PATH` if you want to run it from anywhere.
 
 | View | What you can do |
 | --- | --- |
