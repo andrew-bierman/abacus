@@ -389,16 +389,20 @@ notices_entry() {
 
 # linked_notices_entry NAME: a Go module linked into the binary, with no program shipped for it.
 linked_notices_entry() {
-  local v; v="$(linked_field "$1" .version)"
+  local v module
+  v="$(linked_field "$1" .version)"
+  module="$(linked_field "$1" .module)"
   echo "## $1 $v (linked library)"
   echo
   echo "- License: $(linked_field "$1" .license)"
-  echo "- Source: https://$(linked_field "$1" .module)"
+  echo "- Source: https://$module"
   echo "- Linked: the \`abacus\` binary statically links parts of $1's Go packages ($1 $v,"
   echo "  $(linked_field "$1" .linked_what)). No $1 program is shipped or run."
   echo "- License text: \`third_party/$1/LICENSE\`, copied verbatim from the Go module at that version."
-  echo "  The $1 license adds a rider about use with OpenAI and Anthropic products; read it before"
-  echo "  redistributing."
+  if [[ "$module" == "github.com/Dicklesworthstone/beads_viewer" ]]; then
+    echo "  The $1 license adds a rider about use with OpenAI and Anthropic products; read it before"
+    echo "  redistributing."
+  fi
   echo
 }
 
