@@ -54,7 +54,7 @@ For integrations, see the [tool contract](docs/tool-contract.md) and the [stdio 
 
 ## Terminal preview
 
-The Tasks tab shown below uses demo fixtures.
+The Tasks tab shows data from fixture providers:
 
 ```
 abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
