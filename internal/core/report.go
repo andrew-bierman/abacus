@@ -33,6 +33,39 @@ type Report struct {
 	Overview *Overview `json:"overview,omitempty"`
 	// Bundled is the self-contained check, set by `version`. Additive.
 	Bundled *BundledSummary `json:"bundled,omitempty"`
+	// Contract says what this build offers a client, set by `version`. Additive.
+	Contract *Contract `json:"contract,omitempty"`
+	// Demo is true when the report was made from invented fixtures (--demo, ABACUS_DEMO=1). Additive.
+	Demo bool `json:"demo,omitempty"`
+}
+
+// Contract is what `version --json` tells a client, so it can feature-detect instead of guessing from
+// the version string. Everything here is additive within schema_version 1.
+type Contract struct {
+	SchemaVersion int `json:"schema_version"`
+	// ErrorCodes is the version of the closed error-code set (ErrorCodesVersion).
+	ErrorCodes int `json:"error_codes"`
+	// PlanDigest: every write's --dry-run --json carries plan_digest and every write takes --expect-digest.
+	PlanDigest bool `json:"plan_digest"`
+	// Serve: `abacus serve --stdio` exists in this build.
+	Serve bool `json:"serve"`
+	// Capabilities are the optional features present, sorted, for example "demo" and "tracker".
+	Capabilities []string `json:"capabilities"`
+}
+
+// ErrorCodesVersion is bumped whenever a code is added to or removed from ErrorCodes.
+const ErrorCodesVersion = 1
+
+// ServeSupported is true once `abacus serve --stdio` ships.
+const ServeSupported = false
+
+// ContractCapabilities are the optional client-visible features of this build, sorted.
+var ContractCapabilities = []string{"bulk", "demo", "history", "reopen", "schema", "tracker"}
+
+// NewContract is the contract section of this build.
+func NewContract() *Contract {
+	return &Contract{SchemaVersion: SchemaVersion, ErrorCodes: ErrorCodesVersion, PlanDigest: true, Serve: ServeSupported,
+		Capabilities: append([]string{}, ContractCapabilities...)}
 }
 
 func newReport(version string) Report {
@@ -86,6 +119,7 @@ func VersionReport(version string, entries []Entry) Report {
 	}
 	b := SummarizeBundled(r.Modules)
 	r.Bundled = &b
+	r.Contract = NewContract()
 	return r
 }
 

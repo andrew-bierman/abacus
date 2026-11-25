@@ -241,7 +241,7 @@ const (
 	// BulkUnknown: the write may or may not have happened (timeout, cancel), or the batch ran out of
 	// time before this task: refresh before trying again.
 	BulkUnknown BulkOutcome = "unknown"
-	// BulkNotRun: the audit log could not be written, so this task and the rest were never sent.
+	// BulkNotRun: this task and the rest were never sent (the audit log could not be written, or the batch was interrupted).
 	BulkNotRun BulkOutcome = "not_run"
 )
 
@@ -266,6 +266,9 @@ type BulkReport struct {
 	Items         []BulkItemResult `json:"items"`
 	// PlanDigest is the digest of the plan this batch applied (additive; set by the front end that planned it).
 	PlanDigest string `json:"plan_digest,omitempty"`
+	// Error is the same error object every failing command prints, set (code unknown_outcome) when any task's
+	// result is unknown, so a client reads one place. Additive.
+	Error *ErrorBody `json:"error,omitempty"`
 }
 
 // Summary is the one line after a batch: "3 of 5 applied", then what else happened.
@@ -351,8 +354,12 @@ func (a *Applier) applyBulk(ctx context.Context, p BulkPlan, r TaskReader) (Bulk
 	for i, it := range p.Items {
 		id := it.Change.ID
 		res := BulkItemResult{ID: id, Argv: it.Argv}
-		if ctx.Err() != nil { // out of time: nothing more is sent, and whether the last one landed is not known
+		if ctx.Err() != nil { // nothing more is sent
 			for _, rest := range p.Items[i:] {
+				if errors.Is(ctx.Err(), context.Canceled) { // interrupted: these were never started, so nothing was sent for them
+					rep.add(BulkItemResult{ID: rest.Change.ID, Outcome: BulkNotRun, Argv: rest.Argv, Detail: "not started: interrupted; nothing was sent for this task"})
+					continue
+				}
 				rep.add(BulkItemResult{ID: rest.Change.ID, Outcome: BulkUnknown, Argv: rest.Argv, Detail: "not started: the time ran out; refresh before trying again"})
 			}
 			return rep, nil

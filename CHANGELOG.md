@@ -26,6 +26,21 @@ may change behavior, and patch versions are fixes and small additions.
   - `abacus schema [NAME] [--out DIR]` and `docs/schema/v1`: JSON Schemas derived from the Go types, with a
     test that fails when a type changes without the checked-in schema and one that validates every golden
     against its schema.
+- Client core gaps (additive, `schema_version` stays 1), for the native clients:
+  - `--demo` (or `ABACUS_DEMO=1`) on every read command (`board`, `tasks` and its views, `leases`, `queues`,
+    `agents`, `status`, `doctor`, `setup`, `search`, `version`): the same invented fixtures as `tui --demo`,
+    marked `"demo": true` in the JSON (optional boolean in every schema). A write in demo mode is refused
+    (`refused`, nothing audited) unless it is a `--dry-run` plan; the demo Board and Tasks providers can now
+    plan a post or read a task's history.
+  - `abacus tasks history ID --json` has a contract golden, and a drift test now requires a golden for every
+    schema but the repair plan.
+  - SIGINT or SIGTERM while a write is being applied stops the tool, finishes the audit record as `unknown`
+    and exits 1 with the `unknown_outcome` document under `--json` (it used to kill abacus between the
+    attempt and the outcome line). Tested with a real signal and a fake slow tool.
+  - `--tracker DIR` on `tasks` (every verb), `search`, `status` and `doctor`: wins over `ABACUS_BD_DIR` and the
+    settings, validated like a tracker switch, writes nothing to the settings.
+  - `version --json` gains `contract` (`schema_version`, `error_codes` version, `plan_digest`, `serve`,
+    `capabilities`) so a client can feature-detect.
 - `abacus help [COMMAND]`, `abacus --help` and `COMMAND --help` (also `tasks VERB --help`) print usage on
   stdout and exit 0 (they used to be an "unknown command" usage error, exit 2). `abacus completion
   bash|zsh|fish` prints a shell completion script. The top-level usage lists every `tasks` verb

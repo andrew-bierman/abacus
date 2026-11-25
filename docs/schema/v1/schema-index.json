@@ -23,6 +23,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The --json output of: schema --json",
   "properties": {
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
+    },
     "schema_version": {
       "const": 1
     },

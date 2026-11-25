@@ -17,7 +17,11 @@ import (
 // jsonOut prints v with schema_version added (core.ReportJSON), so every standalone command is versioned
 // the same way as the reports. The embedded report is flattened by encoding/json.
 func jsonOut(w io.Writer, v any) {
-	b, _ := core.ReportJSON(v)
+	report := core.ReportJSON
+	if c, ok := w.(*counter); ok && c.demo {
+		report = core.DemoReportJSON
+	}
+	b, _ := report(v)
 	_, _ = w.Write(b)
 }
 
@@ -184,6 +188,7 @@ func runDomain(cmd string, rest []string, d Deps) int {
 	var o Options
 	asJSON := jsonBool(d, fs, "print JSON")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "config file selecting the queues daemon")
+	o.bind(fs, cmd == "tasks")
 	if fs.Parse(rest) != nil {
 		return core.ExitUsage
 	}
@@ -191,7 +196,10 @@ func runDomain(cmd string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "%s: unexpected argument %q\n", cmd, fs.Arg(0))
 		return core.ExitUsage
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	dom := core.ReadDomain(ctx, d.Build(o).Detect(ctx), core.DomainID(cmd))
 	var v any
@@ -247,6 +255,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks "+verb, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, true)
 	var yes, dry, asJSON bool
 	var title, desc, status, reason, typ, prio string
 	expectRaw := expectFlag(fs)
@@ -276,6 +285,9 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "tasks %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
 		return core.ExitUsage
 	}
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
 	expect, okDigest := parseExpect(d, "tasks "+verb, expectRaw)
 	if !okDigest {
 		return core.ExitUsage
@@ -289,7 +301,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 		}
 		ch.Priority = &n
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	entries := d.Build(o).Detect(ctx)
 	w := core.ResolveProviders(entries).Writer
@@ -346,7 +358,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if err != nil {
 		return planFailed(d, "tasks "+verb, expect, err)
 	}
-	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Apply this change? [y/N] ",
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: digestFor(d, plan.Digest()), expect: expect, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			if op == core.TaskReopen { // someone else may have reopened it, or changed it, since the plan
 				cur, err := reader.ReadTask(ctx, ch.ID)
@@ -382,6 +394,9 @@ func runWrite(d Deps, f writeFlow) int {
 	if f.expect != "" && f.expect != f.digest {
 		return planChanged(d, f.label, f.expect, f.digest)
 	}
+	if code, refused := refuseDemoWrite(d, f.label, f.dry); refused {
+		return code
+	}
 	if f.dry && f.asJSON {
 		jsonOut(d.Out, core.WriteDryRun{DryRun: true, Lines: f.lines, Context: f.ctx, Argv: f.argv, Steps: f.more, PlanDigest: f.digest})
 		return core.ExitOK
@@ -405,18 +420,20 @@ func runWrite(d Deps, f writeFlow) int {
 			return failf(d, core.CodeRefused, "not applied: the change was not confirmed\n")
 		}
 	}
-	au := d.Audit
-	if au == nil {
-		au = core.DefaultAudit()
+	au := auditFor(d)
+	type outcome struct {
+		res  any
+		done string
+		err  error
 	}
-	res, done, err := f.apply(au)
-	if err != nil {
-		return failf(d, core.CodeFor(err), "%s: %s\n", f.label, core.DescribeWriteError(err))
+	got := trapped(d, func() outcome { r, dn, e := f.apply(au); return outcome{r, dn, e} })
+	if got.err != nil {
+		return failf(d, core.CodeFor(got.err), "%s: %s\n", f.label, core.DescribeWriteError(got.err))
 	}
 	if f.asJSON {
-		jsonOut(d.Out, core.WriteApplied{Applied: true, Result: res, PlanDigest: f.digest})
+		jsonOut(d.Out, core.WriteApplied{Applied: true, Result: got.res, PlanDigest: f.digest})
 	} else {
-		fmt.Fprintln(d.Out, done)
+		fmt.Fprintln(d.Out, got.done)
 	}
 	return core.ExitOK
 }
@@ -457,6 +474,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet("board "+verb, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, false)
 	var yes, dry, asJSON bool
 	expectRaw := expectFlag(fs)
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
@@ -476,6 +494,9 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 		fmt.Fprintf(d.Err, "board %s: --json needs --yes or --dry-run (it cannot prompt)\n", verb)
 		return core.ExitUsage
 	}
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
 	expect, okDigest := parseExpect(d, "board "+verb, expectRaw)
 	if !okDigest {
 		return core.ExitUsage
@@ -486,16 +507,13 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	} else {
 		ch.ID = target
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	w := core.ResolveProviders(d.Build(o).Detect(ctx)).BoardWriter
 	if w == nil {
 		return failf(d, core.CodeNotConnected, "board: not connected. %s\n", core.HowToConnectFor(core.DomainBoard))
 	}
-	au := d.Audit
-	if au == nil {
-		au = core.DefaultAudit()
-	}
+	au := auditFor(d)
 	// The key comes from the content, not the clock; the audit log says whether this is a repeat.
 	nonce, repeat, err := core.BoardCLINonce(au, w.Target(), ch, core.BoardKeyWindow, time.Now())
 	if err != nil {
@@ -511,7 +529,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	}
 	dctx, dcancel := context.WithTimeout(ctx, 2*core.DefaultExecTimeout)
 	defer dcancel()
-	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Post this to the board? [y/N] ",
+	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: digestFor(d, plan.Digest()), expect: expect, prompt: "Post this to the board? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
 			return res, "done: posted #" + res.ID, err

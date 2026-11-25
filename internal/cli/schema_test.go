@@ -64,7 +64,7 @@ func TestSchemaCommandListsPrintsAndWrites(t *testing.T) {
 // goldenSchema maps each contract golden to the schema that must describe it.
 var goldenSchema = map[string]string{
 	"version": "report", "doctor": "report", "status": "report", "board": "board", "tasks": "tasks", "leases": "leases",
-	"queues": "queues", "agents": "agents", "search": "search", "config-show": "config-show", "setup": "setup",
+	"queues": "queues", "agents": "agents", "search": "search", "tasks-history": "tasks-history", "config-show": "config-show", "setup": "setup",
 	"setup-applied": "setup", "dry-run-bulk": "bulk-dry-run", "applied-bulk": "bulk-result", "applied-update": "write-applied-task",
 	"applied-board-post": "write-applied-board", "error-usage": "error", "error-not-connected": "error",
 	"error-unknown-outcome": "error", "schema-index": "schema-index",
@@ -127,7 +127,7 @@ func TestContractGoldensValidateAgainstTheSchemas(t *testing.T) {
 		}
 	}
 	for _, s := range core.SchemaSpecs() {
-		if !covered[s.Name] && s.Name != "tasks-history" && s.Name != "setup-repair" {
+		if !covered[s.Name] && s.Name != "setup-repair" { // a repair plan needs a half-built workspace on disk
 			t.Errorf("no golden validates against the %s schema", s.Name)
 		}
 	}

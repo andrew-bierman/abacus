@@ -1,0 +1,31 @@
+{
+  "events": [
+    {
+      "at": "2026-11-24T03:00:00Z",
+      "actor": "ada",
+      "kind": "commented",
+      "detail": "Reproduced. The tick interval is the cause; fix is small."
+    },
+    {
+      "at": "2026-11-23T03:00:00Z",
+      "actor": "mei",
+      "kind": "commented",
+      "detail": "Seen twice on the laptop after sleep."
+    },
+    {
+      "at": "2026-11-21T09:00:00Z",
+      "actor": "ada",
+      "kind": "status_changed",
+      "detail": "open -\u003e in_progress"
+    },
+    {
+      "at": "2026-11-15T09:00:00Z",
+      "actor": "ada",
+      "kind": "created",
+      "detail": "wire the lease heartbeat"
+    }
+  ],
+  "id": "ac-12",
+  "read_at": "2026-11-24T09:00:00Z",
+  "schema_version": 1
+}

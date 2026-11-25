@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"strconv"
@@ -34,6 +33,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	fs := flag.NewFlagSet("tasks "+verb, flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	var o Options
+	o.bind(fs, true)
 	var yes, dry, asJSON, unassign bool
 	var blocks, blockedBy, text string
 	expectRaw := expectFlag(fs)
@@ -55,6 +55,9 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	if fs.NArg() > 0 {
 		fmt.Fprintf(d.Err, "tasks %s: unexpected argument %q (quote values that contain spaces)\n", verb, fs.Arg(0))
 		return core.ExitUsage
+	}
+	if code, ok := o.resolve(d); !ok {
+		return code
 	}
 	bad := func(format string, a ...any) int {
 		fmt.Fprintf(d.Err, "tasks %s: %s\nusage: %s\n", verb, fmt.Sprintf(format, a...), usage)
@@ -123,7 +126,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 		}
 		ch.Op, ch.ID, ch.Text = core.TaskAddComment, pos[0], text
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	entries := d.Build(o).Detect(ctx)
 	pr := core.ResolveProviders(entries)
@@ -176,7 +179,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	if err != nil {
 		return planFailed(d, "tasks "+verb, expect, err)
 	}
-	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Apply this change? [y/N] ",
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: digestFor(d, plan.Digest()), expect: expect, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			// the task is read again after the confirm: a change by someone else in between is refused, and
 			// nothing is written or audited (an aborted plan never reaches the gate)

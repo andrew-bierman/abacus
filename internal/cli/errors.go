@@ -37,8 +37,9 @@ func (s *sink) Write(p []byte) (int, error) {
 // counter counts what a command wrote to stdout: a failing command that already printed a document
 // (a bulk batch that did not all apply, a failed check) keeps it and gets no second one.
 type counter struct {
-	w io.Writer
-	n int
+	w    io.Writer
+	n    int
+	demo bool // the run is in demo mode: its JSON documents say so (jsonOut)
 }
 
 func (c *counter) Write(p []byte) (int, error) { c.n += len(p); return c.w.Write(p) }

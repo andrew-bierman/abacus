@@ -20,7 +20,11 @@ type Options struct {
 	// AllUsers lists agents run by other users too (agents --all); the default is the current user only.
 	AllUsers    bool
 	LambeConfig string
-	Demo        bool
+	// Demo builds the demo providers (invented fixtures) instead of the real ones.
+	Demo bool
+	// Tracker is the validated tracker folder from --tracker ("" means the usual choice).
+	Tracker    string
+	trackerSet bool // --tracker was given, even with an empty value
 }
 
 // Deps are the process edges, injectable for tests.
@@ -39,6 +43,11 @@ type Deps struct {
 	Exe func() (string, error)
 	// Now is the clock for ages in the task views; nil means time.Now.
 	Now func() time.Time
+	// Getenv reads ABACUS_DEMO; nil means os.Getenv.
+	Getenv func(string) string
+
+	base      context.Context // set by Run: what every command's context derives from
+	interrupt context.CancelFunc
 }
 
 func usageText() string {
@@ -67,6 +76,7 @@ diagnostics:
   completion  print a shell completion script (bash, zsh or fish)
 
 flags: --json on every command that reads or reports; writes also take --yes and --dry-run
+       --demo (invented data; also ABACUS_DEMO=1) on every read command; --tracker DIR on tasks, search, status and doctor
 exit codes: 0 ok, 1 something failed or is not ready, 2 usage error
 `, brand.Name)
 }
@@ -84,6 +94,8 @@ func Run(args []string, d Deps) int {
 	}
 	s, o := &sink{w: d.Err}, &counter{w: d.Out}
 	d.Err, d.Out = s, o
+	d.base, d.interrupt = context.WithCancel(context.Background())
+	defer d.interrupt()
 	code := run(args, d)
 	finishError(args, code, s, o)
 	return code
@@ -108,6 +120,9 @@ func run(args []string, d Deps) int {
 }
 
 func dispatch(args []string, d Deps) int {
+	if code, refused := demoGate(d, args); refused {
+		return code
+	}
 	cmd, rest := args[0], args[1:]
 	// The first start unpacks the built-in tools (a few seconds): say so on stderr rather than
 	// leaving a blank terminal. Nothing is printed when they are already unpacked.
@@ -143,7 +158,7 @@ func dispatch(args []string, d Deps) int {
 	var o Options
 	asJSON := jsonBool(d, fs, "print JSON")
 	fs.StringVar(&o.LambeConfig, "lambe-config", "", "Lambe config file selecting the daemon")
-	fs.BoolVar(&o.Demo, "demo", false, "render from fixtures (tui)")
+	o.bind(fs, cmd == "doctor" || cmd == "status")
 	tab := fs.String("tab", "", "tab to open first: board, tasks, leases, queues or doctor (tui)")
 	if err := fs.Parse(rest); err != nil {
 		return core.ExitUsage
@@ -152,6 +167,9 @@ func dispatch(args []string, d Deps) int {
 		fmt.Fprintf(d.Err, "%s: unexpected argument %q\n", cmd, fs.Arg(0))
 		return core.ExitUsage
 	}
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
 	if *tab != "" && (cmd != "tui" || !core.ValidTab(*tab)) {
 		fmt.Fprintf(d.Err, "%s: --tab is for tui and takes board, tasks, leases, queues or doctor\n", cmd)
 		return core.ExitUsage
@@ -159,7 +177,7 @@ func dispatch(args []string, d Deps) int {
 	ctx := context.Background()
 	if cmd != "tui" { // the TUI is interactive and has no overall deadline
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, cliTimeout)
+		ctx, cancel = d.withTimeout(cliTimeout)
 		defer cancel()
 	}
 	entries := d.Build(o).Detect(ctx)
@@ -182,6 +200,7 @@ func dispatch(args []string, d Deps) int {
 	case "status":
 		r = core.FleetStatusReport(ctx, d.Version, entries)
 	}
+	r.Demo = o.Demo
 	if *asJSON {
 		enc := json.NewEncoder(d.Out)
 		enc.SetIndent("", "  ")

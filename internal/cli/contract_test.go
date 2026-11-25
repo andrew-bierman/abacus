@@ -31,8 +31,17 @@ func (fixedAgents) Agents(context.Context) ([]core.Agent, core.AgentsExtra, erro
 	return demo.AgentsAt(contractNow)
 }
 
+// fixedTasks is the demo Tasks provider whose history is read at the fixed moment too.
+type fixedTasks struct{ demoTasks } // not embedded as demo.Tasks: its field name would hide the Tasks method
+
+type demoTasks = demo.Tasks
+
+func (fixedTasks) History(_ context.Context, id string, limit int) (core.TaskHistoryReport, error) {
+	return demo.TaskHistoryAt(contractNow, id, limit)
+}
+
 func contractMods() []core.Module {
-	return []core.Module{lambe.NewDemo(), demo.NewLeases(), demo.NewTasks(), newBoardMod(), fixedAgents{demo.NewAgents()}}
+	return []core.Module{lambe.NewDemo(), demo.NewLeases(), fixedTasks{demo.NewTasks()}, newBoardMod(), fixedAgents{demo.NewAgents()}}
 }
 
 // contractRun runs one command over the demo providers with isolated config, audit and clock.
@@ -89,6 +98,7 @@ func TestContractReadGoldens(t *testing.T) {
 		{"queues", []string{"queues", "--json"}},
 		{"agents", []string{"agents", "--json"}},
 		{"search", []string{"search", "lease", "--json"}},
+		{"tasks-history", []string{"tasks", "history", "ac-12", "--json"}},
 		{"config-show", []string{"config", "show", "--json"}},
 	} {
 		code, out, errOut := contractRun(t, contractMods(), c.args...)

@@ -56,5 +56,19 @@
     ],
     "embedded": false,
     "line": "Development build: tools are not built in; build with make build"
+  },
+  "contract": {
+    "schema_version": 1,
+    "error_codes": 1,
+    "plan_digest": true,
+    "serve": false,
+    "capabilities": [
+      "bulk",
+      "demo",
+      "history",
+      "reopen",
+      "schema",
+      "tracker"
+    ]
   }
 }

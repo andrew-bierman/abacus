@@ -76,7 +76,7 @@ func boardURL(e Env, cfg core.Config) (url, source, bad string) {
 }
 
 // Build constructs the registry. Binary precedence is each module's own: an ABACUS_*_BIN
-// override, then a verified bundled sidecar, then PATH. The tracker is ABACUS_BD_DIR, a tracker
+// override, then a verified bundled sidecar, then PATH. The tracker is --tracker, ABACUS_BD_DIR, a tracker
 // at or above the working directory, the saved tracker_dir, then an existing managed workspace;
 // failing all of those the managed workspace is offered, and a saved tracker_dir that has gone
 // missing is reported rather than replaced. Queues reads, in order, --lambe-config,
@@ -86,7 +86,15 @@ func Build(o cli.Options, e Env) *core.Registry {
 		return core.NewRegistry(lambe.NewDemo(), demo.NewLeases(), demo.NewTasks(), demo.NewBoard(), demo.NewAgents())
 	}
 	cfg, _ := e.Config.Load() // an unreadable file reads as empty here; Doctor reports it
-	choice := core.ResolveTracker(e.Getenv("ABACUS_BD_DIR"), cfg, e.Cwd, e.Workspace)
+	// --tracker (already validated by the CLI) wins over ABACUS_BD_DIR, the working directory and the settings.
+	envDir := e.Getenv("ABACUS_BD_DIR")
+	if o.Tracker != "" {
+		envDir = o.Tracker
+	}
+	choice := core.ResolveTracker(envDir, cfg, e.Cwd, e.Workspace)
+	if o.Tracker != "" {
+		choice.Source = "flag"
+	}
 	ref := core.NewTrackerRef(choice.Dir)
 	lambeCfg := o.LambeConfig
 	if lambeCfg == "" {

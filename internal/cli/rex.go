@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -44,7 +43,7 @@ func runRex(args []string, d Deps) int {
 		return core.ExitFail
 	}
 	cwd, _ := os.Getwd()
-	ctx, cancel := context.WithTimeout(context.Background(), cliTimeout)
+	ctx, cancel := d.withTimeout(cliTimeout)
 	defer cancel()
 	w := core.ResolveProviders(d.Build(Options{}).Detect(ctx)).Placer
 	if w == nil {
@@ -58,6 +57,9 @@ func runRex(args []string, d Deps) int {
 	return runWrite(d, writeFlow{label: "rex layout", lines: plan.Lines, argv: plan.Steps[0], more: plan.Steps[1:], yes: yes, dry: dry, asJSON: asJSON, prompt: "Open these tabs? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			res, err := core.NewPlacementApplier(w, au).Apply(ctx, plan.Confirm())
+			if err != nil && res.Steps > 0 { // an interrupted or failed layout says how far it got (%w keeps an unknown result unknown)
+				err = fmt.Errorf("%w (%d of %d steps completed)", err, res.Steps, len(plan.Steps))
+			}
 			return res, fmt.Sprintf("done: opened %d tabs", res.Steps), err
 		}})
 }

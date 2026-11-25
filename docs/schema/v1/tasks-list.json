@@ -104,6 +104,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The --json output of: tasks list",
   "properties": {
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
+    },
     "deps_unknown": {
       "type": "boolean"
     },

@@ -459,15 +459,17 @@ referenced by the roadmap.
 | C7 | **`--tracker DIR`** on every command (or `ABACUS_BD_DIR` documented as the supported selector for clients), and `via` in the audit entry | per-call tracker choice without writing the shared config; attribute app writes | small |
 | C8 | **A `contract` section in `abacus version --json`** listing the supported `schema_version` and (once C5 exists) the serve protocol version | one place to negotiate | small |
 
-**Implemented since this plan was written** (C1, C2, C3, C4 and the `tasks reopen` half of C6; `docs/tool-contract.md`
+**Implemented since this plan was written** (C1, C2, C3, C4, the `tasks reopen` half of C6, and `--tracker` and
+the `contract` section of `version --json` (C7, C8; see "Demo mode, `--tracker`, interrupts" in the contract); `docs/tool-contract.md`
 has the contract, `CHANGELOG.md` the list). Where it differs from the proposal above: the error document
 is printed on **stdout** under `--json` (with stderr text and exit codes unchanged), not on stderr; the
 codes are `usage`, `not_connected`, `needs_setup`, `not_found`, `refused`, `changed`, `already_applied`,
 `unknown_outcome`, `applied_mismatch`, `audit_failed`, `timeout`, `unsupported` and `failed`; the plan
 token is `--expect-digest DIGEST` on every write (there is no `plan_id` and no `--apply-plan`); and
 `abacus schema` derives the JSON Schemas by reflection in core with no new dependency (about 250 lines over a
-closed set of types), checked in at `docs/schema/v1`. Not built: `serve` (C5), the typed workspace actions,
-`--tracker` and `via` (C7), the `contract` section of `version --json` (C8).
+closed set of types), checked in at `docs/schema/v1`. Not built: `serve` (C5, so `contract.serve` is false), the
+typed workspace actions, and `via` in the audit entry (the C7 half). The native client's gaps added `--demo` on
+every read command, a `tasks history` golden and a trapped SIGINT/SIGTERM during an apply.
 
 C2 and C1 are prerequisites for phase 1; C3 and C4 for phase 2; C5 for phase 3. Nothing in C1 to C8
 needs a new Go dependency except C3's reflection library.
