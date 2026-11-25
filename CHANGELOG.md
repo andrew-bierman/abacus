@@ -27,6 +27,12 @@ may change behavior, and patch versions are fixes and small additions.
   - `plan.setup {step}` and `plan.config.set {key, value}`: setup steps and `config set` as gated plan and
     apply (same digest, freshness check, audit written before the write and "result unknown" rules). The
     `setup` and `config set` commands are unchanged. `serve-applied` gains `setup` and `config` results.
+  - Shutdown never starts a queued write: a waiting `apply` is cancelled with its plan unclaimed, and an `apply`
+    that gets its turn after shutdown began is refused before the plan is claimed. The request queue is strictly
+    first-in, first-out. Watchers take their baseline at subscribe time; the agents watcher ignores a poll in
+    which a feed failed; the tasks watcher keeps at most 5000 tasks (a bigger tracker is `full` only). Config
+    sets are compared again under the file lock and audited with a bounded value for `actor`, `tracker_dir`,
+    `board_url`.
   - Error codes `expired` and `busy` join the closed set (`contract.error_codes` is now 2); a client that does
     not know a code treats it as `failed`.
   - `core.DemoDigest` (the demo marker moved out of the CLI), `core.PlanConfigSet` and `core.ApplyConfigSet`.

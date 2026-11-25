@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 func TestMaxDepthIgnoresBracketsInStrings(t *testing.T) {
@@ -301,5 +302,19 @@ func TestNotifyMergesWhatArrivesWhileOneIsQueued(t *testing.T) {
 	b := noticeBytes(core.ServeNotice{Topic: "agents", Seq: 7, Kind: "ids", ChangedIDs: []string{"a"}, Fingerprint: "f"})
 	if string(b) != `{"jsonrpc":"2.0","method":"agents.changed","params":{"topic":"agents","seq":7,"kind":"ids","fingerprint":"f","changed_ids":["a"]}}` {
 		t.Errorf("%s", b)
+	}
+}
+
+func TestChangedIDsCollectsNothingPastTheCap(t *testing.T) {
+	many := make([]string, maxNoticeIDs+1)
+	for i := range many {
+		many[i] = fmt.Sprintf("t-%d", i)
+	}
+	if ids, ok := changedIDs(taskview.Change{Added: many}); ok || ids != nil {
+		t.Errorf("past the cap: %d ids, %v", len(ids), ok)
+	}
+	ids, ok := changedIDs(taskview.Change{Added: []string{"b"}, Changed: []string{"c"}, Removed: []string{"a"}})
+	if !ok || !slices.Equal(ids, []string{"a", "b", "c"}) {
+		t.Errorf("%v %v", ids, ok)
 	}
 }

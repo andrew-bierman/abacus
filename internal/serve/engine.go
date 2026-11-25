@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -33,6 +34,7 @@ type Engine struct {
 	cachedAt time.Time
 
 	writeMu chan struct{} // one write at a time: the client's applies are serialized here
+	closing atomic.Bool   // the server is shutting down: no apply that has not started may start
 
 	root context.Context
 	wmu  sync.Mutex

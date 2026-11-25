@@ -49,7 +49,7 @@ request. The server never writes a pretty-printed or multi-line message.
 | Request line | 1 MiB | the line is read to its end and thrown away (never buffered past the limit), error -32600 `usage` with id `null`; the server keeps serving |
 | Nesting | 32 levels | -32600 `usage` |
 | Result | 16 MiB | the request fails with `failed` and says to narrow it (a query, a smaller limit) |
-| Requests in flight | 8 | the next ones wait for a slot, in arrival order, up to the queue bound (next row); a deadline or a cancel reaches a waiting request |
+| Requests in flight | 8 | the next ones wait for a slot, strictly in arrival order (a first-in, first-out queue), up to the queue bound (next row); a deadline or a cancel reaches a waiting request |
 | Requests queued | 32 | past in-flight plus queued, the request is refused at once with `busy` and `retry_after_ms` (nothing ran) |
 | Plans held | 64 | the oldest is pushed out; applying it gives `changed` |
 | Plans remembered | 16384 applied ids, 1024 others (expired, cancelled, refused) | past the bound an old id is `not_found` instead of `already_applied` or `changed` |
@@ -120,7 +120,8 @@ request line) and `contract`: the same section `version --json` prints (`schema_
 A client treats a method missing from `methods` as unavailable.
 
 `shutdown` (no params): the server stops accepting requests (new ones get `refused`), cancels reads in
-flight, lets a write in flight finish for up to 5 seconds (past that it is cancelled, and a cancelled
+flight and every request still waiting for a slot (a waiting `apply` is cancelled with its plan unclaimed),
+refuses an `apply` that holds a slot but has not started writing (`refused`, plan unclaimed), lets a write in flight finish for up to 5 seconds (past that it is cancelled, and a cancelled
 write is `unknown_outcome`), answers every request in flight, then answers `shutdown` with `{}` plus
 `schema_version`, stops its watchers and exits 0. End of input does the same without the answer.
 
@@ -273,8 +274,10 @@ plans it (its `plan_digest` is the digest of that step's plan, the one `setup --
 repair); at apply the step is planned again and must be the same plan and still offered, then core's setup
 gate re-checks its own preconditions, writes the attempt to the audit log before anything runs and records the
 outcome. A config plan is guarded by the value the key has when it is planned: if the key moved, apply is
-`changed` and nothing is written or audited; the attempt and outcome are audited for every key (for
-`agent_command`, with the argv "work on this" will run), where the command line audits that key only. The
+`changed` and nothing is written or audited (the comparison is made again under the config file's lock, so a
+concurrent change is never overwritten); the attempt and outcome are audited for every key: the key, and for
+`agent_command` the argv "work on this" will run, for `actor`, `tracker_dir` and `board_url` the new value
+(sanitized, at most 120 bytes), where the command line audits `agent_command` only. The
 commands `setup` and `config set` are unchanged.
 
 Not exposed: `rex layout` and the workspace actions (focus, run, split), `tasks delete` and everything else
@@ -305,6 +308,11 @@ some task; otherwise (the fingerprint moved but no task did, a read failed, or t
 `"full"`. While a notification waits to be written, later changes are merged into it (their ids are added,
 and an unknown one makes it `"full"`); a notice that would list more than 256 ids is `"full"`. So a client that
 refetches only the listed ids misses nothing.
+
+Both watchers take their baseline at once, when `subscribe` starts them, so a change in the first interval is
+reported. The agents watcher skips a poll whose report carries a note or is not connected (a feed failed: its
+agents are missing, not gone) and keeps its baseline. The tasks watcher keeps at most 5000 tasks to compare by
+id; a bigger tracker is watched by a digest of it and every change is `"full"`.
 
 The tasks watcher is the TUI's live refresh without the screen (`taskview.Poller`): a check every 5
 seconds, one at a time, a longer wait (up to 60 seconds) after a slow or failed one; the first look is a

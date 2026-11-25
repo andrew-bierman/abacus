@@ -90,17 +90,49 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 	var snap *core.TaskSnapshot // the tracker as the client was last told about it
 	fails, degraded := 0, false
 	noFP := pr.Fingerprint == nil
-	read := func() *core.TaskSnapshot {
+	// read is the tracker whole, or nil when it cannot be read; big says it holds more than maxWatchTasks
+	// tasks, too many to keep and compare by id (the watcher then compares a digest and says "full").
+	read := func() (cur *core.TaskSnapshot, big bool) {
 		if pr.Source == nil {
-			return nil
+			return nil, false
 		}
 		rctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		cur, err := pr.Source.Snapshot(rctx)
+		got, err := pr.Source.Snapshot(rctx)
 		if err != nil {
+			return nil, false
+		}
+		return &got, len(got.Issues) > maxWatchTasks
+	}
+	var lastSnapFP string // a tracker too big to keep: the digest of it the client was told about
+	keep := func() *core.TaskSnapshot {
+		cur, big := read()
+		if big {
 			return nil
 		}
-		return &cur
+		return cur
+	}
+	// The baseline is taken now, at subscribe time, so a change in the first poll interval is reported.
+	if !noFP {
+		cctx, cancel := context.WithTimeout(ctx, e.cfg.PollSlow)
+		fp, err := pr.Fingerprint.Fingerprint(cctx)
+		cancel()
+		switch {
+		case errors.Is(err, core.ErrNoFingerprint):
+			noFP = true
+			poll.Base, poll.Max = e.cfg.SlowBase, 2*e.cfg.SlowBase
+		case err == nil && fp != "":
+			last, snap = fp, keep()
+		}
+	}
+	if noFP {
+		if cur, big := read(); cur != nil {
+			if big {
+				lastSnapFP = snapshotFingerprint(*cur)
+			} else {
+				snap = cur
+			}
+		}
 	}
 	for {
 		timer := time.NewTimer(poll.Wait())
@@ -127,13 +159,15 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 				ok = false
 			case fp == "": // nothing readable this time: not a change, not a failure
 			case last == "": // the first look is the baseline, not a change
-				last, snap = fp, read()
+				last, snap = fp, keep()
 			case taskview.Changed(last, fp):
 				n := core.ServeNotice{Topic: "tasks", Reason: "fingerprint", Kind: "full", Fingerprint: fp}
-				cur := read()
+				cur := keep()
 				if cur != nil && snap != nil {
 					if d := taskview.Diff(*snap, *cur); !d.Empty() {
-						n.Kind, n.ChangedIDs = "ids", changedIDs(d)
+						if ids, ok := changedIDs(d); ok {
+							n.Kind, n.ChangedIDs = "ids", ids
+						}
 					}
 				}
 				if e.notify(n) {
@@ -142,15 +176,25 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 			}
 		}
 		if noFP && pr.Source != nil {
-			cur := read()
+			cur, big := read()
 			switch {
 			case cur == nil:
 				ok = false
+			case big:
+				if f := snapshotFingerprint(*cur); lastSnapFP == "" {
+					lastSnapFP = f
+				} else if f != lastSnapFP && e.notify(core.ServeNotice{Topic: "tasks", Reason: "snapshot", Fingerprint: f}) {
+					lastSnapFP = f
+				}
 			case snap == nil:
 				snap = cur
 			default:
 				if d := taskview.Diff(*snap, *cur); !d.Empty() {
-					if e.notify(core.ServeNotice{Topic: "tasks", Reason: "snapshot", Kind: "ids", Fingerprint: snapshotFingerprint(*cur), ChangedIDs: changedIDs(d)}) {
+					n := core.ServeNotice{Topic: "tasks", Reason: "snapshot", Fingerprint: snapshotFingerprint(*cur)}
+					if ids, fits := changedIDs(d); fits {
+						n.Kind, n.ChangedIDs = "ids", ids
+					}
+					if e.notify(n) {
 						snap = cur
 					}
 				}
@@ -169,11 +213,19 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 	}
 }
 
-// changedIDs is every task a change touched: added, changed or removed, sorted.
-func changedIDs(d taskview.Change) []string {
+// maxWatchTasks bounds the tracker the tasks watcher keeps and compares by task (two copies are held at a
+// diff): a bigger one is watched by its digest alone and every change is "full".
+const maxWatchTasks = 5000
+
+// changedIDs is every task a change touched (added, changed or removed), sorted; false when there are more
+// than a notification can list, in which case none are collected.
+func changedIDs(d taskview.Change) ([]string, bool) {
+	if len(d.Added)+len(d.Changed)+len(d.Removed) > maxNoticeIDs {
+		return nil, false
+	}
 	ids := append(d.Touched(), d.Removed...)
 	slices.Sort(ids)
-	return ids
+	return ids, true
 }
 
 // snapshotFingerprint is an opaque token of a whole snapshot, for a tracker with no cheap fingerprint.
@@ -197,19 +249,24 @@ func digestLines(lines []string) string {
 // is the baseline.
 func (e *Engine) watchAgents(ctx context.Context) {
 	var last map[string]string
-	for {
-		timer := time.NewTimer(e.cfg.SlowBase)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return
-		case <-timer.C:
+	for first := true; ; first = false {
+		if !first { // the baseline is taken at once, at subscribe time; the polls follow
+			timer := time.NewTimer(e.cfg.SlowBase)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+			}
 		}
 		rctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		rep := core.ReadDomain(rctx, e.entries(rctx), core.DomainAgents).Agents
 		cancel()
 		if ctx.Err() != nil {
 			return
+		}
+		if len(rep.Notes) > 0 || rep.State != core.Connected { // a feed failed or timed out: its agents are missing, not gone
+			continue
 		}
 		cur := make(map[string]string, len(rep.Agents))
 		lines := make([]string, 0, len(rep.Agents))

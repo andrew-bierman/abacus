@@ -447,6 +447,14 @@ func (e *Engine) apply(ctx context.Context, raw json.RawMessage) (any, error) {
 	case <-ctx.Done(): // before the claim: nothing was written and the plan is still held
 		return nil, ctx.Err()
 	}
+	// Having waited for the turn, look again before claiming anything: a request that ended (or a server that
+	// began shutting down) while it waited must not write, and its plan stays held.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if e.closing.Load() {
+		return nil, failErr(core.CodeRefused, "the server is shutting down: nothing was written and the plan was not claimed")
+	}
 	h, err := e.plans.take(id, expect)
 	if err != nil {
 		return nil, err
@@ -480,6 +488,9 @@ func (e *Engine) apply(ctx context.Context, raw json.RawMessage) (any, error) {
 // panicked a result unknown) is still a result unknown with the plan named, never a bare internal error,
 // because the plan is spent and the write may have been sent.
 func (e *Engine) runHeld(ctx context.Context, h *heldPlan) (res *core.ServeApplied, wrote bool, err error) {
+	if err := ctx.Err(); err != nil { // ended between the claim and the write: nothing was sent
+		return nil, false, fromErr(err)
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			res, wrote = nil, true

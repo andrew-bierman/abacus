@@ -116,7 +116,7 @@ type Server struct {
 	initialized atomic.Bool
 
 	locks map[string]chan struct{}
-	slots chan struct{} // one per request being served; the others wait here, in arrival order
+	slots *fifoSem // one per request being served; the others wait here, strictly in arrival order
 
 	out        chan outMsg
 	flush      chan struct{}
@@ -131,7 +131,7 @@ type Server struct {
 // New builds a server. The engine is built from cfg; nothing is read until a request asks.
 func New(cfg Config) *Server {
 	cfg = cfg.withDefaults()
-	s := &Server{cfg: cfg, lim: cfg.Limits, inflight: map[string]*call{}, pendingN: map[string]*core.ServeNotice{}, slots: make(chan struct{}, cfg.Limits.MaxInFlight), seq: map[string]uint64{},
+	s := &Server{cfg: cfg, lim: cfg.Limits, inflight: map[string]*call{}, pendingN: map[string]*core.ServeNotice{}, slots: newFifoSem(cfg.Limits.MaxInFlight), seq: map[string]uint64{},
 		out: make(chan outMsg, 256), flush: make(chan struct{}), writerDone: make(chan struct{}), finished: make(chan struct{}), stalled: make(chan struct{})}
 	s.eng = newEngine(cfg, s.notify)
 	s.ms = s.eng.methods()
@@ -184,6 +184,7 @@ func (s *Server) drain(then func()) bool {
 		return false
 	}
 	s.closing = true
+	s.eng.closing.Store(true)
 	for _, c := range s.inflight {
 		if !c.write {
 			c.cancel(errClosed)
@@ -579,7 +580,7 @@ func (s *Server) handleLine(line []byte) {
 		s.active++
 	}
 	ctx, cancel := context.WithCancelCause(s.root)
-	c := &call{cancel: cancel, write: m.write}
+	c := &call{cancel: cancel} // a write is marked only once it holds a slot (see run)
 	s.inflight[key] = c
 	s.wg.Add(1)
 	s.mu.Unlock()
@@ -594,7 +595,7 @@ func (s *Server) handleLine(line []byte) {
 			cancel(nil)
 			s.wg.Done()
 		}()
-		s.run(ctx, req.ID, m, params, deadline)
+		s.run(ctx, c, req.ID, m, params, deadline)
 	}
 	if m.inline {
 		run()
@@ -630,16 +631,21 @@ func (s *Server) cancelRequest(params json.RawMessage) {
 }
 
 // run serves one request: it takes the method's domain lock, runs it under its deadline, and answers.
-func (s *Server) run(ctx context.Context, id json.RawMessage, m method, params json.RawMessage, deadline time.Duration) {
+func (s *Server) run(ctx context.Context, c *call, id json.RawMessage, m method, params json.RawMessage, deadline time.Duration) {
 	ctx, stop := context.WithTimeout(ctx, deadline)
 	defer stop()
 	if !m.inline { // past MaxInFlight a request waits here, in arrival order, under its own deadline
-		select {
-		case s.slots <- struct{}{}:
-			defer func() { <-s.slots }()
-		case <-ctx.Done():
+		if !s.slots.acquire(ctx) {
 			s.replyError(id, s.classify(ctx, ctx.Err()))
 			return
+		}
+		defer s.slots.release()
+		if m.write {
+			// Only a write that holds a slot is a write in flight, which shutdown lets finish; one still
+			// waiting was cancelled by shutdown (drain cancels every call not yet marked), so it never gets here.
+			s.mu.Lock()
+			c.write = true
+			s.mu.Unlock()
 		}
 	}
 	res, err := s.invoke(ctx, m, params)
@@ -742,4 +748,62 @@ func (s *Server) logf(format string, a ...any) {
 	if s.cfg.Log != nil {
 		fmt.Fprintf(s.cfg.Log, "serve: "+format+"\n", a...)
 	}
+}
+
+// fifoSem is a counting semaphore that hands out slots strictly in arrival order, and in which a waiter
+// that is cancelled or past its deadline never takes one.
+type fifoSem struct {
+	mu      sync.Mutex
+	max     int
+	running int
+	waiters []chan struct{}
+}
+
+func newFifoSem(n int) *fifoSem { return &fifoSem{max: n} }
+
+// acquire waits for a slot; false means ctx ended first (a slot granted at the same moment is given back).
+func (f *fifoSem) acquire(ctx context.Context) bool {
+	if ctx.Err() != nil {
+		return false
+	}
+	f.mu.Lock()
+	if f.running < f.max && len(f.waiters) == 0 {
+		f.running++
+		f.mu.Unlock()
+		return true
+	}
+	w := make(chan struct{})
+	f.waiters = append(f.waiters, w)
+	f.mu.Unlock()
+	select {
+	case <-w:
+		if ctx.Err() != nil { // both were ready: the end of the request wins
+			f.release()
+			return false
+		}
+		return true
+	case <-ctx.Done():
+		f.mu.Lock()
+		for i, x := range f.waiters {
+			if x == w {
+				f.waiters = append(f.waiters[:i], f.waiters[i+1:]...)
+				f.mu.Unlock()
+				return false
+			}
+		}
+		f.mu.Unlock() // it was granted just now
+		f.release()
+		return false
+	}
+}
+
+func (f *fifoSem) release() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.waiters) > 0 { // the slot passes straight to the first waiter
+		close(f.waiters[0])
+		f.waiters = f.waiters[1:]
+		return
+	}
+	f.running--
 }

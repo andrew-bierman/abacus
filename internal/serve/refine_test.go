@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -444,4 +445,164 @@ func TestAgentsChangedFollowsThePoll(t *testing.T) {
 		t.Errorf("%+v (dropped %v)", n, gone)
 	}
 	noNote(t, c, 100*time.Millisecond)
+}
+
+// ---- review fixes ----
+
+// Applies that are still waiting (for a slot, or for their turn to write) when shutdown comes never run: only
+// the write that already started gets the grace.
+func TestQueuedAppliesNeverRunAfterShutdown(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Limits.MaxInFlight, f.cfg.Limits.MaxQueued = 8, 32
+	f.cfg.WriteGrace = 5 * time.Second
+	entered, release := make(chan struct{}, 64), make(chan struct{})
+	f.tasks.runHook = func(ctx context.Context, _ []string) error {
+		entered <- struct{}{}
+		select {
+		case <-release:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	c := startClient(t, f.cfg)
+	c.init()
+	var plans []core.ServePlan
+	for i := 0; i < 28; i++ {
+		plans = append(plans, plan(t, c, "plan.task.close", map[string]any{"id": "ac-12"}))
+	}
+	var ids []string
+	for _, p := range plans {
+		ids = append(ids, c.send("apply", map[string]any{"plan_id": p.PlanID}))
+	}
+	<-entered // the first write is running; seven wait for their turn and twenty for a slot
+	time.Sleep(100 * time.Millisecond)
+	sd := c.send("shutdown", nil)
+	c.call("version", nil).wantErr(t, core.CodeRefused) // the shutdown has been read: the gate is shut
+	for _, id := range ids[8:] {                        // the ones waiting for a slot are cancelled at once, not when a slot frees
+		c.await(id).wantErr(t, core.CodeTimeout)
+	}
+	close(release)
+	applied := 0
+	for _, id := range ids[:8] {
+		if m := c.await(id); m.Error == nil {
+			applied++
+		}
+	}
+	c.await(sd)
+	if applied != 1 || f.tasks.runs() != 1 {
+		t.Errorf("%d applies succeeded and %d writes ran; only the one that had started may", applied, f.tasks.runs())
+	}
+}
+
+// Requests past the in-flight limit are served strictly in the order they arrived.
+func TestQueuedRequestsAreServedInArrivalOrder(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Limits.MaxInFlight, f.cfg.Limits.MaxQueued = 1, 10
+	c := startClient(t, f.cfg)
+	c.init()
+	var log []string
+	c.mu.Lock()
+	c.log = &log
+	c.mu.Unlock()
+	started := slowTasks(f)
+	slow := c.send("tasks.list", nil)
+	<-started
+	var ids []string
+	for i := 0; i < 8; i++ {
+		ids = append(ids, c.send("version", nil))
+		time.Sleep(10 * time.Millisecond)
+	}
+	c.cancel(slow)
+	for _, id := range ids {
+		c.await(id)
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	var got []string
+	for _, l := range log {
+		var m rpcMsg
+		if json.Unmarshal([]byte(l), &m) == nil && m.Result != nil {
+			got = append(got, string(m.ID))
+		}
+	}
+	if !slices.Equal(got, ids) {
+		t.Errorf("answered in order %v, arrived in order %v", got, ids)
+	}
+}
+
+// A feed that failed leaves its agents out of the report with a note: that is not every agent going away.
+type flakyAgents struct {
+	demo.AgentsFeed
+	fail *atomic.Bool
+}
+
+func (a flakyAgents) Agents(context.Context) ([]core.Agent, core.AgentsExtra, error) {
+	if a.fail.Load() {
+		return nil, core.AgentsExtra{}, context.DeadlineExceeded
+	}
+	return demo.AgentsAt(fixedNow)
+}
+
+func TestAgentsWatcherIgnoresAFailedFeedAndStartsAtSubscribe(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.SlowBase = 40 * time.Millisecond
+	var fail atomic.Bool
+	f.cfg.Build = func() *core.Registry {
+		return core.NewRegistry(lambe.NewDemo(), f.leases, f.tasks, f.board, flakyAgents{demo.NewAgents(), &fail})
+	}
+	c := startClient(t, f.cfg)
+	c.init()
+	subscribe(t, c, "agents")
+	time.Sleep(60 * time.Millisecond)
+	fail.Store(true) // the feed fails for a while, then recovers
+	time.Sleep(200 * time.Millisecond)
+	fail.Store(false)
+	noNote(t, c, 250*time.Millisecond)
+}
+
+func TestWatchersTakeTheirBaselineAtSubscribe(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.PollBase, f.cfg.PollMax = 300*time.Millisecond, 300*time.Millisecond // the first poll is far away
+	c := startClient(t, f.cfg)
+	c.init()
+	f.tasks.setFP("a", nil)
+	subscribe(t, c, "tasks")
+	f.tasks.setFP("b", nil) // changed before the first poll
+	n := noteParams(t, c, "tasks.changed", "tasks")
+	if n.Fingerprint != "b" {
+		t.Errorf("%+v", n)
+	}
+}
+
+// bigTasks is a tracker with more tasks than the watcher keeps.
+type bigTasks struct{ *tasksMod }
+
+func (b bigTasks) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
+	s, err := b.tasksMod.Snapshot(ctx)
+	for i := 0; i < 5001; i++ {
+		is := s.Issues[1] // not the one the test edits
+		is.ID = fmt.Sprintf("big-%d", i)
+		s.Issues = append(s.Issues, is)
+	}
+	return s, err
+}
+
+func TestAHugeTrackerIsWatchedByDigestAndEveryChangeIsFull(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Build = func() *core.Registry {
+		return core.NewRegistry(lambe.NewDemo(), f.leases, bigTasks{f.tasks}, f.board, fixedAgents{demo.NewAgents()})
+	}
+	c := startClient(t, f.cfg)
+	c.init()
+	f.tasks.setFP("a", nil)
+	subscribe(t, c, "tasks")
+	time.Sleep(100 * time.Millisecond)
+	f.tasks.mu.Lock()
+	f.tasks.snapGen = 1
+	f.tasks.mu.Unlock()
+	f.tasks.setFP("b", nil)
+	if n := noteParams(t, c, "tasks.changed", "tasks"); n.Kind != "full" || len(n.ChangedIDs) != 0 {
+		t.Errorf("%+v", n)
+	}
 }

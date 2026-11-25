@@ -70,13 +70,28 @@ func ApplyConfigSet(ctx context.Context, st ConfigStore, au Audit, p ConfigSetPl
 	if now, _ := cur.Get(p.Key); now != p.Before {
 		return "", false, Stale(p.Key + " was changed since the plan was made")
 	}
+	// The record names the key, and for the few keys a person would want to trace, the new value (bounded,
+	// control characters removed; none of them holds a secret: a board URL with credentials is refused).
 	argv := []string{p.Key}
-	if p.Key == "agent_command" {
+	switch p.Key {
+	case "agent_command":
 		argv = p.Argv
+	case "tracker_dir", "board_url", "actor":
+		v := Sanitize(p.Value)
+		if len(v) > 120 {
+			v = v[:120] + "..."
+		}
+		argv = append(argv, v)
 	}
 	err = newGate(au).do(setupSeq.Add(1), AuditEntry{Domain: "config", Verb: "set " + p.Key, Argv: argv}, func() error {
 		var err error
-		note, err = st.UpdateNote(func(c *Config) error { return c.Set(p.Key, p.Value) })
+		note, err = st.UpdateNote(func(c *Config) error {
+			// again, under the file's lock: a change made since the check above (or the attempt line) is not overwritten
+			if now, _ := c.Get(p.Key); now != p.Before {
+				return Stale(p.Key + " was changed since the plan was made")
+			}
+			return c.Set(p.Key, p.Value)
+		})
 		return err
 	})
 	var ae *AuditError
