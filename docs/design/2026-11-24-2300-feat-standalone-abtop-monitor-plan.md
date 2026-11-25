@@ -77,7 +77,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `copilot` adapter
 - [x] `qwen` adapter
 - [x] `hermes` adapter (SQLite)
-- [ ] process-only adapters (`Kind: none`) for the remaining CLIs, so they appear with ports
+- [x] process-only adapters (`Kind: none`) for the remaining CLIs, so they appear with ports
 - [ ] `cmd/abtop` scaffold: entry point, terminal setup, `--once` and `--json`
 - [ ] layout: header, sessions table, detail, ports — abtop's shape in lipgloss
 - [ ] host vitals panel (CPU, memory, load) with a history ring
@@ -234,3 +234,11 @@ One line per completed item: what it did and how it was verified.
   `idx_sessions_effective_activity` expression index, a legacy store may lack the deferred message
   indexes, the SQLite DSN is string-concatenated, opencode's sentinel is still special-cased in the
   join, and the schema DDL is copied in the agents and core test fixtures.
+- process-only adapters — added `KindNone` registry entries for `amp`, `antigravity`, `crush`,
+  `cursor-agent` and `kiro-cli`, so discovery reports them with children and ports and leaves the
+  token columns empty; every binary is installed on this machine (`mise ls`/`command -v`), and
+  synthetic fake-machine tests pin a session, child and port for each `KindNone` entry plus the
+  contract that a process-only entry declares no store root while every store-backed entry does.
+  `go build ./...`, `go vet ./...` and `go test ./...` pass. Review applied the roots-contract and
+  no-op/child-gap findings; residual: Trae and Qoder have no locally installed binary to cite, and
+  Cursor/Amp/Antigravity keep stores that no adapter reads yet.

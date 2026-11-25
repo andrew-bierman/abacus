@@ -116,6 +116,46 @@ func TestSnapshotFindsSessionChildrenAndPorts(t *testing.T) {
 	}
 }
 
+// A process-only harness is still a complete session: discovery reports it with its children
+// and ports, so the store adapter it lacks only leaves the token columns empty.
+func TestSnapshotReportsProcessOnlyHarnesses(t *testing.T) {
+	checked := 0
+	for _, spec := range harnesses {
+		if spec.Kind != KindNone {
+			continue
+		}
+		checked++
+		m := &fakeMachine{
+			procs: map[int]Proc{
+				100: {PID: 100, PPID: 1, Name: spec.Binaries[0], Argv: []string{spec.Binaries[0]}},
+				200: {PID: 200, PPID: 100, Name: "node", Argv: []string{"node", "server.js"}},
+			},
+			cwds:  map[int]string{100: "/home/dev/proj"},
+			socks: []Socket{{Port: 3000, PID: 200}},
+		}
+		snap, err := (&Collector{Machine: m}).Snapshot(context.Background())
+		if err != nil {
+			t.Fatalf("%s: %v", spec.Name, err)
+		}
+		if len(snap.Sessions) != 1 {
+			t.Fatalf("%s: got %d sessions, want 1", spec.Name, len(snap.Sessions))
+		}
+		s := snap.Sessions[0]
+		if s.Harness != spec.Name || s.PID != 100 {
+			t.Errorf("%s: session = %+v, want harness %q pid 100", spec.Name, s, spec.Name)
+		}
+		if len(s.Children) != 1 || s.Children[0].PID != 200 {
+			t.Errorf("%s: children = %+v, want pid 200", spec.Name, s.Children)
+		}
+		if len(s.Ports) != 1 || s.Ports[0].Port != 3000 {
+			t.Errorf("%s: ports = %+v, want 3000", spec.Name, s.Ports)
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no process-only harness in the registry")
+	}
+}
+
 func TestSnapshotExecutingOnlyWhenChildCPUAdvances(t *testing.T) {
 	m := &fakeMachine{
 		procs: map[int]Proc{

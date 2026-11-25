@@ -15,6 +15,14 @@ type registryContract struct {
 }
 
 var registryContracts = map[Harness]registryContract{
+	HarnessAmp: {
+		binaries: []string{"amp"},
+		kind:     KindNone,
+	},
+	HarnessAntigravity: {
+		binaries: []string{"antigravity"},
+		kind:     KindNone,
+	},
 	HarnessClaude: {
 		binaries: []string{"claude", "claude-code"},
 		kind:     KindJSONL,
@@ -30,6 +38,14 @@ var registryContracts = map[Harness]registryContract{
 		kind:     KindJSONL,
 		roots:    func(home string) []string { return []string{CopilotSessionsPath(home)} },
 	},
+	HarnessCrush: {
+		binaries: []string{"crush"},
+		kind:     KindNone,
+	},
+	HarnessCursor: {
+		binaries: []string{"cursor-agent"},
+		kind:     KindNone,
+	},
 	HarnessGemini: {
 		binaries: []string{"gemini"},
 		kind:     KindJSONL,
@@ -44,6 +60,10 @@ var registryContracts = map[Harness]registryContract{
 		binaries: []string{"hermes"},
 		kind:     KindSQLite,
 		roots:    HermesDBPaths,
+	},
+	HarnessKiro: {
+		binaries: []string{"kiro-cli"},
+		kind:     KindNone,
 	},
 	HarnessOpenCode: {
 		binaries: []string{"opencode", "opencode-cli"},
@@ -128,6 +148,18 @@ func TestHarnessRegistryRootsMatchContract(t *testing.T) {
 		want, ok := registryContracts[spec.Name]
 		if !ok {
 			continue // the registry test reports the unknown declaration
+		}
+		if spec.Kind == KindNone {
+			// A process-only harness has no store to locate, so a declared root would make
+			// discovery look for history that no adapter reads.
+			if spec.Roots != nil {
+				t.Errorf("process-only harness %q declares roots", spec.Name)
+			}
+			continue
+		}
+		if spec.Roots == nil {
+			t.Errorf("harness %q declares kind %q but no roots", spec.Name, spec.Kind)
+			continue
 		}
 		if roots := spec.Roots(home); !slices.Equal(roots, want.roots(home)) {
 			t.Errorf("harness %q roots = %v, want %v", spec.Name, roots, want.roots(home))

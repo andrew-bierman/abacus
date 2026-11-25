@@ -20,15 +20,20 @@ import (
 type Harness string
 
 const (
-	HarnessClaude   Harness = "claude"
-	HarnessCodex    Harness = "codex"
-	HarnessCopilot  Harness = "copilot"
-	HarnessGemini   Harness = "gemini"
-	HarnessGrok     Harness = "grok"
-	HarnessHermes   Harness = "hermes"
-	HarnessOpenCode Harness = "opencode"
-	HarnessPi       Harness = "pi"
-	HarnessQwen     Harness = "qwen"
+	HarnessAmp         Harness = "amp"
+	HarnessAntigravity Harness = "antigravity"
+	HarnessClaude      Harness = "claude"
+	HarnessCodex       Harness = "codex"
+	HarnessCopilot     Harness = "copilot"
+	HarnessCrush       Harness = "crush"
+	HarnessCursor      Harness = "cursor"
+	HarnessGemini      Harness = "gemini"
+	HarnessGrok        Harness = "grok"
+	HarnessHermes      Harness = "hermes"
+	HarnessKiro        Harness = "kiro"
+	HarnessOpenCode    Harness = "opencode"
+	HarnessPi          Harness = "pi"
+	HarnessQwen        Harness = "qwen"
 )
 
 // State is what a live session is doing. It is derived, never read from a single field:

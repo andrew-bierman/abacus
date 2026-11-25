@@ -11,8 +11,9 @@ const (
 	KindJSONL HarnessKind = "jsonl"
 	// KindSQLite is a database a harness writes its sessions into.
 	KindSQLite HarnessKind = "sqlite"
-	// KindNone is a harness with no readable history: the session still appears with its
-	// process, children and ports, and no tokens.
+	// KindNone is a harness abacus reports from the process table only: the session still
+	// appears with its process, children and ports, and no tokens. A harness that keeps a
+	// history abacus does not read yet starts here until an adapter reads that store.
 	KindNone HarnessKind = "none"
 )
 
@@ -36,8 +37,19 @@ type HarnessSpec struct {
 	Kind HarnessKind
 }
 
-// harnesses is the one table an agent is added to.
+// harnesses is the one table an agent is added to. A process-only harness has no store to
+// read, so its Roots stays nil; the process table supplies liveness, children and ports.
 var harnesses = []HarnessSpec{
+	{
+		Name:     HarnessAmp,
+		Binaries: []string{"amp"},
+		Kind:     KindNone,
+	},
+	{
+		Name:     HarnessAntigravity,
+		Binaries: []string{"antigravity"},
+		Kind:     KindNone,
+	},
 	{
 		Name:     HarnessClaude,
 		Binaries: []string{"claude", "claude-code"},
@@ -57,6 +69,16 @@ var harnesses = []HarnessSpec{
 		Kind:     KindJSONL,
 	},
 	{
+		Name:     HarnessCrush,
+		Binaries: []string{"crush"},
+		Kind:     KindNone,
+	},
+	{
+		Name:     HarnessCursor,
+		Binaries: []string{"cursor-agent"},
+		Kind:     KindNone,
+	},
+	{
 		Name:     HarnessGemini,
 		Binaries: []string{"gemini"},
 		Roots:    rootsOf(GeminiSessionsPath),
@@ -73,6 +95,11 @@ var harnesses = []HarnessSpec{
 		Binaries: []string{"hermes"},
 		Roots:    HermesDBPaths,
 		Kind:     KindSQLite,
+	},
+	{
+		Name:     HarnessKiro,
+		Binaries: []string{"kiro-cli"},
+		Kind:     KindNone,
 	},
 	{
 		Name:     HarnessOpenCode,
