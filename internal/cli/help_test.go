@@ -1,9 +1,13 @@
 package cli_test
 
 import (
+	"bytes"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/andrew-bierman/abacus/internal/cli"
+	"github.com/andrew-bierman/abacus/internal/core"
 )
 
 // Every command the usage lists answers --help and `help CMD` on stdout with exit 0 and nothing on stderr,
@@ -17,17 +21,60 @@ func TestHelpForEveryCommandAndVerb(t *testing.T) {
 	if len(cmds) < 14 {
 		t.Fatalf("usage lists %d commands:\n%s", len(cmds), usageOut)
 	}
-	var args [][]string
 	for _, c := range cmds {
-		args = append(args, []string{c[1], "--help"}, []string{"help", c[1]})
+		assertHelpParity(t, []string{c[1]})
 	}
-	for _, v := range []string{"list", "show", "board", "graph", "history", "create", "update", "close", "label", "assign", "priority", "dep", "comment", "bulk"} {
-		args = append(args, []string{"tasks", v, "-h"})
+	for _, v := range []string{"list", "show", "board", "graph", "history", "create", "update", "close", "reopen", "label", "assign", "priority", "dep", "comment", "bulk"} {
+		assertHelpParity(t, []string{"tasks", v})
 	}
-	for _, a := range args {
-		code, out, errOut := run(t, nil, a...)
-		if code != 0 || errOut != "" || !strings.Contains(strings.ToLower(out), "usage") {
-			t.Errorf("%v: code=%d out=%q err=%q", a, code, out, errOut)
+}
+
+func assertHelpParity(t *testing.T, command []string) {
+	t.Helper()
+	t.Run(strings.Join(command, " "), func(t *testing.T) {
+		var want string
+		for _, args := range [][]string{
+			append(append([]string{}, command...), "--help"),
+			append([]string{"help"}, command...),
+		} {
+			var out, errOut bytes.Buffer
+			code := cli.Run(args, cli.Deps{
+				Out: &out, Err: &errOut,
+				Build: func(cli.Options) *core.Registry {
+					t.Fatalf("%v initialized providers", args)
+					return nil
+				},
+			})
+			got := out.String()
+			if code != 0 || errOut.Len() != 0 || !strings.Contains(strings.ToLower(got), "usage") {
+				t.Errorf("%v: code=%d out=%q err=%q", args, code, got, errOut.String())
+			}
+			if command[0] == "search" && (!strings.Contains(got, "-domain") || !strings.Contains(got, "-limit")) {
+				t.Errorf("%v: missing search flags in %q", args, got)
+			}
+			if want == "" {
+				want = got
+			} else if got != want {
+				t.Errorf("%v: help differs from --help:\ngot %q\nwant %q", args, got, want)
+			}
+		}
+	})
+}
+
+func TestHelpTopLevelAndUnknownCommand(t *testing.T) {
+	_, usage, _ := run(t, nil, "--help")
+	for _, tc := range []struct {
+		args   []string
+		prefix string
+	}{
+		{[]string{"help"}, ""},
+		{[]string{"-h"}, ""},
+		{[]string{"help", "unknown-command"}, "unknown command \"help\"\n"},
+		{[]string{"unknown-command", "--help"}, "unknown command \"unknown-command\"\n"},
+	} {
+		code, out, errOut := run(t, nil, tc.args...)
+		if code != 0 || errOut != "" || out != tc.prefix+usage {
+			t.Errorf("%v: code=%d out=%q err=%q", tc.args, code, out, errOut)
 		}
 	}
 }
