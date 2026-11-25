@@ -37,6 +37,8 @@ type Options struct {
 	// AllUsers includes agents run by other users; by default only the current user's are listed.
 	AllUsers   bool
 	CurrentUID func() int
+	// ClaudeConfigDir is the optional absolute directory for the Claude quota file.
+	ClaudeConfigDir string
 	// OpenCodeDB is the path of OpenCode's session database ("" = its default place under Home or
 	// XDG_DATA_HOME); OpenCode reads it. Dirty counts a repository's uncommitted files.
 	OpenCodeDB string
@@ -499,7 +501,7 @@ func (l *Local) openCodeSessionsFor(ctx context.Context, sc *scan, now time.Time
 }
 
 // rateLimits is each harness account's limits as the files recorded them: Codex's from the newest
-// event that carried them, Claude's from the status-line file when one exists.
+// event that carried them, Claude's from the newest status-line reading.
 func (l *Local) rateLimits(pools map[string]map[string][]session) []core.RateLimit {
 	var out []core.RateLimit
 	var best *quotaRead
@@ -513,10 +515,22 @@ func (l *Local) rateLimits(pools map[string]map[string][]session) []core.RateLim
 	if best != nil {
 		out = append(out, best.limit(core.HarnessCodex))
 	}
-	if l.o.FS != nil {
-		if q, ok := readClaudeQuota(l.o.FS, rel(path.Join(l.o.Home, ".claude"))); ok {
-			out = append(out, q.limit(core.HarnessClaude))
+	if l.o.FS == nil {
+		return out
+	}
+	configDir := path.Clean(l.o.ClaudeConfigDir)
+	var claude quotaRead
+	var found bool
+	if path.IsAbs(configDir) {
+		claude, found = readClaudeQuota(l.o.FS, rel(configDir))
+	}
+	if defaultDir := path.Join(l.o.Home, ".claude"); l.o.Home != "" && defaultDir != configDir {
+		if q, ok := readClaudeQuota(l.o.FS, rel(defaultDir)); ok && (!found || q.Updated.After(claude.Updated)) {
+			claude, found = q, true
 		}
+	}
+	if found {
+		out = append(out, claude.limit(core.HarnessClaude))
 	}
 	return out
 }
