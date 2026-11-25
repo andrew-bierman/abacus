@@ -8,6 +8,8 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- A user-local installer for the macOS and Linux terminal releases verifies the download and installs the `abacus` command.
+
 - Serve gaps found by the macOS client, all additive (`schema_version` and the protocol version stay 1):
   - Demo mode offers the setup and settings sheets: `serve --demo` `setup.state` lists the steps of a first run
     (workspace and actor `needed`, queues `blocked`), `plan.setup` and `plan.config.set` return demo-flagged plans

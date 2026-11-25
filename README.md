@@ -4,27 +4,27 @@
 
 See which Beads tasks are ready, where work is blocked, and which agents are on it. Follow leases, queues, and Board conversations from the same terminal.
 
-[Try the demo](#try-the-demo) · [Connect a workspace](#connect-a-workspace) · [Read the docs](docs/README.md) · [See what changed](CHANGELOG.md)
+[Install](#install-the-terminal-app) · [Connect a workspace](#connect-a-workspace) · [Read the docs](docs/README.md) · [See what changed](CHANGELOG.md)
 
 ![Abacus Tasks view showing a Beads dependency tree, with the lease heartbeat task selected](docs/images/abacus-tasks.png)
 
-## Try the demo
+## Install the terminal app
 
-Download your platform’s archive and `SHA256SUMS` from [Releases](https://github.com/andrew-bierman/abacus/releases/latest). Builds are available for Linux and macOS on x86-64 and ARM64.
-
-For example, on Linux x86-64 you can download and verify v0.6.0 with the GitHub CLI. Run this in an empty directory.
+On macOS or Linux, run:
 
 ```sh
-gh release download v0.6.0 --repo andrew-bierman/abacus \
-  --pattern abacus_0.6.0_linux_amd64.tar.gz --pattern SHA256SUMS &&
-grep '  abacus_0\.6\.0_linux_amd64\.tar\.gz$' SHA256SUMS | sha256sum -c - &&
-tar -xzf abacus_0.6.0_linux_amd64.tar.gz &&
-./abacus_0.6.0_linux_amd64/abacus tui --demo
+curl -fsSL https://raw.githubusercontent.com/andrew-bierman/abacus/main/scripts/install.sh | bash
 ```
 
-On macOS, choose `darwin_arm64` for Apple silicon or `darwin_amd64` for Intel. Run `shasum -a 256` against the archive and compare the output with its entry in `SHA256SUMS` before extracting. Open the extracted directory and run `./abacus tui --demo`. If Gatekeeper blocks the verified binary, clear its quarantine with `xattr -d com.apple.quarantine ./abacus`.
+The installer verifies the release checksum and puts `abacus` in `~/.local/bin`. It prints the PATH command if your shell needs it. You can also [browse the installer](scripts/install.sh) or download a platform archive from [Releases](https://github.com/andrew-bierman/abacus/releases/latest).
 
-The demo runs on sample data. Press **Tab** to explore the views, **?** for the keys in each view, and **q** to quit.
+```sh
+abacus tui --demo
+```
+
+The demo runs on sample data. Press **Tab** to explore, **?** for shortcuts, and **q** to quit. Run the installer again to update.
+
+This install is for the terminal app. The planned [native GUI](docs/design/2026-11-24-plan-native-clients.md) will ship separately with its own Abacus helper bundled inside. No terminal install will be required for the GUI.
 
 <details>
 <summary>Tasks preview as text</summary>
@@ -68,16 +68,14 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 
 ## Connect a workspace
 
-From the extracted release directory, inspect your setup and confirm the changes you want to make.
+Open a terminal in your workspace. Start with Doctor if you want to see which connections need setup.
 
 ```sh
-./abacus doctor
-./abacus setup --dry-run
-./abacus setup
-./abacus tui --tab tasks
+abacus doctor
+abacus tui --tab tasks
 ```
 
-Setup can create a local Beads workspace and configure a lease actor and queues. Start the queue supervisor separately if you need it. For an existing Beads tracker, put the Abacus binary on your `PATH` and run it from the tracker’s workspace, or pass its path with `--tracker`.
+Abacus detects an existing Beads tracker in your workspace. For a new workspace, run `abacus setup` and review the setup steps before confirming. Use `abacus setup --dry-run` to preview them in your terminal. Queue supervision is optional and starts separately.
 
 | View | What you can see or do |
 | --- | --- |
