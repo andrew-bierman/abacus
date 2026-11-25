@@ -1,65 +1,33 @@
 # Abacus
 
-Abacus is a terminal dashboard for developers running Beads-backed coding agents. Browse tasks and their dependencies, see what agents are working on, and check leases, supervisor queues, and Board messages from one place.
+**A terminal dashboard for your coding agents and the work they share.**
+
+See which Beads tasks are ready, where work is blocked, and which agents are on it. Follow leases, queues, and Board conversations from the same terminal.
+
+[Try the demo](#try-the-demo) · [Connect a workspace](#connect-a-workspace) · [Read the docs](docs/README.md) · [See what changed](CHANGELOG.md)
+
+![Abacus Tasks view showing a Beads dependency tree, with the lease heartbeat task selected](docs/images/abacus-tasks.png)
 
 ## Try the demo
 
-Download the archive for your platform from [GitHub Releases](https://github.com/andrew-bierman/abacus/releases/latest). Releases provide Linux and macOS archives for amd64 and arm64, along with `SHA256SUMS`.
+Download your platform’s archive and `SHA256SUMS` from [Releases](https://github.com/andrew-bierman/abacus/releases/latest). Builds are available for Linux and macOS on x86-64 and ARM64.
 
-On Linux x86-64, run these commands in an empty directory with the GitHub CLI installed. While the repository is private, sign in with a GitHub account that has access.
+For example, on Linux x86-64 you can download and verify v0.6.0 with the GitHub CLI. Run this in an empty directory.
 
 ```sh
 gh release download v0.6.0 --repo andrew-bierman/abacus \
   --pattern abacus_0.6.0_linux_amd64.tar.gz --pattern SHA256SUMS &&
 grep '  abacus_0\.6\.0_linux_amd64\.tar\.gz$' SHA256SUMS | sha256sum -c - &&
-  tar -xzf abacus_0.6.0_linux_amd64.tar.gz &&
-  ./abacus_0.6.0_linux_amd64/abacus tui --demo
+tar -xzf abacus_0.6.0_linux_amd64.tar.gz &&
+./abacus_0.6.0_linux_amd64/abacus tui --demo
 ```
 
-On macOS, download the `darwin_arm64` archive for Apple silicon or `darwin_amd64` for Intel. For example, run `shasum -a 256 abacus_0.6.0_darwin_arm64.tar.gz` and compare the result with the line for that filename in `SHA256SUMS` before extracting. Run `./abacus tui --demo` from the extracted directory. If Gatekeeper blocks the verified executable from the official release, clear quarantine with `xattr -d com.apple.quarantine ./abacus`.
+On macOS, choose `darwin_arm64` for Apple silicon or `darwin_amd64` for Intel. Run `shasum -a 256` against the archive and compare the output with its entry in `SHA256SUMS` before extracting. Open the extracted directory and run `./abacus tui --demo`. If Gatekeeper blocks the verified binary, clear its quarantine with `xattr -d com.apple.quarantine ./abacus`.
 
-The demo uses sample data and needs no services. Press `Tab` to switch views, `?` for help, and `q` to quit.
+The demo runs on sample data. Press **Tab** to explore the views, **?** for the keys in each view, and **q** to quit.
 
-## Connect your workspace
-
-From the extracted directory, preview setup and then review and confirm the changes interactively:
-
-```sh
-./abacus setup --dry-run
-./abacus setup
-./abacus tui --tab tasks
-```
-
-Setup can create a local Beads workspace and configure a lease actor and queues. Start the queue supervisor separately if you need it. Run `./abacus doctor` to check tools and connections. On a fresh install it can report that a connection needs setup even when the bundled tools are ready.
-
-To open an existing Beads tracker, run Abacus from its workspace or pass `--tracker` with the workspace path. Add the executable to your `PATH` if you want to run it from anywhere.
-
-| View | What you can do |
-| --- | --- |
-| Board | Read channels and threads, and post or reply with confirmation. Connect using your Vercel Board configuration. |
-| Tasks | Browse, filter, and update Beads tasks. Switch between the list, kanban, dependency graph, and insights. |
-| Leases | See held, stale, and free leases from your coordination hub. |
-| Queues | Inspect Lambe runs, queue history, and items that need attention. |
-| Agents | See local coding agent sessions, repository and branch, and activity details where available. |
-| Doctor | Check provider connections and troubleshoot setup. |
-
-The release binary bundles Beads, Lambe, beads-lease, the Vercel Board CLI, and the abtop agent monitor. The built-in tools unpack into a private per-user directory on first use. Rex is optional and can connect tasks and runs to terminal sessions. See [built-in tools](docs/built-in-tools.md) and [agent monitoring](docs/agents.md) for details.
-
-## Use Abacus from the CLI
-
-```sh
-abacus tasks list --json
-abacus agents --json
-abacus search "release"
-abacus config show
-abacus tasks --help
-```
-
-Task changes and Board posts show a plan before confirmation. Use `--dry-run` on a write command to inspect that plan. Leases and queues are read-only views.
-
-For integrations, see the [tool contract](docs/tool-contract.md) and the [stdio JSON-RPC protocol](docs/serve-protocol.md). `abacus schema` lists the JSON schemas, and `abacus licenses` prints the bundled notices.
-
-## Terminal preview
+<details>
+<summary>Tasks preview as text</summary>
 
 The Tasks tab shows data from fixture providers:
 
@@ -95,6 +63,46 @@ abacus   Board  [Tasks]  Leases  Queues  Agents  Doctor
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · / filter · h/l fold · s/S sort …
 ```
+
+</details>
+
+## Connect a workspace
+
+From the extracted release directory, inspect your setup and confirm the changes you want to make.
+
+```sh
+./abacus doctor
+./abacus setup --dry-run
+./abacus setup
+./abacus tui --tab tasks
+```
+
+Setup can create a local Beads workspace and configure a lease actor and queues. Start the queue supervisor separately if you need it. For an existing Beads tracker, put the Abacus binary on your `PATH` and run it from the tracker’s workspace, or pass its path with `--tracker`.
+
+| View | What you can see or do |
+| --- | --- |
+| **Tasks** | Find ready work and blockers in the list, kanban, dependency graph, and insights. |
+| **Agents** | See local coding sessions, their repositories and branches, and available activity and quota data. |
+| **Leases** | Check which leases are held, stale, or free. |
+| **Queues** | Follow Lambe runs and spot failures that need attention. |
+| **Board** | Catch up on channels and threads, then preview and confirm posts or replies. |
+| **Doctor** | Check provider connections and find setup steps. |
+
+The release bundles Beads, Lambe, beads-lease, the Vercel Board CLI, and abtop. Optional Rex integration connects tasks and runs to terminal sessions. See [built-in tools](docs/built-in-tools.md) and [agent monitoring](docs/agents.md).
+
+## Use Abacus from the CLI
+
+```sh
+abacus tasks list --json
+abacus agents --json
+abacus search release
+```
+
+Task changes and Board posts show a plan for confirmation. Add `--dry-run` to preview a write. The [tool contract](docs/tool-contract.md) describes the JSON reports, and the [stdio protocol](docs/serve-protocol.md) covers native clients.
+
+## Contribute
+
+Start with the [development guide](docs/development.md) and [contribution guide](CONTRIBUTING.md). Abacus is licensed under [GPL-3.0-or-later](LICENSE).
 
 ## Credits
 
