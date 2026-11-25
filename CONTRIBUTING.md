@@ -10,7 +10,7 @@ You need Go (the version `go.mod` names; see [docs/development.md](docs/developm
 
 Use the isolated commands below to build Abacus and try the demo. A development build leaves out
 the bundled tools. The demo uses fixtures, and live setup requires the provider tools. Install
-`shellcheck` to run `make check`. For a bundled binary, see the [development guide](docs/development.md#building-from-source).
+`shellcheck` for the same shell checks CI runs. For a bundled binary, see the [development guide](docs/development.md#building-from-source).
 
 ## Test isolation rules
 
@@ -37,9 +37,13 @@ Build and test in a subshell with isolated state, cache, and temporary files. Ch
   export XDG_STATE_HOME="$abacus_scratch/state" XDG_DATA_HOME="$abacus_scratch/data"
   export XDG_CACHE_HOME="$abacus_scratch/cache" TMPDIR="$abacus_scratch/tmp"
   export GOTMPDIR="$abacus_scratch/tmp" GOCACHE="$abacus_scratch/gocache"
-  make build-dev
-  ./bin/abacus tui --demo
-  make check
+  go build -o "$abacus_scratch/abacus" ./cmd/abacus
+  "$abacus_scratch/abacus" tui --demo
+  test -z "$(gofmt -l .)"
+  go vet ./...
+  shellcheck -x -P SCRIPTDIR scripts/*.sh scripts/lib/*.sh
+  go test ./...
+  scripts/check-embedtools.sh
 )
 ```
 
