@@ -51,6 +51,12 @@ var harnesses = []HarnessSpec{
 		Kind:     KindJSONL,
 	},
 	{
+		Name:     HarnessCopilot,
+		Binaries: []string{"copilot"},
+		Roots:    rootsOf(CopilotSessionsPath),
+		Kind:     KindJSONL,
+	},
+	{
 		Name:     HarnessGemini,
 		Binaries: []string{"gemini"},
 		Roots:    rootsOf(GeminiSessionsPath),

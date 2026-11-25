@@ -536,6 +536,53 @@ func TestSessionsJoinsGeminiTranscript(t *testing.T) {
 	}
 }
 
+// TestSessionsJoinsCopilotSession covers the Copilot arm of the join: the live process's
+// directory resolves the newest session event log, and the workspace sidecar plus the event
+// stream supply title, model, settled tokens and state.
+func TestSessionsJoinsCopilotSession(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/atelier"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	relocatedRoot := filepath.Join(home, ".copilot", "relocated")
+	dir := filepath.Join(relocatedRoot, "ses_copilot")
+	writeFile(t, filepath.Join(dir, "workspace.yaml"),
+		"id: ses_copilot\ncwd: "+cwd+"\nname: \"Atelier fixture\"\n")
+	path := filepath.Join(dir, "events.jsonl")
+	writeFile(t, path, strings.Join([]string{
+		`{"type":"session.start","timestamp":"2026-11-24T09:00:01Z","data":{"sessionId":"ses_copilot","context":{"cwd":"/home/dev/atelier"}}}`,
+		`{"type":"user.message","timestamp":"2026-11-24T09:00:02Z","data":{"content":"tidy the atelier"}}`,
+		`{"type":"assistant.message","timestamp":"2026-11-24T09:00:03Z","data":{"content":"done","model":"fixture-labs/copilot-1","outputTokens":10}}`,
+		`{"type":"assistant.usage","timestamp":"2026-11-24T09:00:04Z","data":{"model":"fixture-labs/copilot-1","inputTokens":120,"outputTokens":30,"cacheReadTokens":20,"cacheWriteTokens":10}}`,
+		`{"type":"assistant.turn_end","timestamp":"2026-11-24T09:00:05Z","data":{"turnId":"1"}}`,
+	}, "\n")+"\n")
+	setMtime(t, path, started.Add(time.Minute))
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{7000: {PID: 7000, PPID: 1, Name: "copilot", Started: started}},
+		cwds:  map[int]string{7000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		CopilotRoot: relocatedRoot,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "Atelier fixture" || got.Model != "fixture-labs/copilot-1" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 90, Output: 30, CacheRead: 20, CacheCreate: 10}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.Context != (agents.Context{Used: 120}) {
+		t.Errorf("context = %+v, want the call's gross input", got.Context)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the turn ended", got.State)
+	}
+}
+
 // TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted pins the `since` argument: an
 // older transcript in the same project is not this process's session.
 func TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted(t *testing.T) {

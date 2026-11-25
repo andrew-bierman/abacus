@@ -74,7 +74,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] port the three existing JSONL readers onto the generic adapter, deleting the duplication
 - [x] `grok` adapter (verified against the store on this machine)
 - [x] `gemini` adapter (documented-only until a real session exists)
-- [ ] `copilot` adapter
+- [x] `copilot` adapter
 - [ ] `qwen` adapter
 - [ ] `hermes` adapter (SQLite)
 - [ ] process-only adapters (`Kind: none`) for the remaining CLIs, so they appear with ports
@@ -161,3 +161,23 @@ One line per completed item: what it did and how it was verified.
   resolution strategy in tests, and collapsed resolution to one candidate loop; residual: no live
   transcript, older-response rewrites count anew, live subagents resolve the parent session, and
   Gemini tool records do not drive state (CPU deltas still do).
+- `copilot` adapter — added `internal/agents/copilot.go` with `CopilotStore` over
+  `session-state/<id>/events.jsonl` and the pre-1.0.11 flat `<id>.jsonl`: `session.start`
+  identity and cwd, `workspace.yaml` cwd/name fallback with a size+mtime sidecar cache,
+  user/assistant/tool state, per-call `assistant.usage` and per-model `session.shutdown` deltas
+  (input cache-inclusive, backwards counters reset, repeated rollups zero), message-output and
+  `session.usage_info` fallbacks, `session.task_complete` title, and newest-session resolution
+  with bounded root-mtime, cwd and sidecar caches. Registered `HarnessCopilot` and joined it in
+  `internal/core/sessions.go`. **Verified against Copilot CLI's SDK streaming-events reference
+  and token-accounting readers plus synthetic fixtures with invented names; there is no real
+  Copilot store on this machine, so this is documented-only.** Tests pin shutdown precedence,
+  resumed deltas, repeated rollups, resets, multi-model deltas, inclusive-input subtraction,
+  per-call and message fallbacks, usage-info context and limit, tool cleanup for named and
+  anonymous calls, workspace rewriting, flat legacy naming, path caching and the core join.
+  `go build ./...`, `go vet ./...` and `go test ./...` pass. Review applied sidecar/cwd caches,
+  candidate ordering, the dropped duplicate stat, `useContext`, deterministic eviction,
+  dangling-tool cleanup, the larger usage source for resumed sessions, and removal of the
+  delta-derived context fill; residuals: newer Copilot builds moved history to central SQLite
+  stores (`session-store.db`, `data.db`), `session.shutdown.tokenDetails` and OTel exports are
+  not read, `readCopilotStartCWD` bypasses the JSONL line cap, and the mod-time/dir helpers
+  duplicate Gemini/Grok pending a package-wide refactor.
