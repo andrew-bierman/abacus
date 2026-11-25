@@ -63,7 +63,7 @@ func TestSchemaCommandListsPrintsAndWrites(t *testing.T) {
 
 // goldenSchema maps each contract golden to the schema that must describe it.
 var goldenSchema = map[string]string{
-	"version": "report", "doctor": "report", "status": "report", "board": "board", "tasks": "tasks", "leases": "leases",
+	"version": "report", "doctor": "report", "doctor-demo": "report", "status": "report", "board": "board", "tasks": "tasks", "leases": "leases",
 	"queues": "queues", "agents": "agents", "search": "search", "tasks-history": "tasks-history", "config-show": "config-show", "setup": "setup",
 	"setup-applied": "setup", "dry-run-bulk": "bulk-dry-run", "applied-bulk": "bulk-result", "applied-update": "write-applied-task",
 	"applied-board-post": "write-applied-board", "error-usage": "error", "error-not-connected": "error",
