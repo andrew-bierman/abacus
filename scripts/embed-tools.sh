@@ -90,7 +90,10 @@ verified() {
   if [ ! -x "$dir/$tool" ]; then echo "not executable"; return 1; fi
   if writable_by_others "$dir" || writable_by_others "$dir/$tool"; then echo "writable by group or others (abacus would refuse it)"; return 1; fi
   lic="$dir/third_party/$tool/LICENSE"
-  [ -f "$dir/.pins/$tool" ] && [ -f "$lic" ] && [ ! -L "$lic" ] || { echo "no install record"; return 1; }
+  if [[ ! -f "$dir/.pins/$tool" || ! -f "$lic" || -L "$lic" ]]; then
+    echo "no install record"
+    return 1
+  fi
   rec="$want $platform $(sha "$dir/$tool")"
   [ "$(cat "$dir/.pins/$tool")" = "$rec" ] || { echo "does not match the pin (changed, or a different version or platform)"; return 1; }
   if is_npm "$tool" && [ ! -s "$dir/third_party/$tool/BUN_LICENSE.md" ]; then echo "its runtime license is missing"; return 1; fi
