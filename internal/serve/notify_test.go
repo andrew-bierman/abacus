@@ -150,3 +150,25 @@ func TestNotificationsStopWithTheServer(t *testing.T) {
 }
 
 var _ = serve.New
+
+func TestAProviderPanicInAWatcherBecomesEngineDegraded(t *testing.T) {
+	c, f := readyClient(t)
+	f.tasks.mu.Lock()
+	f.tasks.panicFP = true
+	f.tasks.mu.Unlock()
+	subscribe(t, c, "tasks")
+	if n := wantNote(t, c, "engine.degraded", "engine"); n.Reason == "" {
+		t.Errorf("%+v", n)
+	}
+	if m := c.call("version", nil); m.Error != nil {
+		t.Fatal("the server did not survive")
+	}
+	// the watcher is gone, so subscribing starts a fresh one
+	f.tasks.mu.Lock()
+	f.tasks.panicFP = false
+	f.tasks.mu.Unlock()
+	f.tasks.setFP("a", nil)
+	if s := subscribe(t, c, "tasks"); len(s.Active) != 1 {
+		t.Errorf("%+v", s)
+	}
+}

@@ -20,7 +20,7 @@ may change behavior, and patch versions are fixes and small additions.
   read per domain and one write at a time, strict size, depth and JSON limits, `shutdown`, and bounded
   `tasks.changed` / `workspace.changed` / `engine.degraded` notifications from the TUI's fingerprint poll and the
   workspace provider's event feed. Additive: schemas `serve-initialize`, `serve-plan`, `serve-applied`,
-  `serve-error` and `workspace` in `docs/schema/v1`; `taskview.ReadSearchFeeds` (moved out of the CLI). `version --json` `contract.serve` is now true and lists the `serve` capability; the effects table classifies `serve` as reads, and `serve --demo` serves reads marked `demo: true` and refuses every plan and apply.
+  `serve-error` and `workspace` in `docs/schema/v1`; `taskview.ReadSearchFeeds` (moved out of the CLI). `version --json` `contract.serve` is now true and lists the `serve` capability; the effects table classifies `serve` as reads, and `serve --demo` serves reads marked `demo: true` and refuses every plan and apply. The write gate turns a panic in a provider into a recorded result unknown.
 - Client contract (the core prerequisites of `docs/design/2026-11-24-plan-native-clients.md`, section 9;
   all additive, `schema_version` stays 1, exit codes 0/1/2 keep their meaning, no success path changes):
   - Golden fixtures for every read command and every write envelope (dry-run, applied, bulk, board) in

@@ -367,6 +367,19 @@ func (e *Engine) planBoard(op core.BoardOp) handler {
 		defer cancel()
 		h := &heldPlan{kind: "board", digest: plan.Digest()}
 		h.apply = func(ctx context.Context) (*core.ServeApplied, bool, error) {
+			// the repeat guard ran at plan time; run it again now, so two plans made before either was applied
+			// cannot both post the same message under the same key
+			if r, ok := au.(core.AuditReader); ok {
+				entries, err := r.Entries()
+				if err != nil {
+					return nil, false, failErr(core.CodeAuditFailed, "board %s: %v", op, err)
+				}
+				for _, en := range entries {
+					if en.Domain == string(core.DomainBoard) && slices.Contains(en.Argv, plan.Key) {
+						return nil, false, &apiError{rpc: rpcServer, code: core.CodeChanged, msg: "this message was posted, or tried, since the plan was made (the board may already have it: refresh it first); nothing was written. Plan it again with again:true to post it anyway"}
+					}
+				}
+			}
 			res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
 			if err != nil {
 				var ae *core.AuditError
@@ -435,7 +448,7 @@ func (e *Engine) apply(ctx context.Context, raw json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, wrote, err := h.apply(ctx)
+	res, wrote, err := e.runHeld(ctx, h)
 	if wrote {
 		e.invalidate()
 	}
@@ -448,6 +461,9 @@ func (e *Engine) apply(ctx context.Context, raw json.RawMessage) (any, error) {
 			if ae.planID == "" {
 				ae.planID, ae.digest = id, h.digest
 			}
+			if !wrote && ctx.Err() != nil && ae.code == core.CodeRefused { // the re-read could not finish: the request ended first
+				ae.code = core.CodeTimeout
+			}
 			if ae.outcome == "" {
 				ae.outcome = outcomeOf(ae.code)
 			}
@@ -455,4 +471,17 @@ func (e *Engine) apply(ctx context.Context, raw json.RawMessage) (any, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+// runHeld runs a claimed plan. A panic that gets past the gate's own recovery (which makes a write that
+// panicked a result unknown) is still a result unknown with the plan named, never a bare internal error,
+// because the plan is spent and the write may have been sent.
+func (e *Engine) runHeld(ctx context.Context, h *heldPlan) (res *core.ServeApplied, wrote bool, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			res, wrote = nil, true
+			err = &apiError{rpc: rpcServer, code: core.CodeUnknownOutcome, msg: "result unknown: the write failed unexpectedly; refresh before retrying", planID: h.id, digest: h.digest, outcome: "unknown"}
+		}
+	}()
+	return h.apply(ctx)
 }

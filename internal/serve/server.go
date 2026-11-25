@@ -410,6 +410,8 @@ func maxDepth(b []byte) int {
 }
 
 // parseID accepts a string of at most 128 bytes or an integer; null, fractions and anything else are refused.
+// It returns the canonical form, so "a" and "\u0061", or 0 and -0, are the same id for the in-flight
+// table and for cancellation.
 func parseID(raw json.RawMessage) (string, bool) {
 	if len(raw) == 0 {
 		return "", false
@@ -420,13 +422,14 @@ func parseID(raw json.RawMessage) (string, bool) {
 		if json.Unmarshal(raw, &s) != nil || len(s) > 128 {
 			return "", false
 		}
-		return string(raw), true
+		b, _ := json.Marshal(s)
+		return string(b), true
 	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		n, err := strconv.ParseInt(string(raw), 10, 64)
 		if err != nil || n > 1<<53 || n < -(1<<53) {
 			return "", false
 		}
-		return string(raw), true
+		return strconv.FormatInt(n, 10), true
 	}
 	return "", false
 }
@@ -627,13 +630,17 @@ func (s *Server) invoke(ctx context.Context, m method, params json.RawMessage) (
 func (s *Server) classify(ctx context.Context, err error) *apiError {
 	ae := fromErr(err)
 	if ae.code == core.CodeTimeout && ctx.Err() != nil {
+		out := &apiError{rpc: rpcServer, code: core.CodeTimeout, msg: "the request ran out of time", planID: ae.planID, digest: ae.digest, outcome: ae.outcome}
 		switch cause := context.Cause(ctx); {
 		case errors.Is(cause, errCancelled):
-			return &apiError{rpc: rpcCancelled, code: core.CodeTimeout, msg: "the request was cancelled"}
+			out.rpc, out.msg = rpcCancelled, "the request was cancelled"
 		case errors.Is(cause, errClosed):
-			return &apiError{rpc: rpcServer, code: core.CodeTimeout, msg: "the server is shutting down"}
+			out.msg = "the server is shutting down"
 		}
-		return &apiError{rpc: rpcServer, code: core.CodeTimeout, msg: "the request ran out of time"}
+		if out.planID != "" { // the plan was claimed before the request ended, and nothing was written
+			out.msg += " after its plan was claimed: nothing was written, and the plan is spent (plan again)"
+		}
+		return out
 	}
 	return ae
 }

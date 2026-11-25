@@ -48,10 +48,10 @@ func (e *Engine) subscribe(on bool) handler {
 			wctx, cancel := context.WithCancel(e.root)
 			switch {
 			case t == "tasks" && (pr.Fingerprint != nil || pr.Source != nil):
-				go e.watchTasks(wctx, pr)
+				go e.guard("tasks", func() { e.watchTasks(wctx, pr) })
 			case t == "workspace" && pr.Watcher != nil:
 				w := pr.Watcher
-				go w.Watch(wctx, func() { e.notify("workspace", "events") })
+				go e.guard("workspace", func() { w.Watch(wctx, func() { e.notify("workspace", "events") }) })
 			default:
 				cancel()
 				if out.Unavailable == nil {
@@ -138,4 +138,21 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 			return
 		}
 	}
+}
+
+// guard runs a watcher so that a provider's panic ends that watcher, not the process (which may be
+// in the middle of a write): the client is told with engine.degraded and may subscribe again.
+func (e *Engine) guard(topic string, run func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			e.wmu.Lock()
+			if cancel := e.subs[topic]; cancel != nil {
+				cancel()
+				delete(e.subs, topic)
+			}
+			e.wmu.Unlock()
+			e.notify("engine", "the "+topic+" watcher stopped after a provider failed; subscribe again")
+		}
+	}()
+	run()
 }

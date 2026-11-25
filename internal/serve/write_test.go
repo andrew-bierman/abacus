@@ -529,3 +529,101 @@ type brokenAudit struct{}
 
 func (brokenAudit) Record(core.AuditEntry) error        { return errors.New("no") }
 func (brokenAudit) Entries() ([]core.AuditEntry, error) { return nil, errors.New("unreadable") }
+
+func TestAPanicInTheWriterIsAResultUnknownWithItsOutcomeRecorded(t *testing.T) {
+	c, f := readyClient(t)
+	p := plan(t, c, "plan.task.close", map[string]any{"id": "ac-12"})
+	f.tasks.mu.Lock()
+	f.tasks.runHook = func(context.Context, []string) error { panic("provider bug with secret task text") }
+	f.tasks.mu.Unlock()
+	e := c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeUnknownOutcome)
+	if !e.Data.UnknownOutcome || e.Data.Outcome != "unknown" || e.Data.PlanID != p.PlanID || strings.Contains(e.Message, "secret") {
+		t.Errorf("%+v", e)
+	}
+	if got := f.audit.phases(); got != "attempt,unknown" {
+		t.Errorf("the audit must end with the outcome, got %q", got)
+	}
+	c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeAlreadyApplied)
+	if m := c.call("version", nil); m.Error != nil {
+		t.Fatal("the server did not survive")
+	}
+	// a batch whose writer panics reports the task unknown and stops, with its outcome in the audit
+	bp := plan(t, c, "plan.tasks.bulk", map[string]any{"ids": []string{"ac-30", "ac-33"}, "op": "priority", "value": "1"})
+	var a core.ServeApplied
+	c.call("apply", map[string]any{"plan_id": bp.PlanID}).into(t, &a)
+	if a.Outcome != "unknown" || a.Bulk.Unknown != 2 {
+		t.Errorf("%+v", a.Bulk)
+	}
+}
+
+func TestAPanicInTheFreshnessCheckKeepsThePlanAndOutcome(t *testing.T) {
+	c, f := readyClient(t)
+	p := plan(t, c, "plan.task.priority", map[string]any{"id": "ac-12", "priority": 3})
+	f.tasks.mu.Lock()
+	f.tasks.readHook = func(string, core.Task) core.Task { panic("boom") }
+	f.tasks.mu.Unlock()
+	e := c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeUnknownOutcome)
+	if e.Data.PlanID != p.PlanID || e.Data.Outcome != "unknown" {
+		t.Errorf("%+v", e)
+	}
+}
+
+func TestTwoBoardPlansMadeBeforeEitherIsAppliedPostOnce(t *testing.T) {
+	c, f := readyClient(t)
+	p1 := plan(t, c, "plan.board.post", map[string]any{"channel": "dev", "text": "same"})
+	p2 := plan(t, c, "plan.board.post", map[string]any{"channel": "dev", "text": "same"})
+	if p1.PlanDigest != p2.PlanDigest {
+		t.Fatal("setup: the two plans share a key")
+	}
+	apply(t, c, p1.PlanID)
+	e := c.call("apply", map[string]any{"plan_id": p2.PlanID}).wantErr(t, core.CodeChanged)
+	if e.Data.PlanID != p2.PlanID || e.Data.Outcome != "changed" || f.board.runs() != 1 {
+		t.Errorf("%+v runs=%d", e.Data, f.board.runs())
+	}
+	// again:true is a new key, so it is a new plan that applies
+	p3 := plan(t, c, "plan.board.post", map[string]any{"channel": "dev", "text": "same", "again": true})
+	apply(t, c, p3.PlanID)
+	if f.board.runs() != 2 {
+		t.Errorf("runs %d", f.board.runs())
+	}
+}
+
+func TestACancelAfterTheClaimNamesTheSpentPlan(t *testing.T) {
+	c, f := readyClient(t)
+	p := plan(t, c, "plan.task.priority", map[string]any{"id": "ac-12", "priority": 3})
+	started := make(chan struct{}, 1)
+	f.tasks.mu.Lock()
+	f.tasks.readHook = func(string, core.Task) core.Task { return core.Task{} }
+	f.tasks.mu.Unlock()
+	_ = started
+	// make the freshness re-read wait for the context, as a slow tracker would
+	f.tasks.mu.Lock()
+	f.tasks.readHook = nil
+	f.tasks.snapHook = nil
+	f.tasks.mu.Unlock()
+	slow := make(chan struct{}, 1)
+	f.tasks.mu.Lock()
+	f.tasks.readSlow = func(ctx context.Context) error { slow <- struct{}{}; <-ctx.Done(); return ctx.Err() }
+	f.tasks.mu.Unlock()
+	id := c.send("apply", map[string]any{"plan_id": p.PlanID})
+	<-slow
+	c.cancel(id)
+	e := c.await(id).wantErr(t, core.CodeTimeout)
+	if e.Code != -32800 || e.Data.PlanID != p.PlanID || e.Data.Outcome == "" || !strings.Contains(e.Message, "nothing was written") || f.tasks.runs() != 0 {
+		t.Errorf("%+v runs=%d", e, f.tasks.runs())
+	}
+	c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeChanged)
+}
+
+func TestSecondRequestIdSpelledDifferentlyIsStillADuplicate(t *testing.T) {
+	c, f := readyClient(t)
+	started := slowTasks(f)
+	id := c.expect(`"a"`)
+	c.raw(`{"jsonrpc":"2.0","id":"a","method":"tasks.list"}`)
+	<-started
+	dup := c.expect(`"\u0061"`)
+	c.raw(`{"jsonrpc":"2.0","id":"\u0061","method":"version"}`)
+	c.await(dup).wantErr(t, core.CodeUsage)
+	c.raw(`{"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":"\u0061"}}`) // cancels the original
+	c.await(id).wantErr(t, core.CodeTimeout)
+}

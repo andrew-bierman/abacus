@@ -39,7 +39,9 @@ type tasksMod struct {
 	ran      [][]string
 	runHook  func(ctx context.Context, argv []string) error // called inside RunTask
 	snapHook func(ctx context.Context) error                // called inside Snapshot
+	readSlow func(ctx context.Context) error                // called at the start of ReadTask
 	readHook func(id string, t core.Task) core.Task         // changes what a re-read of a task returns
+	panicFP  bool
 	fp       string
 	fpErr    error
 	snapGen  int // bumps the snapshot (a change for the no-fingerprint path)
@@ -92,6 +94,14 @@ func (m *tasksMod) runs() int {
 }
 
 func (m *tasksMod) ReadTask(ctx context.Context, id string) (core.Task, error) {
+	m.mu.Lock()
+	slow := m.readSlow
+	m.mu.Unlock()
+	if slow != nil {
+		if err := slow(ctx); err != nil {
+			return core.Task{}, err
+		}
+	}
 	t, err := m.Tasks.ReadTask(ctx, id)
 	m.mu.Lock()
 	hook := m.readHook
@@ -109,6 +119,9 @@ func (m *tasksMod) History(_ context.Context, id string, _ int) (core.TaskHistor
 func (m *tasksMod) Fingerprint(context.Context) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if m.panicFP {
+		panic("provider bug")
+	}
 	return m.fp, m.fpErr
 }
 

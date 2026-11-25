@@ -22,6 +22,52 @@ func TestMaxDepthIgnoresBracketsInStrings(t *testing.T) {
 	}
 }
 
+func TestAppliedIDsAreRememberedLongerThanOtherEndedOnes(t *testing.T) {
+	st, _ := testStore(2)
+	d := strings.Repeat("a", 64)
+	st.add(held("first", d))
+	if _, err := st.take("first", ""); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 3*maxEnded; i++ { // far more than the ordinary bound of plans that expired
+		id := newPlanID()
+		st.add(held(id, d))
+		_ = st.cancel(id)
+	}
+	if _, err := st.take("first", ""); codeOf(err) != core.CodeAlreadyApplied {
+		t.Fatalf("an applied id must outlive %d cancelled ones: %v", 3*maxEnded, err)
+	}
+	var last, mid string
+	for i := 0; i < maxApplied+5; i++ {
+		last = newPlanID()
+		st.add(held(last, d))
+		_, _ = st.take(last, "")
+		if i == 10 {
+			mid = last
+		}
+	}
+	if _, err := st.take(mid, ""); codeOf(err) != core.CodeAlreadyApplied {
+		t.Fatalf("an id applied thousands of plans ago is still within the bound: %v", err)
+	}
+	if _, err := st.take(last, ""); codeOf(err) != core.CodeAlreadyApplied {
+		t.Fatalf("a recently applied id must still be remembered: %v", err)
+	}
+	if len(st.appliedOrder) > maxApplied || len(st.ended) > maxApplied+maxEnded {
+		t.Fatalf("applied memory is unbounded: %d", len(st.appliedOrder))
+	}
+}
+
+func TestParseIDIsCanonical(t *testing.T) {
+	pairs := [][2]string{{`"a"`, `"\u0061"`}, {`0`, `-0`}, {`"a/b"`, `"a\/b"`}}
+	for _, p := range pairs {
+		a, ok1 := parseID([]byte(p[0]))
+		b, ok2 := parseID([]byte(p[1]))
+		if !ok1 || !ok2 || a != b {
+			t.Errorf("%s and %s must be one id: %q %q", p[0], p[1], a, b)
+		}
+	}
+}
+
 func TestParseID(t *testing.T) {
 	for in, ok := range map[string]bool{
 		`1`: true, `-7`: true, `"abc"`: true, `""`: true, `9007199254740992`: true, `9007199254740993`: false, `1.5`: false, `1e3`: false, `null`: false,
@@ -139,7 +185,7 @@ func TestPlanStoreMemoryIsBounded(t *testing.T) {
 			_, _ = st.take(id, "")
 		}
 	}
-	if st.size() > 3 || len(st.ended) > maxEnded || len(st.endedOrder) > maxEnded {
+	if st.size() > 3 || len(st.ended) > maxEnded+maxApplied || len(st.endedOrder) > maxEnded || len(st.appliedOrder) > maxApplied {
 		t.Fatalf("live %d ended %d/%d", st.size(), len(st.ended), len(st.endedOrder))
 	}
 }

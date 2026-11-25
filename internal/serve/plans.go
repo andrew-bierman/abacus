@@ -36,17 +36,24 @@ type heldPlan struct {
 // planStore holds at most max live plans and remembers (bounded) how the ended ones ended, so a second
 // apply, an expired plan and an unknown id are told apart. It is the single-use guard of the protocol.
 type planStore struct {
-	mu         sync.Mutex
-	live       map[string]*heldPlan
-	order      []string
-	ended      map[string]ended
-	endedOrder []string
-	max        int
-	ttl        time.Duration
-	now        func() time.Time
+	mu           sync.Mutex
+	live         map[string]*heldPlan
+	order        []string
+	ended        map[string]ended
+	endedOrder   []string
+	appliedOrder []string
+	max          int
+	ttl          time.Duration
+	now          func() time.Time
 }
 
-const maxEnded = 1024
+// maxEnded bounds the memory of plans that ended otherwise (expired, cancelled, refused before a write);
+// maxApplied bounds the applied ones, which are kept longer so "already applied" stays honest for a long
+// session (about 16k small entries). Past either bound an old id is reported not_found.
+const (
+	maxEnded   = 1024
+	maxApplied = 16384
+)
 
 func newPlanStore(max int, ttl time.Duration, now func() time.Time) *planStore {
 	return &planStore{live: map[string]*heldPlan{}, ended: map[string]ended{}, max: max, ttl: ttl, now: now}
@@ -70,10 +77,18 @@ func (p *planStore) end(id string, why ended) {
 		}
 	}
 	if _, seen := p.ended[id]; !seen {
-		p.endedOrder = append(p.endedOrder, id)
-		if len(p.endedOrder) > maxEnded {
-			delete(p.ended, p.endedOrder[0])
-			p.endedOrder = p.endedOrder[1:]
+		if why == endedApplied {
+			p.appliedOrder = append(p.appliedOrder, id)
+			if len(p.appliedOrder) > maxApplied {
+				delete(p.ended, p.appliedOrder[0])
+				p.appliedOrder = p.appliedOrder[1:]
+			}
+		} else {
+			p.endedOrder = append(p.endedOrder, id)
+			if len(p.endedOrder) > maxEnded {
+				delete(p.ended, p.endedOrder[0])
+				p.endedOrder = p.endedOrder[1:]
+			}
 		}
 	}
 	p.ended[id] = why
@@ -129,8 +144,15 @@ func (p *planStore) take(id, expect string) (*heldPlan, error) {
 // unwritten records that a claimed plan was refused before anything was written.
 func (p *planStore) unwritten(id string) {
 	p.mu.Lock()
-	p.ended[id] = endedUnwritten
-	p.mu.Unlock()
+	defer p.mu.Unlock()
+	for i, o := range p.appliedOrder { // it was claimed as applied; it was not
+		if o == id {
+			p.appliedOrder = append(p.appliedOrder[:i], p.appliedOrder[i+1:]...)
+			break
+		}
+	}
+	delete(p.ended, id)
+	p.end(id, endedUnwritten)
 }
 
 // cancel discards a plan the client no longer wants.

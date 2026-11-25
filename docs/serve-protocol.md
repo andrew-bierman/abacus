@@ -24,7 +24,7 @@ abacus serve --stdio [--demo] [--tracker DIR] [--all] [--lambe-config FILE]
   environment again when it starts one (as every command does). The client sets the tracker with
   `ABACUS_BD_DIR` in the child's environment, as for any command.
 - It ignores SIGPIPE: a client that closes its end of stdout is a write error that ends the server
-  (exit 1), never a signal that kills it mid-response. SIGINT and SIGTERM and end of input end it
+  (exit 1), never a signal that kills it mid-response. SIGINT, SIGTERM, SIGHUP and end of input end it
   cleanly (exit 0), after the shutdown rules below.
 - stdout carries only protocol lines. stderr gets the first-run "preparing" notice and, when something
   goes wrong, one plain line (a handler failed, the client stopped reading). It never carries a request, a
@@ -47,6 +47,7 @@ request. The server never writes a pretty-printed or multi-line message.
 | Result | 16 MiB | the request fails with `failed` and says to narrow it (a query, a smaller limit) |
 | Requests in flight | 8 | the next one is refused at once with `refused` ("too many requests in flight"), never queued without bound |
 | Plans held | 64 | the oldest is pushed out; applying it gives `changed` |
+| Plans remembered | 16384 applied ids, 1024 others (expired, cancelled, refused) | past the bound an old id is `not_found` instead of `already_applied` or `changed` |
 | Plan age | 10 minutes | applying it gives `changed` |
 | Deadline | 30 s default, 10 min most | see "Deadlines" |
 
@@ -115,7 +116,7 @@ write is `unknown_outcome`), answers every request in flight, then answers `shut
 ## Request ids, cancellation, deadlines, concurrency
 
 - Responses carry the request's id and may arrive in any order. At most one request per id is in
-  flight.
+  flight; ids compare in canonical form (`"a"` and `"\u0061"`, `0` and `-0`, are one id).
 - **Cancel** with a notification (no id, no answer): `{"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":7}}`.
   The cancelled request is answered with error -32800 and `data.code` `timeout` if it was a read or had
   not been claimed yet. A cancel that arrives after an `apply` has started the write cannot un-write it:
@@ -217,6 +218,9 @@ match for every verb.
    same id (concurrent or later) gets `already_applied` and nothing runs. A digest that is not the
    plan's is `changed` (nothing written, nothing audited, the plan stays held: the client had a different
    one). An expired or pushed-out plan is `changed`; an id never issued, or cancelled, is `not_found`.
+   If the request is cancelled or runs out of time after the claim but before the write (the re-read in
+   step 4), the answer is `timeout` carrying `plan_id` and `outcome`, and says nothing was written and the
+   plan is spent: plan again.
 4. The task is read again and checked against what the plan was made from (the status or assignee
    guard, a dependency cycle, a reopen of a task that is no longer closed). A task that moved is `changed`,
    before anything is audited or run, and the claimed plan is spent (`changed` again if reused).
@@ -241,6 +245,11 @@ A batch is a result, not an error, once it ran: `outcome` is `applied` (every ta
 after it were not started: read `bulk.items`), and `bulk` is the same report `tasks bulk --json` prints,
 with the `batch_id` every audit line of the batch carries. A batch that could not start at all is an error.
 
+A panic in a provider during the write is a result unknown: the gate records the outcome (`unknown`) after
+the attempt line, and the answer is `unknown_outcome` with the plan named. A repeat of a board post is also
+checked at apply: if the plan's idempotency key has been recorded since the plan was made (two identical plans
+made before either was applied), the second is `changed` and nothing is posted.
+
 What the protocol does not give: it does not make two *different* processes unable to apply the same
 change. The id's single use holds inside one server; across processes the digest, the audit log and the
 tracker's own guards remain the backstops, as for the command line.
@@ -262,7 +271,7 @@ bound.
 |---|---|---|
 | `tasks.changed` | `{topic, seq, reason}` | the tracker's change fingerprint moved (`reason: "fingerprint"`), or, for a tracker with no cheap fingerprint, a full read differs from the last (`"snapshot"`) |
 | `workspace.changed` | `{topic, seq, reason}` | the terminal workspace's own event feed reported a relevant change |
-| `engine.degraded` | `{topic: "engine", seq, reason}` | the tracker could not be checked three times in a row (once per episode) |
+| `engine.degraded` | `{topic: "engine", seq, reason}` | the tracker could not be checked three times in a row (once per episode), or a provider panicked in a watcher (that watcher stops: subscribe again) |
 
 The tasks watcher is the TUI's live refresh without the screen (`taskview.Poller`): a check every 5
 seconds, one at a time, a longer wait (up to 60 seconds) after a slow or failed one; the first look is a

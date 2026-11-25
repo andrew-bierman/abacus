@@ -46,7 +46,7 @@ func runServe(rest []string, d Deps) int {
 	}
 	scrubServeEnv()
 	ignoreSIGPIPE()
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
 	s := serve.New(serve.Config{Build: func() *core.Registry { return d.Build(o) }, Version: d.Version, Demo: o.Demo, Audit: d.Audit, Config: d.Config,
 		Setup: func(en []core.Entry) *core.Setup { return setupFor(d, en) }, Now: d.Now, Log: d.Err})

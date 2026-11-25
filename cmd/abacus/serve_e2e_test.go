@@ -153,6 +153,16 @@ func TestServeStopsOnSIGTERM(t *testing.T) {
 	}
 }
 
+func TestServeStopsOnSIGHUP(t *testing.T) {
+	p := start(t, nil, "serve", "--stdio", "--demo")
+	p.send(initReq)
+	p.read(t)
+	_ = p.cmd.Process.Signal(syscall.SIGHUP)
+	if st := p.wait(t); st.ExitCode() != 0 {
+		t.Fatalf("exit %d: %s", st.ExitCode(), p.stderr)
+	}
+}
+
 // A client that closes its end of stdout is an error to write to, not a signal that kills the process.
 func TestServeIgnoresSIGPIPE(t *testing.T) {
 	home := t.TempDir()
