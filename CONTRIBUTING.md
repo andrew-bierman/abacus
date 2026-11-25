@@ -8,14 +8,9 @@ Security problems go through [SECURITY.md](SECURITY.md), never a public issue.
 
 You need Go (the version `go.mod` names; see [docs/development.md](docs/development.md)).
 
-```
-make help         # every target
-make build-dev    # quick build with no tools built in: bin/abacus
-make check        # gofmt, vet, shellcheck, tests, tagged-build check
-```
-
-`make build` (every tool inside the binary) needs `gh`, `npm` and `bun` and is for releases; you
-do not need it to work on abacus. `shellcheck` is needed for `make check` (hosted CI runs it too).
+Use the isolated commands below to build Abacus and try the demo. A development build leaves out
+the bundled tools. The demo uses fixtures, and live setup requires the provider tools. Install
+`shellcheck` to run `make check`. For a bundled binary, see the [development guide](docs/development.md#building-from-source).
 
 ## Test isolation rules
 
@@ -27,18 +22,25 @@ do not need it to work on abacus. `shellcheck` is needed for `make check` (hoste
 - Test data uses invented names (`bot-scheduler-01`, `fixture-user`, `dm-zoj`); do not paste real
   hostnames, user names, tokens, task ids or paths into code, fixtures or goldens.
 
-Run the suite with isolated state, cache, and temporary files. Choose a disk-backed directory for `abacus_scratch_root` if your usual cache is in memory.
+Build and test in a subshell with isolated state, cache, and temporary files. Choose a disk-backed
+`abacus_scratch_root` if your usual cache is in memory. Press `q` to leave the demo and run the checks.
 
 ```bash
-abacus_scratch_root="${XDG_CACHE_HOME:-$HOME/.cache}/abacus-tests"
-mkdir -p "$abacus_scratch_root"
-abacus_scratch=$(mktemp -d "$abacus_scratch_root/run.XXXXXXXX")
-mkdir -p "$abacus_scratch"/{home,config,state,data,cache,tmp,gocache}
-HOME="$abacus_scratch/home" XDG_CONFIG_HOME="$abacus_scratch/config" \
-  XDG_STATE_HOME="$abacus_scratch/state" XDG_DATA_HOME="$abacus_scratch/data" \
-  XDG_CACHE_HOME="$abacus_scratch/cache" TMPDIR="$abacus_scratch/tmp" \
-  GOTMPDIR="$abacus_scratch/tmp" GOCACHE="$abacus_scratch/gocache" \
-  go test -count=1 ./...
+(
+  set -e
+  abacus_scratch_root="${XDG_CACHE_HOME:-$HOME/.cache}/abacus-tests"
+  mkdir -p "$abacus_scratch_root"
+  abacus_scratch=$(mktemp -d "$abacus_scratch_root/run.XXXXXXXX")
+  mkdir -p "$abacus_scratch"/{home,config,state,data,cache,tmp,gocache}
+  export GOMODCACHE="$(go env GOMODCACHE)"
+  export HOME="$abacus_scratch/home" XDG_CONFIG_HOME="$abacus_scratch/config"
+  export XDG_STATE_HOME="$abacus_scratch/state" XDG_DATA_HOME="$abacus_scratch/data"
+  export XDG_CACHE_HOME="$abacus_scratch/cache" TMPDIR="$abacus_scratch/tmp"
+  export GOTMPDIR="$abacus_scratch/tmp" GOCACHE="$abacus_scratch/gocache"
+  make build-dev
+  ./bin/abacus tui --demo
+  make check
+)
 ```
 
 ## Architecture rules
