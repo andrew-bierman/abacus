@@ -397,12 +397,15 @@ func (s *agentsSection) strip(w int) []string {
 	for _, l := range r.RateLimits {
 		parts := []string{s.th.Header.Render(san(core.HarnessTitle(l.Harness)))}
 		if l.FiveHourPct != nil {
-			parts = append(parts, "5h "+s.gauge(l.FiveHourPct, 8)+" "+pctText(l.FiveHourPct))
+			parts = append(parts, s.limitPart(core.WindowLabel(l.ShortWindowMinutes, "5h"), l.FiveHourPct, l.FiveHourResets, l.Stale))
 		}
 		if l.SevenDayPct != nil {
-			parts = append(parts, "7d "+s.gauge(l.SevenDayPct, 8)+" "+pctText(l.SevenDayPct))
+			parts = append(parts, s.limitPart(core.WindowLabel(l.LongWindowMinutes, "7d"), l.SevenDayPct, l.SevenDayResets, l.Stale))
 		}
 		if len(parts) > 1 {
+			if l.Stale {
+				parts = append(parts, s.th.Text(KindMuted, "stale"))
+			}
 			out = append(out, trunc(strings.Join(parts, "  "), w))
 		}
 	}
@@ -410,6 +413,67 @@ func (s *agentsSection) strip(w int) []string {
 		out = append(out, trunc(s.th.Text(KindWarn, fmt.Sprintf("%s still open after their agent ended: %s", core.Plural(n, "port"), orphanList(r.OrphanPorts))), w))
 	}
 	return out
+}
+
+// limitPart is one rate-limit window: label, gauge, share and, while the read is fresh, how long until
+// it resets. A stale read is drawn dim and without the countdown: the window may have rolled over.
+func (s *agentsSection) limitPart(label string, pct *float64, resets string, stale bool) string {
+	if stale {
+		return s.th.Text(KindMuted, label+" "+plainGauge(pct, 8)+" "+pctText(pct))
+	}
+	out := label + " " + s.gauge(pct, 8) + " " + pctText(pct)
+	if t, err := time.Parse(time.RFC3339, resets); err == nil {
+		if d := t.Sub(nowFn()); d > 0 {
+			out += " ↻" + shortDuration(d)
+		}
+	}
+	return out
+}
+
+// shortDuration is "25m", "2h" or "3d": the largest whole unit.
+func shortDuration(d time.Duration) string {
+	switch {
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", max(1, int(d.Minutes())))
+	case d < 48*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	}
+	return fmt.Sprintf("%dd", int(d.Hours()/24))
+}
+
+// tokenText is a token count in a short form: 950, 1.2k, 84k, 1.5M.
+func tokenText(n int64) string {
+	switch {
+	case n < 1000:
+		return fmt.Sprint(n)
+	case n < 10_000:
+		return fmt.Sprintf("%.1fk", float64(n)/1000)
+	case n < 1_000_000:
+		return fmt.Sprintf("%dk", n/1000)
+	}
+	return fmt.Sprintf("%.1fM", float64(n)/1e6)
+}
+
+// spark draws a series as one block per point, scaled to its own largest value (zero is the lowest
+// block), the newest w points when there are more.
+func spark(pts []int64, w int) string {
+	if w < 1 || len(pts) == 0 {
+		return ""
+	}
+	if len(pts) > w {
+		pts = pts[len(pts)-w:]
+	}
+	top := int64(1)
+	for _, v := range pts {
+		top = max(top, v)
+	}
+	blocks := []rune("▁▂▃▄▅▆▇█")
+	out := make([]rune, len(pts))
+	for i, v := range pts {
+		// float64: a point near the int64 limit must not overflow the scale (nor index below zero)
+		out[i] = blocks[max(0, min(len(blocks)-1, int(float64(v)/float64(top)*float64(len(blocks)-1))))]
+	}
+	return string(out)
 }
 
 func orphanList(ps []core.AgentPort) string {
@@ -539,7 +603,30 @@ func (s *agentsSection) detailLines(iw int) []string {
 		act += fmt.Sprintf("  $%.2f", *a.CostUSD)
 	}
 	out = append(out, field("last seen", strings.TrimSpace(act)))
-	out = append(out, th.Label.Render(padTo("context", 11))+s.gauge(a.ContextPct, 12)+" "+pctText(a.ContextPct))
+	if g := a.Git; g != nil {
+		changes := "clean"
+		if g.Added+g.Modified > 0 {
+			changes = fmt.Sprintf("%d added  %d modified", g.Added, g.Modified)
+		}
+		out = append(out, field("changes", changes))
+	}
+	// the gauge gives way to the numbers when the detail is narrow
+	tail := " " + pctText(a.ContextPct)
+	switch {
+	case a.ContextTokens != nil && a.ContextWindow != nil:
+		tail += "  " + tokenText(*a.ContextTokens) + "/" + tokenText(*a.ContextWindow)
+	case a.ContextTokens != nil:
+		tail += "  " + tokenText(*a.ContextTokens) + " tokens" // the window is not recorded
+	}
+	out = append(out, trunc(th.Label.Render(padTo("context", 11))+s.gauge(a.ContextPct, max(4, min(12, iw-11-len(tail))))+tail, iw))
+	if n := len(a.TurnTokens); n >= 2 {
+		peak := int64(0)
+		for _, v := range a.TurnTokens {
+			peak = max(peak, v)
+		}
+		note := fmt.Sprintf("  last %s  peak %s", tokenText(a.TurnTokens[n-1]), tokenText(peak))
+		out = append(out, trunc(th.Label.Render(padTo("turns", 11))+th.Text(KindAccent, spark(a.TurnTokens, max(4, min(24, iw-11-len(note)))))+th.Text(KindMuted, note), iw))
+	}
 	srcs := make([]string, 0, len(a.Sources))
 	for _, e := range a.Sources {
 		srcs = append(srcs, string(e))

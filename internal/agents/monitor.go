@@ -48,6 +48,7 @@ type MonitorOptions struct {
 	LookPath func(string) (string, error)
 	Runner   core.Runner // wrapped by the allowlist whatever it is
 	Enrich   func([]core.Agent)
+	Now      func() time.Time // the clock rate limits are judged stale against; nil means time.Now
 }
 
 // Monitor is the module for the built-in session monitor.
@@ -57,6 +58,7 @@ type Monitor struct {
 	lookup   func(string) (string, error)
 	explicit string
 	enrich   func([]core.Agent)
+	now      func() time.Time
 	mu       sync.Mutex
 	ran      bool
 	lastErr  error
@@ -70,7 +72,10 @@ func NewMonitor(o MonitorOptions) *Monitor {
 	if o.LookPath == nil {
 		o.LookPath = exec.LookPath
 	}
-	return &Monitor{run: allowOnly{o.Runner}, lookup: o.LookPath, explicit: o.Bin, enrich: o.Enrich}
+	if o.Now == nil {
+		o.Now = time.Now
+	}
+	return &Monitor{run: allowOnly{o.Runner}, lookup: o.LookPath, explicit: o.Bin, enrich: o.Enrich, now: o.Now}
 }
 
 // keepEnv drops every inherited variable but the few the monitor needs to find its files.
@@ -143,6 +148,9 @@ func (m *Monitor) snapshot(ctx context.Context) ([]core.Agent, core.AgentsExtra,
 	agents, extra, err := ParseSnapshot(out)
 	if err == nil && m.enrich != nil {
 		m.enrich(agents)
+	}
+	for i := range extra.RateLimits {
+		extra.RateLimits[i].Stale = core.RateLimitStale(extra.RateLimits[i].UpdatedAt, m.now())
 	}
 	return agents, extra, err
 }

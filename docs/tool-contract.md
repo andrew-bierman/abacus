@@ -381,8 +381,10 @@ failed feed into a note instead of failing the domain. The report is `AgentsRepo
 1; additive only; `agents` is `[]`, never null). Pointer fields are nil when unknown. `state` is a
 closed set and `source` says how it was learned.
 
-- Native feed (`internal/agents`, module `agents`): process list, session-file tails and tmux panes,
-  every source injected, nothing written. See `docs/agents.md` for limits and state inference.
+- Native feed (`internal/agents`, module `agents`): process list, session-file tails (Claude Code, Codex,
+  pi), OpenCode's session database (read-only, immutable), per-repository uncommitted-file counts (one
+  fixed read-only `git status`) and tmux panes, every source injected, nothing written. It also reports
+  rate limits (`rate_limits[]`, one per harness, each marked `stale` by the feed that read it). See `docs/agents.md` for limits and state inference.
 - Live monitor (module `abtop`, built in, optional): argv allowlist is exactly `--json`; deadline 15 s;
   output capped at 8 MiB; environment reduced to HOME, PATH, USER/LOGNAME, TMUX*, XDG_*, TMPDIR, LANG,
   CLAUDE_CONFIG_DIR and CODEX_HOME. Output is read tolerantly (unknown fields ignored, missing ones

@@ -59,7 +59,8 @@ detail from 100 columns; below that `enter` opens the detail and `esc` returns. 
 shown and then about every 10 seconds while visible, one read at a time.
 
 ```
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%          rate limits, when known
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻2h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d  rate limits, when known
+Codex  5h ▱▱▱ 88%  30d ▰▱▱▱ 41%  stale                  an old read: dim, no countdown
 1 port still open after their agent ended: 4000         orphaned ports, when known
 sort: attention  ~ guessed from files                   active filters and sort
 ╭─ ▸ Agents 6 · 310 tok/s ──────────────╮ ╭─ Agent ─────────────╮
@@ -73,8 +74,13 @@ sort: attention  ~ guessed from files                   active filters and sort
   repo; `f` cycles the states that exist; `H` cycles the harnesses that exist; `/` filters by words
   in the task, repo, branch, harness or directory. `esc` peels the detail, then the query, state and
   harness filters, one at a time. The selected agent stays selected through a refresh.
+- **Rate limits.** The strip shows each account's windows with the time until they reset (`↻2h`). A read
+  older than ten minutes, or with no time, is drawn dim, marked `stale`, and has no countdown: the window
+  may have rolled over. A window's name follows its real length (`5h`, `7d`, `30d`).
 - **Detail.** Task, where (repo, branch, worktree), directory, model and pid, last seen, tokens and
-  cost when known, a context gauge, which sources saw it, the terminal and the line to copy to get
+  cost when known, uncommitted files (`changes`), a context gauge with the tokens used and the window when
+  the harness records one, a per-turn token sparkline (`turns`, the newest responses, with the last and
+  the peak), which sources saw it, the terminal and the line to copy to get
   there (abacus never runs it), subagents as a tree, ports and child processes. `J` `K` scroll it.
 - Unknown values are `?` or `-`, never zero. A source that could not be read is a one-line note
   under the filters; the other sources still show.

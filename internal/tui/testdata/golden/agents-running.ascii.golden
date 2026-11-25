@@ -14,8 +14,8 @@ state:error  sort: attention  ~ guessed…
 === 40x30 ===
  [Agents]  5/6
 ────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41…
 1 port still open after their agent end…
 state:error  sort: attention  ~ guessed…
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────╮
@@ -58,8 +58,8 @@ state:error  sort: attention  ~ guessed from files
 === 80x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────────────╮
@@ -102,8 +102,8 @@ state:error  sort: attention  ~ guessed from files
 === 120x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
@@ -158,8 +158,8 @@ state:error  sort: attention  ~ guessed from files
 === 100x32 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 state:error  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 1/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮

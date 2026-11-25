@@ -8,6 +8,20 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- Agents: richer reads, all additive (`schema_version` stays 1), ported from the parallel sessions work
+  into the one Agents domain rather than a second domain. New agent fields `context_tokens`,
+  `context_window` (a share is derived when both are known), `turn_tokens` (per-response token series
+  for a sparkline, cache reads left out) and `git` (`added`/`modified` uncommitted files); `rate_limits`
+  entries gain `short_window_minutes`, `long_window_minutes` and `stale`, and one entry is kept per
+  harness. New sources: OpenCode sessions from its local SQLite database (read-only, immutable, through
+  the linked pure-Go `modernc.org/sqlite`, BSD-3-Clause, notices shipped), pi sessions from its JSONL
+  files (new `pi` harness), Codex rate limits and context window from its session files, Claude rate
+  limits from the status-line file when one exists, Claude and Codex per-turn tokens. The Agents tab
+  shows a per-turn sparkline, a context bar with tokens and window, uncommitted files and dimmed stale
+  limits with no reset countdown; `abacus agents` prints the same. Hardened: every token figure from a
+  file is bounded (a trillion) and the sparkline cannot overflow; the uncommitted-file count empties
+  content filters and ignores submodules before running git; a bare `pi` or `aider` process needs
+  corroboration to be listed; the OpenCode database is size-capped and its text columns bounded.
 - `abacus serve --stdio` (`docs/serve-protocol.md`): a long-lived JSON-RPC 2.0 server for a native client, one
   message per line on stdin and stdout, no network port, refusing to run unless stdin is a pipe or socket
   (SIGPIPE ignored, loader variables scrubbed). It returns the same typed `schema_version` 1 reports as the

@@ -14,8 +14,8 @@ note: the live monitor did not answer i…
 === 40x30 ===
  [Agents]  5/6
 ────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱…
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱…
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41…
 1 port still open after their agent end…
 sort: attention  ~ guessed from files
 note: the live monitor did not answer i…
@@ -58,8 +58,8 @@ note: the live monitor did not answer in time
 === 80x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor
 ────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 sort: attention  ~ guessed from files
 note: the live monitor did not answer in time
@@ -96,14 +96,14 @@ note: the live monitor did not answer in time
 │   ● running   Claude Code  orchard@fea…  Add a pear …   4s  ▰▰▰▱ 72% │ │ task       Package the wheat module         │
 │   ○ idle~     Claude Code  cellar@fix/…  Rename the …   7m  ···· ?   │ │ where      mill@main                        │
 │   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ directory  /work/mill                       │
-│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │   ↕ +6 more                                 │
+│   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │   ↕ +8 more                                 │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 ? help · q quit · tab/→ next tab · : command · ↑/↓ move · / filter · f state · H harness · s sort · J/K scroll detail …
 === 120x30 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 sort: attention  ~ guessed from files
 note: the live monitor did not answer in time
@@ -115,13 +115,13 @@ note: the live monitor did not answer in time
 │   ? unknown~  OpenCode     barn@main     -               -  ···· ?   │ │ directory  /work/mill                       │
 │   · stopped~  Codex        orchard@docs  Write the p…  12m  ···· ?   │ │ agent      codex-demo-1  pid 41310          │
 │                                                                      │ │ last seen  1m ago  4321 tokens              │
-│                                                                      │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%                 │
+│                                                                      │ │ changes    clean                            │
+│                                                                      │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%  36k/200k       │
+│                                                                      │ │ turns      ▄▆█  last 1.9k  peak 1.9k        │
 │                                                                      │ │ seen by    monitor                          │
 │                                                                      │ │ tmux pane  work:2.1                         │
 │                                                                      │ │ go there   tmux switch-client -t %5         │
 ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-
-
 
 
 
@@ -158,8 +158,8 @@ note: the live monitor did not answer in time
 === 100x32 ===
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                   fleet · 14 tasks · 3 ready
 ────────────────────────────────────────────────────────────────────────────────────────────────────
-Claude Code  5h ▰▰▰▱▱▱▱▱ 35%  7d ▰▱▱▱▱▱▱▱ 12%
-Codex  5h ▰▰▰▰▰▰▰▱ 88%
+Claude Code  5h ▰▰▰▱▱▱▱▱ 35% ↻1h  7d ▰▱▱▱▱▱▱▱ 12% ↻3d
+Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 sort: attention  ~ guessed from files
 note: the live monitor did not answer in time
@@ -171,13 +171,13 @@ note: the live monitor did not answer in time
 │   ? unknown~  OpenCode     barn@main   -               - │ │ directory  /work/mill               │
 │   · stopped~  Codex        orchard@d…  Write the p…  12m │ │ agent      codex-demo-1  pid 41310  │
 │                                                          │ │ last seen  1m ago  4321 tokens      │
-│                                                          │ │ context    ▰▰▱▱▱▱▱▱▱▱▱▱ 18%         │
+│                                                          │ │ changes    clean                    │
+│                                                          │ │ context    ▰▰▱▱▱▱▱▱▱▱ 18%  36k/200k │
+│                                                          │ │ turns      ▄▆█  last 1.9k  peak 1.… │
 │                                                          │ │ seen by    monitor                  │
 │                                                          │ │ tmux pane  work:2.1                 │
 │                                                          │ │ go there   tmux switch-client -t %5 │
 ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-
-
 
 
 

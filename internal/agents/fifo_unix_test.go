@@ -33,7 +33,8 @@ func TestFifosNeverHangAScan(t *testing.T) {
 		Procs: func(context.Context) ([]Proc, error) {
 			return []Proc{{PID: 9, PPID: 1, Name: "claude", Cwd: repo, StartUnix: time.Now().Add(-time.Hour).Unix()}}, nil
 		},
-		Panes: func(context.Context) ([]Pane, error) { return nil, nil }})
+		Panes: func(context.Context) ([]Pane, error) { return nil, nil },
+		Dirty: func(context.Context, string) (core.AgentGit, bool) { return core.AgentGit{}, false }})
 	done := make(chan []core.Agent, 1)
 	go func() { a, _, _ := l.Agents(context.Background()); done <- a }()
 	select {

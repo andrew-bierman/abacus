@@ -1,6 +1,7 @@
 package agents
 
 import (
+	"io"
 	"io/fs"
 	"path"
 	"strings"
@@ -78,4 +79,18 @@ func readSmall(fsys fs.FS, name string) ([]byte, error) {
 	buf := make([]byte, 4096)
 	n, _ := f.Read(buf)
 	return buf[:n], nil
+}
+
+// readBounded reads a whole regular file of at most max bytes; a larger one is refused rather than
+// cut, because half a JSON document says nothing.
+func readBounded(fsys fs.FS, name string, max int64) ([]byte, error) {
+	f, fi, err := openRegular(fsys, name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if fi.Size() > max {
+		return nil, fs.ErrInvalid
+	}
+	return io.ReadAll(io.LimitReader(f, max))
 }
