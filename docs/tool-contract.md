@@ -370,7 +370,7 @@ connected) and never starts a server.
 **Not done**: `session.select` (needs a client), window labels as placements, `rex hosts`.
 
 **Deferred** until someone runs them against a real Rex and records argv and JSON: `rex window
-focus`, `rex window new`, `session.select` (also needs a client with Remote control on; `rex-tui`
+focus`, `session.select` (also needs a client with Remote control on; `rex-tui`
 support is unknown), window labels via `session.view`, `rex hosts`, program status, spawning. A
 rung is data (a name and an argv), so each is a new value, not a new type.
 ## Agents (native feeds, plus an optional built-in monitor)
