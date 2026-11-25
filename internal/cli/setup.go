@@ -69,8 +69,13 @@ func runSetup(rest []string, d Deps) int {
 	if repair {
 		return runRepair(ctx, s, d, yes, dry, asJSON, expect)
 	}
-	steps := s.Steps(ctx)
-	reviewed := s.SetupStepPlans(ctx)
+	var steps []core.StepInfo
+	var reviewed []core.SetupStepPlan
+	if demoRun(d) { // demo data has no tracker to set up: the report shows the steps a first run has, as plans only
+		steps, reviewed = core.DemoSetupSteps(), core.DemoSetupStepPlans()
+	} else {
+		steps, reviewed = s.Steps(ctx), s.SetupStepPlans(ctx)
+	}
 	digest := digestFor(d, core.SetupDigest(reviewed))
 	if expect != "" && expect != digest {
 		return planChanged(d, "setup", expect, digest)
@@ -86,7 +91,7 @@ func runSetup(rest []string, d Deps) int {
 				failed = true
 				break
 			}
-			if st.State != "needed" && st.State != "blocked" {
+			if st.State != core.StepNeeded && st.State != core.StepBlocked {
 				continue
 			}
 			// Re-plan now: an earlier step (the workspace) can unblock a later one (Queues).
@@ -191,7 +196,7 @@ func orEmpty(r io.Reader) io.Reader {
 func renderSetup(w io.Writer, steps []core.StepInfo, results []setupResult, noPrompt, canAsk bool) {
 	needed := 0
 	for _, st := range steps {
-		if st.State == "needed" || st.State == "blocked" || st.State == "repair" {
+		if st.State == core.StepNeeded || st.State == core.StepBlocked || st.State == core.StepRepairing {
 			needed++
 		}
 	}

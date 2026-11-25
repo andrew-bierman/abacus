@@ -18,6 +18,8 @@ import (
 // field is omitempty, time.Time is a date-time string. A type with its own MarshalJSON (OpenPlan,
 // OpenRung) forces its lists non-null. Closed sets that may grow (states, kinds, statuses) are plain
 // strings: a new value is additive, so a schema enum would break a client that generates one.
+// A string type that implements SchemaEnum is the exception: it is a closed set the contract promises not to
+// grow within schema_version 1, so its schema lists the values as an enum.
 // The schemas are open (no additionalProperties: false) because a new field is additive too.
 // schema_version is added to every root, as ReportJSON adds it to the output, and so is the optional demo flag.
 
@@ -46,6 +48,7 @@ func SchemaSpecs() []SchemaSpec {
 		{"tasks-board", "tasks board", typeOf[KanbanReport]()},
 		{"tasks-graph", "tasks graph", typeOf[GraphView]()},
 		{"tasks-history", "tasks history", typeOf[TaskHistoryReport]()},
+		{"serve-tasks-since", "serve tasks.since", typeOf[TasksSince]()},
 		{"setup", "setup", typeOf[SetupReport]()},
 		{"setup-repair", "setup --repair", typeOf[SetupRepairReport]()},
 		{"config-show", "config show", typeOf[ConfigShow]()},
@@ -63,6 +66,9 @@ func SchemaSpecs() []SchemaSpec {
 		{"schema-index", "schema --json", typeOf[SchemaIndex]()},
 	}
 }
+
+// SchemaEnum is implemented by a string type that is a closed set of values.
+type SchemaEnum interface{ SchemaValues() []string }
 
 // SchemaDoc is the JSON Schema of one spec.
 func SchemaDoc(s SchemaSpec) (map[string]any, error) {
@@ -193,6 +199,14 @@ func (g *schemaGen) schema(t reflect.Type, nullable bool) (map[string]any, error
 	case reflect.Float32, reflect.Float64:
 		return typed("number", false, nil), nil
 	case reflect.String:
+		if e, ok := reflect.Zero(t).Interface().(SchemaEnum); ok {
+			vals := e.SchemaValues()
+			enum := make([]any, len(vals))
+			for i, v := range vals {
+				enum[i] = v
+			}
+			return typed("string", false, map[string]any{"enum": enum}), nil
+		}
 		return typed("string", false, nil), nil
 	case reflect.Slice, reflect.Array:
 		if t.Elem().Kind() == reflect.Uint8 {

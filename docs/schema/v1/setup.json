@@ -60,6 +60,13 @@
           "type": "array"
         },
         "state": {
+          "enum": [
+            "done",
+            "needed",
+            "blocked",
+            "unavailable",
+            "repair"
+          ],
           "type": "string"
         },
         "step": {

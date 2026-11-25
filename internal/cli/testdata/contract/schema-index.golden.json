@@ -67,6 +67,11 @@
       "file": "tasks-history.json"
     },
     {
+      "name": "serve-tasks-since",
+      "commands": "serve tasks.since",
+      "file": "serve-tasks-since.json"
+    },
+    {
       "name": "setup",
       "commands": "setup",
       "file": "setup.json"

@@ -182,3 +182,46 @@ func TestEverySpecHasAUniqueNameAndSchemaVersion(t *testing.T) {
 		}
 	}
 }
+
+// A closed string set (SchemaEnum) is an enum in the schema, listing exactly the Go values; every other
+// string stays a plain string.
+func TestClosedSetsAreSchemaEnums(t *testing.T) {
+	for _, tc := range []struct {
+		schema, def string
+		want        []string
+	}{
+		{"setup", "StepInfo", []string{"done", "needed", "blocked", "unavailable", "repair"}},
+		{"serve-tasks-since", "TasksSince", []string{"delta", "full"}},
+	} {
+		type props = map[string]struct {
+			Type any `json:"type"`
+			Enum []string
+		}
+		var doc struct {
+			Properties props `json:"properties"`
+			Defs       map[string]struct {
+				Properties props
+			} `json:"$defs"`
+		}
+		b, err := os.ReadFile(filepath.Join(schemaDir, tc.schema+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(b, &doc); err != nil {
+			t.Fatal(err)
+		}
+		field, p := "state", doc.Defs[tc.def].Properties
+		if tc.def == "TasksSince" { // the root of its own schema
+			field, p = "kind", doc.Properties
+		}
+		got := p[field]
+		if got.Type != "string" || !reflect.DeepEqual(got.Enum, tc.want) {
+			t.Errorf("%s.%s: %+v, want enum %v", tc.def, field, got, tc.want)
+		}
+	}
+	// a plain string field has no enum
+	doc, _ := SchemaDoc(SchemaSpec{Name: "x", Type: reflect.TypeFor[StepInfo]()})
+	if p := doc["properties"].(map[string]any)["message"].(map[string]any); p["enum"] != nil {
+		t.Errorf("message: %v", p)
+	}
+}
