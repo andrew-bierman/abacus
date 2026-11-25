@@ -3,6 +3,7 @@ package agents
 import (
 	"encoding/json"
 	"io/fs"
+	"path"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -143,7 +144,7 @@ func parseClaudeQuota(raw []byte) (quotaRead, bool) {
 }
 
 func readClaudeQuota(fsys fs.FS, claudeDir string) (quotaRead, bool) {
-	raw, err := readBounded(fsys, claudeDir+"/"+claudeQuotaFile, maxQuotaFile)
+	raw, err := readBounded(fsys, path.Join(claudeDir, claudeQuotaFile), maxQuotaFile)
 	if err != nil {
 		return quotaRead{}, false
 	}

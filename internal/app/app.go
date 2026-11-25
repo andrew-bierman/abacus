@@ -143,6 +143,7 @@ func agentFeeds(e Env, allUsers bool) []core.Module {
 	}
 	ao := *e.Agents
 	ao.AllUsers = allUsers
+	ao.ClaudeConfigDir = e.Getenv("CLAUDE_CONFIG_DIR")
 	local := agents.NewLocal(ao)
 	var mo agents.MonitorOptions
 	if e.Monitor != nil {

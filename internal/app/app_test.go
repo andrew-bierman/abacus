@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/cli"
@@ -345,5 +346,56 @@ func TestTrackerFlagWinsOverEnvAndConfig(t *testing.T) {
 	}
 	if got := dirOf(cli.Options{Tracker: "/from/flag"}); got != "/from/flag" {
 		t.Errorf("--tracker must win, got %q", got)
+	}
+}
+
+func TestNativeClaudeQuotaConfigDir(t *testing.T) {
+	const (
+		custom   = "/fixture/custom"
+		fallback = `{"five_hour":{"used_percentage":20},"updated_at":1767268740}`
+		fresh    = `{"five_hour":{"used_percentage":70},"updated_at":1767268800}`
+		old      = `{"five_hour":{"used_percentage":70},"updated_at":1767267900}`
+		unknown  = `{"five_hour":{"used_percentage":70}}`
+	)
+	ctx := context.Background()
+	for _, tc := range []struct {
+		name, dir, customJSON, defaultJSON string
+		want                               float64
+		stale                              bool
+	}{
+		{"configured only", custom, fresh, "", 70, false},
+		{"configured newer", custom, fresh, fallback, 70, false},
+		{"default newer", custom, old, fallback, 20, false},
+		{"configured wins tie", custom, fresh, strings.Replace(fresh, "70", "20", 1), 70, false},
+		{"default with no override", "", fresh, fallback, 20, false},
+		{"missing override file", custom, "", fallback, 20, false},
+		{"malformed override file", custom, "{", fallback, 20, false},
+		{"oversized override file", custom, fresh + strings.Repeat(" ", 64<<10), fallback, 20, false},
+		{"relative override ignored", "fixture/custom", fresh, fallback, 20, false},
+		{"stale configured reading", custom, old, "", 70, true},
+		{"undated configured reading", custom, unknown, "", 70, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fsys := fstest.MapFS{}
+			if tc.customJSON != "" {
+				fsys["fixture/custom/abtop-rate-limits.json"] = &fstest.MapFile{Data: []byte(tc.customJSON)}
+			}
+			if tc.defaultJSON != "" {
+				fsys["fixture/home/.claude/abtop-rate-limits.json"] = &fstest.MapFile{Data: []byte(tc.defaultJSON)}
+			}
+			e := env(t, map[string]string{"CLAUDE_CONFIG_DIR": tc.dir})
+			e.Agents.FS = fsys
+			e.Agents.Home = "/fixture/home"
+			e.Agents.Now = func() time.Time { return time.Unix(1767268800, 0) }
+			feed := agentFeeds(e, false)[0].(*agents.Local)
+			_, extra, err := feed.Agents(ctx)
+			if err != nil || len(extra.RateLimits) != 1 {
+				t.Fatalf("quota = %+v, err = %v", extra.RateLimits, err)
+			}
+			got := extra.RateLimits[0]
+			if got.Harness != core.HarnessClaude || got.FiveHourPct == nil || *got.FiveHourPct != tc.want || got.Stale != tc.stale {
+				t.Fatalf("quota = %+v, want Claude %g%% with stale=%v", got, tc.want, tc.stale)
+			}
+		})
 	}
 }

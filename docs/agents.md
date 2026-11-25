@@ -99,8 +99,9 @@ by itself.
 - *Rate limits*: Codex writes the account's limits into its session files (a `token_count` event); the
   newest read wins and the window length decides which slot it fills, so a free plan's 30-day window is
   never drawn as 5 hours. A read dated in the future (past two minutes of clock skew) is as untrustworthy as one with no time and is stale too. A limit named for one model is not the account's and is ignored. Claude Code
-  keeps its limits out of its files; they are read from `~/.claude/abtop-rate-limits.json` only when a
-  status-line hook has written one (the live monitor reads the same file, and abacus creates nothing).
+  keeps its limits out of session files. The native provider reads `abtop-rate-limits.json` from
+  `~/.claude` and, when set to an absolute path, `CLAUDE_CONFIG_DIR`. The newest status-line reading
+  wins, with the configured directory preferred on a tie. A status-line hook creates the file.
   Every entry older than ten minutes, or with no time, is `stale`: the tab draws it dim with no reset
   countdown, since the window may have rolled over. One entry per harness is kept, the most recently
   updated winning when two sources saw the same account.
