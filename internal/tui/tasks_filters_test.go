@@ -460,7 +460,8 @@ func liveScenarios() []scenario {
 		_ = rec.Touch(b, now.Add(-time.Hour))
 		_ = rec.Touch(a, now)
 		old := scrubPaths
-		scrubPaths = func(s string) string { return strings.ReplaceAll(s, root, "/work") }
+		// The picker shortens paths under HOME before scrubbing them.
+		scrubPaths = strings.NewReplacer(root, "/work", shortHome(root), "/work").Replace
 		t.Cleanup(func() { scrubPaths = old })
 		sw := core.NewSwitcher(core.ConfigStore{Path: filepath.Join(root, "config.json")}, rec, &recTarget{}, func() string { return a }, &memAudit{})
 		p := tasksFake()
