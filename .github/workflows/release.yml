@@ -1,9 +1,8 @@
 name: release
 
 # Tag vX.Y.Z (or run manually with a version) to build the four archives with the pinned sidecar
-# tools and publish a GitHub release. Needs the repository secret ABACUS_RELEASE_TOKEN: a token
-# that can read releases of the (private) beads-lease repository, because the default
-# GITHUB_TOKEN cannot read other private repositories. Without it the build fails closed.
+# tools and publish a GitHub release. Dependency downloads are anonymous unless the optional
+# ABACUS_RELEASE_TOKEN secret is set.
 
 on:
   push:
@@ -23,6 +22,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
@@ -46,7 +47,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ABACUS_RELEASE_TOKEN }}
         run: |
-          [ -n "$GH_TOKEN" ] || { echo "secret ABACUS_RELEASE_TOKEN is not set" >&2; exit 1; }
+          if [ -z "$GH_TOKEN" ]; then export ABACUS_PUBLIC_DOWNLOADS=1; fi
           scripts/package-release.sh "${{ steps.v.outputs.version }}" --out dist
       - name: publish
         env:
@@ -56,5 +57,7 @@ jobs:
           notes="$(awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md)"
           [ -n "$notes" ] || notes="abacus v$VERSION"
           printf '%s\n' "$notes" > dist/notes.md
-          gh release create "v$VERSION" dist/*.tar.gz dist/SHA256SUMS \
+          assets=(dist/*.tar.gz dist/SHA256SUMS)
+          if [ -f dist/EMBEDDED_TOOLS.md ]; then assets+=(dist/EMBEDDED_TOOLS.md); fi
+          gh release create "v$VERSION" "${assets[@]}" \
             --title "abacus v$VERSION" --notes-file dist/notes.md --target "$GITHUB_SHA"

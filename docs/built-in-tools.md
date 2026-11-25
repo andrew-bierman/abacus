@@ -103,15 +103,20 @@ optional separate programs abacus can hand off to, and say so.
 ## How the binary is built
 
 `bundled-tools.json` pins every tool. `scripts/embed-tools.sh` (run by `make build` and by the
-release) fetches each release asset with `gh` (your login, so the private beads-lease repo works),
-fails unless its sha256 equals the pin, extracts only the one executable, builds the Board CLI
+release) fetches each pinned release asset and fails unless its sha256 equals the pin. It extracts
+only the one executable and builds the Board CLI
 (`npm ci --ignore-scripts` from the committed `scripts/board/package-lock.json`, whose sha256 and
 the package's npm integrity are pinned; then `bun build --compile` for the platform), compresses
 them with zstd into `internal/embedtools/blobs/<os>-<arch>/` (git-ignored: these are tens of
 megabytes and are never committed) and writes the complete notices. `go build -tags embedtools`
 embeds that folder. The Board executable is compiled, and bun's output need not be reproducible,
 so it is pinned by its inputs and the sha256 of each compiled output is recorded for the release
-notes (`EMBEDDED_TOOLS.md`, written next to the archives).
+notes (`EMBEDDED_TOOLS.md`, written next to the archives and attached to the GitHub release).
+
+The release workflow downloads dependencies anonymously with `curl` by default. Set
+`ABACUS_PUBLIC_DOWNLOADS=1` for the same local packaging mode. Local builds otherwise use your
+`gh` login. If the workflow has an optional `ABACUS_RELEASE_TOKEN`, the package step uses it for
+authenticated downloads through `gh`. Both paths verify the same committed pins.
 
 ```
 make build                    # bin/abacus, one file, tools inside (needs gh, npm, bun)
