@@ -113,6 +113,7 @@ type SessionsOptions struct {
 	ClaudeRoot string
 	PiRoot     string
 	CodexRoot  string
+	GrokRoot   string
 	// ClaudeConfigDirs are the directories whose rate-limit hooks are read. Empty means
 	// CLAUDE_CONFIG_DIR when set, then ~/.claude.
 	ClaudeConfigDirs []string
@@ -132,6 +133,7 @@ type Sessions struct {
 	collector agents.Collector
 	claude    agents.ClaudeStore
 	codex     agents.CodexStore
+	grok      agents.GrokStore
 	pi        agents.PiStore
 	opencode  agents.OpenCodeStore
 	git       agents.Git
@@ -184,6 +186,9 @@ func NewSessions(o SessionsOptions) *Sessions {
 	if o.CodexRoot == "" {
 		o.CodexRoot = agents.CodexSessionsPath(o.Home)
 	}
+	if o.GrokRoot == "" {
+		o.GrokRoot = agents.GrokSessionsPathFrom(o.Home, o.Getenv)
+	}
 	// The kernel reports a process's open file by its resolved path, so a symlinked store root
 	// would not prefix-match the rollout. Resolve it once; a missing root keeps its name.
 	if real, err := filepath.EvalSymlinks(o.CodexRoot); err == nil {
@@ -205,11 +210,12 @@ func NewSessions(o SessionsOptions) *Sessions {
 		collector:  agents.Collector{Machine: o.Machine, Now: o.Now},
 		claude:     agents.ClaudeStore{Root: o.ClaudeRoot},
 		codex:      agents.CodexStore{},
+		grok:       agents.GrokStore{Root: o.GrokRoot},
 		pi:         agents.PiStore{Root: o.PiRoot},
 		opencode:   agents.OpenCodeStore{Path: o.OpenCodeDB},
 		git:        agents.Git{Runner: o.Runner, Now: o.Now},
 	}
-	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.pi}
+	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.grok, &s.pi}
 	return s
 }
 
@@ -420,6 +426,8 @@ func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, open map[
 		return st, ok, nil
 	case agents.HarnessClaude:
 		return s.transcriptFor(&s.claude, sess)
+	case agents.HarnessGrok:
+		return s.transcriptFor(&s.grok, sess)
 	case agents.HarnessPi:
 		return s.transcriptFor(&s.pi, sess)
 	case agents.HarnessCodex:
@@ -436,8 +444,8 @@ func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, open map[
 	return agents.StoredSession{}, false, nil
 }
 
-// transcriptStore is the pair of reads the Claude and pi readers share: resolve the file a
-// session in a directory is writing, then parse it.
+// transcriptStore is the pair of reads the Claude, pi and Grok readers share: resolve the file
+// a session in a directory is writing, then parse it.
 type transcriptStore interface {
 	PathFor(cwd string, since time.Time) (string, bool)
 	Transcript(path string) (agents.StoredSession, error)
@@ -459,9 +467,9 @@ func (s *Sessions) transcriptFor(store transcriptStore, sess agents.Session) (ag
 	return st, true, nil
 }
 
-// sameSessionDir reports whether a store's session describes the live directory. Claude's and
-// pi's PathFor fall back to the newest transcript anywhere because a worktree keeps its
-// transcript under a branch-keyed directory, so a heuristic hit can belong to another project.
+// sameSessionDir reports whether a store's session describes the live directory. Claude's,
+// pi's and Grok's PathFor fall back to the newest transcript anywhere because a worktree keeps
+// its transcript under a branch-keyed directory, so a heuristic hit can belong to another project.
 // A recorded directory that disagrees is not this process's transcript; an empty one is left to
 // the reader's heuristic rather than rejected.
 func sameSessionDir(stored, live string) bool {

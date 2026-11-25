@@ -51,6 +51,12 @@ var harnesses = []HarnessSpec{
 		Kind:     KindJSONL,
 	},
 	{
+		Name:     HarnessGrok,
+		Binaries: []string{"grok", "grok-cli"},
+		Roots:    rootsOf(GrokSessionsPath),
+		Kind:     KindJSONL,
+	},
+	{
 		Name:     HarnessOpenCode,
 		Binaries: []string{"opencode", "opencode-cli"},
 		Roots:    rootsOf(OpenCodeDBPath),

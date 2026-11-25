@@ -443,6 +443,53 @@ func TestSessionsJoinsPiTranscript(t *testing.T) {
 	}
 }
 
+func TestSessionsJoinsGrokSession(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/shop"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	root := filepath.Join(home, ".grok", "sessions")
+	dir := filepath.Join(root, "%2Fhome%2Fdev%2Fshop", "ses_grok")
+	writeFile(t, filepath.Join(dir, "summary.json"), `{
+		"info":{"id":"ses_grok","cwd":"/home/dev/shop"},
+		"generated_title":"Shop fixture",
+		"current_model_id":"fixture-model-2",
+		"created_at":"2026-11-24T09:00:00Z",
+		"updated_at":"2026-11-24T09:05:00Z"
+	}`)
+	writeFile(t, filepath.Join(dir, "updates.jsonl"), strings.Join([]string{
+		`{"timestamp":1784278801,"method":"session/update","params":{"sessionId":"ses_grok","update":{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"tidy the shop"}},"_meta":{"agentTimestampMs":1784278801000}}}`,
+		`{"timestamp":1784278802,"method":"session/update","params":{"sessionId":"ses_grok","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"done"}},"_meta":{"agentTimestampMs":1784278802000}}}`,
+	}, "\n")+"\n")
+	writeFile(t, filepath.Join(dir, "usage.json"), `{
+		"sessionId":"ses_grok",
+		"turns":[{"turnNumber":1,"endedAt":"2026-11-24T09:05:00Z",
+			"inputTokens":300,"outputTokens":40,"cachedReadTokens":100,
+			"cacheCreationTokens":20,"reasoningTokens":5,"totalTokens":340,"modelCalls":1}]
+	}`)
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "grok", Started: started}},
+		cwds:  map[int]string{4000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		GrokRoot: root,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "Shop fixture" || got.Model != "fixture-model-2" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens.Total() == 0 || len(got.TokenHistory) == 0 {
+		t.Errorf("tokens/history = %+v/%v, want the Grok usage joined", got.Tokens, got.TokenHistory)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the response", got.State)
+	}
+}
+
 // TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted pins the `since` argument: an
 // older transcript in the same project is not this process's session.
 func TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted(t *testing.T) {

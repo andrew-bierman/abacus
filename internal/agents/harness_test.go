@@ -25,6 +25,11 @@ var registryContracts = map[Harness]registryContract{
 		kind:     KindJSONL,
 		root:     CodexSessionsPath,
 	},
+	HarnessGrok: {
+		binaries: []string{"grok", "grok-cli"},
+		kind:     KindJSONL,
+		root:     GrokSessionsPath,
+	},
 	HarnessOpenCode: {
 		binaries: []string{"opencode", "opencode-cli"},
 		kind:     KindSQLite,
