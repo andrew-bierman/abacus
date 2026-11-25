@@ -396,7 +396,12 @@ closed set and `source` says how it was learned.
   cockpit uses. Nothing is contacted or read from disk. Every JSON document made this way carries the additive root key
   `"demo": true` (omitted otherwise; every schema in `docs/schema/v1` lists it as an optional boolean). A write verb
   in demo mode is refused with code `refused` and exit 1 before anything is confirmed, run or audited, unless it is a
-  `--dry-run` plan (which works and says `"demo": true`); `setup` is only a report or a `--dry-run` plan. Behind the
+  `--dry-run` plan (which works and says `"demo": true`); `setup` is only a report or a `--dry-run` plan. Commands
+  that change something with no plan to show (`config set`, `schema --out DIR`, `rex layout`, even with `--dry-run`)
+  are refused outright. This is one table (`internal/cli/effects.go`) checked before any command runs: a command or
+  verb that is not in it is refused in demo mode, and a test enumerates every registered command against it. A demo
+  `plan_digest` is never equal to a real plan's (it is hashed with a demo marker), so a demo review cannot satisfy
+  `--expect-digest` on a real tracker. Behind the
   refusal, demo mode has no audit log, so even a write that got past it would be stopped by the gate. `--demo` cannot
   be combined with `--tracker` (usage error).
 - **`--tracker DIR`** on `tasks` and every `tasks` verb (summary, list, show, board, graph, history, create, update,
@@ -408,7 +413,10 @@ closed set and `source` says how it was learned.
 - **Interrupts.** While a write is being applied (single task verbs, `tasks bulk`, `board post|reply`, `setup`, `setup
   --repair`, `rex layout`), SIGINT and SIGTERM are caught: the running tool is stopped, the audit gate writes the
   outcome line with phase `unknown`, and the command exits 1 with the `unknown_outcome` error document under `--json`
-  ("result unknown, refresh before retrying"). Outside an apply (reads, the confirm prompt) the default behavior stays,
+  ("result unknown, refresh before retrying"). `tasks bulk` and `setup` keep their own result documents and add the
+  same `error` object (`{code: "unknown_outcome", ...}`) to them whenever a result is unknown; a setup interrupted
+  between steps runs no further step. `rex layout` says how many steps completed. The handler is removed after the
+  first signal, so a second SIGINT or SIGTERM kills the process. Outside an apply (reads, the confirm prompt) the default behavior stays,
   so a prompt can still be interrupted. A write that had already finished when the signal arrived reports its real result.
 - **`version --json` `contract`** lets a client feature-detect:
   `{"schema_version": 1, "error_codes": 1, "plan_digest": true, "serve": false, "capabilities": ["bulk", "demo", "history", "reopen", "schema", "tracker"]}`.
@@ -456,8 +464,8 @@ single-task change per task (so each has its own exact argv from the same allowl
 no longer fits is left out and named in `skipped`), the front end shows the whole plan and asks once,
 and `Applier.ApplyBulk` runs it. Nothing is atomic. Before each task is written it is read again and
 checked (the status it was planned against, then the edit's own check); a task that changed or cannot be
-read is skipped, never written. A failure does not stop the rest; a timeout or cancel makes that task
-and every task after it `unknown`; an audit log that cannot be written stops the batch (`not_run`), so
+read is skipped, never written. A failure does not stop the rest; a timeout makes that task
+and every task after it `unknown`, while an interrupt makes the tasks that were never started `not_run` ("interrupted; nothing was sent") and only the one in flight `unknown`; an audit log that cannot be written stops the batch (`not_run`), so
 nothing is sent unrecorded. The batch plan and each of its tasks are single use. Every audit line
 carries the same `batch` id (additive field of the audit entry). `abacus tasks bulk --json` prints
 `{schema_version: 1, batch_id, op, applied, skipped, failed, unknown, not_run, items: [{id, outcome,

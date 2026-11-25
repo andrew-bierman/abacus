@@ -138,7 +138,7 @@ func (r ExecRunner) RunSplit(ctx context.Context, name string, args ...string) (
 	} else {
 		out, err = cmd.Output()
 	}
-	if ctx.Err() != nil {
+	if ctx.Err() != nil && err != nil { // a tool that had already exited 0 when the context ended did finish: its answer stands
 		if parent.Err() != nil {
 			return nil, nil, -1, fmt.Errorf("%w: %w", ErrCanceled, parent.Err())
 		}

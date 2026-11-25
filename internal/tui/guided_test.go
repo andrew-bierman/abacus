@@ -220,8 +220,10 @@ func TestAHalfCreatedWorkspaceOffersARepairWithTheExactPlan(t *testing.T) {
 	}
 	m = press(m, "r")
 	v := m.View()
+	// the box hard-wraps the long temp path wherever the width falls, so compare with the wrapping removed
+	flat := strings.NewReplacer("│", "", "\n", "", " ", "").Replace(v)
 	for _, want := range []string{"Confirm this setup step", ".beads.incomplete-", "nothing is deleted"} {
-		if !strings.Contains(v, want) {
+		if !strings.Contains(flat, strings.ReplaceAll(want, " ", "")) {
 			t.Fatalf("repair confirm screen missing %q:\n%s", want, v)
 		}
 	}

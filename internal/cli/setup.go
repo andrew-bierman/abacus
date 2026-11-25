@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -70,17 +71,21 @@ func runSetup(rest []string, d Deps) int {
 	}
 	steps := s.Steps(ctx)
 	reviewed := s.SetupStepPlans(ctx)
-	digest := core.SetupDigest(reviewed)
+	digest := digestFor(d, core.SetupDigest(reviewed))
 	if expect != "" && expect != digest {
 		return planChanged(d, "setup", expect, digest)
 	}
 	var results []setupResult
-	failed, changedStep := false, false
+	failed, changedStep, unknownStep := false, false, false
 	// Applying needs an explicit yes: --yes, or a y at the prompt (which needs input and text mode).
 	canAsk := !asJSON && !demoRun(d) && d.In != nil && interactive(d.In)
 	if !dry && (yes || canAsk) {
 		in := bufio.NewReader(orEmpty(d.In))
 		for _, st := range steps {
+			if interrupted(d) { // a signal arrived: no further step is planned, audited or run
+				failed = true
+				break
+			}
 			if st.State != "needed" && st.State != "blocked" {
 				continue
 			}
@@ -121,17 +126,23 @@ func runSetup(rest []string, d Deps) int {
 			msg, err := trapped(d, func() applyOut { m, e := s.Apply(ctx, p.Confirm()); return applyOut{m, e} }).unpack()
 			if err != nil {
 				failed = true
+				unknownStep = unknownStep || errors.Is(err, core.ErrOutcomeUnknown)
 				results = append(results, setupResult{Step: st.Step, Error: core.DescribeWriteError(err)})
 				continue
 			}
 			results = append(results, setupResult{Step: st.Step, Applied: true, Message: msg})
 		}
-		steps = s.Steps(ctx) // what is left after applying
+		if !interrupted(d) {
+			steps = s.Steps(ctx) // what is left after applying
+		}
 	}
 	if asJSON {
 		rep := core.SetupReport{Steps: steps, Results: results, PlanDigest: digest}
 		if changedStep { // a step was not run because it was never reviewed: the same error object as any refusal
 			b := core.NewErrorDoc(core.CodeChanged, "the plan changed since you reviewed it: a step was not run; review it again").Error
+			rep.Error = &b
+		} else if unknownStep || (failed && interrupted(d)) { // a cancelled step may or may not have run
+			b := core.NewErrorDoc(core.CodeUnknownOutcome, "a step was interrupted or timed out: its result is unknown; refresh before running setup again").Error
 			rep.Error = &b
 		}
 		jsonOut(d.Out, rep)
@@ -240,7 +251,7 @@ func runRepair(ctx context.Context, s *core.Setup, d Deps, yes, dry, asJSON bool
 		}
 		return finishWith(core.ExitFail, core.CodeRefused)
 	}
-	digest = p.Digest()
+	digest = digestFor(d, p.Digest())
 	if expect != "" && expect != digest {
 		return planChanged(d, "repair", expect, digest) // before anything is printed: under --json this is the error document
 	}

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"os"
@@ -31,7 +33,7 @@ func (d Deps) getenv(k string) string {
 func (o *Options) bind(fs *flag.FlagSet, tracker bool) {
 	fs.BoolVar(&o.Demo, "demo", false, "use invented fixture data: nothing is contacted and nothing can be changed except as a --dry-run plan (also ABACUS_DEMO=1)")
 	if tracker {
-		fs.StringVar(&o.Tracker, "tracker", "", "the tracker folder to use (an absolute path to the folder that holds .beads); wins over ABACUS_BD_DIR and the settings")
+		fs.Func("tracker", "the tracker folder to use (an absolute path to the folder that holds .beads); wins over ABACUS_BD_DIR and the settings", func(v string) error { o.Tracker, o.trackerSet = v, true; return nil })
 	}
 }
 
@@ -41,6 +43,10 @@ func (o *Options) bind(fs *flag.FlagSet, tracker bool) {
 func (o *Options) resolve(d Deps) (code int, ok bool) {
 	if d.getenv(envDemo) == "1" {
 		o.Demo = true
+	}
+	if o.trackerSet && o.Tracker == "" {
+		fmt.Fprintln(d.Err, "--tracker needs a folder (an absolute path to the folder that holds .beads)")
+		return core.ExitUsage, false
 	}
 	if o.Tracker != "" {
 		if o.Demo {
@@ -77,6 +83,19 @@ func refuseDemoWrite(d Deps, label string, dry bool) (int, bool) {
 	}
 	return failf(d, core.CodeRefused, "%s: demo data cannot be changed (nothing was written). --dry-run shows the plan\n", label), true
 }
+
+// digestFor is the plan digest a client sees: in demo mode it is never equal to the digest of the same plan
+// made against a real tracker, so a demo review cannot stand in for a real one (--expect-digest).
+func digestFor(d Deps, digest string) string {
+	if !demoRun(d) {
+		return digest
+	}
+	sum := sha256.Sum256([]byte("abacus-demo-plan\x00" + digest))
+	return hex.EncodeToString(sum[:])
+}
+
+// interrupted reports whether an interrupt arrived while a write was being applied.
+func interrupted(d Deps) bool { return d.base != nil && d.base.Err() != nil }
 
 // demoAudit is the backstop behind refuseDemoWrite: in demo mode an audit record cannot be written,
 // so any apply path that slipped past the guard is stopped by the gate (fail closed) before it runs.
@@ -121,6 +140,7 @@ func trapped[T any](d Deps, apply func() T) T {
 	go func() {
 		select {
 		case <-ch:
+			signal.Stop(ch) // the next one is not caught: it kills the process
 			d.interrupt()
 		case <-done:
 		}

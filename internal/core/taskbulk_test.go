@@ -295,7 +295,7 @@ func TestApplyBulkADeadContextSendsNothing(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	rep, _ := ap.ApplyBulk(ctx, p.Confirm(), readerOf(ts))
-	if len(w.ran) != 0 || rep.Unknown != 3 {
+	if len(w.ran) != 0 || rep.NotRun != 3 { // an interrupt: never started, so nothing was sent
 		t.Fatalf("%+v ran=%d", rep, len(w.ran))
 	}
 }
@@ -336,5 +336,33 @@ func TestCheckFreshRefusesANoOpStatusOrAssignee(t *testing.T) {
 	}
 	if err := core.CheckFresh(ch, core.Task{Assignee: "bob"}); err != nil {
 		t.Errorf("a real assignment fits: %v", err)
+	}
+}
+
+// An interrupt between tasks: the tasks never started are not_run (nothing was sent), not unknown; a deadline
+// keeps the older, more cautious answer.
+func TestApplyBulkStopsOnInterruptWithNotRunAndOnDeadlineWithUnknown(t *testing.T) {
+	for name, tc := range map[string]struct {
+		mk   func() (context.Context, context.CancelFunc)
+		want core.BulkOutcome
+		sub  string
+	}{
+		"interrupt": {func() (context.Context, context.CancelFunc) { return context.WithCancel(context.Background()) }, core.BulkNotRun, "interrupted"},
+		"deadline":  {func() (context.Context, context.CancelFunc) { return context.WithTimeout(context.Background(), 0) }, core.BulkUnknown, "time ran out"},
+	} {
+		w, a := &bulkWriter{}, &memAudit{}
+		ts := tasksN(3)
+		p, _ := core.PlanBulk(w, closeSpec, ts)
+		ctx, cancel := tc.mk()
+		cancel()
+		rep, err := core.NewApplier(w, a).ApplyBulk(ctx, p.Confirm(), readerOf(ts))
+		if err != nil || len(w.ran) != 0 || len(rep.Items) != 3 {
+			t.Fatalf("%s: %v ran=%d %+v", name, err, len(w.ran), rep)
+		}
+		for _, it := range rep.Items {
+			if it.Outcome != tc.want || !strings.Contains(it.Detail, tc.sub) {
+				t.Errorf("%s: %+v", name, it)
+			}
+		}
 	}
 }

@@ -358,7 +358,7 @@ func runTaskWrite(verb string, rest []string, d Deps) int {
 	if err != nil {
 		return planFailed(d, "tasks "+verb, expect, err)
 	}
-	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Apply this change? [y/N] ",
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: digestFor(d, plan.Digest()), expect: expect, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			if op == core.TaskReopen { // someone else may have reopened it, or changed it, since the plan
 				cur, err := reader.ReadTask(ctx, ch.ID)
@@ -529,7 +529,7 @@ func runBoardWrite(verb string, rest []string, d Deps) int {
 	}
 	dctx, dcancel := context.WithTimeout(ctx, 2*core.DefaultExecTimeout)
 	defer dcancel()
-	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Post this to the board? [y/N] ",
+	return runWrite(d, writeFlow{label: "board " + verb, lines: plan.Lines, ctx: w.Describe(dctx, ch), argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: digestFor(d, plan.Digest()), expect: expect, prompt: "Post this to the board? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			res, err := core.NewBoardApplier(w, au).Apply(ctx, plan.Confirm())
 			return res, "done: posted #" + res.ID, err

@@ -215,3 +215,109 @@ func TestVersionJSONHasTheContractSection(t *testing.T) {
 		}
 	}
 }
+
+// Demo mode refuses every command that changes something, through the central table, with nothing written.
+func TestDemoModeRefusesEveryMutatingCommandCentrally(t *testing.T) {
+	cfgDir := t.TempDir()
+	cfg := filepath.Join(cfgDir, "config.json")
+	out := filepath.Join(t.TempDir(), "schemas")
+	mutating := [][]string{
+		{"config", "set", "actor", "bob"}, {"schema", "--out", out}, {"rex", "layout", "--yes"}, {"rex", "layout", "--dry-run"},
+		{"setup", "--yes"}, {"setup", "--repair", "--yes"}, {"tasks", "close", "ac-12", "--yes"}, {"tasks", "create", "--title", "x", "--yes"},
+		{"tasks", "bulk", "--ids", "ac-12", "--op", "close", "--yes"}, {"board", "post", "dev", "x", "--yes"}, {"board", "reply", "15", "x", "--yes"},
+		{"tasks", "nosuchverb"}, {"config", "nosuchverb"},
+	}
+	for _, how := range []string{"flag", "env"} {
+		for _, c := range mutating {
+			args := append([]string{}, c...)
+			env := map[string]string{}
+			if how == "flag" {
+				args = append(args, "--demo")
+			} else {
+				env["ABACUS_DEMO"] = "1"
+			}
+			au := &memAudit{}
+			var o, e bytes.Buffer
+			code := cli.Run(append(args, "--json"), cli.Deps{Out: &o, Err: &e, Audit: au, Version: "t", Config: core.ConfigStore{Path: cfg},
+				Getenv: func(k string) string { return env[k] },
+				Build:  func(cli.Options) *core.Registry { return core.NewRegistry(contractMods()...) }})
+			var doc core.ErrorDoc
+			if code != 1 || json.Unmarshal(o.Bytes(), &doc) != nil || doc.Error.Code != core.CodeRefused {
+				t.Errorf("%v %s: exit %d out %s err %s", c, how, code, o.String(), e.String())
+			}
+			if au.n != 0 {
+				t.Errorf("%v %s: audited", c, how)
+			}
+		}
+	}
+	if _, err := os.Stat(cfg); err == nil {
+		t.Error("demo mode wrote the config")
+	}
+	if _, err := os.Stat(out); err == nil {
+		t.Error("demo mode wrote schema files")
+	}
+	// reads and dry-run plans still work in demo mode
+	for _, c := range [][]string{{"config", "show"}, {"config", "path"}, {"schema"}, {"tasks", "close", "ac-12", "--dry-run"}, {"setup"}, {"licenses"}} {
+		args := append(append([]string{}, c...), "--json")
+		if c[0] == "licenses" {
+			args = c
+		}
+		var o, e bytes.Buffer
+		if code := cli.Run(args, cli.Deps{Out: &o, Err: &e, Version: "t", Config: core.ConfigStore{Path: cfg}, Getenv: func(k string) string { return map[string]string{"ABACUS_DEMO": "1"}[k] },
+			Build: func(cli.Options) *core.Registry { return core.NewRegistry(contractMods()...) }}); code != 0 {
+			t.Errorf("%v in demo mode: exit %d %s", c, code, e.String())
+		}
+	}
+}
+
+func TestDemoDigestNeverEqualsARealOne(t *testing.T) {
+	digest := func(env map[string]string, extra ...string) string {
+		_, out, _, _ := runOpts(t, env, &memAudit{}, append([]string{"tasks", "close", "ac-12", "--dry-run", "--json"}, extra...)...)
+		var d struct {
+			PlanDigest string `json:"plan_digest"`
+		}
+		if err := json.Unmarshal([]byte(out), &d); err != nil || len(d.PlanDigest) != 64 {
+			t.Fatalf("%v %s", err, out)
+		}
+		return d.PlanDigest
+	}
+	real, demo := digest(nil), digest(nil, "--demo")
+	if real == demo || demo != digest(map[string]string{"ABACUS_DEMO": "1"}) {
+		t.Errorf("real %s demo %s", real, demo)
+	}
+	// and --expect-digest takes the demo digest in demo mode, the real one only outside it
+	if code, _, _, _ := runOpts(t, nil, &memAudit{}, "tasks", "close", "ac-12", "--dry-run", "--demo", "--expect-digest", real); code != 1 {
+		t.Errorf("a real digest must not match a demo plan: %d", code)
+	}
+	if code, _, _, _ := runOpts(t, nil, &memAudit{}, "tasks", "close", "ac-12", "--dry-run", "--demo", "--expect-digest", demo); code != 0 {
+		t.Errorf("the demo digest matches its own plan: %d", code)
+	}
+}
+
+func TestEmptyTrackerFlagIsAUsageErrorOnEveryVerb(t *testing.T) {
+	for _, c := range [][]string{{"tasks"}, {"tasks", "list"}, {"tasks", "show", "ac-12"}, {"tasks", "graph"}, {"tasks", "board"}, {"tasks", "history", "ac-12"},
+		{"tasks", "create", "--title", "x", "--dry-run"}, {"tasks", "close", "ac-12", "--dry-run"}, {"tasks", "label", "add", "ac-12", "ui", "--dry-run"},
+		{"tasks", "bulk", "--ids", "ac-12", "--op", "close", "--dry-run"}, {"search", "x"}, {"status"}, {"doctor"}} {
+		for _, form := range [][]string{{"--tracker", ""}, {"--tracker="}} {
+			var built bool
+			var o, e bytes.Buffer
+			code := cli.Run(append(append([]string{}, c...), append(form, "--json")...), cli.Deps{Out: &o, Err: &e, Build: func(cli.Options) *core.Registry { built = true; return core.NewRegistry() }})
+			if code != 2 || built || !strings.Contains(e.String(), "--tracker") {
+				t.Errorf("%v %v: exit %d built=%v %s", c, form, code, built, e.String())
+			}
+		}
+	}
+}
+
+// A bulk batch with an unknown result carries the standard error object next to its own per-task results.
+func TestBulkWithAnUnknownResultCarriesTheErrorObject(t *testing.T) {
+	m := newTaskMod()
+	m.fail = core.UnknownOutcome("timed out")
+	var o, e bytes.Buffer
+	code := cli.Run([]string{"tasks", "bulk", "--ids", "ac-12", "--op", "close", "--yes", "--json"}, cli.Deps{Out: &o, Err: &e, Audit: &memAudit{}, Version: "t",
+		Build: func(cli.Options) *core.Registry { return core.NewRegistry(m) }})
+	var rep core.BulkReport
+	if code != 1 || json.Unmarshal(o.Bytes(), &rep) != nil || rep.Unknown != 1 || rep.Error == nil || rep.Error.Code != core.CodeUnknownOutcome || !rep.Error.UnknownOutcome {
+		t.Errorf("exit %d %s", code, o.String())
+	}
+}

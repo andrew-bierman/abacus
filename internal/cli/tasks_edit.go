@@ -179,7 +179,7 @@ func runTaskEdit(verb string, rest []string, d Deps) int {
 	if err != nil {
 		return planFailed(d, "tasks "+verb, expect, err)
 	}
-	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: plan.Digest(), expect: expect, prompt: "Apply this change? [y/N] ",
+	return runWrite(d, writeFlow{label: "tasks " + verb, lines: plan.Lines, argv: plan.Argv, yes: yes, dry: dry, asJSON: asJSON, digest: digestFor(d, plan.Digest()), expect: expect, prompt: "Apply this change? [y/N] ",
 		apply: func(au core.Audit) (any, string, error) {
 			// the task is read again after the confirm: a change by someone else in between is refused, and
 			// nothing is written or audited (an aborted plan never reaches the gate)

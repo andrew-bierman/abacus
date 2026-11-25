@@ -126,7 +126,7 @@ func runTaskBulk(rest []string, d Deps) int {
 	if err != nil {
 		return planFailed(d, "tasks bulk", expect, err)
 	}
-	digest := plan.Digest()
+	digest := digestFor(d, plan.Digest())
 	if expect != "" && expect != digest {
 		return planChanged(d, "tasks bulk", expect, digest)
 	}
@@ -173,6 +173,10 @@ func runTaskBulk(rest []string, d Deps) int {
 		return failf(d, core.CodeFor(err), "tasks bulk: %s\n", core.DescribeWriteError(err))
 	}
 	rep.PlanDigest = digest
+	if rep.Unknown > 0 { // the same error object as any failing command, next to the per-task results
+		b := core.NewErrorDoc(core.CodeUnknownOutcome, "result unknown for "+core.Plural(rep.Unknown, "task")+": refresh before retrying").Error
+		rep.Error = &b
+	}
 	if asJSON {
 		jsonOut(d.Out, rep)
 	} else {

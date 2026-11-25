@@ -23,7 +23,8 @@ type Options struct {
 	// Demo builds the demo providers (invented fixtures) instead of the real ones.
 	Demo bool
 	// Tracker is the validated tracker folder from --tracker ("" means the usual choice).
-	Tracker string
+	Tracker    string
+	trackerSet bool // --tracker was given, even with an empty value
 }
 
 // Deps are the process edges, injectable for tests.
@@ -119,6 +120,9 @@ func run(args []string, d Deps) int {
 }
 
 func dispatch(args []string, d Deps) int {
+	if code, refused := demoGate(d, args); refused {
+		return code
+	}
 	cmd, rest := args[0], args[1:]
 	// The first start unpacks the built-in tools (a few seconds): say so on stderr rather than
 	// leaving a blank terminal. Nothing is printed when they are already unpacked.

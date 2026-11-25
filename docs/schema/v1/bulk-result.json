@@ -23,6 +23,27 @@
         "outcome"
       ],
       "type": "object"
+    },
+    "ErrorBody": {
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "unknown_outcome": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -37,6 +58,9 @@
     "demo": {
       "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
       "type": "boolean"
+    },
+    "error": {
+      "$ref": "#/$defs/ErrorBody"
     },
     "failed": {
       "type": "integer"
