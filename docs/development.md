@@ -23,7 +23,7 @@ types. Review the diff either way: a key may be added, never renamed or removed,
 ```
 make build-dev               # go build -o bin/abacus ./cmd/abacus: quick, no tools built in
 make build                   # bin/abacus with every tool inside (needs gh, npm, bun)
-./bin/abacus doctor          # leads with: Built-in tools: 4 of 4 ready
+./bin/abacus doctor          # check built-in tools and provider connections
 ```
 
 `make build` fetches and verifies the pinned tools into `.cache/` and `internal/embedtools/blobs/`
