@@ -51,10 +51,10 @@ type grokPath struct {
 
 // grokGroupBest caches the newest session for one cwd group, invalidated by the group's mtime.
 type grokGroupBest struct {
-	dir       string
-	at        time.Time
-	groupMod  time.Time
-	checked   time.Time
+	dir      string
+	at       time.Time
+	groupMod time.Time
+	checked  time.Time
 }
 
 // grokStamp identifies a sidecar version. Size covers the common case where a growing usage
