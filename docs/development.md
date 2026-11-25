@@ -1,11 +1,7 @@
 # Development
 
-- Develop and test against an isolated `HOME`, `XDG_*` dirs and `bd` database. Never touch a
-  running Lambe daemon, its state, or real Beads data.
-- Nothing here launches an app or takes window focus. Tests use fakes for Lambe, HTTP and Rex; the only real
-  tool tests run is `bd`, against temp projects with an isolated `HOME`, and they skip when absent.
-  Sidecar tests use fake binaries in temp dirs.
-- Use a private `GOCACHE` for builds.
+Start with the [isolated test commands in Contributing](../CONTRIBUTING.md#test-isolation-rules). Use them for focused tests and builds too. Tests use fake Lambe, HTTP, Rex, and sidecar providers. The Beads integration tests use `bd` against a temporary project and skip if it is unavailable.
+
 - The Agents domain reads the process list and the session folders of Claude Code and Codex. Tests never do:
   `app.Env.Agents` is nil unless `DefaultEnv` sets it, every source is injected, and the `internal/agents`
   tests make reaching for the real ones panic.
@@ -27,7 +23,7 @@ types. Review the diff either way: a key may be added, never renamed or removed,
 ```
 make build-dev               # go build -o bin/abacus ./cmd/abacus: quick, no tools built in
 make build                   # bin/abacus with every tool inside (needs gh, npm, bun)
-./bin/abacus doctor          # leads with: Built-in tools: 4 of 4 ready
+./bin/abacus doctor          # check built-in tools and provider connections
 ```
 
 `make build` fetches and verifies the pinned tools into `.cache/` and `internal/embedtools/blobs/`
