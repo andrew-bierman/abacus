@@ -351,9 +351,12 @@ its refresh interval is marked "may be out of date". A domain that is not connec
 or unreadable is named in one muted line, and a domain searched only in part says how (only recent changes for Tasks when the full list could not be read, only recent threads for a capped Board, the first 20,000 documents). The last 100 queries that led to a jump are kept in the
 abacus state directory (`search-history.json`, mode 0600, never in a tracker directory; a demo
 session keeps none). The queries are stored as plain text: `abacus config set search_history off`
-keeps none. If the history file is busy the jump still happens and the footer says it was not saved. `abacus search "QUERY" [--domain D] [--limit N] [--json]` prints the same hits
-(exit 0 with an answer, 1 when no domain could be searched, 2 for a bad invocation or query; nothing
-on stdout on a failure under `--json`).
+keeps none. If the history file is busy, the jump still happens and the footer says it was not saved.
+
+`abacus search "QUERY" [--domain D] [--limit N] [--json]` prints the same hits. It exits 0 with an
+answer, 1 when no domain could be searched, and 2 for an invalid invocation or query. On failure,
+`--json` writes one [structured error document](tool-contract.md#errors-stable-codes) to stdout.
+Without `--json`, stdout stays empty. The diagnostic goes to stderr in both modes.
 
 ## Command prompt
 
