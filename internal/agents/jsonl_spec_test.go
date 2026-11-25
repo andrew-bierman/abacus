@@ -561,3 +561,62 @@ func TestJSONLSpecEmptyPath(t *testing.T) {
 		t.Errorf("err = %v, want %v", err, errJSONLPathEmpty)
 	}
 }
+
+// jsonlSpecResponse is one response record whose id a store can rewrite as its usage grows.
+func jsonlSpecResponse(t *testing.T, id, text string, counts jsonlSpecCounts) string {
+	t.Helper()
+	return jsonlSpecJSON(t, map[string]any{
+		"meta": map[string]any{"timestamp": "2026-11-24T10:00:01Z", "id": "ses_quartz"},
+		"event": map[string]any{
+			"kind": "bot", "body": text, "id": id,
+			"usage": map[string]any{"in": counts.in, "out": counts.out, "read": counts.read, "write": counts.write},
+		},
+	})
+}
+
+// A cumulative mapping is already idempotent at a repeated level, so its UsageID must not take
+// the additive replacement path and rebaseline the history.
+func TestJSONLSpecCumulativeUsageKeepsItsLevels(t *testing.T) {
+	mapping := jsonlSpecMapping()
+	mapping.Usage = JSONLUsageCumulative
+	mapping.UsageID = "event.id"
+	path := writeJSONLSpecFile(t,
+		jsonlSpecResponse(t, "msg_kiln", "First.", jsonlSpecCounts{in: 100, out: 20, read: 5}),
+		jsonlSpecResponse(t, "msg_kiln", "Second.", jsonlSpecCounts{in: 150, out: 30, read: 5}),
+	)
+
+	got := readJSONLSpec(t, &JSONLStore{Mapping: mapping}, path)
+
+	if want := []int64{125, 60}; !slices.Equal(got.TokenHistory, want) {
+		t.Errorf("history = %v, want each level once %v", got.TokenHistory, want)
+	}
+	if got.Tokens != (Tokens{Input: 150, Output: 30, CacheRead: 5}) {
+		t.Errorf("tokens = %+v, want the latest level", got.Tokens)
+	}
+	if got.Context.Used != 50 {
+		t.Errorf("context = %+v, want the latest level's share", got.Context)
+	}
+}
+
+func TestJSONLSpecRepeatedResponseReplacesItsUsage(t *testing.T) {
+	mapping := jsonlSpecMapping()
+	mapping.UsageID = "event.id"
+	path := writeJSONLSpecFile(t,
+		jsonlSpecResponse(t, "msg_kiln", "Working.", jsonlSpecCounts{in: 100, out: 20, read: 10}),
+		jsonlSpecResponse(t, "msg_kiln", "Working.", jsonlSpecCounts{in: 120, out: 30, read: 10}),
+		jsonlSpecResponse(t, "msg_kiln", "Working.", jsonlSpecCounts{in: 120, out: 30, read: 10}),
+		jsonlSpecResponse(t, "msg_kiln_2", "Done.", jsonlSpecCounts{in: 40, out: 8, read: 5}),
+	)
+
+	got := readJSONLSpec(t, &JSONLStore{Mapping: mapping}, path)
+
+	if want := (Tokens{Input: 160, Output: 38, CacheRead: 15}); got.Tokens != want {
+		t.Errorf("tokens = %+v, want only the latest write of each response %+v", got.Tokens, want)
+	}
+	if want := []int64{160, 53}; !slices.Equal(got.TokenHistory, want) {
+		t.Errorf("history = %v, want one point per response %v", got.TokenHistory, want)
+	}
+	if got.Context.Used != 45 {
+		t.Errorf("context = %+v, want the latest response's prompt", got.Context)
+	}
+}

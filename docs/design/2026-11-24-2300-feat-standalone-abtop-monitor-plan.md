@@ -73,7 +73,7 @@ The loop works the first unchecked item. Tick one per pass.
 - [x] `jsonl_spec.go`: generic JSONL adapter (dotted-path mapping, additive vs cumulative usage)
 - [x] port the three existing JSONL readers onto the generic adapter, deleting the duplication
 - [x] `grok` adapter (verified against the store on this machine)
-- [ ] `gemini` adapter (documented-only until a real session exists)
+- [x] `gemini` adapter (documented-only until a real session exists)
 - [ ] `copilot` adapter
 - [ ] `qwen` adapter
 - [ ] `hermes` adapter (SQLite)
@@ -145,3 +145,19 @@ One line per completed item: what it did and how it was verified.
   (SessionEnded, SessionSummaryGenerated), field shapes are pinned by binary strings and synthetic
   fixtures rather than a full live transcript, and the group-mtime cache trusts the filesystem to
   update the parent directory mtime when a new session subdirectory is created.
+- `gemini` adapter — added `internal/agents/gemini.go` with `GeminiStore` over the generic JSONL
+  adapter: the mapping reads the header (`sessionId`), message records (`type` user/gemini,
+  `content`, `model`), `tokens.{input,output,cached}` with cached content split out of input, and
+  `$set.summary`; a `UsageID` in the mapping makes a rewritten response replace its own
+  contribution, and the store resolves the project from `projects.json`, a legacy SHA-256
+  directory, or a cached `.project_root` marker, with subagent parent from the nested directory.
+  Registered `HarnessGemini` and joined it in `internal/core/sessions.go`. **Verified against
+  Gemini CLI's upstream `chatRecordingService.ts`, `chatRecordingTypes.ts`, `storage.ts` and
+  `paths.ts` plus synthetic fixtures with invented names; there is no real Gemini session store
+  on this machine, so this is documented-only.** Tests pin registry, legacy-hash, marker,
+  malformed-registry, cached-hit, cache-eviction, subagent-parent, rewrite-folding, prompt-fill and
+  non-conversation records. `go build ./...`, `go vet ./...` and `go test ./...` pass. Review
+  applied the marker-index cache (a miss no longer re-walks every project), isolated each
+  resolution strategy in tests, and collapsed resolution to one candidate loop; residual: no live
+  transcript, older-response rewrites count anew, live subagents resolve the parent session, and
+  Gemini tool records do not drive state (CPU deltas still do).

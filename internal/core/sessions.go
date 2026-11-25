@@ -113,6 +113,7 @@ type SessionsOptions struct {
 	ClaudeRoot string
 	PiRoot     string
 	CodexRoot  string
+	GeminiRoot string
 	GrokRoot   string
 	// ClaudeConfigDirs are the directories whose rate-limit hooks are read. Empty means
 	// CLAUDE_CONFIG_DIR when set, then ~/.claude.
@@ -133,6 +134,7 @@ type Sessions struct {
 	collector agents.Collector
 	claude    agents.ClaudeStore
 	codex     agents.CodexStore
+	gemini    agents.GeminiStore
 	grok      agents.GrokStore
 	pi        agents.PiStore
 	opencode  agents.OpenCodeStore
@@ -186,6 +188,9 @@ func NewSessions(o SessionsOptions) *Sessions {
 	if o.CodexRoot == "" {
 		o.CodexRoot = agents.CodexSessionsPath(o.Home)
 	}
+	if o.GeminiRoot == "" {
+		o.GeminiRoot = agents.GeminiSessionsPathFrom(o.Home, o.Getenv)
+	}
 	if o.GrokRoot == "" {
 		o.GrokRoot = agents.GrokSessionsPathFrom(o.Home, o.Getenv)
 	}
@@ -210,12 +215,13 @@ func NewSessions(o SessionsOptions) *Sessions {
 		collector:  agents.Collector{Machine: o.Machine, Now: o.Now},
 		claude:     agents.ClaudeStore{Root: o.ClaudeRoot},
 		codex:      agents.CodexStore{},
+		gemini:     agents.GeminiStore{Root: o.GeminiRoot},
 		grok:       agents.GrokStore{Root: o.GrokRoot},
 		pi:         agents.PiStore{Root: o.PiRoot},
 		opencode:   agents.OpenCodeStore{Path: o.OpenCodeDB},
 		git:        agents.Git{Runner: o.Runner, Now: o.Now},
 	}
-	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.grok, &s.pi}
+	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.gemini, &s.grok, &s.pi}
 	return s
 }
 
@@ -426,6 +432,8 @@ func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, open map[
 		return st, ok, nil
 	case agents.HarnessClaude:
 		return s.transcriptFor(&s.claude, sess)
+	case agents.HarnessGemini:
+		return s.transcriptFor(&s.gemini, sess)
 	case agents.HarnessGrok:
 		return s.transcriptFor(&s.grok, sess)
 	case agents.HarnessPi:
@@ -444,8 +452,8 @@ func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, open map[
 	return agents.StoredSession{}, false, nil
 }
 
-// transcriptStore is the pair of reads the Claude, pi and Grok readers share: resolve the file
-// a session in a directory is writing, then parse it.
+// transcriptStore is the pair of reads the Claude, Gemini, pi and Grok readers share: resolve the
+// file a session in a directory is writing, then parse it.
 type transcriptStore interface {
 	PathFor(cwd string, since time.Time) (string, bool)
 	Transcript(path string) (agents.StoredSession, error)

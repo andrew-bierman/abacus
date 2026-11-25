@@ -56,6 +56,12 @@ type JSONLMapping struct {
 	ID       string
 	Dir      string
 	ParentID string
+	// UsageID names a record id a store repeats when it rewrites a message, as Gemini CLI does
+	// when tokens or tool calls arrive for a response already written. A repeat of the latest
+	// id replaces that response's contribution; a repeat of an older id is counted as a new
+	// contribution, because only the latest response is rewritten in practice. Empty means
+	// every record is a new contribution.
+	UsageID string
 	// Title is an explicit session name. The latest non-empty value wins.
 	Title string
 	// Input, Output, CacheRead and CacheCreate are the four token counters.
@@ -138,6 +144,7 @@ type jsonlPaths struct {
 	meta               jsonlMetaPaths
 	text               []string
 	role               []string
+	usageID            []string
 	tokens             jsonlTokenPaths
 	fill               jsonlFillPaths
 }
@@ -167,8 +174,9 @@ func compileJSONLMapping(m JSONLMapping) jsonlPaths {
 			title:     splitJSONLPath(m.Title),
 			timestamp: splitJSONLPath(m.Timestamp),
 		},
-		text: splitJSONLPath(m.Text),
-		role: splitJSONLPath(m.Role),
+		text:    splitJSONLPath(m.Text),
+		role:    splitJSONLPath(m.Role),
+		usageID: splitJSONLPath(m.UsageID),
 		tokens: jsonlTokenPaths{
 			input:       splitJSONLPath(m.Input),
 			output:      splitJSONLPath(m.Output),
@@ -190,6 +198,11 @@ type jsonlMappedFile struct {
 
 	openTurn  bool
 	executing bool
+
+	// lastUsageID and lastUsage remember the latest response a store may write again, so a
+	// rewritten message replaces its own contribution instead of doubling the totals.
+	lastUsageID string
+	lastUsage   Tokens
 }
 
 func (f *jsonlMappedFile) add(line []byte) {
@@ -201,7 +214,7 @@ func (f *jsonlMappedFile) add(line []byte) {
 	role := f.paths.recordRole(record)
 	f.applyRole(record, role)
 	if tokens, ok := f.paths.tokensFor(record); ok {
-		f.usage(tokens, role)
+		f.usage(tokens, role, f.paths.usageKey(record))
 	}
 	f.contextFields(record)
 }
@@ -255,9 +268,23 @@ func (f *jsonlMappedFile) applyRole(record map[string]any, role JSONLRole) {
 	}
 }
 
-func (f *jsonlMappedFile) usage(t Tokens, role JSONLRole) {
+func (f *jsonlMappedFile) usage(t Tokens, role JSONLRole, usageID string) {
 	if t == (Tokens{}) {
 		return
+	}
+	// A store that rewrites a response as its usage grows writes the full record again. Replace
+	// that response's contribution rather than count it twice; an identical rewrite changes
+	// nothing. Cumulative usage is already idempotent at the same level.
+	if role == JSONLRoleAssistant && f.paths.usage != JSONLUsageCumulative {
+		if usageID != "" && usageID == f.lastUsageID {
+			if t == f.lastUsage {
+				return
+			}
+			f.discardLastResponse(f.lastUsage)
+		}
+		if usageID != "" {
+			f.lastUsageID, f.lastUsage = usageID, t
+		}
 	}
 	// delta is what this record added: the record itself in additive mode and after a reset,
 	// and the difference from the previous level in cumulative mode.
@@ -325,6 +352,19 @@ func (p *jsonlPaths) recordRole(record map[string]any) JSONLRole {
 		return role
 	}
 	return JSONLRole(raw)
+}
+
+// usageKey returns the id a store uses to recognize a rewritten response, empty when the
+// mapping declares none.
+func (p *jsonlPaths) usageKey(record map[string]any) string {
+	if len(p.usageID) == 0 {
+		return ""
+	}
+	v, ok := jsonlLookup(record, p.usageID)
+	if !ok {
+		return ""
+	}
+	return jsonlString(v)
 }
 
 // tokensFor reports whether the mapping declares any token path, which is different from a

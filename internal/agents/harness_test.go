@@ -25,6 +25,11 @@ var registryContracts = map[Harness]registryContract{
 		kind:     KindJSONL,
 		root:     CodexSessionsPath,
 	},
+	HarnessGemini: {
+		binaries: []string{"gemini"},
+		kind:     KindJSONL,
+		root:     GeminiSessionsPath,
+	},
 	HarnessGrok: {
 		binaries: []string{"grok", "grok-cli"},
 		kind:     KindJSONL,

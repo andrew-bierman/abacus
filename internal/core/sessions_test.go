@@ -490,6 +490,52 @@ func TestSessionsJoinsGrokSession(t *testing.T) {
 	}
 }
 
+// TestSessionsJoinsGeminiTranscript covers the Gemini arm of the join: the project registry maps
+// the live process's directory to a chats folder, and the session file supplies the title, model
+// and tokens.
+func TestSessionsJoinsGeminiTranscript(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/atelier"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	// A relocated root proves SessionsOptions.GeminiRoot is plumbed, not just the default.
+	root := filepath.Join(home, ".gemini", "relocated")
+	writeFile(t, filepath.Join(home, ".gemini", "projects.json"),
+		`{"projects":{"`+cwd+`":"atelier"}}`)
+	writeFile(t, filepath.Join(root, "atelier", ".project_root"), cwd+"\n")
+	path := filepath.Join(root, "atelier", "chats", "session-2026-11-24T09-00-abcdef12.jsonl")
+	writeFile(t, path, strings.Join([]string{
+		`{"sessionId":"ses_gemini","projectHash":"fixture","startTime":"2026-11-24T09:00:00Z","lastUpdated":"2026-11-24T09:00:00Z"}`,
+		`{"id":"msg_prompt","timestamp":"2026-11-24T09:00:01Z","type":"user","content":"tidy the atelier"}`,
+		`{"id":"msg_reply","timestamp":"2026-11-24T09:00:02Z","type":"gemini","content":[{"text":"done"}],"model":"fixture-model-3","tokens":{"input":120,"output":30,"cached":20,"thoughts":0,"tool":0,"total":150}}`,
+	}, "\n")+"\n")
+	setMtime(t, path, started.Add(time.Minute))
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{6000: {PID: 6000, PPID: 1, Name: "gemini", Started: started}},
+		cwds:  map[int]string{6000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		GeminiRoot: root,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "tidy the atelier" || got.Model != "fixture-model-3" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 100, Output: 30, CacheRead: 20}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.Context != (agents.Context{Used: 120}) {
+		t.Errorf("context = %+v, want the prompt tokens", got.Context)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the response", got.State)
+	}
+}
+
 // TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted pins the `since` argument: an
 // older transcript in the same project is not this process's session.
 func TestSessionsIgnoresATranscriptWrittenBeforeTheProcessStarted(t *testing.T) {

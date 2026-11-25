@@ -126,13 +126,21 @@ func (t transcriptRef) newerThan(o transcriptRef) bool {
 }
 
 func newestTranscript(dir string, since time.Time) (transcriptRef, bool) {
+	return newestTranscriptMatching(dir, since, func(name string) bool {
+		return strings.HasSuffix(name, ".jsonl")
+	})
+}
+
+// newestTranscriptMatching is the directory scan behind every store that groups one file per
+// session, with the store's own filename rule supplied by keep.
+func newestTranscriptMatching(dir string, since time.Time, keep func(string) bool) (transcriptRef, bool) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return transcriptRef{}, false
 	}
 	var best transcriptRef
 	for _, e := range entries {
-		if e.IsDir() || e.Type()&os.ModeSymlink != 0 || !strings.HasSuffix(e.Name(), ".jsonl") {
+		if e.IsDir() || e.Type()&os.ModeSymlink != 0 || !keep(e.Name()) {
 			continue
 		}
 		info, err := e.Info()
