@@ -92,9 +92,12 @@ linked_field() { jq -r --arg t "$1" ".linked_licenses[] | select(.name==\$t) | $
 module_license_file() {
   local dir
   [[ "$3" =~ ^[A-Za-z0-9._-]+$ ]] || die "unsafe license path '$3' in the manifest"
-  dir="$(go -C "$root" mod download -json "$1@$2" | jq -r .Dir)" && [ -d "$dir" ] \
-    || die "cannot read $1@$2 from the module cache (run go mod download first)"
-  [ -f "$dir/$3" ] && [ ! -L "$dir/$3" ] || die "$1@$2 has no regular file $3"
+  if ! dir="$(go -C "$root" mod download -json "$1@$2" | jq -r .Dir)" || [ ! -d "$dir" ]; then
+    die "cannot read $1@$2 from the module cache (run go mod download first)"
+  fi
+  if [[ ! -f "$dir/$3" || -L "$dir/$3" ]]; then
+    die "$1@$2 has no regular file $3"
+  fi
   echo "$dir/$3"
 }
 
@@ -201,8 +204,9 @@ fetch() {
     echo "npm:$(tool_field "$tool" .package)@$(tool_field "$tool" .version)"; return 0
   fi
   asset="$(tool_field "$tool" ".assets[\"$p\"].asset")"; want="$(tool_field "$tool" ".assets[\"$p\"].sha256")"
-  [ -n "$asset" ] && [ "$asset" != null ] && [ -n "$want" ] && [ "$want" != null ] \
-    || die "$tool has no pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
+  if [[ -z "$asset" || "$asset" == null || -z "$want" || "$want" == null ]]; then
+    die "$tool has no pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
+  fi
   mkdir -p "$cache/$tool"
   if [ ! -f "$cache/$tool/$asset" ]; then
     download_release_asset "$(tool_field "$tool" .repo)" "$(tag_for "$tool" "$(tool_field "$tool" .version)")" \
@@ -242,8 +246,12 @@ fetch_bun() {
   local tool="$1" p="$2" asset want member bunv dir zip exe
   asset="$(tool_field "$tool" ".bun_runtime[\"$p\"].asset // empty")"; want="$(tool_field "$tool" ".bun_runtime[\"$p\"].sha256 // empty")"
   member="$(tool_field "$tool" ".bun_runtime[\"$p\"].member // empty")"; bunv="$(tool_field "$tool" .bun_version)"
-  [ -n "$asset" ] && [ -n "$want" ] && [ -n "$member" ] || die "$tool has no bun runtime pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
-  [[ "$asset" =~ ^bun-[a-z0-9-]+\.zip$ ]] && [[ "$member" =~ ^bun-[a-z0-9-]+/bun$ ]] || die "$tool: unsafe bun runtime asset or member in the manifest"
+  if [[ -z "$asset" || -z "$want" || -z "$member" ]]; then
+    die "$tool has no bun runtime pin for $p in the manifest (run scripts/update-bundled-tools.sh)"
+  fi
+  if [[ ! "$asset" =~ ^bun-[a-z0-9-]+\.zip$ || ! "$member" =~ ^bun-[a-z0-9-]+/bun$ ]]; then
+    die "$tool: unsafe bun runtime asset or member in the manifest"
+  fi
   dir="$cache/bun/$bunv-$p"; zip="$dir/$asset"; exe="$dir/bun"
   mkdir -p "$dir"
   if [ ! -f "$zip" ]; then
@@ -271,8 +279,12 @@ ensure_board_build() {
   bunv="$(tool_field "$tool" .bun_version)"; entry="$(tool_field "$tool" .entry)"
   target="$(tool_field "$tool" ".assets[\"$p\"].bun_target")"; pkg="$(tool_field "$tool" .package)"
   [[ "$target" =~ ^bun-[a-z0-9-]+$ ]] || die "$tool: unsafe bun target '$target' in the manifest"
-  [[ "$entry" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$entry" != *..* ]] || die "$tool: unsafe entry '$entry' in the manifest"
-  [ -f "$lock" ] && [ "$(sha "$lock")" = "$lock_sha" ] || die "$tool: $(tool_field "$tool" .lockfile) does not match its pin lockfile_sha256; review it, then re-pin"
+  if [[ ! "$entry" =~ ^[A-Za-z0-9._/-]+$ || "$entry" == *..* ]]; then
+    die "$tool: unsafe entry '$entry' in the manifest"
+  fi
+  if [[ ! -f "$lock" || "$(sha "$lock")" != "$lock_sha" ]]; then
+    die "$tool: $(tool_field "$tool" .lockfile) does not match its pin lockfile_sha256; review it, then re-pin"
+  fi
   jq -e --arg pkg "$pkg" --arg i "$integ" '.packages["node_modules/" + $pkg].integrity == $i' "$lock" >/dev/null \
     || die "$tool: the lockfile does not record the pinned npm integrity for $pkg"
   key="$cache/$tool/$version-$p"; rec="$integ $lock_sha $bunv $target $(tool_field "$tool" ".bun_runtime[\"$p\"].sha256 // empty")"

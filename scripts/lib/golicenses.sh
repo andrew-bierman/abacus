@@ -52,7 +52,10 @@ go_licenses_section() {
 
   # Every Go binary also contains the Go standard library and runtime.
   local goroot
-  goroot="$(go env GOROOT)" && [ -f "$goroot/LICENSE" ] || { echo "no Go LICENSE found" >&2; return 1; }
+  if ! goroot="$(go env GOROOT)" || [ ! -f "$goroot/LICENSE" ]; then
+    echo "no Go LICENSE found" >&2
+    return 1
+  fi
   echo "### Go standard library and runtime"
   echo
   echo "License file \`LICENSE\` of the Go toolchain:"

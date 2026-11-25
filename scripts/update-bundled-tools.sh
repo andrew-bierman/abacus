@@ -163,7 +163,9 @@ pin_linked() {
 }
 
 if [ -n "$lic_name" ]; then
-  [ "${#args[@]}" = 0 ] && [ "$all" = 0 ] || die "--license takes only a name"
+  if [[ "${#args[@]}" != 0 || "$all" != 0 ]]; then
+    die "--license takes only a name"
+  fi
   pin_linked "$lic_name"
 elif [ "$all" = 1 ]; then
   [ "${#args[@]}" = 0 ] || die "--all takes no arguments"
