@@ -1,19 +1,23 @@
 # Agents
 
-One dashboard of every coding agent running on this machine, across harnesses: Claude Code and
-Codex, OpenCode and pi read from the files and database they write, with Gemini CLI and Aider seen as
-processes. It is read only. abacus never
-starts, stops, signals or types into an agent.
+The Agents tab shows coding agents that Abacus can find on the local machine. Open it with
+`:agents` in the TUI, or use `abacus agents` from a shell.
 
-`abacus agents [--json] [--harness H] [--state S] [--repo R] [WORDS...]` prints the report, the
-Agents tab shows it live, `abacus search` and `ctrl+k` cover it, and `:agents` jumps to it.
+```sh
+abacus agents --harness codex
+abacus agents --json
+```
+
+Native discovery reads local session data for Claude Code, Codex, OpenCode, and pi. Gemini CLI and
+Aider can appear through process discovery. The optional bundled abtop monitor adds live detail,
+including child processes, listener ports, subagents, and orphan-port alerts. Both sources are
+read-only.
 
 ## What an agent is
 
-The typed report (`AgentsReport`, `schema_version` 1, additive changes only) holds `agents[]` and,
-`rate_limits[]` (from the session files, the status-line file and the live monitor), and, when the live
-monitor supplied them, `orphan_ports[]` and `token_rate`.
-`notes[]` says which source could not be read; the other sources still count.
+The `AgentsReport` JSON uses `schema_version` 1. It includes `agents[]` and `rate_limits[]`.
+The live monitor can also supply `orphan_ports[]` and `token_rate`. If a source cannot be read,
+`notes[]` records the problem and the report still includes the available sources.
 
 | Field | Meaning |
 | --- | --- |
@@ -131,7 +135,8 @@ license shipped verbatim). It adds the real process behind a session, context us
 processes and the ports they hold, subagents, and orphaned ports. abacus runs exactly one argv,
 `--json`, with a deadline, an 8 MiB output cap and an environment cut to the variables it needs to find
 its files. Its other modes (a terminal UI, a hook installer, an updater) cannot be reached.
-`ABACUS_ABTOP_BIN` overrides the location. Without it everything above still works.
+Set `ABACUS_ABTOP_BIN` to override the bundled executable. A development build can use native
+sources by itself. If the monitor is missing or unavailable, its additional telemetry is omitted.
 
 The monitor's JSON has no schema version. The shape this build reads is that of the pinned release
 (`internal/agents/testdata/monitor-v0.5.5.json`, an invented snapshot in that shape). Unknown fields
