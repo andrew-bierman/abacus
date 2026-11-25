@@ -27,6 +27,7 @@ type Engine struct {
 	cfg    Config
 	notify func(core.ServeNotice) bool
 	plans  *planStore
+	since  sinceStore
 
 	emu      sync.Mutex
 	reg      *core.Registry
@@ -70,6 +71,11 @@ func (e *Engine) invalidate() {
 	e.emu.Lock()
 	e.cached = nil
 	e.emu.Unlock()
+}
+
+// errDemoApply is the refusal of a write in demo mode.
+func errDemoApply(what string) error {
+	return failErr(core.CodeRefused, "%s: demo data cannot be changed (nothing was written)", what)
 }
 
 // demoAudit is the backstop behind the demo refusal of apply: in demo mode an audit record cannot be written,
@@ -121,6 +127,7 @@ func (e *Engine) methods() map[string]method {
 		"tasks.list":    {fn: e.tasksList(false), domain: "tasks"},
 		"tasks.tree":    {fn: e.tasksList(true), domain: "tasks"},
 		"tasks.board":   {fn: e.tasksBoard, domain: "tasks"},
+		"tasks.since":   {fn: e.tasksSince, domain: "tasks"},
 		"tasks.show":    {fn: e.tasksShow, domain: "tasks"},
 		"tasks.graph":   {fn: e.tasksGraph, domain: "tasks"},
 		"tasks.history": {fn: e.tasksHistory, domain: "tasks"},
@@ -143,17 +150,12 @@ func (e *Engine) methods() map[string]method {
 		m["plan.task."+string(op)] = method{fn: e.planTask(op)}
 	}
 	if e.cfg.Demo {
-		// Demo data cannot be changed: apply is always refused, and so is a plan with no plan to show (the
-		// effects table's "changes": config set), as the commands refuse them. Every other plan is made
-		// against the demo data, flagged "demo": true with a demo-marked digest, so a client can show its
-		// confirm sheets; nothing it holds can be applied.
-		for _, name := range []string{"apply", "plan.config.set"} {
-			md := m[name]
-			md.fn = func(context.Context, json.RawMessage) (any, error) {
-				return nil, failErr(core.CodeRefused, "%s: demo data cannot be changed (nothing was written)", name)
-			}
-			m[name] = md
-		}
+		// Demo data cannot be changed: apply is always refused. Every plan is made against the demo data (the
+		// setup steps and the settings too), flagged "demo": true with a demo-marked digest, so a client can show
+		// its confirm sheets; nothing it holds can be applied.
+		md := m["apply"]
+		md.fn = func(context.Context, json.RawMessage) (any, error) { return nil, errDemoApply("apply") }
+		m["apply"] = md
 	}
 	return m
 }
@@ -455,12 +457,11 @@ func (e *Engine) setupState(ctx context.Context, raw json.RawMessage) (any, erro
 	if err := decodeParams(raw, &struct{}{}); err != nil {
 		return nil, err
 	}
-	s := e.newSetup(e.entries(ctx))
-	digest := core.SetupDigest(s.SetupStepPlans(ctx))
-	if e.cfg.Demo {
-		digest = core.DemoDigest(digest)
+	if e.cfg.Demo { // demo data has no tracker to set up: the steps of a first run, as plans only
+		return core.SetupReport{Steps: core.DemoSetupSteps(), PlanDigest: core.DemoDigest(core.SetupDigest(core.DemoSetupStepPlans()))}, nil
 	}
-	return core.SetupReport{Steps: s.Steps(ctx), PlanDigest: digest}, nil
+	s := e.newSetup(e.entries(ctx))
+	return core.SetupReport{Steps: s.Steps(ctx), PlanDigest: core.SetupDigest(s.SetupStepPlans(ctx))}, nil
 }
 
 func (e *Engine) configShow(_ context.Context, raw json.RawMessage) (any, error) {

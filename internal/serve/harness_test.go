@@ -44,7 +44,8 @@ type tasksMod struct {
 	panicFP  bool
 	fp       string
 	fpErr    error
-	snapGen  int // bumps the snapshot (a change for the no-fingerprint path)
+	snapGen  int                      // bumps the snapshot (a change for the no-fingerprint path)
+	snapMut  func(*core.TaskSnapshot) // edits every snapshot read (tasks.since tests)
 	cur, max atomic.Int32
 }
 
@@ -60,7 +61,7 @@ func (m *tasksMod) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
 		}
 	}
 	m.mu.Lock()
-	hook, gen := m.snapHook, m.snapGen
+	hook, gen, mut := m.snapHook, m.snapGen, m.snapMut
 	m.mu.Unlock()
 	if hook != nil {
 		if err := hook(ctx); err != nil {
@@ -70,6 +71,9 @@ func (m *tasksMod) Snapshot(ctx context.Context) (core.TaskSnapshot, error) {
 	s := demo.TaskSnapshot(fixedNow)
 	if gen > 0 {
 		s.Issues[0].Title += strings.Repeat("!", gen)
+	}
+	if mut != nil {
+		mut(&s)
 	}
 	return s, nil
 }
@@ -492,3 +496,9 @@ func readyClient(t *testing.T) (*client, *fixture) {
 }
 
 func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }
+
+func (m *tasksMod) mutate(fn func(*core.TaskSnapshot)) {
+	m.mu.Lock()
+	m.snapMut = fn
+	m.mu.Unlock()
+}

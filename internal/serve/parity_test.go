@@ -9,12 +9,15 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/cli"
 	"github.com/andrew-bierman/abacus/internal/core"
+	"github.com/andrew-bierman/abacus/internal/demo"
+	"github.com/andrew-bierman/abacus/internal/taskview"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden transcripts in testdata")
@@ -289,6 +292,28 @@ func TestTranscriptDemoPlans(t *testing.T) {
 		{method: "apply", params: map[string]any{"plan_id": "plan_00000000000000000000000000000001"}},
 		{method: "plan.config.set", params: map[string]any{"key": "actor", "value": "mei"}},
 		{method: "plan.cancel", params: map[string]any{"plan_id": "plan_00000000000000000000000000000001"}},
+		{method: "setup.state"},
+		{method: "plan.setup", params: map[string]any{"step": "workspace"}},
+		{method: "apply", params: map[string]any{"plan_id": "plan_00000000000000000000000000000003"}},
+		{method: "plan.setup", params: map[string]any{"step": "queues"}},
+		{method: "plan.config.set", params: map[string]any{"key": "agent_command", "value": []string{"claude", "Work on {task_id}: {title}"}}},
+	})
+}
+
+func TestTranscriptTasksSince(t *testing.T) {
+	f := newFixture(t)
+	base := taskview.Build(demo.TaskSnapshot(fixedNow), fixedNow).State().Fingerprint() // what the first answer names
+	transcript(t, "tasks-since", f, []step{
+		initStep(),
+		{method: "tasks.since"},
+		{method: "tasks.since", params: map[string]any{"fingerprint": "unknown"}},
+		{do: func() {
+			f.tasks.mutate(func(s *core.TaskSnapshot) {
+				s.Issues[0].Title += " (edited)"
+				s.Issues = slices.DeleteFunc(s.Issues, func(i core.TaskIssue) bool { return i.ID == "ac-30" })
+			})
+		}},
+		{method: "tasks.since", params: map[string]any{"fingerprint": base}},
 	})
 }
 

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/andrew-bierman/abacus/internal/brand"
@@ -84,6 +86,26 @@ func (c *Config) Set(key, val string) error {
 		return fmt.Errorf("unknown setting %q (known: %s)", key, strings.Join(ConfigKeys, ", "))
 	}
 	return nil
+}
+
+// ConfigListKeys are the keys whose value is an argv: they may be given as a list of words as well as text.
+var ConfigListKeys = []string{"agent_command"}
+
+// ConfigListValue is the text form of a list value for an argv key, checked by the parser of that key (so a list
+// and the same JSON text are one value).
+func ConfigListValue(key string, words []string) (string, error) {
+	if !slices.Contains(ConfigListKeys, key) {
+		return "", fmt.Errorf("%s takes a text value, not a list", key)
+	}
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(words)
+	val := strings.TrimSuffix(b.String(), "\n")
+	if _, err := ParseAgentCommand(val); err != nil {
+		return "", err
+	}
+	return val, nil
 }
 
 // Get returns one key's value.

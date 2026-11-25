@@ -506,7 +506,7 @@ var setupSteps = []core.StepID{core.StepWorkspace, core.StepQueues, core.StepAct
 // setupOffered says whether `setup` would offer the step now: needed, or for a half-made workspace repair.
 func setupOffered(ctx context.Context, s *core.Setup, step core.StepID) bool {
 	for _, si := range s.Steps(ctx) {
-		if si.Step == step && (si.State == "needed" || si.State == "repair") {
+		if si.Step == step && (si.State == core.StepNeeded || si.State == core.StepRepairing) {
 			return true
 		}
 	}
@@ -526,6 +526,9 @@ func (e *Engine) planSetup(ctx context.Context, raw json.RawMessage) (any, error
 	step := core.StepID(p.Step)
 	if !slices.Contains(setupSteps, step) {
 		return nil, usageErr("step is one of workspace, queues, actor, repair")
+	}
+	if e.cfg.Demo {
+		return e.planDemoSetup(step)
 	}
 	s := e.newSetup(e.entries(ctx))
 	if !setupOffered(ctx, s, step) {
@@ -551,33 +554,82 @@ func (e *Engine) planSetup(ctx context.Context, raw json.RawMessage) (any, error
 	return e.hold(h, core.ServePlan{Op: string(step), Lines: plan.Lines, Argv: plan.Argv}), nil
 }
 
+// planDemoSetup plans a step of the demo setup: shown and held like any plan, never applied.
+func (e *Engine) planDemoSetup(step core.StepID) (any, error) {
+	lines, argv, digest, ok := core.DemoSetupPlan(step)
+	if !ok {
+		return nil, failErr(core.CodeRefused, "setup %s: there is nothing to do for this step now (see setup.state)", step)
+	}
+	h := &heldPlan{kind: "setup", digest: digest}
+	h.apply = func(context.Context) (*core.ServeApplied, bool, error) {
+		return nil, false, errDemoApply("setup " + string(step))
+	}
+	return e.hold(h, core.ServePlan{Op: string(step), Lines: lines, Argv: argv}), nil
+}
+
+// configValue reads the value of plan.config.set: text for every key, and for the keys that are an argv
+// (agent_command) a list of words too, which is checked by the same parser as the text form.
+func configValue(key string, raw json.RawMessage) (string, error) {
+	switch {
+	case len(raw) == 0:
+		return "", usageErr("plan.config.set needs a key and a value (%s)", strings.Join(core.ConfigKeys, ", "))
+	case raw[0] == '"':
+		var s string
+		if err := json.Unmarshal(raw, &s); err != nil {
+			return "", usageErr("value is text")
+		}
+		return s, nil
+	case raw[0] == '[':
+		var words []string
+		if err := json.Unmarshal(raw, &words); err != nil {
+			return "", usageErr("a list value is a list of strings")
+		}
+		s, err := core.ConfigListValue(key, words)
+		if err != nil {
+			return "", usageErr("%v", err)
+		}
+		return s, nil
+	}
+	return "", usageErr("value is text, or for agent_command a list of strings")
+}
+
 // planConfigSet plans `config set KEY VALUE`: the value is checked as the command checks it, and the plan is
-// guarded by the value the key has now. Not available on demo data, as `config set` is not.
+// guarded by the value the key has now. On demo data it is planned against an empty settings file (the real one
+// is never read) and, like every demo plan, cannot be applied.
 func (e *Engine) planConfigSet(_ context.Context, raw json.RawMessage) (any, error) {
 	var p struct {
-		Key   string  `json:"key"`
-		Value *string `json:"value"`
+		Key   string          `json:"key"`
+		Value json.RawMessage `json:"value"`
 	}
 	if err := decodeParams(raw, &p); err != nil {
 		return nil, err
 	}
-	if p.Key == "" || p.Value == nil {
+	if p.Key == "" {
 		return nil, usageErr("plan.config.set needs a key and a value (%s)", strings.Join(core.ConfigKeys, ", "))
 	}
+	value, err := configValue(p.Key, p.Value)
+	if err != nil {
+		return nil, err
+	}
 	st := e.cfg.Config
-	if st.Path == "" {
+	if e.cfg.Demo {
+		st = core.ConfigStore{}
+	} else if st.Path == "" {
 		path, err := core.DefaultConfigPath()
 		if err != nil {
 			return nil, fromErr(err)
 		}
 		st = core.ConfigStore{Path: path}
 	}
-	plan, err := core.PlanConfigSet(st, p.Key, *p.Value)
+	plan, err := core.PlanConfigSet(st, p.Key, value)
 	if err != nil {
 		return nil, usageErr("%v", err)
 	}
 	h := &heldPlan{kind: "config", digest: plan.Digest()}
 	h.apply = func(ctx context.Context) (*core.ServeApplied, bool, error) {
+		if e.cfg.Demo {
+			return nil, false, errDemoApply("config set")
+		}
 		note, wrote, err := core.ApplyConfigSet(ctx, st, e.audit(), plan.Confirm())
 		if err != nil {
 			if !wrote { // refused before the attempt was recorded: nothing happened
