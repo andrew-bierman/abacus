@@ -8,6 +8,7 @@ import (
 	"errors"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/andrew-bierman/abacus/internal/core"
@@ -51,14 +52,20 @@ func (e *Engine) subscribe(on bool) handler {
 			wctx, cancel := context.WithCancel(e.root)
 			switch {
 			case t == "tasks" && (pr.Fingerprint != nil || pr.Source != nil):
-				go e.guard("tasks", func() { e.watchTasks(wctx, pr) })
+				based := make(chan struct{})
+				ready := sync.OnceFunc(func() { close(based) })
+				go e.guard("tasks", func() { defer ready(); e.watchTasks(wctx, pr, ready) })
+				awaitBaseline(ctx, based)
 			case t == "workspace" && pr.Watcher != nil:
 				w := pr.Watcher
 				go e.guard("workspace", func() {
 					w.Watch(wctx, func() { e.notify(core.ServeNotice{Topic: "workspace", Reason: "events"}) })
 				})
 			case t == "agents":
-				go e.guard("agents", func() { e.watchAgents(wctx) })
+				based := make(chan struct{})
+				ready := sync.OnceFunc(func() { close(based) })
+				go e.guard("agents", func() { defer ready(); e.watchAgents(wctx, ready) })
+				awaitBaseline(ctx, based)
 			default:
 				cancel()
 				if out.Unavailable == nil {
@@ -84,7 +91,7 @@ func (e *Engine) subscribe(on bool) handler {
 // removed (the tracker is read once per change, as the TUI's refresh does, and compared with the last
 // read); when it cannot, or a read fails, the notification says "full" and the client refetches
 // everything. A tracker with no cheap fingerprint is read in full on a slow rhythm and compared by task.
-func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
+func (e *Engine) watchTasks(ctx context.Context, pr core.Providers, ready func()) {
 	poll := taskview.NewPoller(e.cfg.PollBase, e.cfg.PollMax, e.cfg.PollSlow)
 	var last string             // the fingerprint the client has been told about
 	var snap *core.TaskSnapshot // the tracker as the client was last told about it
@@ -134,6 +141,7 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 			}
 		}
 	}
+	ready() // subscribe answers once the baseline is taken: a change after that is reported
 	for {
 		timer := time.NewTimer(poll.Wait())
 		select {
@@ -213,6 +221,14 @@ func (e *Engine) watchTasks(ctx context.Context, pr core.Providers) {
 	}
 }
 
+// awaitBaseline waits for a watcher's first look (bounded by the request's own deadline).
+func awaitBaseline(ctx context.Context, based <-chan struct{}) {
+	select {
+	case <-based:
+	case <-ctx.Done():
+	}
+}
+
 // maxWatchTasks bounds the tracker the tasks watcher keeps and compares by task (two copies are held at a
 // diff): a bigger one is watched by its digest alone and every change is "full".
 const maxWatchTasks = 5000
@@ -247,7 +263,7 @@ func digestLines(lines []string) string {
 // when an agent appears, goes, or changes state, task, branch or model. Volatile figures (tokens, last
 // activity) are left out of the comparison, so a busy agent is not a change at every look. The first look
 // is the baseline.
-func (e *Engine) watchAgents(ctx context.Context) {
+func (e *Engine) watchAgents(ctx context.Context, ready func()) {
 	var last map[string]string
 	for first := true; ; first = false {
 		if !first { // the baseline is taken at once, at subscribe time; the polls follow
@@ -266,6 +282,7 @@ func (e *Engine) watchAgents(ctx context.Context) {
 			return
 		}
 		if len(rep.Notes) > 0 || rep.State != core.Connected { // a feed failed or timed out: its agents are missing, not gone
+			ready()
 			continue
 		}
 		cur := make(map[string]string, len(rep.Agents))
@@ -277,6 +294,7 @@ func (e *Engine) watchAgents(ctx context.Context) {
 		}
 		if last == nil {
 			last = cur
+			ready()
 			continue
 		}
 		var ids []string
