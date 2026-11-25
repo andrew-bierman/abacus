@@ -137,11 +137,14 @@ func TestApplyParamsAndStaleOrUnknownPlanIDs(t *testing.T) {
 	// expired: the plan is only valid against the state it was read from
 	p := plan(t, c, "plan.task.close", map[string]any{"id": "ac-12"})
 	f.advance(10*time.Minute + time.Second)
-	e = c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeChanged)
-	if e.Data.Outcome != "changed" || !e.Data.Retryable || !strings.Contains(e.Message, "expired") {
-		t.Errorf("%+v", e)
+	e = c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeExpired)
+	if e.Data.Outcome != "expired" || !e.Data.Retryable || e.Data.ExpiresAt != p.ExpiresAt || e.Data.PlanID != p.PlanID {
+		t.Errorf("%+v (plan %+v)", e, p)
 	}
-	c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeChanged) // and stays expired
+	e = c.call("apply", map[string]any{"plan_id": p.PlanID}).wantErr(t, core.CodeExpired) // and stays expired, still saying when
+	if e.Data.ExpiresAt != p.ExpiresAt {
+		t.Errorf("a remembered expiry lost its time: %+v", e.Data)
+	}
 	// the store is bounded: the oldest plan is pushed out by newer ones
 	p1 := plan(t, c, "plan.task.close", map[string]any{"id": "ac-12"})
 	p2 := plan(t, c, "plan.task.close", map[string]any{"id": "ac-15"})

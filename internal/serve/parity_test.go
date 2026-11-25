@@ -152,6 +152,7 @@ func TestPlanDigestsMatchTheCommandLine(t *testing.T) {
 
 type step struct {
 	raw    string // a raw line, when the step is not a well formed request
+	do     func() // something that happens between two requests (the clock moves)
 	method string
 	params any
 }
@@ -178,6 +179,10 @@ func transcript(t *testing.T, name string, f *fixture, steps []step) {
 	}
 	var b strings.Builder
 	for _, s := range steps {
+		if s.do != nil {
+			s.do()
+			continue
+		}
 		if s.raw != "" {
 			c.raw(s.raw)
 			fmt.Fprintf(&b, "-> %s\n<- %s\n", s.raw, norm(c.anonResponse().Raw))
@@ -256,6 +261,34 @@ func TestTranscriptPlanApply(t *testing.T) {
 		{method: "apply", params: map[string]any{"plan_id": "plan_00000000000000000000000000000003"}},
 		{method: "plan.board.post", params: map[string]any{"channel": "dev", "text": "deploy done"}},
 		{method: "plan.cancel", params: map[string]any{"plan_id": "plan_00000000000000000000000000000003"}},
+	})
+}
+
+func TestTranscriptConfigSetupAndExpiry(t *testing.T) {
+	f := newFixture(t)
+	f.withActorGuide()
+	transcript(t, "config-setup-expiry", f, []step{
+		initStep(),
+		{method: "plan.config.set", params: map[string]any{"key": "search_history", "value": "off"}},
+		{method: "apply", params: map[string]any{"plan_id": "plan_00000000000000000000000000000001"}},
+		{method: "plan.config.set", params: map[string]any{"key": "nosuch", "value": "x"}},
+		{method: "plan.setup", params: map[string]any{"step": "actor"}},
+		{do: func() { f.advance(11 * time.Minute) }},
+		{method: "apply", params: map[string]any{"plan_id": "plan_00000000000000000000000000000002"}},
+		{method: "apply", params: map[string]any{"plan_id": "plan_00000000000000000000000000000002"}},
+		{method: "plan.setup", params: map[string]any{"step": "queues"}},
+	})
+}
+
+func TestTranscriptDemoPlans(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Demo = true
+	transcript(t, "demo-plans", f, []step{
+		initStep(),
+		{method: "plan.task.close", params: map[string]any{"id": "ac-12"}},
+		{method: "apply", params: map[string]any{"plan_id": "plan_00000000000000000000000000000001"}},
+		{method: "plan.config.set", params: map[string]any{"key": "actor", "value": "mei"}},
+		{method: "plan.cancel", params: map[string]any{"plan_id": "plan_00000000000000000000000000000001"}},
 	})
 }
 

@@ -18,13 +18,13 @@ import (
 )
 
 // topics are what subscribe accepts.
-var topics = []string{"tasks", "workspace"}
+var topics = []string{"tasks", "workspace", "agents"}
 
 // Engine is the domain side of the server: it reads through core's providers and plans writes through
 // core's gate. It holds no logic of its own that the CLI and the TUI do not also have, only the glue.
 type Engine struct {
 	cfg    Config
-	notify func(topic, reason string) bool
+	notify func(core.ServeNotice) bool
 	plans  *planStore
 
 	emu      sync.Mutex
@@ -39,7 +39,7 @@ type Engine struct {
 	subs map[string]context.CancelFunc
 }
 
-func newEngine(cfg Config, notify func(string, string) bool) *Engine {
+func newEngine(cfg Config, notify func(core.ServeNotice) bool) *Engine {
 	return &Engine{cfg: cfg, notify: notify, plans: newPlanStore(cfg.Limits.MaxPlans, cfg.PlanTTL, cfg.Now),
 		writeMu: make(chan struct{}, 1), subs: map[string]context.CancelFunc{}}
 }
@@ -70,7 +70,19 @@ func (e *Engine) invalidate() {
 	e.emu.Unlock()
 }
 
+// demoAudit is the backstop behind the demo refusal of apply: in demo mode an audit record cannot be written,
+// so a write that slipped past the guard is stopped by the gate (fail closed) before it runs. It is not a
+// reader, so a board plan made in demo mode never reads the real audit log for a repeat.
+type demoAudit struct{}
+
+func (demoAudit) Record(core.AuditEntry) error {
+	return errors.New("demo mode: nothing can be written")
+}
+
 func (e *Engine) audit() core.Audit {
+	if e.cfg.Demo {
+		return demoAudit{}
+	}
 	if e.cfg.Audit != nil {
 		return e.cfg.Audit
 	}
@@ -120,20 +132,25 @@ func (e *Engine) methods() map[string]method {
 		"plan.tasks.bulk":  {fn: e.planBulk},
 		"plan.board.post":  {fn: e.planBoard(core.BoardPost)},
 		"plan.board.reply": {fn: e.planBoard(core.BoardReply)},
+		"plan.setup":       {fn: e.planSetup},
+		"plan.config.set":  {fn: e.planConfigSet},
 		"plan.cancel":      {fn: e.planCancel},
 		"apply":            {fn: e.apply, write: true, deadline: core.BulkTotalTimeout + 30*time.Second},
 	}
 	for op := range taskFields {
 		m["plan.task."+string(op)] = method{fn: e.planTask(op)}
 	}
-	if e.cfg.Demo { // demo data cannot be changed, not even as a plan: the same refusal as a command's
-		for name, md := range m {
-			if strings.HasPrefix(name, "plan.") || name == "apply" {
-				md.fn = func(context.Context, json.RawMessage) (any, error) {
-					return nil, failErr(core.CodeRefused, "%s: demo data cannot be changed (nothing was written)", name)
-				}
-				m[name] = md
+	if e.cfg.Demo {
+		// Demo data cannot be changed: apply is always refused, and so is a plan with no plan to show (the
+		// effects table's "changes": config set), as the commands refuse them. Every other plan is made
+		// against the demo data, flagged "demo": true with a demo-marked digest, so a client can show its
+		// confirm sheets; nothing it holds can be applied.
+		for _, name := range []string{"apply", "plan.config.set"} {
+			md := m[name]
+			md.fn = func(context.Context, json.RawMessage) (any, error) {
+				return nil, failErr(core.CodeRefused, "%s: demo data cannot be changed (nothing was written)", name)
 			}
+			m[name] = md
 		}
 	}
 	return m
@@ -422,20 +439,26 @@ func (e *Engine) workspace(ctx context.Context, raw json.RawMessage) (any, error
 	return core.WorkspaceReport{}, nil
 }
 
+// newSetup is the first-run setup over the detected modules: the configured one, or the real one.
+func (e *Engine) newSetup(en []core.Entry) *core.Setup {
+	if e.cfg.Setup != nil {
+		return e.cfg.Setup(en)
+	}
+	o := core.DefaultSetupOptions()
+	o.Audit = e.audit()
+	return core.NewSetup(en, o)
+}
+
 func (e *Engine) setupState(ctx context.Context, raw json.RawMessage) (any, error) {
 	if err := decodeParams(raw, &struct{}{}); err != nil {
 		return nil, err
 	}
-	en := e.entries(ctx)
-	var s *core.Setup
-	if e.cfg.Setup != nil {
-		s = e.cfg.Setup(en)
-	} else {
-		o := core.DefaultSetupOptions()
-		o.Audit = e.cfg.Audit
-		s = core.NewSetup(en, o)
+	s := e.newSetup(e.entries(ctx))
+	digest := core.SetupDigest(s.SetupStepPlans(ctx))
+	if e.cfg.Demo {
+		digest = core.DemoDigest(digest)
 	}
-	return core.SetupReport{Steps: s.Steps(ctx), PlanDigest: core.SetupDigest(s.SetupStepPlans(ctx))}, nil
+	return core.SetupReport{Steps: s.Steps(ctx), PlanDigest: digest}, nil
 }
 
 func (e *Engine) configShow(_ context.Context, raw json.RawMessage) (any, error) {

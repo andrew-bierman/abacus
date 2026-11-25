@@ -57,7 +57,7 @@ func TestInitializeHandshakeAndGate(t *testing.T) {
 		}
 	}
 	l := init.Capabilities.Limits
-	if l.MaxRequestBytes != 1<<20 || l.MaxDepth != 32 || l.MaxInFlight != 8 || l.PlanTTLSeconds != 600 || l.DefaultDeadlineMS != 30000 {
+	if l.MaxRequestBytes != 1<<20 || l.MaxDepth != 32 || l.MaxInFlight != 8 || l.MaxQueued != 32 || l.PlanTTLSeconds != 600 || l.DefaultDeadlineMS != 30000 {
 		t.Errorf("limits: %+v", l)
 	}
 	var raw rpcMsg
@@ -298,7 +298,7 @@ func TestPerRequestDeadline(t *testing.T) {
 	}
 }
 
-func TestOneReadInFlightPerDomainAndALimitOnRequests(t *testing.T) {
+func TestOneReadInFlightPerDomain(t *testing.T) {
 	f := newFixture(t)
 	f.cfg.Limits.MaxInFlight = 3
 	c := startClient(t, f.cfg)
@@ -315,17 +315,79 @@ func TestOneReadInFlightPerDomainAndALimitOnRequests(t *testing.T) {
 	if n := f.tasks.max.Load(); n != 1 {
 		t.Errorf("at most one read of the tracker at a time, saw %d", n)
 	}
-	// the fourth request in flight is refused, not queued without bound
-	e := c.call("version", nil).wantErr(t, core.CodeRefused)
-	if !strings.Contains(e.Message, "too many") {
-		t.Errorf("message: %q", e.Message)
-	}
 	for _, id := range ids {
 		c.cancel(id)
 	}
 	for _, id := range ids {
 		c.await(id).wantErr(t, core.CodeTimeout)
 	}
+}
+
+// Past MaxInFlight a request waits for a slot, in arrival order, up to MaxQueued; the one after that is
+// refused at once with "busy" and a retry_after_ms, and nothing of it ran.
+func TestRequestsPastTheInFlightLimitQueueThenAreRefusedBusy(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Limits.MaxInFlight, f.cfg.Limits.MaxQueued = 3, 2
+	c := startClient(t, f.cfg)
+	if l := c.init().Capabilities.Limits; l.MaxInFlight != 3 || l.MaxQueued != 2 {
+		t.Fatalf("limits: %+v", l)
+	}
+	started := slowTasks(f)
+	slow := []string{c.send("tasks.list", nil), c.send("tasks.board", nil), c.send("tasks.tree", nil)}
+	<-started
+	q1, q2 := c.send("version", nil), c.send("status", nil) // wait for a slot
+	time.Sleep(100 * time.Millisecond)
+	e := c.call("leases", nil).wantErr(t, core.CodeBusy)
+	if e.Data.RetryAfterMS <= 0 || !e.Data.Retryable || e.Data.UnknownOutcome {
+		t.Errorf("busy: %+v", e.Data)
+	}
+	// a slot frees: the first to wait runs, the second still waits its turn
+	c.cancel(slow[0])
+	c.await(slow[0]).wantErr(t, core.CodeTimeout)
+	if m := c.await(q1); m.Error != nil {
+		t.Fatalf("the first queued request: %+v", m.Error)
+	}
+	c.mu.Lock()
+	_, early := c.early[q2]
+	c.mu.Unlock()
+	if early {
+		t.Error("the second queued request ran before a second slot was free")
+	}
+	c.cancel(slow[1])
+	c.await(slow[1]).wantErr(t, core.CodeTimeout)
+	if m := c.await(q2); m.Error != nil {
+		t.Fatalf("the second queued request: %+v", m.Error)
+	}
+	// the queue has room again
+	if m := c.call("leases", nil); m.Error != nil {
+		t.Errorf("after the queue drained: %+v", m.Error)
+	}
+	c.cancel(slow[2])
+	c.await(slow[2]).wantErr(t, core.CodeTimeout)
+}
+
+// A request's deadline covers the time it waits for a slot, and a cancel reaches it there.
+func TestAQueuedRequestKeepsItsDeadlineAndCanBeCancelled(t *testing.T) {
+	f := newFixture(t)
+	f.cfg.Limits.MaxInFlight = 1
+	c := startClient(t, f.cfg)
+	c.init()
+	started := slowTasks(f)
+	slow := c.send("tasks.list", nil)
+	<-started
+	start := time.Now()
+	c.call("version", nil, 80).wantErr(t, core.CodeTimeout)
+	if time.Since(start) > 3*time.Second {
+		t.Errorf("a queued request ran past its deadline: %v", time.Since(start))
+	}
+	q := c.send("version", nil)
+	time.Sleep(50 * time.Millisecond)
+	c.cancel(q)
+	if e := c.await(q).wantErr(t, core.CodeTimeout); e.Code != -32800 {
+		t.Errorf("cancelled while queued: %+v", e)
+	}
+	c.cancel(slow)
+	c.await(slow).wantErr(t, core.CodeTimeout)
 }
 
 func TestConcurrentRequestsAreRaceFree(t *testing.T) {
@@ -340,7 +402,7 @@ func TestConcurrentRequestsAreRaceFree(t *testing.T) {
 			for _, m := range methods {
 				for {
 					r := c.call(m, nil)
-					if r.Error != nil && r.Error.Data.Code == core.CodeRefused { // the in-flight limit: wait and ask again
+					if r.Error != nil && r.Error.Data.Code == core.CodeBusy { // the queue is full: wait and ask again
 						time.Sleep(5 * time.Millisecond)
 						continue
 					}
@@ -626,9 +688,8 @@ func TestShutdownCancelsReadsAtOnceAndOnlyWritesGetTheGrace(t *testing.T) {
 	}
 }
 
-// In demo mode the server serves reads (marked "demo": true) and refuses every plan and apply, as the
-// commands refuse a write on demo data.
-func TestDemoModeServesReadsAndRefusesEveryWrite(t *testing.T) {
+// In demo mode the server serves reads, marked "demo": true (plans and apply: see TestDemoModePlansEveryWriteAndRefusesApply).
+func TestDemoModeServesReadsMarkedDemo(t *testing.T) {
 	f := newFixture(t)
 	f.cfg.Demo = true
 	c := startClient(t, f.cfg)
@@ -638,16 +699,5 @@ func TestDemoModeServesReadsAndRefusesEveryWrite(t *testing.T) {
 		if r.Error != nil || string(mustMap(t, r.Result)["demo"]) != "true" {
 			t.Errorf("%s: %+v %s", m, r.Error, r.Result)
 		}
-	}
-	for method, params := range map[string]any{
-		"plan.task.close": map[string]any{"id": "ac-12"}, "plan.tasks.bulk": map[string]any{"ids": []string{"ac-12"}, "op": "close"},
-		"plan.board.post": map[string]any{"channel": "dev", "text": "x"}, "apply": map[string]any{"plan_id": "plan_" + strings.Repeat("0", 32)},
-	} {
-		if e := c.call(method, params).wantErr(t, core.CodeRefused); !strings.Contains(e.Message, "demo") {
-			t.Errorf("%s: %q", method, e.Message)
-		}
-	}
-	if f.tasks.runs() != 0 || f.board.runs() != 0 || f.audit.phases() != "" {
-		t.Error("demo mode wrote or audited")
 	}
 }

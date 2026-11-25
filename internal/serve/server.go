@@ -28,6 +28,7 @@ type Limits struct {
 	MaxResponseBytes int           // one result
 	MaxDepth         int           // JSON nesting
 	MaxInFlight      int           // requests being served at once
+	MaxQueued        int           // requests past MaxInFlight that wait their turn before "busy"
 	MaxPlans         int           // plans held for apply
 	DefaultDeadline  time.Duration // per request, when the client names none
 	MaxDeadline      time.Duration // the most a client may ask for
@@ -43,6 +44,7 @@ func (l Limits) withDefaults() Limits {
 	def(&l.MaxResponseBytes, 16<<20)
 	def(&l.MaxDepth, 32)
 	def(&l.MaxInFlight, 8)
+	def(&l.MaxQueued, 32)
 	def(&l.MaxPlans, 64)
 	if l.DefaultDeadline <= 0 {
 		l.DefaultDeadline = 30 * time.Second
@@ -52,6 +54,9 @@ func (l Limits) withDefaults() Limits {
 	}
 	return l
 }
+
+// busyRetryAfterMS is the retry_after_ms of a "busy" refusal.
+const busyRetryAfterMS = 250
 
 var (
 	errCancelled = errors.New("request cancelled")
@@ -105,11 +110,13 @@ type Server struct {
 	closing     bool
 	inflight    map[string]*call
 	wg          sync.WaitGroup
-	pending     map[string]bool // topics with a notification queued
+	pendingN    map[string]*core.ServeNotice // topics with a notification queued, still open to merging
+	active      int                          // accepted requests that are not inline: running or waiting for a slot
 	seq         map[string]uint64
 	initialized atomic.Bool
 
 	locks map[string]chan struct{}
+	slots chan struct{} // one per request being served; the others wait here, in arrival order
 
 	out        chan outMsg
 	flush      chan struct{}
@@ -124,7 +131,7 @@ type Server struct {
 // New builds a server. The engine is built from cfg; nothing is read until a request asks.
 func New(cfg Config) *Server {
 	cfg = cfg.withDefaults()
-	s := &Server{cfg: cfg, lim: cfg.Limits, inflight: map[string]*call{}, pending: map[string]bool{}, seq: map[string]uint64{},
+	s := &Server{cfg: cfg, lim: cfg.Limits, inflight: map[string]*call{}, pendingN: map[string]*core.ServeNotice{}, slots: make(chan struct{}, cfg.Limits.MaxInFlight), seq: map[string]uint64{},
 		out: make(chan outMsg, 256), flush: make(chan struct{}), writerDone: make(chan struct{}), finished: make(chan struct{}), stalled: make(chan struct{})}
 	s.eng = newEngine(cfg, s.notify)
 	s.ms = s.eng.methods()
@@ -213,10 +220,15 @@ func (s *Server) writer(out io.Writer) {
 	defer close(s.writerDone)
 	dead := false
 	write := func(m outMsg) {
-		if m.topic != "" {
+		if m.topic != "" { // a notification is made as it is written, so changes that arrived while it waited are in it
 			s.mu.Lock()
-			delete(s.pending, m.topic)
+			n := s.pendingN[m.topic]
+			delete(s.pendingN, m.topic)
 			s.mu.Unlock()
+			if n == nil {
+				return
+			}
+			m.b = noticeBytes(*n)
 		}
 		if dead {
 			return
@@ -274,39 +286,67 @@ func (s *Server) send(b []byte) {
 	}
 }
 
-// notify queues a notification without ever waiting: while one for the topic is still queued another
-// is not added (the client refetches after the first and sees both changes), and a full queue reports
-// false so the watcher tries again at its next look. Nothing is dropped silently.
-func (s *Server) notify(topic, reason string) bool {
+// maxNoticeIDs bounds the ids one notification lists; past it the notice says "full" (refetch the topic).
+const maxNoticeIDs = 256
+
+// notify queues a notification without ever waiting. While one for the topic is still queued, another is
+// merged into it (its ids are added, or it becomes "full"), so the client's single refetch covers both and a
+// client that refetches only the listed ids misses nothing. A full queue reports false so the watcher tries
+// again at its next look. Nothing is dropped silently.
+func (s *Server) notify(n core.ServeNotice) bool {
+	if n.Kind != "ids" || len(n.ChangedIDs) > maxNoticeIDs {
+		n.Kind, n.ChangedIDs = "full", nil
+	}
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.closing {
-		s.mu.Unlock()
 		return true
 	}
-	if s.pending[topic] {
-		s.mu.Unlock()
+	if p := s.pendingN[n.Topic]; p != nil {
+		if n.Fingerprint != "" {
+			p.Fingerprint = n.Fingerprint
+		}
+		if p.Kind == "ids" && n.Kind == "ids" {
+			p.ChangedIDs = mergeIDs(p.ChangedIDs, n.ChangedIDs)
+		}
+		if p.Kind != "ids" || n.Kind != "ids" || len(p.ChangedIDs) > maxNoticeIDs {
+			p.Kind, p.ChangedIDs = "full", nil
+		}
 		return true
 	}
-	s.seq[topic]++
-	n := core.ServeNotice{Topic: topic, Seq: s.seq[topic], Reason: reason}
-	b, _ := json.Marshal(struct {
-		JSONRPC string           `json:"jsonrpc"`
-		Method  string           `json:"method"`
-		Params  core.ServeNotice `json:"params"`
-	}{"2.0", noticeMethod(topic), n})
+	s.seq[n.Topic]++
+	n.Seq = s.seq[n.Topic]
 	select {
-	case s.out <- outMsg{b: b, topic: topic}:
-		s.pending[topic] = true
-		s.mu.Unlock()
+	case s.out <- outMsg{topic: n.Topic}:
+		s.pendingN[n.Topic] = &n
 		return true
 	default:
-		s.seq[topic]--
-		s.mu.Unlock()
+		s.seq[n.Topic]--
 		return false
 	}
 }
 
-// noticeMethod is the method of a notification: tasks.changed, workspace.changed, engine.degraded.
+func mergeIDs(a, b []string) []string {
+	out := slices.Clone(a)
+	for _, id := range b {
+		if !slices.Contains(out, id) {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+func noticeBytes(n core.ServeNotice) []byte {
+	b, _ := json.Marshal(struct {
+		JSONRPC string           `json:"jsonrpc"`
+		Method  string           `json:"method"`
+		Params  core.ServeNotice `json:"params"`
+	}{"2.0", noticeMethod(n.Topic), n})
+	return b
+}
+
+// noticeMethod is the method of a notification: tasks.changed, workspace.changed, agents.changed, engine.degraded.
 func noticeMethod(topic string) string {
 	if topic == "engine" {
 		return "engine.degraded"
@@ -529,10 +569,14 @@ func (s *Server) handleLine(line []byte) {
 		s.mu.Unlock()
 		fail(&apiError{rpc: rpcInvalidRequest, code: core.CodeUsage, msg: "a request with this id is still in flight"})
 		return
-	case !m.inline && len(s.inflight) >= s.lim.MaxInFlight:
+	case !m.inline && s.active >= s.lim.MaxInFlight+s.lim.MaxQueued:
 		s.mu.Unlock()
-		fail(&apiError{rpc: rpcServer, code: core.CodeRefused, msg: fmt.Sprintf("too many requests in flight (at most %d): wait for one to finish", s.lim.MaxInFlight), outcome: ""})
+		fail(&apiError{rpc: rpcServer, code: core.CodeBusy, retryAfterMS: busyRetryAfterMS,
+			msg: fmt.Sprintf("the server is busy: %d requests are being served and %d are waiting (nothing ran): try again in %d ms", s.lim.MaxInFlight, s.lim.MaxQueued, busyRetryAfterMS)})
 		return
+	}
+	if !m.inline {
+		s.active++
 	}
 	ctx, cancel := context.WithCancelCause(s.root)
 	c := &call{cancel: cancel, write: m.write}
@@ -543,6 +587,9 @@ func (s *Server) handleLine(line []byte) {
 		defer func() {
 			s.mu.Lock()
 			delete(s.inflight, key)
+			if !m.inline {
+				s.active--
+			}
 			s.mu.Unlock()
 			cancel(nil)
 			s.wg.Done()
@@ -586,6 +633,15 @@ func (s *Server) cancelRequest(params json.RawMessage) {
 func (s *Server) run(ctx context.Context, id json.RawMessage, m method, params json.RawMessage, deadline time.Duration) {
 	ctx, stop := context.WithTimeout(ctx, deadline)
 	defer stop()
+	if !m.inline { // past MaxInFlight a request waits here, in arrival order, under its own deadline
+		select {
+		case s.slots <- struct{}{}:
+			defer func() { <-s.slots }()
+		case <-ctx.Done():
+			s.replyError(id, s.classify(ctx, ctx.Err()))
+			return
+		}
+	}
 	res, err := s.invoke(ctx, m, params)
 	if err != nil {
 		s.replyError(id, s.classify(ctx, err))
@@ -674,10 +730,11 @@ func (s *Server) initialize(_ context.Context, params json.RawMessage) (any, err
 	names = append(names, "shutdown")
 	slices.Sort(names)
 	return core.ServeInitialize{ProtocolVersion: core.ServeProtocolVersion, AbacusVersion: s.cfg.Version, Capabilities: core.ServeCapabilities{
-		Methods: names, Notifications: []string{"tasks.changed", "workspace.changed", "engine.degraded"}, Topics: topics,
+		Methods: names, Notifications: []string{"tasks.changed", "workspace.changed", "agents.changed", "engine.degraded"}, Topics: topics,
 		Limits: core.ServeLimits{MaxRequestBytes: s.lim.MaxRequestBytes, MaxResponseBytes: s.lim.MaxResponseBytes, MaxDepth: s.lim.MaxDepth,
-			MaxInFlight: s.lim.MaxInFlight, MaxPlans: s.lim.MaxPlans, PlanTTLSeconds: int(s.cfg.PlanTTL / time.Second),
-			DefaultDeadlineMS: int(s.lim.DefaultDeadline / time.Millisecond), MaxDeadlineMS: int(s.lim.MaxDeadline / time.Millisecond)}}}, nil
+			MaxInFlight: s.lim.MaxInFlight, MaxQueued: s.lim.MaxQueued, MaxPlans: s.lim.MaxPlans, PlanTTLSeconds: int(s.cfg.PlanTTL / time.Second),
+			DefaultDeadlineMS: int(s.lim.DefaultDeadline / time.Millisecond), MaxDeadlineMS: int(s.lim.MaxDeadline / time.Millisecond)}},
+		Contract: core.NewContract()}, nil
 }
 
 // logf writes one lifecycle line to the log. It never carries a request, a parameter or a result.
