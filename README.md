@@ -193,6 +193,7 @@ abacus setup   [--json] [--yes] [--dry-run]       report and perform first-run s
 abacus setup --repair [--yes] [--dry-run]       fix a half-created workspace (nothing is deleted)
 abacus config  show [--json] | get KEY | set KEY VALUE | path
 abacus schema  [NAME] [--out DIR] [--json]        the JSON Schemas of every --json output (for clients)
+abacus serve   --stdio [--demo] [--all]           a line-delimited JSON-RPC server for a native client (no network port)
 abacus status  [--json] [--lambe-config FILE]     domains plus provider state
 abacus doctor  [--json] [--lambe-config FILE]     leads with ready or needs attention
 abacus version [--json]
@@ -230,6 +231,12 @@ Every write's `--dry-run --json` also prints a `plan_digest`, and every write ta
 DIGEST`: it applies only if the plan made now has the same digest (same operation, targets, exact
 commands and guards), else it exits 1 with code `changed` and writes nothing. A front end uses it to
 prove that what the user confirmed is what ran.
+
+`abacus serve --stdio` is the long-lived form for a native client (a later SwiftUI app): JSON-RPC 2.0, one
+message per line on stdin and stdout, no network port, and it runs only when stdin is a pipe. It returns the same
+typed reports as the `--json` commands, plans each write and applies it once by a server-held plan id (with the
+same digest check, audit and "result unknown" rules), and pushes a `tasks.changed` notification when the tracker
+moves. See [docs/serve-protocol.md](docs/serve-protocol.md).
 
 Overrides: `ABACUS_BD_DIR` (the tracker directory, passed as `bd -C`), `ABACUS_BD_BIN`,
 `ABACUS_LAMBE_BIN`, `ABACUS_LAMBE_STATE_DIR`, `ABACUS_LAMBE_CONFIG`,

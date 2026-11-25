@@ -3,7 +3,7 @@ title: Native Clients (SwiftUI macOS first) - Plan
 type: plan
 date: 2026-11-24
 execution: none
-status: proposed
+status: partly built (C1-C4, `tasks reopen` and C5 `serve --stdio` exist; the app and C7-C8 do not)
 ---
 
 # Native Clients (SwiftUI macOS first) - Plan
@@ -470,6 +470,19 @@ token is `--expect-digest DIGEST` on every write (there is no `plan_id` and no `
 closed set of types), checked in at `docs/schema/v1`. Not built: `serve` (C5, so `contract.serve` is false), the
 typed workspace actions, and `via` in the audit entry (the C7 half). The native client's gaps added `--demo` on
 every read command, a `tasks history` golden and a trapped SIGINT/SIGTERM during an apply.
+
+**C5 is built too** (`abacus serve --stdio`; the protocol is `docs/serve-protocol.md`). Where it differs from
+section 6.3: the handshake is `initialize` (not `server.hello`) and carries the protocol version, `schema_version`,
+the abacus version and every method and limit; writes are `plan.task.<verb>`, `plan.tasks.bulk` and
+`plan.board.post|reply`, each returning a server-held single-use `plan_id` with the same `plan_digest` the command
+line prints, and one `apply {plan_id, expected_digest?}` (there is no `plan.create {change}` or `plan.apply`);
+errors are JSON-RPC errors whose `data` is the closed-code error object (plus `plan_id`, `plan_digest` and the P3
+`outcome`), with a JSON-RPC number beside it; cancellation is the `$/cancelRequest` notification and a deadline is a
+top-level `deadline_ms`; the notifications are `tasks.changed`, `workspace.changed` (from the workspace provider's own
+event feed) and `engine.degraded`, behind `subscribe` and `unsubscribe`. Not built: `snapshot_id` and `read_at` (each
+request is one read, as a command is), `--tracker DIR` on the command (the client sets `ABACUS_BD_DIR`), the
+`domain.changed` notification, and any setup, config or workspace-action write (setup state is readable;
+applying it stays a command).
 
 C2 and C1 are prerequisites for phase 1; C3 and C4 for phase 2; C5 for phase 3. Nothing in C1 to C8
 needs a new Go dependency except C3's reflection library.

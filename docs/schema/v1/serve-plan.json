@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "BulkDryRunItem": {
+      "properties": {
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "change": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "argv",
+        "change",
+        "id"
+      ],
+      "type": "object"
+    },
+    "BulkSkip": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "reason"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The --json output of: serve plan.* methods",
+  "properties": {
+    "argv": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "context": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "demo": {
+      "description": "true when every value is invented fixture data (--demo, ABACUS_DEMO=1); omitted otherwise",
+      "type": "boolean"
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/BulkDryRunItem"
+      },
+      "type": "array"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "lines": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "op": {
+      "type": "string"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "skipped": {
+      "items": {
+        "$ref": "#/$defs/BulkSkip"
+      },
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "expires_at",
+    "kind",
+    "lines",
+    "op",
+    "plan_digest",
+    "plan_id",
+    "schema_version"
+  ],
+  "title": "serve-plan",
+  "type": "object",
+  "x-abacus-schema": 1
+}

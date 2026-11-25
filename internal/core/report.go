@@ -57,10 +57,10 @@ type Contract struct {
 const ErrorCodesVersion = 1
 
 // ServeSupported is true once `abacus serve --stdio` ships.
-const ServeSupported = false
+const ServeSupported = true
 
 // ContractCapabilities are the optional client-visible features of this build, sorted.
-var ContractCapabilities = []string{"bulk", "demo", "history", "reopen", "schema", "tracker"}
+var ContractCapabilities = []string{"bulk", "demo", "history", "reopen", "schema", "serve", "tracker"}
 
 // NewContract is the contract section of this build.
 func NewContract() *Contract {

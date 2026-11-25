@@ -54,6 +54,11 @@ func SchemaSpecs() []SchemaSpec {
 		{"write-applied-board", "board post and reply with --yes", typeOf[BoardApplied]()},
 		{"bulk-dry-run", "tasks bulk --dry-run", typeOf[BulkDryRun]()},
 		{"bulk-result", "tasks bulk --yes", typeOf[BulkReport]()},
+		{"workspace", "status (domains.workspace), serve workspace", typeOf[WorkspaceReport]()},
+		{"serve-initialize", "serve initialize", typeOf[ServeInitialize]()},
+		{"serve-plan", "serve plan.* methods", typeOf[ServePlan]()},
+		{"serve-applied", "serve apply", typeOf[ServeApplied]()},
+		{"serve-error", "serve error.data (the error object plus the plan it concerns; schema_version is not sent there)", typeOf[ServeErrorData]()},
 		{"error", "any command that fails, with --json", typeOf[ErrorDoc]()},
 		{"schema-index", "schema --json", typeOf[SchemaIndex]()},
 	}

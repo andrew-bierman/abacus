@@ -127,7 +127,7 @@ func TestContractGoldensValidateAgainstTheSchemas(t *testing.T) {
 		}
 	}
 	for _, s := range core.SchemaSpecs() {
-		if !covered[s.Name] && s.Name != "setup-repair" { // a repair plan needs a half-built workspace on disk
+		if !covered[s.Name] && s.Name != "setup-repair" && !strings.HasPrefix(s.Name, "serve-") && s.Name != "workspace" { // setup-repair needs a half-built workspace on disk; the serve ones: TestServeTranscriptsValidateAgainstTheSchemas
 			t.Errorf("no golden validates against the %s schema", s.Name)
 		}
 	}
@@ -305,6 +305,73 @@ func TestSchemaOutNeverOverwritesOrFollows(t *testing.T) {
 		ents, _ := os.ReadDir(dir2)
 		if code != 1 || string(b) != "precious" || fi.Mode()&os.ModeSymlink == 0 || len(ents) != 1 || errorCode(out) != "refused" {
 			t.Errorf("%v: code=%d out=%s victim=%q files=%d", args, code, out, b, len(ents))
+		}
+	}
+}
+
+// The serve protocol's own messages (initialize, plans, applies, error data and the workspace report), as the
+// golden transcripts in internal/serve/testdata record them, validate against their schemas.
+func TestServeTranscriptsValidateAgainstTheSchemas(t *testing.T) {
+	schemas := map[string]map[string]any{}
+	for _, s := range core.SchemaSpecs() {
+		doc, err := core.SchemaDoc(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, _ := json.Marshal(doc)
+		var m map[string]any
+		_ = json.Unmarshal(b, &m)
+		schemas[s.Name] = m
+	}
+	files, _ := filepath.Glob(filepath.Join("..", "serve", "testdata", "*.golden"))
+	if len(files) < 3 {
+		t.Fatalf("serve transcripts: %v", files)
+	}
+	seen := map[string]int{}
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, line := range strings.Split(string(b), "\n") {
+			body, ok := strings.CutPrefix(line, "<- ")
+			if !ok {
+				continue
+			}
+			var m struct {
+				Result map[string]any `json:"result"`
+				Error  map[string]any `json:"error"`
+			}
+			if err := json.Unmarshal([]byte(body), &m); err != nil {
+				t.Fatalf("%s: %v", f, err)
+			}
+			name, doc := "", m.Result
+			switch {
+			case m.Error != nil:
+				name, doc = "serve-error", m.Error["data"].(map[string]any)
+				doc["schema_version"] = float64(1) // the error data does not repeat it
+			case doc["capabilities"] != nil:
+				name = "serve-initialize"
+			case doc["plan_id"] != nil && doc["expires_at"] != nil:
+				name = "serve-plan"
+			case doc["plan_id"] != nil && doc["outcome"] != nil:
+				name = "serve-applied"
+			case doc["placements"] != nil:
+				name = "workspace"
+			}
+			if name == "" {
+				continue
+			}
+			seen[name]++
+			sc := schemas[name]
+			for _, e := range validate(sc, sc, any(doc), "$") {
+				t.Errorf("%s: %s against %s: %s", f, strings.TrimSpace(body[:min(60, len(body))]), name, e)
+			}
+		}
+	}
+	for _, n := range []string{"serve-initialize", "serve-plan", "serve-applied", "serve-error", "workspace"} {
+		if seen[n] == 0 {
+			t.Errorf("no transcript line validated against %s", n)
 		}
 	}
 }

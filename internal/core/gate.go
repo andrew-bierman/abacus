@@ -43,7 +43,7 @@ func (g *gate) do(id uint64, e AuditEntry, run func() error) error {
 	if err := g.audit.Record(e); err != nil {
 		return &AuditError{err}
 	}
-	err := run()
+	err := runRecovered(run)
 	e.Time, e.Phase = time.Now().UTC(), "ok"
 	if err != nil {
 		e.Phase, e.Error = "error", Sanitize(err.Error())
@@ -56,4 +56,16 @@ func (g *gate) do(id uint64, e AuditEntry, run func() error) error {
 	}
 	_ = g.audit.Record(e) // the attempt line already exists; a failed result line must not mask the outcome
 	return err
+}
+
+// runRecovered runs a write; a panic in it (a provider bug) is a result unknown, not a crash and not a
+// lost outcome: the write may have reached the tracker before it panicked, and the attempt line is
+// already in the audit log, so the outcome must be recorded too.
+func runRecovered(run func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = UnknownOutcome("the write failed unexpectedly after it was sent; refresh before retrying")
+		}
+	}()
+	return run()
 }

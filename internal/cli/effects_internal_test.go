@@ -51,3 +51,14 @@ func TestEveryRegisteredCommandIsClassified(t *testing.T) {
 		}
 	}
 }
+
+// serve is long-lived: the gate lets `serve --demo` start (it reads), and the server itself refuses every
+// plan and apply in demo mode (see internal/serve TestDemoModeServesReadsAndRefusesEveryWrite).
+func TestServeIsClassifiedAsReads(t *testing.T) {
+	if r, ok := effects["serve"]; !ok || r.effect != reads {
+		t.Fatalf("serve: %+v", r)
+	}
+	if _, mutates := mutation([]string{"serve", "--stdio", "--demo"}); mutates {
+		t.Error("the gate must not refuse serve --demo itself")
+	}
+}

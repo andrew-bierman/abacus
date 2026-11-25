@@ -419,7 +419,7 @@ closed set and `source` says how it was learned.
   first signal, so a second SIGINT or SIGTERM kills the process. Outside an apply (reads, the confirm prompt) the default behavior stays,
   so a prompt can still be interrupted. A write that had already finished when the signal arrived reports its real result.
 - **`version --json` `contract`** lets a client feature-detect:
-  `{"schema_version": 1, "error_codes": 1, "plan_digest": true, "serve": false, "capabilities": ["bulk", "demo", "history", "reopen", "schema", "tracker"]}`.
+  `{"schema_version": 1, "error_codes": 1, "plan_digest": true, "serve": true, "capabilities": ["bulk", "demo", "history", "reopen", "schema", "serve", "tracker"]}`.
   `error_codes` is the version of the closed code set (bumped when a code is added), `plan_digest` says every
   write has `plan_digest` and `--expect-digest`, `serve` says `abacus serve --stdio` exists in this build, and
   `capabilities` lists optional features, sorted. A client treats a capability it does not know as absent.
@@ -591,6 +591,15 @@ bulk, board-post, board-reply), `applied-*` for a task write, a batch and a boar
 `schema-index`; the task views and search have theirs in `internal/cli/testdata/`. `go test ./internal/cli
 -update-golden` rewrites them and refuses anything that is not a `schema_version` 1 object. `batch_id` is
 a random per-run value, normalized in its golden.
+
+## Serve mode
+
+`abacus serve --stdio` is the long-lived form of this contract for a native client: JSON-RPC 2.0, one
+message per line on stdin and stdout, no network port. Its read methods return the documents above (same
+bytes as the command's `--json`, on one line), its errors carry the closed codes of "Errors: stable codes" in
+`error.data`, and its writes are the plan and apply of "Plan digests" with a server-held single-use plan id.
+The protocol, limits and the notification rules are in `docs/serve-protocol.md`; the extra messages have
+schemas in `docs/schema/v1` (`serve-initialize`, `serve-plan`, `serve-applied`, `serve-error`).
 
 ## Clients
 

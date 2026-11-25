@@ -8,6 +8,19 @@ may change behavior, and patch versions are fixes and small additions.
 
 ### Added
 
+- `abacus serve --stdio` (`docs/serve-protocol.md`): a long-lived JSON-RPC 2.0 server for a native client, one
+  message per line on stdin and stdout, no network port, refusing to run unless stdin is a pipe or socket
+  (SIGPIPE ignored, loader variables scrubbed). It returns the same typed `schema_version` 1 reports as the
+  `--json` commands (board, tasks list, tree, board, show, graph and history, leases, queues, agents, status,
+  doctor, search, setup state, workspace, config), plans every write (`plan.task.*`, `plan.tasks.bulk`,
+  `plan.board.post|reply`) under a server-held single-use plan id and applies it once with `apply {plan_id,
+  expected_digest?}`, through the same gate: the digest the command line prints, the freshness check, the audit
+  line written before the write (fail closed) and "result unknown" for a timeout or cancel, with errors in the
+  closed code set. Request ids, `$/cancelRequest`, per-request `deadline_ms`, a limit on requests in flight, one
+  read per domain and one write at a time, strict size, depth and JSON limits, `shutdown`, and bounded
+  `tasks.changed` / `workspace.changed` / `engine.degraded` notifications from the TUI's fingerprint poll and the
+  workspace provider's event feed. Additive: schemas `serve-initialize`, `serve-plan`, `serve-applied`,
+  `serve-error` and `workspace` in `docs/schema/v1`; `taskview.ReadSearchFeeds` (moved out of the CLI). `version --json` `contract.serve` is now true and lists the `serve` capability; the effects table classifies `serve` as reads, and `serve --demo` serves reads marked `demo: true` and refuses every plan and apply. The write gate turns a panic in a provider into a recorded result unknown.
 - Client contract (the core prerequisites of `docs/design/2026-11-24-plan-native-clients.md`, section 9;
   all additive, `schema_version` stays 1, exit codes 0/1/2 keep their meaning, no success path changes):
   - Golden fixtures for every read command and every write envelope (dry-run, applied, bulk, board) in
