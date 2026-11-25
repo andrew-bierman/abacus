@@ -1,7 +1,7 @@
 === 40x12 ===
  [Board]  1/6
 ╭─ ▸ Board ────────────────────────────╮
-│ none yet: the first post makes one   │
+│ no channels yet                      │
 │                                      │
 │ Recent threads                       │
 │ no threads yet                       │
@@ -19,7 +19,7 @@
 │ tasks                                │
 │                                      │
 │ Channels                             │
-│ none yet: the first post makes one   │
+│ no channels yet                      │
 │                                      │
 │ Recent threads                       │
 │ no threads yet                       │
@@ -45,7 +45,7 @@
 === 80x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Board ────────────────────────────────────────────────────────────────────╮
-│ none yet: the first post makes one                                           │
+│ no channels yet                                                              │
 │                                                                              │
 │ Recent threads                                                               │
 │ no threads yet                                                               │
@@ -62,7 +62,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ 0 channels, 0 recent threads, 0 open tasks                                   │
 │                                                                              │
 │ Channels                                                                     │
-│ none yet: the first post makes one                                           │
+│ no channels yet                                                              │
 │                                                                              │
 │ Recent threads                                                               │
 │ no threads yet                                                               │
@@ -89,7 +89,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 === 120x12 ===
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────────────╮
-│ none yet: the first post makes one                                   │ │ nothing selected                            │
+│ no channels yet                                                      │ │                                             │
 │                                                                      │ │                                             │
 │ Recent threads                                                       │ │                                             │
 │ no threads yet                                                       │ │                                             │
@@ -103,10 +103,10 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────────────╮
-│ 0 channels, 0 recent threads, 0 open tasks                           │ │ nothing selected                            │
+│ 0 channels, 0 recent threads, 0 open tasks                           │ │                                             │
 │                                                                      │ │                                             │
 │ Channels                                                             │ │                                             │
-│ none yet: the first post makes one                                   │ │                                             │
+│ no channels yet                                                      │ │                                             │
 │                                                                      │ │                                             │
 │ Recent threads                                                       │ │                                             │
 │ no threads yet                                                       │ │                                             │
@@ -137,7 +137,7 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 │ 0 channels, 0 recent threads, 0 open tasks               │
 │                                                          │
 │ Channels                                                 │
-│ none yet: the first post makes one                       │
+│ no channels yet                                          │
 │                                                          │
 │ Recent threads                                           │
 │ no threads yet                                           │
@@ -159,10 +159,10 @@ abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 abacus   [Board]  Tasks  Leases  Queues  Agents  Doctor
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ ▸ Board ────────────────────────────────────────────────╮ ╭─ Message ───────────────────────────╮
-│ 0 channels, 0 recent threads, 0 open tasks               │ │ nothing selected                    │
+│ 0 channels, 0 recent threads, 0 open tasks               │ │                                     │
 │                                                          │ │                                     │
 │ Channels                                                 │ │                                     │
-│ none yet: the first post makes one                       │ │                                     │
+│ no channels yet                                          │ │                                     │
 │                                                          │ │                                     │
 │ Recent threads                                           │ │                                     │
 │ no threads yet                                           │ │                                     │

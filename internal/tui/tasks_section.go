@@ -734,6 +734,13 @@ func (s *tasksSection) stateView() string {
 	return joinLines(box(th, "Tasks", body, w, s.h))
 }
 
+func (s *tasksSection) emptyTasksHint() string {
+	if s.applier != nil {
+		return "no tasks yet — press n to add the first one"
+	}
+	return "no tasks yet"
+}
+
 func (s *tasksSection) insightParts(iw int) (string, []string) {
 	th := s.th
 	in := s.insights

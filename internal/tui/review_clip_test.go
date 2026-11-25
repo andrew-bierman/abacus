@@ -230,8 +230,7 @@ func bindingOn(bs []key.Binding, k string) (enabled, found bool) {
 	return false, false
 }
 
-// Queues offers enter whenever it is stacked, even with no runs (as it did before listNav).
-func TestQueuesOffersEnterWhenStackedEvenWithZeroRuns(t *testing.T) {
+func TestQueuesOmitsEnterWhenThereAreNoRuns(t *testing.T) {
 	s := newLambeSection(lambe.NewDemo(), nil)
 	s.SetTheme(asciiTheme())
 	var m tea.Model = s
@@ -240,8 +239,8 @@ func TestQueuesOffersEnterWhenStackedEvenWithZeroRuns(t *testing.T) {
 	if len(s.runs()) != 0 {
 		t.Fatal("the test needs zero runs")
 	}
-	if on, found := bindingOn(s.Bindings(), "enter"); !found || !on {
-		t.Fatalf("stacked with no runs: enter is offered (found=%v enabled=%v)", found, on)
+	if on, _ := bindingOn(s.Bindings(), "enter"); on {
+		t.Fatal("stacked with no runs: enter is offered")
 	}
 	m = sized(m, 140, 30)
 	if on, _ := bindingOn(s.Bindings(), "enter"); on {

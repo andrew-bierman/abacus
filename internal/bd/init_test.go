@@ -143,7 +143,7 @@ func TestTasksWithNoTrackerAsksForSetupInsteadOfFailing(t *testing.T) {
 	m.Detect(context.Background())
 	_, err := m.Tasks(context.Background())
 	g, ok := core.AsNeedsSetup(err)
-	if !ok || g.Step != core.StepWorkspace || g.Message != "No tracker here" || g.Action != "create your fleet workspace (bd init)" {
+	if !ok || g.Step != core.StepWorkspace || g.Message != "No Beads tracker found" || g.Action != "create a workspace (bd init)" {
 		t.Fatalf("%+v %v", g, err)
 	}
 	if got := m.Guide(context.Background()); got == nil || got.Step != core.StepWorkspace || !strings.Contains(got.Detail, ws) {

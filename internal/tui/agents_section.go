@@ -520,11 +520,11 @@ func (s *agentsSection) listLines(g duoGeom) []string {
 	th := s.th
 	l := s.visible()
 	if len(l) == 0 {
-		msg := "no agents running"
+		msg := "no agents detected — start a local coding agent"
 		if len(s.report.Agents) > 0 {
 			msg = "no agent matches the filters (esc clears them)"
 		}
-		return []string{th.Text(KindMuted, msg)}
+		return wrap(th.Text(KindMuted, msg), g.listInner())
 	}
 	var styled, plain [][]string
 	now := nowFn()
@@ -562,7 +562,7 @@ func (s *agentsSection) detailLines(iw int) []string {
 	th := s.th
 	l := s.visible()
 	if s.cursor >= len(l) {
-		return []string{th.Text(KindMuted, "select an agent")}
+		return nil
 	}
 	a := l[s.cursor]
 	now := nowFn()

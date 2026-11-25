@@ -393,11 +393,15 @@ func (s *boardSection) stateView() string {
 	}
 	var nc *core.NotConnectedError
 	if errors.As(s.err, &nc) { // the tool is there but no board is set up: say how to connect
-		how := nc.HowToConnect
-		if how == nc.Reason {
+		reason, how := nc.Reason, nc.HowToConnect
+		if reason == core.BoardNotSetUpReason {
+			reason = "No board is configured."
+			how = "Run abacus config set board_url <url>."
+		}
+		if how == reason {
 			how = ""
 		}
-		return joinLines(notConnectedBox(th, "Board", nc.Reason, how, w, s.h))
+		return joinLines(notConnectedBox(th, "Board", reason, how, w, s.h))
 	}
 	body := unavailableBody(th, s.err.Error(), inner)
 	body = append(body, "")
@@ -500,11 +504,7 @@ func (s *boardSection) connectedView() string {
 	}
 	lines = append(lines, "", th.Section("Channels"))
 	if len(r.Channels) == 0 {
-		none := "none yet: the first post makes one"
-		if canPost {
-			none += " (press n)"
-		}
-		lines = append(lines, wrap(th.Text(KindMuted, none), iw)...)
+		lines = append(lines, th.Text(KindMuted, "no channels yet"))
 	}
 	lines = append(lines, chanLines(th, r.Channels, iw)...)
 
@@ -544,7 +544,7 @@ func (s *boardSection) connectedView() string {
 		cursorLine = len(lines) - len(krows) + (s.cursor - len(r.Threads))
 	}
 
-	detailTitle, detail := "Message", []string{th.Text(KindMuted, "nothing selected")}
+	detailTitle, detail := "Message", []string(nil)
 	if s.cursor < len(rows) {
 		if strings.HasPrefix(rows[s.cursor].id, "k:") {
 			detailTitle = "Task"

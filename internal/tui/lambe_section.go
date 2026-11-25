@@ -88,9 +88,7 @@ func (s *lambeSection) SetTheme(t Theme) { s.th = t }
 func (s *lambeSection) Capturing() bool  { return s.typing }
 
 func (s *lambeSection) Bindings() []key.Binding {
-	_, back := s.bindings(s.width(), len(s.runs()))
-	enter := keyEnter // offered whenever stacked, even with no runs, as before
-	enter.SetEnabled(isStacked(s.width()) && !s.drilled)
+	enter, back := s.bindings(s.width(), len(s.runs()))
 	back.SetEnabled(s.drilled || s.filter != "")
 	return append(moveBindings(), enter, back, keyFilter, keyOpen)
 }
@@ -258,6 +256,9 @@ func (s *lambeSection) attentionLines() []string {
 // listTitle is the list panel's title: the run count and, when it applies, where the data came from.
 func (s *lambeSection) listTitle() string {
 	title := fmt.Sprintf("Runs %d", len(s.runs()))
+	if len(s.view.Snapshot.Runs) == 0 {
+		title = "Queues"
+	}
 	if s.view.Source == lambe.SourceTracker {
 		title += " · " + lambe.SourceTracker
 	}
@@ -315,7 +316,11 @@ func (s *lambeSection) listLines(iw int) ([]string, int) {
 	}
 	cursorLine := len(out)
 	if len(runs) == 0 {
-		out = append(out, th.Text(KindMuted, "no runs"))
+		msg := "no runs yet"
+		if len(s.view.Snapshot.Runs) > 0 {
+			msg = "no runs match — press esc to clear the filter"
+		}
+		out = append(out, wrap(th.Text(KindMuted, msg), iw)...)
 	}
 	stalled := false
 	for _, r := range runs {
@@ -380,7 +385,7 @@ func (s *lambeSection) detailLines() []string {
 	th := s.th
 	runs := s.runs()
 	if s.cursor >= len(runs) {
-		return []string{th.Header.Render("Run"), th.Text(KindMuted, "nothing selected")}
+		return nil
 	}
 	r := runs[s.cursor]
 	head := th.Header.Render(orDash(r.Issue)) + " " + th.Badge(stateKind(r.RunState()), orDash(r.State))

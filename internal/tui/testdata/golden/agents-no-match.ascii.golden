@@ -2,8 +2,8 @@
  [Agents]  5/6
 /zzzzzz  sort: attention  ~ guessed fro…
 ╭─ ▸ Agents 0/6 · 310 tok/s ───────────╮
-│ no agent matches the filters (esc c… │
-│                                      │
+│ no agent matches the filters (esc    │
+│ clears them)                         │
 │                                      │
 │                                      │
 │                                      │
@@ -19,8 +19,8 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41…
 1 port still open after their agent end…
 /zzzzzz  sort: attention  ~ guessed fro…
 ╭─ ▸ Agents 0/6 · 310 tok/s ───────────╮
-│ no agent matches the filters (esc c… │
-│                                      │
+│ no agent matches the filters (esc    │
+│ clears them)                         │
 │                                      │
 │                                      │
 │                                      │
@@ -90,7 +90,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 abacus   Board  Tasks  Leases  Queues  [Agents]  Doctor                                       fleet · 14 tasks · 3 ready
 /zzzzzz  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
-│ no agent matches the filters (esc clears them)                       │ │ select an agent                             │
+│ no agent matches the filters (esc clears them)                       │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -107,7 +107,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 /zzzzzz  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────────────────╮ ╭─ Agent ─────────────────────────────────────╮
-│ no agent matches the filters (esc clears them)                       │ │ select an agent                             │
+│ no agent matches the filters (esc clears them)                       │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
 │                                                                      │ │                                             │
@@ -163,7 +163,7 @@ Codex  5h ▰▰▰▰▰▰▰▱ 88%  30d ▰▰▰▱▱▱▱▱ 41%  stale
 1 port still open after their agent ended: 4000
 /zzzzzz  sort: attention  ~ guessed from files
 ╭─ ▸ Agents 0/6 · 310 tok/s ───────────────────────────────╮ ╭─ Agent ─────────────────────────────╮
-│ no agent matches the filters (esc clears them)           │ │ select an agent                     │
+│ no agent matches the filters (esc clears them)           │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │
 │                                                          │ │                                     │

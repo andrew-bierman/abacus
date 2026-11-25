@@ -457,7 +457,7 @@ func (s *tasksSection) kanbanView() (out string) {
 	}
 	switch {
 	case rep.Total == 0:
-		body = append(body, panel(th, "Kanban", padRows([]string{th.Text(KindMuted, "no tasks yet — press n to add the first one")}, rowsOf(panelH)), w, panelH, true)...)
+		body = append(body, panel(th, "Kanban", padRows(wrap(th.Text(KindMuted, s.emptyTasksHint()), innerW(w)), rowsOf(panelH)), w, panelH, true)...)
 	case len(cols) == 0:
 		hint := "no cards in this grouping: press s for another grouping, or esc to clear the filter"
 		body = append(body, panel(th, "Kanban", padRows(wrap(th.Text(KindMuted, hint), max(w-panelChromeW, 1)), rowsOf(panelH)), w, panelH, true)...)

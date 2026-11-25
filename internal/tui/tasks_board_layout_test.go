@@ -95,7 +95,7 @@ func TestBoardDrillNeverOutlivesAWideLayout(t *testing.T) {
 
 func TestBoardEmptyStatesAreWordsInsideAPanel(t *testing.T) {
 	v := boardAt(120, 40, core.BoardReport{Header: core.Header{Source: core.SourceLive}}).View()
-	for _, want := range []string{"none yet: the first post makes one", "no threads yet", "no open tasks", "╭", "nothing selected"} {
+	for _, want := range []string{"no channels yet", "no threads yet", "no open tasks", "╭"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("empty board missing %q:\n%s", want, v)
 		}
