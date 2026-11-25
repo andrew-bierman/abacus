@@ -9,7 +9,7 @@ execution: code
 
 # Abacus Hardening, Typed Core Surface and beads-lease Module - Plan
 
-**Target repo:** `abacus` (`~/Code/abacus`, private `andrew-bierman/abacus`). This plan stacks on the shipped skeleton (draft PR #1) and does not modify Lambe or beads-lease code. `beads-lease` is `andrew-bierman/beads-lease`, read from a local clone at `<beads-lease checkout>`.
+**Target repo:** `abacus`. This plan stacks on the shipped skeleton (draft PR #1) and does not modify Lambe or beads-lease code. The beads-lease checkout is a read-only reference.
 
 ## Goal Capsule
 
@@ -81,7 +81,7 @@ The skeleton works but can mislead: an installed-but-crashing Lambe vanishes fro
 
 ### Scope Boundaries
 
-- **Deferred to follow-up work:** a board-beads module once board-beads (or the Vercel Board `vb` CLI) offers a contract surface, which is the owner's priority interest; a survey of ecosystem Beads dashboard and kanban tools to adopt instead of building one; the SwiftUI thin client; third-party Beads tool adapters; releases and packaging; CI for this repo; the final name, brand and mascot (`abacus` stays a placeholder); moving beads-lease to the shared contract (an upstream change).
+- **Deferred to follow-up work:** a board-beads module once board-beads (or the Vercel Board `vb` CLI) offers a contract surface, which is the owner's priority interest; a survey of ecosystem Beads dashboard and kanban tools to adopt instead of building one; the SwiftUI thin client; third-party Beads tool adapters; releases and packaging; CI for this repo; moving beads-lease to the shared contract (an upstream change).
 - **Not built (considered):** a board-beads module in this increment (it is a TypeScript library with no CLI contract, so there is nothing to compose yet); any board or kanban UI in abacus; a `doctor` implementation for beads-lease inside abacus (the upstream tool owns its own doctor); any beads-lease write or sync path; merging the two `signalZero` bodies (they port Lambe's logic and the duplication is cheap); a dedicated beads-lease TUI section (the generic status section is enough until a lease-specific view is requested).
 - Lambe and beads-lease code, config and release setup are not modified.
 

@@ -9,7 +9,7 @@ execution: code
 
 # Fleet Domains, Domain-First Navigation and the Tasks Write Path - Plan
 
-**Target repo:** `abacus` (`~/Code/abacus`, private `andrew-bierman/abacus`). Branch `feat/fleet-domains`, draft PR only. Upstream repos are only read here; gaps are filed on `andrew-bierman/beads-lease`, `andrew-bierman/lambe` and `andrew-bierman/board-beads`.
+**Target repo:** `abacus`. Branch `feat/fleet-domains`, draft PR only. Upstream repos are only read here; gaps are filed in the corresponding provider projects.
 
 ## Goal Capsule
 
@@ -39,7 +39,7 @@ Go; core holds all logic type-safely and CLI/TUI/native clients render core's ty
 
 ## Inventory: read and write surfaces today
 
-Verified on 2026-11-21 with `bd 1.3.4`, `<beads-lease checkout>` (README and `internal/cmd`), `~/Code/lambe` (`docs/api/state-api.md`, `lambe --help`) and `~/Code/board-beads` (README, `src/`).
+Verified on 2026-11-21 with `bd 1.3.4`, `<beads-lease checkout>` (README and `internal/cmd`), the Lambe checkout (`docs/api/state-api.md`, `lambe --help`) and the Board Beads checkout (README, `src/`).
 
 ### Tasks (Beads issues via `bd`)
 
