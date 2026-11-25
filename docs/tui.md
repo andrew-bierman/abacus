@@ -486,7 +486,7 @@ A provider that was found but cannot be used (`broken`, `incompatible`) leaves i
 detected provider.
 
 The Doctor tab (the one place providers are listed by name) leads with "Ready" or "Needs attention",
-one line per area, a "Built-in tools: 4 of 4 ready" line (a development build says "Development
+one line per area, a "Built-in tools: 5 of 5 ready" line (a development build says "Development
 build: tools are not built in; build with make build" instead), and each tool with where it was
 found (`built in`, `override`, `demo`; `bundled` or `PATH` in a development build; or `unavailable`
 for a built-in copy that cannot be set up) and its version, then the detailed checks.

@@ -46,11 +46,10 @@ officially representing the community in public spaces.
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the
-community leaders responsible for enforcement through GitHub's private vulnerability reporting
-(<https://github.com/andrew-bierman/abacus/security/advisories/new>) or by contacting the
-maintainer, @andrew-bierman, through GitHub. All complaints will be reviewed and investigated
-promptly and fairly.
+For conduct concerns, contact the maintainer using the website linked from
+[@andrew-bierman’s profile](https://github.com/andrew-bierman). Include relevant links
+and how you can be reached. The maintainer will review reports promptly
+and handle them with discretion.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any
 incident.

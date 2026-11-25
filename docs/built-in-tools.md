@@ -89,7 +89,7 @@ handle, so a replacement between the one-stat check and the start is a same-user
 rights. The Board CLI's `--help` identity check still runs on an override, with a token-free
 environment, before it is trusted.
 
-**Doctor** shows each tool as `built in` with its version and leads with `Built-in tools: 4 of 4
+**Doctor** shows each tool as `built in` with its version and leads with `Built-in tools: 5 of 5
 ready`. It is Ready when bd, lambe and beads-lease are usable; the Board CLI is built in too but
 never blocks Ready: the Board tab works once a board is configured (`abacus config set board_url
 URL`, then `vercel login` or `BOARD_TOKEN`) and otherwise says how to point it at one.
