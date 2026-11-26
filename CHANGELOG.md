@@ -6,6 +6,8 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-26
+
 ### Added
 
 - A user-local installer for the macOS and Linux terminal releases verifies the download and installs the `abacus` command.
