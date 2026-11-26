@@ -132,13 +132,20 @@ func TestPiSessionIsReadFromItsTail(t *testing.T) {
 		`{"type":"message","message":{"role":"toolResult","toolCallId":"c1"}}`,
 		`{"type":"message","message":{"role":"assistant","provider":"demo","model":"pi-demo-1","stopReason":"stop","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0}}}`,
 		`{"type":"message","message":{"role":"assistant","provider":"demo","model":"pi-demo-1","stopReason":"stop","usage":{"input":120,"output":40,"cacheRead":1000,"cacheWrite":0}}}`,
+		`{"type":"message","message":{"role":"assistant","provider":"demo","model":"pi-demo-1","stopReason":"aborted","usage":{"input":200,"output":15,"cacheRead":1300,"cacheWrite":10}}}`,
 		`{"type":"model_change","modelId":"ignored"}`,
 	))
 	if s.ID != "pi-s1" || s.Cwd != "/work/orchard" || s.Task != "sort the crates" || s.Model != "demo/pi-demo-1" || s.End != endDone {
 		t.Fatalf("%+v", s)
 	}
-	if !slices.Equal(s.Turns, []int64{150, 160}) || s.Context == nil || *s.Context != 1120 {
-		t.Fatalf("a zero-usage response is not a turn: %v %v", s.Turns, s.Context)
+	if !slices.Equal(s.Turns, []int64{150, 160}) {
+		t.Errorf("turns = %v, want [150 160] after zero-usage and aborted responses", s.Turns)
+	}
+	if s.Context == nil {
+		t.Fatal("missing context from the last successful response")
+	}
+	if *s.Context != 1120 {
+		t.Errorf("context = %d, want 1120 from the last successful response", *s.Context)
 	}
 	for _, c := range []struct {
 		stop string

@@ -109,6 +109,10 @@ func parsePi(head []byte, lines [][]byte) session {
 				s.End = endToolUse
 			case "error":
 				s.End = endError
+			case "aborted":
+				s.End = endDone
+				// The pi footer skips aborted responses even when they report usage.
+				return
 			case "deferred": // the provider will answer later: the turn is still open
 				s.End = endPrompt
 			default:
