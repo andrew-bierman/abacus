@@ -92,6 +92,25 @@ func TestCodexUsageWindowAndLimits(t *testing.T) {
 	}
 }
 
+func TestCodexQuotaRequiresWindowDuration(t *testing.T) {
+	const ts = "2026-01-01T10:00:00Z"
+	unknown := codexTok(ts, 10, 5, 0, 5, 1000, `{"limit_id":"codex","primary":{"used_percent":12.5}}`)
+	if got := parseCodex(nil, lines(unknown)).Quota; got != nil {
+		t.Errorf("durationless report produced quota: %+v", got.limit(core.HarnessCodex))
+	}
+
+	// The live account quota can occupy primary. An unclassified secondary must not replace it.
+	mixed := codexTok(ts, 20, 5, 0, 5, 1000, `{"limit_id":"codex","primary":{"used_percent":40,"window_minutes":10080,"resets_at":1767700000},"secondary":{"used_percent":12.5}}`)
+	q := parseCodex(nil, lines(mixed, unknown)).Quota
+	if q == nil {
+		t.Fatal("expected a quota from the explicit 10080-minute window")
+	}
+	got := q.limit(core.HarnessCodex)
+	if got.FiveHourPct != nil || got.SevenDayPct == nil || *got.SevenDayPct != 40 || got.LongWindowMinutes != 10080 || got.SevenDayResets != iso(epochTime(1767700000)) {
+		t.Fatalf("expected only the explicit 10080-minute window: %+v", got)
+	}
+}
+
 func TestClaudeQuotaFile(t *testing.T) {
 	good := `{"five_hour":{"used_percentage":21,"resets_at":1767268800},"seven_day":{"used_percentage":8.5,"resets_at":1767700000,"window_minutes":10080},"updated_at":1767265200}`
 	q, ok := parseClaudeQuota([]byte(good))
