@@ -177,6 +177,15 @@ func dispatch(args []string, d Deps) int {
 		fmt.Fprintf(d.Err, "%s: --tab is for tui and takes board, tasks, leases, queues or doctor\n", cmd)
 		return core.ExitUsage
 	}
+	if cmd == "doctor" && o.Demo {
+		// A demo has no provider health to report. Keep the required JSON fields.
+		return renderReport(d.Out, cmd, *asJSON, core.Report{
+			SchemaVersion: core.SchemaVersion,
+			Version:       d.Version,
+			Modules:       []core.ModuleReport{},
+			Demo:          true,
+		})
+	}
 	ctx := context.Background()
 	if cmd != "tui" { // the TUI is interactive and has no overall deadline
 		var cancel context.CancelFunc
@@ -204,12 +213,16 @@ func dispatch(args []string, d Deps) int {
 		r = core.FleetStatusReport(ctx, d.Version, entries)
 	}
 	r.Demo = o.Demo
-	if *asJSON {
-		enc := json.NewEncoder(d.Out)
+	return renderReport(d.Out, cmd, *asJSON, r)
+}
+
+func renderReport(w io.Writer, cmd string, asJSON bool, r core.Report) int {
+	if asJSON {
+		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 		_ = enc.Encode(r)
 	} else {
-		renderText(d.Out, cmd, r)
+		renderText(w, cmd, r)
 	}
 	return r.ExitCode()
 }
@@ -233,8 +246,15 @@ func renderText(w io.Writer, cmd string, r core.Report) {
 		}
 		return
 	}
-	if cmd == "doctor" && r.Overview != nil {
-		renderOverview(w, *r.Overview)
+	if cmd == "doctor" {
+		if r.Demo {
+			fmt.Fprintln(w, "You're exploring sample data in demo mode.")
+			fmt.Fprintf(w, "Run %s doctor outside demo mode to check your providers.\n", brand.Name)
+			return
+		}
+		if r.Overview != nil {
+			renderOverview(w, *r.Overview)
+		}
 	}
 	if len(r.Modules) == 0 && r.Domains == nil {
 		fmt.Fprintln(w, "no Beads tools detected")

@@ -91,6 +91,7 @@ func TestContractReadGoldens(t *testing.T) {
 	}{
 		{"version", []string{"version", "--json"}},
 		{"doctor", []string{"doctor", "--json"}},
+		{"doctor-demo", []string{"doctor", "--demo", "--json"}},
 		{"status", []string{"status", "--json"}},
 		{"board", []string{"board", "--json"}},
 		{"tasks", []string{"tasks", "--json"}},

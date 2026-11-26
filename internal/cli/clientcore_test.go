@@ -38,7 +38,7 @@ func hasDemo(t *testing.T, out string) bool {
 	return string(m["demo"]) == "true"
 }
 
-func TestDemoFlagAndEnvMarkEveryReadAndBuildDemo(t *testing.T) {
+func TestDemoFlagAndEnvMarkEveryReadAndBuildDemoProvidersWhenNeeded(t *testing.T) {
 	for _, c := range readCommands {
 		args := append(append([]string{}, c...), "--json")
 		for name, tc := range map[string]struct {
@@ -56,6 +56,12 @@ func TestDemoFlagAndEnvMarkEveryReadAndBuildDemo(t *testing.T) {
 			}
 			if hasDemo(t, out) != tc.demo {
 				t.Errorf("%v %s: demo marker = %v, want %v", c, name, !tc.demo, tc.demo)
+			}
+			if c[0] == "doctor" && tc.demo {
+				if len(opts) != 0 {
+					t.Errorf("%v %s: Build got %+v, want no provider build", c, name, opts)
+				}
+				continue
 			}
 			if len(opts) == 0 || opts[len(opts)-1].Demo != tc.demo {
 				t.Errorf("%v %s: Build got %+v, want Demo=%v", c, name, opts, tc.demo)

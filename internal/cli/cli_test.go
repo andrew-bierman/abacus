@@ -58,6 +58,29 @@ func TestDoctorOKExitsZeroWithJSON(t *testing.T) {
 	}
 }
 
+func TestDoctorDemoText(t *testing.T) {
+	for _, mode := range []string{"flag", "env"} {
+		t.Run(mode, func(t *testing.T) {
+			args := []string{"doctor"}
+			if mode == "flag" {
+				t.Setenv("ABACUS_DEMO", "")
+				args = append(args, "--demo")
+			} else {
+				t.Setenv("ABACUS_DEMO", "1")
+			}
+			var out, errOut bytes.Buffer
+			code := cli.Run(args, cli.Deps{Out: &out, Err: &errOut, Build: func(cli.Options) *core.Registry {
+				t.Error("demo Doctor built providers")
+				return core.NewRegistry(ready("fixture"))
+			}})
+			want := "You're exploring sample data in demo mode.\nRun abacus doctor outside demo mode to check your providers.\n"
+			if code != 0 || out.String() != want || errOut.Len() != 0 {
+				t.Fatalf("exit %d, stdout %q, stderr %q", code, out.String(), errOut.String())
+			}
+		})
+	}
+}
+
 func TestFailExitsOneWarnAndSkipDoNot(t *testing.T) {
 	mods := func(s core.CheckStatus) []core.Module {
 		return []core.Module{ready("a", core.Check{Name: "c", Status: s})}
