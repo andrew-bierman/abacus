@@ -321,6 +321,28 @@ func TestLocalMatchesOpenCodeSessionsAndSkipsSubagents(t *testing.T) {
 	}
 }
 
+func TestOpenCodeStateUsesLatestTransition(t *testing.T) {
+	for _, tt := range []struct {
+		name                   string
+		busy, idle, compacting int64
+		want                   core.AgentState
+	}{
+		{"idle after compaction", 10, 30, 20, core.AgentIdle},
+		{"compaction after idle", 10, 20, 30, core.AgentRunning},
+		{"busy after compaction", 30, 10, 20, core.AgentRunning},
+		{"idle ties compaction", 10, 20, 20, core.AgentIdle},
+		{"idle ties busy", 20, 20, 10, core.AgentIdle},
+		{"missing timestamps", 0, 0, 0, core.AgentIdle},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			row := opencodeSession{Updated: now, Busy: tt.busy, Idle: tt.idle, Compacting: tt.compacting}
+			if got := inferState(row.asSession(), now); got != tt.want {
+				t.Fatalf("state = %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestOpenCodeBusyAfterAWhileIsNotClaimedRunning(t *testing.T) {
 	r := opencodeSession{ID: "s", Dir: "/w", Updated: now.Add(-time.Hour), Busy: 10, Idle: 5}
 	if st := inferState(r.asSession(), now); st != core.AgentUnknown {
