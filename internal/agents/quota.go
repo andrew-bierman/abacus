@@ -83,7 +83,7 @@ type codexLimits struct {
 
 // read folds the two slots by window length, not by position: on a free plan the primary slot holds
 // a 30-day window. A model-specific allowance (a limit id other than the account's) is not the
-// account's, and an object with no window is not a report.
+// account's. A slot needs both a usage percentage and a positive duration to be classified.
 func (l *codexLimits) read(timestamp string) (quotaRead, bool) {
 	if l == nil || (l.LimitID != "" && l.LimitID != "codex") {
 		return quotaRead{}, false
@@ -93,11 +93,11 @@ func (l *codexLimits) read(timestamp string) (quotaRead, bool) {
 		q.Updated = t.UTC()
 	}
 	for _, w := range []*codexWindow{l.Primary, l.Secondary} {
-		if w == nil || w.UsedPercent == nil {
+		if w == nil || w.UsedPercent == nil || w.Minutes <= 0 {
 			continue
 		}
 		win := &quotaWin{Pct: *w.UsedPercent, Resets: epochTime(w.ResetsAt), Minutes: w.Minutes}
-		if w.Minutes > 0 && w.Minutes <= shortWindowMinutes {
+		if w.Minutes <= shortWindowMinutes {
 			q.Short = win
 		} else {
 			q.Long = win
