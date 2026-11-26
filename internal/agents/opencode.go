@@ -147,14 +147,14 @@ func openCodeModel(raw string) string {
 	return m.ID
 }
 
-// asSession maps a row to what the scan matches on. The harness's own busy and idle stamps say which
-// way it last moved; they are read like a transcript's last record (age decides how far to trust them).
+// asSession maps a row to what the scan matches on. The newest transition determines how the
+// session ended, with idle winning ties. The scan applies the usual age rules to that evidence.
 func (o opencodeSession) asSession() session {
 	s := session{ID: o.ID, Cwd: o.Dir, Model: o.Model, Task: o.Title, ModTime: o.Updated, Cost: o.Cost}
 	if t := tok(o.Input) + tok(o.Output) + tok(o.CacheWrite); t > 0 {
 		s.Tokens = &t
 	}
-	if o.Compacting > 0 || o.Busy > o.Idle {
+	if max(o.Busy, o.Compacting) > o.Idle {
 		s.End = endPrompt
 	} else {
 		s.End = endDone
