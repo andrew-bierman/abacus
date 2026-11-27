@@ -92,6 +92,13 @@ type SchemaIndexEntry struct {
 	File     string `json:"file"`
 }
 
+// DemoConfigPath is the path `config show` gives in demo mode, where there is no settings file and the real one
+// is never read.
+const DemoConfigPath = "(demo data: no settings file)"
+
+// DemoConfigShow is the settings of demo data: none set.
+func DemoConfigShow() ConfigShow { return ConfigShow{Path: DemoConfigPath} }
+
 // ConfigShow is `config show --json`: the settings file's path and its settings.
 type ConfigShow struct {
 	Path string `json:"path"`

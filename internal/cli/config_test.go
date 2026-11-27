@@ -67,3 +67,36 @@ func TestConfigVerbsRoundTripAndExitCodes(t *testing.T) {
 		t.Fatalf("the damaged file was not kept: %q %v", kept, err)
 	}
 }
+
+// Demo mode never reads the real settings file: show, get and path answer from an empty demo store with a demo
+// path marker, whether demo is asked for by the flag or the environment.
+func TestConfigDemoNeverReadsTheRealFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "secret-home", "c.json")
+	if err := (core.ConfigStore{Path: path}).Update(func(c *core.Config) error { return c.Set("actor", "real-actor-name") }); err != nil {
+		t.Fatal(err)
+	}
+	for _, how := range []struct {
+		name string
+		env  map[string]string
+		flag []string
+	}{{"flag", nil, []string{"--demo"}}, {"env", map[string]string{"ABACUS_DEMO": "1"}, nil}} {
+		for _, verb := range [][]string{{"show"}, {"show", "--json"}, {"get", "actor"}, {"path"}} {
+			var o, e bytes.Buffer
+			args := append(append([]string{"config", verb[0]}, how.flag...), verb[1:]...) // flags come before the positionals
+			code := cli.Run(args, cli.Deps{Out: &o, Err: &e, Version: "t", Config: core.ConfigStore{Path: path}, Getenv: func(k string) string { return how.env[k] }})
+			out := o.String() + e.String()
+			if code != 0 || strings.Contains(out, "real-actor-name") || strings.Contains(out, "secret-home") {
+				t.Errorf("%s %v: %d %q", how.name, verb, code, out)
+			}
+			if verb[len(verb)-1] == "--json" {
+				var v map[string]any
+				if json.Unmarshal(o.Bytes(), &v) != nil || v["demo"] != true || v["path"] != core.DemoConfigPath {
+					t.Errorf("%s show --json: %s", how.name, o.String())
+				}
+			}
+			if verb[0] == "path" && strings.TrimSpace(o.String()) != core.DemoConfigPath {
+				t.Errorf("%s path: %q", how.name, o.String())
+			}
+		}
+	}
+}

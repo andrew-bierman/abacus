@@ -97,15 +97,26 @@ func ConfigListValue(key string, words []string) (string, error) {
 	if !slices.Contains(ConfigListKeys, key) {
 		return "", fmt.Errorf("%s takes a text value, not a list", key)
 	}
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	enc.SetEscapeHTML(false)
-	_ = enc.Encode(words)
-	val := strings.TrimSuffix(b.String(), "\n")
+	if len(words) == 0 {
+		return "", errors.New(`agent_command is an empty list: only "" clears it`)
+	}
+	val := agentCommandJSON(words)
 	if _, err := ParseAgentCommand(val); err != nil {
 		return "", err
 	}
 	return val, nil
+}
+
+// agentCommandJSON is the one text form of an agent command: compact JSON, no HTML escaping, "" for none.
+func agentCommandJSON(words []string) string {
+	if len(words) == 0 {
+		return ""
+	}
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(words)
+	return strings.TrimSuffix(b.String(), "\n")
 }
 
 // Get returns one key's value.
@@ -128,8 +139,7 @@ func (c Config) Get(key string) (string, error) {
 		if len(c.AgentCommand) == 0 {
 			return "", nil
 		}
-		b, _ := json.Marshal(c.AgentCommand)
-		return string(b), nil
+		return agentCommandJSON(c.AgentCommand), nil
 	}
 	return "", fmt.Errorf("unknown setting %q", key)
 }

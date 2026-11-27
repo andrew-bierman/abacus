@@ -25,6 +25,9 @@ func PlanConfigSet(st ConfigStore, key, value string) (ConfigSetPlan, error) {
 	if err := scratch.Set(key, value); err != nil {
 		return ConfigSetPlan{}, err
 	}
+	if key == "agent_command" { // a list and the same words as text (any spacing) are one value: one digest, one stored form
+		value = agentCommandJSON(scratch.AgentCommand)
+	}
 	cur, err := st.Load()
 	var corrupt *errCorrupt
 	if err != nil && !errors.As(err, &corrupt) { // an unreadable file is kept aside by the write, as the command does

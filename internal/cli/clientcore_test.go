@@ -375,3 +375,33 @@ func TestSetupDemoShowsTheFirstRunStepsAsPlans(t *testing.T) {
 		t.Errorf("%d audit records in demo mode", au.n)
 	}
 }
+
+// `setup --demo --repair --dry-run` answers from the demo: it never looks at the real workspace folder (a
+// half-created one is there), and no real path appears in what it prints.
+func TestSetupDemoRepairNeverTouchesTheRealWorkspace(t *testing.T) {
+	ws := filepath.Join(t.TempDir(), "real-workspace-dir")
+	if err := os.MkdirAll(filepath.Join(ws, ".beads"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	built := false
+	for _, env := range []map[string]string{nil, {"ABACUS_DEMO": "1"}} {
+		args := []string{"setup", "--repair", "--dry-run", "--json"}
+		if env == nil {
+			args = append(args, "--demo")
+		}
+		var o, e bytes.Buffer
+		code := cli.Run(args, cli.Deps{Out: &o, Err: &e, Version: "t", Getenv: func(k string) string { return env[k] },
+			Build: func(cli.Options) *core.Registry { return core.NewRegistry(contractMods()...) },
+			Setup: func(en []core.Entry) *core.Setup {
+				built = true
+				return core.NewSetup(en, core.SetupOptions{Config: core.ConfigStore{Path: filepath.Join(ws, "c.json")}, Workspace: ws, Audit: &memAudit{}})
+			}})
+		out := o.String() + e.String()
+		if code != 1 || strings.Contains(out, "real-workspace-dir") || !strings.Contains(out, "demo") {
+			t.Errorf("%v: %d %s", env, code, out)
+		}
+	}
+	if built {
+		t.Error("the real setup was built in demo mode")
+	}
+}
