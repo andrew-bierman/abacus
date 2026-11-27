@@ -6,6 +6,16 @@ may change behavior, and patch versions are fixes and small additions.
 
 ## [Unreleased]
 
+### Fixed
+
+- Demo mode no longer reads real state: `config show|get|path` (command and serve `config.show`) answer from empty demo
+  settings with a demo path marker, and `setup --demo --repair` is refused instead of inspecting the real workspace.
+- `tasks.since` ties its fingerprint to the tracker (another tracker's token is `full`), answers an unchanged tracker
+  without reading it when the tracker has a cheap change check, and answers `full` for a snapshot with a repeated id.
+- The serve request queue is strictly first come, first served: a request takes its place in line when it is read,
+  not when its goroutine happens to run.
+- `agent_command` given as a list or as text (any spacing) is one value with one digest; `[]` is refused, only `""` clears.
+
 ## [0.7.0] - 2026-11-26
 
 ### Added
