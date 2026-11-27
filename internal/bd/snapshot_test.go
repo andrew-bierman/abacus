@@ -41,7 +41,10 @@ func TestSnapshotRunsExactlyTheAllowlistedExportRead(t *testing.T) {
 }
 
 func TestSnapshotWithoutADirNamesNoTracker(t *testing.T) {
+	// The repository now carries its own .beads, so run from an empty directory: the test is about
+	// a working directory with no tracker at or above it.
 	f := &fakeRun{resp: map[string]string{"--readonly version --json": verJSON, "--readonly export": exportFixture(t)}}
+	t.Chdir(t.TempDir())
 	m := mod(f, Options{})
 	m.Detect(context.Background())
 	snap, err := m.Snapshot(context.Background())
