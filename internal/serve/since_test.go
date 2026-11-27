@@ -1,9 +1,11 @@
 package serve_test
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -173,4 +175,53 @@ func TestTasksSinceBadParams(t *testing.T) {
 	c, _ := readyClient(t)
 	c.call("tasks.since", map[string]any{"fingerprint": 1}).wantErr(t, core.CodeUsage)
 	c.call("tasks.since", map[string]any{"since": "x"}).wantErr(t, core.CodeUsage)
+}
+
+// A token from one tracker used against another is "full", even when the content is identical.
+func TestTasksSinceTokenFromAnotherTrackerIsFull(t *testing.T) {
+	c, f := readyClient(t)
+	f.tasks.mutate(func(s *core.TaskSnapshot) { s.Root = "/work/a" })
+	a := since(t, c, "")
+	if got := since(t, c, a.Fingerprint); got.Kind != core.SinceDelta {
+		t.Fatalf("same tracker: %+v", got)
+	}
+	f.tasks.mutate(func(s *core.TaskSnapshot) { s.Root = "/work/b" })
+	b := since(t, c, a.Fingerprint)
+	if b.Kind != core.SinceFull || b.Fingerprint == a.Fingerprint || len(b.Rows) != b.Total {
+		t.Fatalf("another tracker: %+v", b)
+	}
+}
+
+// A snapshot that holds an id twice cannot be compared by id: "full", and nothing is kept.
+func TestTasksSinceDuplicateIDsAreFull(t *testing.T) {
+	c, f := readyClient(t)
+	f.tasks.mutate(func(s *core.TaskSnapshot) { s.Issues = append(s.Issues, s.Issues[1]) })
+	first := since(t, c, "")
+	if again := since(t, c, first.Fingerprint); again.Kind != core.SinceFull {
+		t.Fatalf("%+v", again)
+	}
+}
+
+// With the tracker's own fingerprint unchanged, "unchanged" is answered without reading the tracker; once it
+// moves the tracker is read and the delta made.
+func TestTasksSinceUsesTheCheapFingerprintToSkipTheRead(t *testing.T) {
+	c, f := readyClient(t)
+	var reads atomic.Int32
+	f.tasks.snapHook = func(context.Context) error { reads.Add(1); return nil }
+	f.tasks.setFP("fp-1", nil)
+	base := since(t, c, "")
+	n := reads.Load()
+	for i := 0; i < 3; i++ {
+		if got := since(t, c, base.Fingerprint); got.Kind != core.SinceDelta || len(got.Rows)+len(got.Removed) != 0 || got.Fingerprint != base.Fingerprint || got.Total != base.Total {
+			t.Fatalf("%+v", got)
+		}
+	}
+	if reads.Load() != n {
+		t.Errorf("the tracker was read %d times for an unchanged fingerprint", reads.Load()-n)
+	}
+	f.tasks.setFP("fp-2", nil)
+	f.tasks.mutate(func(s *core.TaskSnapshot) { s.Issues = s.Issues[:len(s.Issues)-1] })
+	if got := since(t, c, base.Fingerprint); got.Kind != core.SinceDelta || len(got.Removed) != 1 || reads.Load() == n {
+		t.Fatalf("%+v", got)
+	}
 }
