@@ -576,8 +576,10 @@ func (s *Server) handleLine(line []byte) {
 			msg: fmt.Sprintf("the server is busy: %d requests are being served and %d are waiting (nothing ran): try again in %d ms", s.lim.MaxInFlight, s.lim.MaxQueued, busyRetryAfterMS)})
 		return
 	}
+	var tk *ticket
 	if !m.inline {
 		s.active++
+		tk = s.slots.enqueue() // the place in line is taken here, on the reading goroutine, so it is the order the lines arrived in
 	}
 	ctx, cancel := context.WithCancelCause(s.root)
 	c := &call{cancel: cancel} // a write is marked only once it holds a slot (see run)
@@ -595,7 +597,7 @@ func (s *Server) handleLine(line []byte) {
 			cancel(nil)
 			s.wg.Done()
 		}()
-		s.run(ctx, c, req.ID, m, params, deadline)
+		s.run(ctx, c, tk, req.ID, m, params, deadline)
 	}
 	if m.inline {
 		run()
@@ -631,11 +633,11 @@ func (s *Server) cancelRequest(params json.RawMessage) {
 }
 
 // run serves one request: it takes the method's domain lock, runs it under its deadline, and answers.
-func (s *Server) run(ctx context.Context, c *call, id json.RawMessage, m method, params json.RawMessage, deadline time.Duration) {
+func (s *Server) run(ctx context.Context, c *call, tk *ticket, id json.RawMessage, m method, params json.RawMessage, deadline time.Duration) {
 	ctx, stop := context.WithTimeout(ctx, deadline)
 	defer stop()
 	if !m.inline { // past MaxInFlight a request waits here, in arrival order, under its own deadline
-		if !s.slots.acquire(ctx) {
+		if !s.slots.wait(ctx, tk) {
 			s.replyError(id, s.classify(ctx, ctx.Err()))
 			return
 		}
@@ -750,33 +752,40 @@ func (s *Server) logf(format string, a ...any) {
 	}
 }
 
-// fifoSem is a counting semaphore that hands out slots strictly in arrival order, and in which a waiter
-// that is cancelled or past its deadline never takes one.
+// fifoSem is a counting semaphore that hands out slots strictly in the order places in line were taken
+// (enqueue), and in which a waiter that is cancelled or past its deadline never takes one. The place is taken by
+// the goroutine that reads the requests, before the request's own goroutine exists, so the order does not depend
+// on the scheduler.
 type fifoSem struct {
 	mu      sync.Mutex
 	max     int
 	running int
-	waiters []chan struct{}
+	waiters []*ticket
 }
+
+// ticket is a place in line; ch is closed when the slot is granted.
+type ticket struct{ ch chan struct{} }
 
 func newFifoSem(n int) *fifoSem { return &fifoSem{max: n} }
 
-// acquire waits for a slot; false means ctx ended first (a slot granted at the same moment is given back).
-func (f *fifoSem) acquire(ctx context.Context) bool {
-	if ctx.Err() != nil {
-		return false
-	}
+// enqueue takes the next place in line: a free slot is granted at once, else the ticket waits behind the others.
+func (f *fifoSem) enqueue() *ticket {
+	t := &ticket{ch: make(chan struct{})}
 	f.mu.Lock()
+	defer f.mu.Unlock()
 	if f.running < f.max && len(f.waiters) == 0 {
 		f.running++
-		f.mu.Unlock()
-		return true
+		close(t.ch)
+	} else {
+		f.waiters = append(f.waiters, t)
 	}
-	w := make(chan struct{})
-	f.waiters = append(f.waiters, w)
-	f.mu.Unlock()
+	return t
+}
+
+// wait blocks until t is granted; false means ctx ended first (a slot granted at the same moment is given back).
+func (f *fifoSem) wait(ctx context.Context, t *ticket) bool {
 	select {
-	case <-w:
+	case <-t.ch:
 		if ctx.Err() != nil { // both were ready: the end of the request wins
 			f.release()
 			return false
@@ -785,7 +794,7 @@ func (f *fifoSem) acquire(ctx context.Context) bool {
 	case <-ctx.Done():
 		f.mu.Lock()
 		for i, x := range f.waiters {
-			if x == w {
+			if x == t {
 				f.waiters = append(f.waiters[:i], f.waiters[i+1:]...)
 				f.mu.Unlock()
 				return false
@@ -801,7 +810,7 @@ func (f *fifoSem) release() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if len(f.waiters) > 0 { // the slot passes straight to the first waiter
-		close(f.waiters[0])
+		close(f.waiters[0].ch)
 		f.waiters = f.waiters[1:]
 		return
 	}

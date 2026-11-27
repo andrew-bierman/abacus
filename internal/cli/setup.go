@@ -58,6 +58,9 @@ func runSetup(rest []string, d Deps) int {
 	if code, refused := refuseDemoWrite(d, "setup", dry || !(yes || repair)); refused {
 		return code
 	}
+	if demoRun(d) && repair { // a repair looks at the real workspace folder: demo data has none, and nothing is read
+		return failf(d, core.CodeRefused, "setup --repair: demo data has no workspace to repair (nothing was read or changed)\n")
+	}
 	expect, okDigest := parseExpect(d, "setup", expectRaw)
 	if !okDigest {
 		return core.ExitUsage

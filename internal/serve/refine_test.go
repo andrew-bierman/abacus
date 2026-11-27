@@ -476,7 +476,8 @@ func TestQueuedAppliesNeverRunAfterShutdown(t *testing.T) {
 		ids = append(ids, c.send("apply", map[string]any{"plan_id": p.PlanID}))
 	}
 	<-entered // the first write is running; seven wait for their turn and twenty for a slot
-	time.Sleep(100 * time.Millisecond)
+	// no wait for the others to be queued: requests are read, and their place in line taken, in order, so
+	// once the shutdown has been read every apply before it has its place
 	sd := c.send("shutdown", nil)
 	c.call("version", nil).wantErr(t, core.CodeRefused) // the shutdown has been read: the gate is shut
 	for _, id := range ids[8:] {                        // the ones waiting for a slot are cancelled at once, not when a slot frees
@@ -510,8 +511,7 @@ func TestQueuedRequestsAreServedInArrivalOrder(t *testing.T) {
 	<-started
 	var ids []string
 	for i := 0; i < 8; i++ {
-		ids = append(ids, c.send("version", nil))
-		time.Sleep(10 * time.Millisecond)
+		ids = append(ids, c.send("version", nil)) // read in this order: the place in line is taken as each is read
 	}
 	c.cancel(slow)
 	for _, id := range ids {

@@ -468,6 +468,9 @@ func (e *Engine) configShow(_ context.Context, raw json.RawMessage) (any, error)
 	if err := decodeParams(raw, &struct{}{}); err != nil {
 		return nil, err
 	}
+	if e.cfg.Demo { // the real settings file is never read in demo mode
+		return core.DemoConfigShow(), nil
+	}
 	st := e.cfg.Config
 	if st.Path == "" {
 		p, err := core.DefaultConfigPath()

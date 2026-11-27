@@ -401,7 +401,9 @@ closed set and `source` says how it was learned.
   in demo mode is refused with code `refused` and exit 1 before anything is confirmed, run or audited, unless it is a
   `--dry-run` plan (which works and says `"demo": true`); `setup` is only a report or a `--dry-run` plan, and in demo
   mode the report is the steps of a first run (the workspace and actor `needed` with their plans, queues `blocked`), so
-  a client can show its setup sheet with no tracker. Commands that change something with no plan to show
+  a client can show its setup sheet with no tracker (`setup --repair` is refused in demo mode: it would look at the real
+  workspace folder); `config show|get|path` answer from empty demo settings with a demo path marker and never read the
+  real settings file. Commands that change something with no plan to show
   (`config set`, `schema --out DIR`, `rex layout`, even with `--dry-run`) are refused outright (over serve,
   `plan.config.set` is a demo plan: it is shown, and never applied). This is one table (`internal/cli/effects.go`) checked before any command runs: a command or
   verb that is not in it is refused in demo mode, and a test enumerates every registered command against it. A demo

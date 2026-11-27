@@ -147,3 +147,44 @@ func TestPlanConfigSetListValueIsValidatedAndOnlyForArgvKeys(t *testing.T) {
 		t.Errorf("%+v", p)
 	}
 }
+
+// config.show in demo mode is the demo store: the real settings file is never read, and its path never shown.
+func TestDemoConfigShowNeverReadsTheRealFile(t *testing.T) {
+	c, f := demoClient(t)
+	if err := f.cfg.Config.Update(func(cfg *core.Config) error { return cfg.Set("actor", "real-actor-name") }); err != nil {
+		t.Fatal(err)
+	}
+	r := c.call("config.show", nil)
+	var got core.ConfigShow
+	r.into(t, &got)
+	if got.Path != core.DemoConfigPath || got.Actor != "" || strings.Contains(r.Raw, "real-actor-name") || strings.Contains(r.Raw, f.cfg.Config.Path) {
+		t.Errorf("%s", r.Raw)
+	}
+	if string(mustMap(t, r.Result)["demo"]) != "true" {
+		t.Errorf("not flagged demo: %s", r.Raw)
+	}
+}
+
+// The list form and every spelling of the same words as text are one plan: one digest, one stored value.
+func TestPlanConfigSetAgentCommandIsCanonical(t *testing.T) {
+	c, f := readyClient(t)
+	list := plan(t, c, "plan.config.set", map[string]any{"key": "agent_command", "value": []string{"claude", "a & {task_id}"}})
+	for _, text := range []string{`["claude","a & {task_id}"]`, ` [ "claude" ,  "a & {task_id}" ] `} {
+		p := plan(t, c, "plan.config.set", map[string]any{"key": "agent_command", "value": text})
+		if p.PlanDigest != list.PlanDigest || !slices.Equal(p.Lines, list.Lines) {
+			t.Errorf("%q: %+v vs %+v", text, p, list)
+		}
+	}
+	apply(t, c, list.PlanID)
+	var shown core.ConfigShow
+	c.call("config.show", nil).into(t, &shown)
+	if got, _ := shown.Config.Get("agent_command"); got != `["claude","a & {task_id}"]` {
+		t.Errorf("stored %q", got)
+	}
+	_ = f
+	// only "" clears (a blank string too): an empty list is refused
+	if a, b := plan(t, c, "plan.config.set", map[string]any{"key": "agent_command", "value": ""}), plan(t, c, "plan.config.set", map[string]any{"key": "agent_command", "value": "  "}); a.PlanDigest != b.PlanDigest {
+		t.Error("blank and empty are different clears")
+	}
+	c.call("plan.config.set", map[string]any{"key": "agent_command", "value": []string{}}).wantErr(t, core.CodeUsage)
+}

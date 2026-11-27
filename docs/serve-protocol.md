@@ -36,7 +36,8 @@ abacus serve --stdio [--demo] [--tracker DIR] [--all] [--lambe-config FILE]
   nothing audited). That includes the setup steps and the settings, so a client can show those sheets with no
   tracker: `setup.state` lists the steps of a first run (the workspace and the actor name `needed`, queues
   `blocked` until the workspace exists; the same report `setup --demo --json` prints, with its demo digest),
-  `plan.setup` plans a `needed` one (invented lines and display argv; `queues` and `repair` are `refused` as a
+  `config.show` answers an empty settings object with a demo path marker (the real settings file is never read or
+  named), `plan.setup` plans a `needed` one (invented lines and display argv; `queues` and `repair` are `refused` as a
   step that is not offered is), and `plan.config.set` validates the value as `config set` does, against an
   empty settings file (the real file is never read, written or audited). A held demo plan can be cancelled like any other. `--tracker DIR` selects the tracker as on the other commands (not with demo). `version --json`
   reports `contract.serve: true` and the `serve` capability.
@@ -183,17 +184,21 @@ this server handed out, instead of the whole list. The answer is `{kind, fingerp
   did (closing a blocker frees the task it held, and changes its epic's done count, though neither was edited);
   the age is the clock's, not the task's, and is not a change.
 - `kind: "full"`: the `fingerprint` named is empty, unknown (another server, a restart, a typo) or forgotten, or
-  the tracker holds more than 5000 tasks (the watcher's own bound: too many to keep and compare by task).
-  Replace the client’s entire task set with `rows`, which contains all tasks sorted by id. `removed` is empty.
-  The rows and fingerprint come from the same snapshot, so initialization requires one call.
+  the tracker holds more than 5000 tasks (the watcher's own bound: too many to keep and compare by task; the
+  size is only known once it is read), the fingerprint came from another tracker (the state is tied to the
+  tracker's project directory, and so is the token), or the snapshot holds a task id twice (a by-id comparison
+  would hide a change). Replace the client's entire task set with `rows`, which contains all tasks sorted by id.
+  `removed` is empty. The rows and fingerprint come from the same snapshot, so initialization requires one call.
+- When the tracker has its own cheap change check and it has not moved since the state was read, the answer is
+  an empty `delta` without reading the tracker at all (`read_at` is then when that state was read). Otherwise
+  each call reads the tracker whole, under the request's deadline, as `tasks.list` does.
 - `fingerprint` is the opaque token of the state this answer describes: send it back next time (compare it,
   never parse it). The first call (no fingerprint) is how a client gets its baseline. It is **not** the
   `fingerprint` of a `tasks.changed` notice (that one is the tracker's own cheap check); a notice says "refetch",
   and `tasks.since` with the last token is the refetch.
 - The server keeps the last 8 states (one per token it handed out, oldest forgotten first), a digest per task,
   not the tasks, so a client that falls further behind is told `full`. A tracker over 5000 tasks keeps none, so
-  every answer is `full`. Each call reads the tracker whole, as `tasks.list` does, so it is one read on the
-  `tasks` domain. A second client using the same server shares the tokens.
+  every answer is `full`. It is one read on the `tasks` domain. A second client using the same server shares the tokens.
 - There is no `tasks list --since` in the command line: a command is one process with no earlier state to compare
   with, so it could only answer "unchanged" or "full".
 
@@ -233,8 +238,9 @@ that is not one of the verb's own is refused.
 also a JSON list of strings, so a client does not have to encode JSON inside a string: `{"key":"agent_command",
 "value":["claude","Work on {task_id}: {title}"]}` is the plan `config set agent_command '["claude","Work on {task_id}: {title}"]'`
 is, same parser and limits (the list is turned into that text before it is checked, so the digest, the audit
-line and the stored value are the same either way). A list for any other key, an empty list (the text `""`
-clears), words that are not strings, and a number, object, boolean or null are `usage`. The typed values of every
+line and the stored value are the same either way; the text form is canonicalized to compact JSON, so any
+spacing of the same words is one plan). A list for any other key, an empty list (only the text `""` or a blank
+string clears; `[]` is refused), words that are not strings, and a number, object, boolean or null are `usage`. The typed values of every
 key are in `docs/tool-contract.md`, "Settings".
 
 Planning runs nothing and writes nothing (it reads the task or tracker it needs, as the commands do). A

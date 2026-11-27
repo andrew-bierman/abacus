@@ -23,6 +23,8 @@ func runConfig(rest []string, d Deps) int {
 	fs := flag.NewFlagSet("config", flag.ContinueOnError)
 	fs.SetOutput(d.Err)
 	asJSON := jsonBool(d, fs, "print JSON (show)")
+	var o Options
+	o.bind(fs, false)
 	if len(rest) == 0 || strings.HasPrefix(rest[0], "-") {
 		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path\nkeys: "+strings.Join(core.ConfigKeys, ", "))
 		return core.ExitUsage
@@ -32,6 +34,12 @@ func runConfig(rest []string, d Deps) int {
 		return core.ExitUsage
 	}
 	args = fs.Args()
+	if code, ok := o.resolve(d); !ok {
+		return code
+	}
+	if demoRun(d) { // the real settings file is never read in demo mode
+		return runConfigDemo(verb, args, *asJSON, d)
+	}
 	st, err := configStore(d)
 	if err != nil {
 		fmt.Fprintf(d.Err, "config: %v\n", err)
@@ -107,6 +115,40 @@ func runConfig(rest []string, d Deps) int {
 		if note != "" {
 			fmt.Fprintln(d.Err, "config: "+note)
 		}
+	default:
+		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path")
+		return core.ExitUsage
+	}
+	return core.ExitOK
+}
+
+// runConfigDemo answers the read verbs from the demo settings (none set, a demo path marker). `set` never gets
+// here (the demo gate refuses it); anything else is the usage error it is outside demo mode.
+func runConfigDemo(verb string, args []string, asJSON bool, d Deps) int {
+	c := core.DemoConfigShow()
+	switch {
+	case verb == "path" && len(args) == 0:
+		fmt.Fprintln(d.Out, c.Path)
+	case verb == "show" && len(args) == 0:
+		if asJSON {
+			jsonOut(d.Out, c)
+			return core.ExitOK
+		}
+		fmt.Fprintf(d.Out, "%s\n", c.Path)
+		for _, k := range core.ConfigKeys {
+			v, _ := c.Get(k)
+			if v == "" {
+				v = "(not set)"
+			}
+			fmt.Fprintf(d.Out, "  %-13s %s\n", k, core.Sanitize(v))
+		}
+	case verb == "get" && len(args) == 1:
+		v, err := c.Get(args[0])
+		if err != nil {
+			fmt.Fprintf(d.Err, "config: %v\n", err)
+			return core.ExitUsage
+		}
+		fmt.Fprintln(d.Out, core.Sanitize(v))
 	default:
 		fmt.Fprintln(d.Err, "usage: config show [--json] | get KEY | set KEY VALUE | path")
 		return core.ExitUsage

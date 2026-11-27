@@ -318,3 +318,39 @@ func TestChangedIDsCollectsNothingPastTheCap(t *testing.T) {
 		t.Errorf("%v %v", ids, ok)
 	}
 }
+
+// The place in line is taken when enqueue is called, not when the waiter's goroutine gets to run: tickets are
+// granted strictly in enqueue order whatever order the goroutines wait in.
+func TestFifoSemGrantsInEnqueueOrder(t *testing.T) {
+	f := newFifoSem(1)
+	first := f.enqueue() // takes the only slot
+	var ts []*ticket
+	for i := 0; i < 20; i++ {
+		ts = append(ts, f.enqueue())
+	}
+	var mu sync.Mutex
+	var got []int
+	var wg sync.WaitGroup
+	for i := len(ts) - 1; i >= 0; i-- { // the goroutines start in the opposite order
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if !f.wait(context.Background(), ts[i]) {
+				t.Error("not granted")
+				return
+			}
+			mu.Lock()
+			got = append(got, i)
+			mu.Unlock()
+			f.release()
+		}()
+	}
+	if !f.wait(context.Background(), first) {
+		t.Fatal("first")
+	}
+	f.release()
+	wg.Wait()
+	if !slices.IsSorted(got) || len(got) != 20 {
+		t.Errorf("granted in order %v", got)
+	}
+}
