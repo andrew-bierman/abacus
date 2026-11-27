@@ -103,16 +103,24 @@ type SessionsOptions struct {
 	Runner agents.Runner
 	// Home is the user's home directory for default store locations. "" means os.UserHomeDir.
 	Home string
-	// Getenv resolves CLAUDE_CONFIG_DIR; nil means os.Getenv.
+	// Getenv resolves the harness environment overrides (CLAUDE_CONFIG_DIR, HERMES_HOME, …);
+	// nil means os.Getenv.
 	Getenv func(string) string
 	// Now is the clock for store windows; nil means time.Now.
 	Now func() time.Time
 
 	// Store locations. Empty means the default under Home, which tests override.
-	OpenCodeDB string
-	ClaudeRoot string
-	PiRoot     string
-	CodexRoot  string
+	OpenCodeDB  string
+	ClaudeRoot  string
+	PiRoot      string
+	CodexRoot   string
+	CopilotRoot string
+	GeminiRoot  string
+	GrokRoot    string
+	QwenRoot    string
+	// HermesDBs are Hermes Agent's state databases, one per profile. Empty means every profile
+	// under Home, honouring HERMES_HOME when Getenv reports one.
+	HermesDBs []string
 	// ClaudeConfigDirs are the directories whose rate-limit hooks are read. Empty means
 	// CLAUDE_CONFIG_DIR when set, then ~/.claude.
 	ClaudeConfigDirs []string
@@ -132,19 +140,30 @@ type Sessions struct {
 	collector agents.Collector
 	claude    agents.ClaudeStore
 	codex     agents.CodexStore
+	copilot   agents.CopilotStore
+	gemini    agents.GeminiStore
+	grok      agents.GrokStore
+	hermes    agents.HermesStore
 	pi        agents.PiStore
+	qwen      agents.QwenStore
 	opencode  agents.OpenCodeStore
 	git       agents.Git
+	// hermesPathsErr is the profiles directory listing failure from discovery. It is reported
+	// while a live Hermes process exists, because only then can it hide named-profile sessions.
+	hermesPathsErr error
 	// drains is every JSONL store, in one place: a new harness joins here and the drain's three
 	// operations cannot each forget it.
 	drains []jsonlDrainer
+	// dbs is every database-backed store, in the same one place, so a harness is joined by
+	// directory exactly when it is registered here.
+	dbs []dbStoreSpec
 	// mu serializes reads: the stores keep cross-tick cursors.
 	mu     sync.Mutex
 	rotate int
 }
 
-// jsonlDrainer is a store whose history a one-shot read can finish in passes. opencode is not
-// one: a database query is already complete.
+// jsonlDrainer is a store whose history a one-shot read can finish in passes. Database
+// harnesses (opencode, Hermes) are not: a database query is already complete.
 type jsonlDrainer interface {
 	BeginDrainPass()
 	EndDrainPass()
@@ -184,6 +203,22 @@ func NewSessions(o SessionsOptions) *Sessions {
 	if o.CodexRoot == "" {
 		o.CodexRoot = agents.CodexSessionsPath(o.Home)
 	}
+	if o.CopilotRoot == "" {
+		o.CopilotRoot = agents.CopilotSessionsPathFrom(o.Home, o.Getenv)
+	}
+	if o.GeminiRoot == "" {
+		o.GeminiRoot = agents.GeminiSessionsPathFrom(o.Home, o.Getenv)
+	}
+	if o.GrokRoot == "" {
+		o.GrokRoot = agents.GrokSessionsPathFrom(o.Home, o.Getenv)
+	}
+	if o.QwenRoot == "" {
+		o.QwenRoot = agents.QwenSessionsPathFrom(o.Home, o.Getenv)
+	}
+	var hermesPathsErr error
+	if len(o.HermesDBs) == 0 {
+		o.HermesDBs, hermesPathsErr = agents.HermesDBPathsAndErr(o.Home, o.Getenv)
+	}
 	// The kernel reports a process's open file by its resolved path, so a symlinked store root
 	// would not prefix-match the rollout. Resolve it once; a missing root keeps its name.
 	if real, err := filepath.EvalSymlinks(o.CodexRoot); err == nil {
@@ -199,17 +234,29 @@ func NewSessions(o SessionsOptions) *Sessions {
 		}
 	}
 	s := &Sessions{
-		files:      o.Files,
-		codexRoot:  o.CodexRoot,
-		claudeDirs: dedupeDirs(dirs),
-		collector:  agents.Collector{Machine: o.Machine, Now: o.Now},
-		claude:     agents.ClaudeStore{Root: o.ClaudeRoot},
-		codex:      agents.CodexStore{},
-		pi:         agents.PiStore{Root: o.PiRoot},
-		opencode:   agents.OpenCodeStore{Path: o.OpenCodeDB},
-		git:        agents.Git{Runner: o.Runner, Now: o.Now},
+		files:          o.Files,
+		codexRoot:      o.CodexRoot,
+		claudeDirs:     dedupeDirs(dirs),
+		collector:      agents.Collector{Machine: o.Machine, Now: o.Now},
+		claude:         agents.ClaudeStore{Root: o.ClaudeRoot},
+		codex:          agents.CodexStore{},
+		copilot:        agents.CopilotStore{Root: o.CopilotRoot},
+		gemini:         agents.GeminiStore{Root: o.GeminiRoot},
+		grok:           agents.GrokStore{Root: o.GrokRoot},
+		hermes:         agents.HermesStore{Paths: o.HermesDBs},
+		hermesPathsErr: hermesPathsErr,
+		pi:             agents.PiStore{Root: o.PiRoot},
+		qwen:           agents.QwenStore{Root: o.QwenRoot},
+		opencode:       agents.OpenCodeStore{Path: o.OpenCodeDB},
+		git:            agents.Git{Runner: o.Runner, Now: o.Now},
 	}
-	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.pi}
+	s.drains = []jsonlDrainer{&s.claude, &s.codex, &s.copilot, &s.gemini, &s.grok, &s.pi, &s.qwen}
+	// Hermes discovery reports a profiles directory it could not list; without the recorded
+	// error the named profiles' sessions would be absent from a report that looks complete.
+	s.dbs = []dbStoreSpec{
+		{agents.HarnessOpenCode, s.opencode},
+		{agents.HarnessHermes, s.hermes},
+	}
 	return s
 }
 
@@ -341,8 +388,8 @@ func (s *Sessions) beginDrainPass() {
 	}
 }
 
-// caughtUp reports whether every JSONL store consumed all the records it was asked for. opencode
-// reads a database, where one query is already complete, so it is not in drains.
+// caughtUp reports whether every JSONL store consumed all the records it was asked for. Database
+// harnesses read a database, where one query is already complete, so they are not in drains.
 func (s *Sessions) caughtUp() bool {
 	for _, d := range s.drains {
 		if !d.CaughtUp() {
@@ -360,11 +407,14 @@ func (s *Sessions) readLocked(ctx context.Context) (SessionsReport, error) {
 	rep := SessionsReport{Header: Header{Source: SourceLive}, Snapshot: snap}
 	rep.normalize()
 
-	open, openErr := s.openCodeByDir(ctx, rep.Sessions)
-	if openErr != nil && !errors.Is(openErr, agents.ErrNoOpenCodeV2) {
-		rep.unreadable(agents.HarnessOpenCode, openErr)
+	db, failures := s.dbSessionsByHarness(ctx, rep.Sessions)
+	if s.hermesPathsErr != nil && hasHarness(rep.Sessions, agents.HarnessHermes) {
+		failures = append(failures, storeFailure{harness: agents.HarnessHermes, err: s.hermesPathsErr})
+	}
+	for _, f := range failures {
+		rep.unreadable(f.harness, f.err)
 		for i := range rep.Sessions {
-			if rep.Sessions[i].Harness == agents.HarnessOpenCode && rep.Sessions[i].State != agents.StateExecuting {
+			if rep.Sessions[i].Harness == f.harness && rep.Sessions[i].State != agents.StateExecuting {
 				rep.Sessions[i].State = agents.StateUnknown
 			}
 		}
@@ -372,7 +422,7 @@ func (s *Sessions) readLocked(ctx context.Context) (SessionsReport, error) {
 	quotas := map[agents.Harness]agents.Quota{}
 	for _, i := range s.readOrder(len(rep.Sessions)) {
 		sess := &rep.Sessions[i]
-		stored, ok, err := s.storedFor(ctx, *sess, open)
+		stored, ok, err := s.storedFor(ctx, *sess, db)
 		if err != nil {
 			rep.unreadable(sess.Harness, err)
 			if sess.State != agents.StateExecuting {
@@ -409,19 +459,29 @@ func (s *Sessions) readOrder(n int) []int {
 	return append(out, order[:k]...)
 }
 
-// storedFor returns the stored session behind one live process. Only opencode has a list; the
-// JSONL harnesses resolve one transcript from the process's cwd and start time, and Codex
-// finds the rollout it holds open. A read error is returned so the caller can report it and
-// mark the session unknown; a store that simply has nothing for the session is not an error.
-func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, open map[string]agents.StoredSession) (agents.StoredSession, bool, error) {
-	switch sess.Harness {
-	case agents.HarnessOpenCode:
-		st, ok := open[cleanDir(sess.CWD)]
+// storedFor returns the stored session behind one live process. A database store registered in
+// dbs has its session list read once per tick; the JSONL harnesses resolve one transcript from
+// the process's cwd and start time, and Codex finds the rollout it holds open. A read error is
+// returned so the caller can report it and mark the session unknown; a store that simply has
+// nothing for the session is not an error.
+func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, db map[agents.Harness]map[string]agents.StoredSession) (agents.StoredSession, bool, error) {
+	if index, ok := db[sess.Harness]; ok {
+		st, ok := index[cleanDir(sess.CWD)]
 		return st, ok, nil
+	}
+	switch sess.Harness {
 	case agents.HarnessClaude:
 		return s.transcriptFor(&s.claude, sess)
+	case agents.HarnessCopilot:
+		return s.transcriptFor(&s.copilot, sess)
+	case agents.HarnessGemini:
+		return s.transcriptFor(&s.gemini, sess)
+	case agents.HarnessGrok:
+		return s.transcriptFor(&s.grok, sess)
 	case agents.HarnessPi:
 		return s.transcriptFor(&s.pi, sess)
+	case agents.HarnessQwen:
+		return s.transcriptFor(&s.qwen, sess)
 	case agents.HarnessCodex:
 		path, ok := s.rolloutFor(ctx, sess.PID)
 		if !ok {
@@ -436,8 +496,7 @@ func (s *Sessions) storedFor(ctx context.Context, sess agents.Session, open map[
 	return agents.StoredSession{}, false, nil
 }
 
-// transcriptStore is the pair of reads the Claude and pi readers share: resolve the file a
-// session in a directory is writing, then parse it.
+// transcriptStore is the pair of reads the line-oriented readers share.
 type transcriptStore interface {
 	PathFor(cwd string, since time.Time) (string, bool)
 	Transcript(path string) (agents.StoredSession, error)
@@ -459,9 +518,9 @@ func (s *Sessions) transcriptFor(store transcriptStore, sess agents.Session) (ag
 	return st, true, nil
 }
 
-// sameSessionDir reports whether a store's session describes the live directory. Claude's and
-// pi's PathFor fall back to the newest transcript anywhere because a worktree keeps its
-// transcript under a branch-keyed directory, so a heuristic hit can belong to another project.
+// sameSessionDir reports whether a store's session describes the live directory. Claude's,
+// pi's and Grok's PathFor fall back to the newest transcript anywhere because a worktree keeps
+// its transcript under a branch-keyed directory, so a heuristic hit can belong to another project.
 // A recorded directory that disagrees is not this process's transcript; an empty one is left to
 // the reader's heuristic rather than rejected.
 func sameSessionDir(stored, live string) bool {
@@ -491,14 +550,54 @@ func mergeStored(sess *agents.Session, st agents.StoredSession) {
 	}
 }
 
-// openCodeByDir asks opencode's database for the sessions live processes could be in. The
-// store is the session list, so one query covers the window; the newest session per directory
-// is the one a process there is running.
-func (s *Sessions) openCodeByDir(ctx context.Context, live []agents.Session) (map[string]agents.StoredSession, error) {
+// dbStore is one database-backed harness's session list. A store that can read some of its
+// sources (Hermes profiles) returns those sessions together with the first error, so the join
+// indexes what it read and reports the failure instead of hiding both.
+type dbStore interface {
+	Sessions(ctx context.Context, since time.Time, limit int) ([]agents.StoredSession, error)
+}
+
+// dbStoreSpec ties a harness to the store that lists its sessions, so registration in dbs is
+// the only place a database harness is declared.
+type dbStoreSpec struct {
+	harness agents.Harness
+	store   dbStore
+}
+
+// storeFailure is one database store that could not be read. The helper reports it instead of
+// mutating the report, so the error policy stays in readLocked beside every other read failure.
+type storeFailure struct {
+	harness agents.Harness
+	err     error
+}
+
+// dbSessionsByHarness reads every registered database store that has a live process.
+func (s *Sessions) dbSessionsByHarness(ctx context.Context, live []agents.Session) (map[agents.Harness]map[string]agents.StoredSession, []storeFailure) {
+	by := make(map[agents.Harness]map[string]agents.StoredSession, len(s.dbs))
+	var failures []storeFailure
+	for _, spec := range s.dbs {
+		index, err := s.dbSessionsByDir(ctx, live, spec.harness, spec.store)
+		if err != nil {
+			if errors.Is(err, agents.ErrNoOpenCodeV2) {
+				continue // a file without opencode's v2 tables reads as "nothing here"
+			}
+			failures = append(failures, storeFailure{harness: spec.harness, err: err})
+		}
+		// Keep the partial index even with an error: a corrupt Hermes profile must not hide the
+		// sessions another profile returned.
+		by[spec.harness] = index
+	}
+	return by, failures
+}
+
+// dbSessionsByDir asks one database store for the sessions live processes could be in, and
+// indexes them by directory: the newest session per directory is the one a process there is
+// running.
+func (s *Sessions) dbSessionsByDir(ctx context.Context, live []agents.Session, harness agents.Harness, store dbStore) (map[string]agents.StoredSession, error) {
 	var since time.Time
 	any := false
 	for _, x := range live {
-		if x.Harness != agents.HarnessOpenCode {
+		if x.Harness != harness {
 			continue
 		}
 		any = true
@@ -512,10 +611,7 @@ func (s *Sessions) openCodeByDir(ctx context.Context, live []agents.Session) (ma
 	if since.IsZero() {
 		since = s.collector.Now().Add(-24 * time.Hour)
 	}
-	list, err := s.opencode.Sessions(ctx, since, 200)
-	if err != nil {
-		return nil, err
-	}
+	list, err := store.Sessions(ctx, since, 200)
 	by := make(map[string]agents.StoredSession, len(list))
 	for _, st := range list {
 		key := cleanDir(st.Dir)
@@ -526,7 +622,18 @@ func (s *Sessions) openCodeByDir(ctx context.Context, live []agents.Session) (ma
 			by[key] = st
 		}
 	}
-	return by, nil
+	return by, err
+}
+
+// hasHarness reports whether the live table has a process for one harness, so a discovery
+// failure is reported only when it could hide that harness's sessions.
+func hasHarness(live []agents.Session, want agents.Harness) bool {
+	for _, x := range live {
+		if x.Harness == want {
+			return true
+		}
+	}
+	return false
 }
 
 // rolloutFor finds the rollout a live Codex process holds open. Codex keeps no list, and

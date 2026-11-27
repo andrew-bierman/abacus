@@ -132,17 +132,7 @@ func encodePiPath(cwd string) string {
 
 type piFile struct {
 	jsonlCursor
-
-	id      string
-	dir     string
-	model   string
-	title   string
-	prompt  string
-	tokens  Tokens
-	history []int64
-
-	contextUsed int64
-	sawResponse bool
+	jsonlSession
 
 	openTurn     bool
 	pendingCalls map[string]struct{}
@@ -155,25 +145,21 @@ func (p *piFile) add(line []byte) {
 	}
 	switch e.Type {
 	case "session":
-		if p.id == "" {
-			p.id = e.ID
-		}
-		if p.dir == "" {
-			p.dir = e.CWD
-		}
+		p.setIDIfEmpty(e.ID)
+		p.setDirIfEmpty(e.CWD)
 	case "model_change":
 		if p.model == "" {
-			p.model = piModelName(e.Provider, e.ModelID)
+			p.setModel(piModelName(e.Provider, e.ModelID))
 		}
 	case "session_info":
 		// The latest name wins, including an empty one: pi treats that as a cleared name and
 		// falls back to the first prompt.
-		p.title = strings.TrimSpace(e.Name)
+		p.replaceTitle(e.Name)
 	case "usage", "compaction", "branch_summary":
 		// These record model work that is not a conversation response: cache warming, a
 		// compaction summary, a branch summary. They count toward the session's tokens but
 		// must not move the context fill or add a sparkline point.
-		p.addTokens(e.Usage)
+		p.addTokens(piTokens(e.Usage))
 	case "message":
 		p.message(e.Message)
 	}
@@ -192,9 +178,7 @@ func (p *piFile) message(m *piMessage) {
 		// A pending call stays pending: a steering prompt does not stop the tool that is
 		// already running, and session() prefers executing while one is open.
 		p.openTurn = true
-		if p.prompt == "" {
-			p.prompt = promptTitle(text)
-		}
+		p.setPrompt(text)
 	case "assistant":
 		p.assistant(m)
 	case "toolResult":
@@ -203,9 +187,7 @@ func (p *piFile) message(m *piMessage) {
 }
 
 func (p *piFile) assistant(m *piMessage) {
-	if name := piModelName(m.Provider, m.Model); name != "" {
-		p.model = name
-	}
+	p.setModel(piModelName(m.Provider, m.Model))
 	// One assistant record is one response: pi writes the content blocks together, so a new
 	// response also means the previous turn's calls are settled.
 	p.openTurn = false
@@ -230,7 +212,7 @@ func (p *piFile) toolResult(m *piMessage) {
 	if m.ToolCallID != "" {
 		delete(p.pendingCalls, m.ToolCallID)
 	}
-	p.addTokens(m.Usage)
+	p.addTokens(piTokens(m.Usage))
 	// The model is asked to answer the result, so the turn reopens. If another parallel call is
 	// still pending, session() stays executing.
 	p.openTurn = true
@@ -239,58 +221,36 @@ func (p *piFile) toolResult(m *piMessage) {
 // responseUsage sets the fill and adds a history point. Nested tool work and auxiliary records
 // go through addTokens instead, so they never pretend to be turns.
 func (p *piFile) responseUsage(u *piUsage) {
-	if u == nil {
+	t := piTokens(u)
+	if t == (Tokens{}) {
+		// pi reports zero usage for a response that never reached the provider; counting it
+		// would add an empty turn and blank the fill an earlier response established.
 		return
 	}
-	p.addTokens(u)
-	// pi reports zero usage for a response that never reached the provider; counting it would add
-	// an empty turn and blank the fill an earlier response established.
-	if u.total() == 0 {
-		return
-	}
-	p.sawResponse = true
-	p.contextUsed = u.prompt()
-	p.history = appendHistoryPoint(p.history, u.total())
+	p.addResponseTokens(t)
+	p.useContext(t.prompt())
 }
 
-func (p *piFile) addTokens(u *piUsage) {
+// piTokens converts one provider call's counters. Reasoning is already inside output and
+// cacheWrite1h inside cacheWrite, so neither is a field here.
+func piTokens(u *piUsage) Tokens {
 	if u == nil {
-		return
+		return Tokens{}
 	}
-	t := Tokens{Input: u.Input, Output: u.Output, CacheRead: u.CacheRead, CacheCreate: u.CacheWrite}
-	if t == (Tokens{}) {
-		return
-	}
-	p.tokens = p.tokens.add(t)
+	return Tokens{Input: u.Input, Output: u.Output, CacheRead: u.CacheRead, CacheCreate: u.CacheWrite}
 }
 
 func (p *piFile) session() StoredSession {
-	title := p.title
-	if title == "" {
-		title = p.prompt
-	}
-	s := StoredSession{
-		ID:           p.id,
-		Dir:          p.dir,
-		Title:        title,
-		Model:        p.model,
-		Tokens:       p.tokens,
-		TokenHistory: slices.Clone(p.history),
-		Updated:      p.modTime(),
-		State:        StateWaiting,
-	}
+	state := StateWaiting
 	switch {
 	case len(p.pendingCalls) > 0:
-		s.State = StateExecuting
+		state = StateExecuting
 	case p.openTurn:
-		s.State = StateThinking
+		state = StateThinking
 	}
-	if p.sawResponse {
-		// The session file does not name the window; Context.Limit stays zero, so a front-end
-		// draws no bar rather than a made-up percentage.
-		s.Context = Context{Used: p.contextUsed}
-	}
-	return s
+	// The session file does not name the window; Context.Limit stays zero, so a front-end
+	// draws no bar rather than a made-up percentage.
+	return p.jsonlSession.session(state, p.modTime())
 }
 
 // piEntry is the subset of a session record this reader uses. The file is a tree of entries via
@@ -324,16 +284,6 @@ type piUsage struct {
 	Output     int64 `json:"output"`
 	CacheRead  int64 `json:"cacheRead"`
 	CacheWrite int64 `json:"cacheWrite"`
-}
-
-func (u piUsage) total() int64 {
-	return u.Input + u.Output + u.CacheRead + u.CacheWrite
-}
-
-// prompt is what the model saw: input excludes cached content, so the cache counters are prompt
-// tokens too.
-func (u piUsage) prompt() int64 {
-	return u.Input + u.CacheRead + u.CacheWrite
 }
 
 type piBlock struct {

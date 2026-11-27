@@ -290,6 +290,146 @@ func TestSessionsJoinsOpenCodeByDirectory(t *testing.T) {
 	}
 }
 
+// newHermesDB builds the state.db subset the reader uses, with invented rows.
+func newHermesDB(t *testing.T, sessionID, title, model, dir string, updated time.Time, in, out, cacheRead, cacheWrite int64) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "state.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`
+		CREATE TABLE sessions (
+			id TEXT PRIMARY KEY, source TEXT NOT NULL, model TEXT, parent_session_id TEXT,
+			started_at REAL NOT NULL, ended_at REAL, input_tokens INTEGER DEFAULT 0,
+			output_tokens INTEGER DEFAULT 0, cache_read_tokens INTEGER DEFAULT 0,
+			cache_write_tokens INTEGER DEFAULT 0, cwd TEXT, estimated_cost_usd REAL,
+			actual_cost_usd REAL, title TEXT, last_activity_at REAL,
+			last_activity_description TEXT);
+		CREATE TABLE messages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, role TEXT NOT NULL,
+			content TEXT, tool_calls TEXT, timestamp REAL NOT NULL, token_count INTEGER,
+			active INTEGER NOT NULL DEFAULT 1);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO sessions (id, source, model, started_at, cwd,
+		input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, title, last_activity_at)
+		VALUES (?, 'cli', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sessionID, model, float64(updated.Add(-time.Hour).Unix()), dir, in, out, cacheRead, cacheWrite,
+		title, float64(updated.Unix())); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO messages (session_id, role, content, timestamp)
+		VALUES (?, 'user', 'trim the invoice list', ?), (?, 'assistant', 'done', ?)`,
+		sessionID, float64(updated.Add(-2*time.Minute).Unix()),
+		sessionID, float64(updated.Add(-time.Minute).Unix())); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestSessionsJoinsHermesByDirectory(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/shop"
+	updated := time.Date(2026, 11, 24, 9, 30, 0, 0, time.UTC)
+	db := newHermesDB(t, "ses_hermes", "Payment refactor", "anthropic/claude-sonnet-4.6",
+		cwd, updated, 90, 10, 400, 5)
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "hermes", Started: updated.Add(-2 * time.Hour)}},
+		cwds:  map[int]string{4000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		HermesDBs: []string{db},
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Sessions) != 1 {
+		t.Fatalf("sessions = %+v", rep.Sessions)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "Payment refactor" || got.Model != "anthropic/claude-sonnet-4.6" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 90, Output: 10, CacheRead: 400, CacheCreate: 5}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the assistant reply", got.State)
+	}
+	// Hermes records cumulative totals, not a context window or per-turn series.
+	if got.Context != (agents.Context{}) || got.TokenHistory != nil {
+		t.Errorf("context/history = %+v/%v, want the does-not-record sentinel", got.Context, got.TokenHistory)
+	}
+	if len(rep.Unreadable) != 0 {
+		t.Errorf("unreadable = %+v, want a clean read", rep.Unreadable)
+	}
+}
+
+// TestSessionsReportsAPartialHermesStore: one corrupt profile must not hide the sessions and
+// their fields from the profiles that read, and the failure must still be reported.
+func TestSessionsReportsAPartialHermesStore(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/shop"
+	updated := time.Date(2026, 11, 24, 9, 30, 0, 0, time.UTC)
+	good := newHermesDB(t, "ses_hermes", "Payment refactor", "anthropic/claude-sonnet-4.6",
+		cwd, updated, 90, 10, 400, 5)
+	corrupt := filepath.Join(t.TempDir(), "state.db")
+	writeFile(t, corrupt, "not a database")
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "hermes", Started: updated.Add(-2 * time.Hour)}},
+		cwds:  map[int]string{4000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		HermesDBs: []string{good, corrupt},
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Sessions) != 1 {
+		t.Fatalf("sessions = %+v", rep.Sessions)
+	}
+	if got := rep.Sessions[0]; got.Title != "Payment refactor" || got.State != agents.StateWaiting {
+		t.Errorf("session = %+v, want the readable profile's fields to join", got)
+	}
+	if len(rep.Unreadable) != 1 || !strings.Contains(rep.Unreadable[0], "hermes") {
+		t.Fatalf("unreadable = %+v, want the corrupt profile reported", rep.Unreadable)
+	}
+}
+
+// TestSessionsReportsAnUnlistableHermesProfilesDirectory: discovery records the listing failure,
+// so a live Hermes process still appears while the unreadable profiles directory is named.
+func TestSessionsReportsAnUnlistableHermesProfilesDirectory(t *testing.T) {
+	home := t.TempDir()
+	profiles := filepath.Join(home, ".hermes", "profiles")
+	if err := os.MkdirAll(filepath.Dir(profiles), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(profiles, []byte("not a directory"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "hermes"}},
+		cwds:  map[int]string{4000: "/home/dev/shop"},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Sessions) != 1 || rep.Sessions[0].Harness != agents.HarnessHermes {
+		t.Fatalf("sessions = %+v, want the live hermes row", rep.Sessions)
+	}
+	if len(rep.Unreadable) != 1 || !strings.Contains(rep.Unreadable[0], "hermes") {
+		t.Fatalf("unreadable = %+v, want the profiles listing failure reported", rep.Unreadable)
+	}
+}
+
 // TestSessionsKeepsTheLiveSessionWhenAStoreCannotBeRead: one unreadable store is reported,
 // bounded, and never turns the live process table into an empty tab.
 func TestSessionsKeepsTheLiveSessionWhenAStoreCannotBeRead(t *testing.T) {
@@ -440,6 +580,187 @@ func TestSessionsJoinsPiTranscript(t *testing.T) {
 	}
 	if got.State != agents.StateWaiting {
 		t.Errorf("state = %q, want the completed response to close the turn", got.State)
+	}
+}
+
+func TestSessionsJoinsGrokSession(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/shop"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	root := filepath.Join(home, ".grok", "sessions")
+	dir := filepath.Join(root, "%2Fhome%2Fdev%2Fshop", "ses_grok")
+	writeFile(t, filepath.Join(dir, "summary.json"), `{
+		"info":{"id":"ses_grok","cwd":"/home/dev/shop"},
+		"generated_title":"Shop fixture",
+		"current_model_id":"fixture-model-2",
+		"created_at":"2026-11-24T09:00:00Z",
+		"updated_at":"2026-11-24T09:05:00Z"
+	}`)
+	writeFile(t, filepath.Join(dir, "updates.jsonl"), strings.Join([]string{
+		`{"timestamp":1784278801,"method":"session/update","params":{"sessionId":"ses_grok","update":{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"tidy the shop"}},"_meta":{"agentTimestampMs":1784278801000}}}`,
+		`{"timestamp":1784278802,"method":"session/update","params":{"sessionId":"ses_grok","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"done"}},"_meta":{"agentTimestampMs":1784278802000}}}`,
+	}, "\n")+"\n")
+	writeFile(t, filepath.Join(dir, "usage.json"), `{
+		"sessionId":"ses_grok",
+		"turns":[{"turnNumber":1,"endedAt":"2026-11-24T09:05:00Z",
+			"inputTokens":300,"outputTokens":40,"cachedReadTokens":100,
+			"cacheCreationTokens":20,"reasoningTokens":5,"totalTokens":340,"modelCalls":1}]
+	}`)
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{4000: {PID: 4000, PPID: 1, Name: "grok", Started: started}},
+		cwds:  map[int]string{4000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		GrokRoot: root,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "Shop fixture" || got.Model != "fixture-model-2" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens.Total() == 0 || len(got.TokenHistory) == 0 {
+		t.Errorf("tokens/history = %+v/%v, want the Grok usage joined", got.Tokens, got.TokenHistory)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the response", got.State)
+	}
+}
+
+// TestSessionsJoinsGeminiTranscript covers the Gemini arm of the join: the project registry maps
+// the live process's directory to a chats folder, and the session file supplies the title, model
+// and tokens.
+func TestSessionsJoinsGeminiTranscript(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/atelier"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	// A relocated root proves SessionsOptions.GeminiRoot is plumbed, not just the default.
+	root := filepath.Join(home, ".gemini", "relocated")
+	writeFile(t, filepath.Join(home, ".gemini", "projects.json"),
+		`{"projects":{"`+cwd+`":"atelier"}}`)
+	writeFile(t, filepath.Join(root, "atelier", ".project_root"), cwd+"\n")
+	path := filepath.Join(root, "atelier", "chats", "session-2026-11-24T09-00-abcdef12.jsonl")
+	writeFile(t, path, strings.Join([]string{
+		`{"sessionId":"ses_gemini","projectHash":"fixture","startTime":"2026-11-24T09:00:00Z","lastUpdated":"2026-11-24T09:00:00Z"}`,
+		`{"id":"msg_prompt","timestamp":"2026-11-24T09:00:01Z","type":"user","content":"tidy the atelier"}`,
+		`{"id":"msg_reply","timestamp":"2026-11-24T09:00:02Z","type":"gemini","content":[{"text":"done"}],"model":"fixture-model-3","tokens":{"input":120,"output":30,"cached":20,"thoughts":0,"tool":0,"total":150}}`,
+	}, "\n")+"\n")
+	setMtime(t, path, started.Add(time.Minute))
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{6000: {PID: 6000, PPID: 1, Name: "gemini", Started: started}},
+		cwds:  map[int]string{6000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		GeminiRoot: root,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "tidy the atelier" || got.Model != "fixture-model-3" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 100, Output: 30, CacheRead: 20}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.Context != (agents.Context{Used: 120}) {
+		t.Errorf("context = %+v, want the prompt tokens", got.Context)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the response", got.State)
+	}
+}
+
+// TestSessionsJoinsCopilotSession covers the Copilot arm of the join: the live process's
+// directory resolves the newest session event log, and the workspace sidecar plus the event
+// stream supply title, model, settled tokens and state.
+func TestSessionsJoinsCopilotSession(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/atelier"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	relocatedRoot := filepath.Join(home, ".copilot", "relocated")
+	dir := filepath.Join(relocatedRoot, "ses_copilot")
+	writeFile(t, filepath.Join(dir, "workspace.yaml"),
+		"id: ses_copilot\ncwd: "+cwd+"\nname: \"Atelier fixture\"\n")
+	path := filepath.Join(dir, "events.jsonl")
+	writeFile(t, path, strings.Join([]string{
+		`{"type":"session.start","timestamp":"2026-11-24T09:00:01Z","data":{"sessionId":"ses_copilot","context":{"cwd":"/home/dev/atelier"}}}`,
+		`{"type":"user.message","timestamp":"2026-11-24T09:00:02Z","data":{"content":"tidy the atelier"}}`,
+		`{"type":"assistant.message","timestamp":"2026-11-24T09:00:03Z","data":{"content":"done","model":"fixture-labs/copilot-1","outputTokens":10}}`,
+		`{"type":"assistant.usage","timestamp":"2026-11-24T09:00:04Z","data":{"model":"fixture-labs/copilot-1","inputTokens":120,"outputTokens":30,"cacheReadTokens":20,"cacheWriteTokens":10}}`,
+		`{"type":"assistant.turn_end","timestamp":"2026-11-24T09:00:05Z","data":{"turnId":"1"}}`,
+	}, "\n")+"\n")
+	setMtime(t, path, started.Add(time.Minute))
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{7000: {PID: 7000, PPID: 1, Name: "copilot", Started: started}},
+		cwds:  map[int]string{7000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		CopilotRoot: relocatedRoot,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "Atelier fixture" || got.Model != "fixture-labs/copilot-1" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 90, Output: 30, CacheRead: 20, CacheCreate: 10}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.Context != (agents.Context{Used: 120}) {
+		t.Errorf("context = %+v, want the call's gross input", got.Context)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the turn ended", got.State)
+	}
+}
+
+// TestSessionsJoinsQwenTranscript covers the Qwen arm of the join: the sanitized project
+// directory holds the session, and its records supply the title, model, tokens and window.
+func TestSessionsJoinsQwenTranscript(t *testing.T) {
+	home, cwd := t.TempDir(), "/home/dev/atelier"
+	started := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	// A relocated root proves SessionsOptions.QwenRoot is plumbed, not just the default.
+	root := filepath.Join(home, ".qwen", "relocated")
+	path := filepath.Join(root, "-home-dev-atelier", "chats", "7f3c9a1b2d4e4f6089ab01cd23ef4567.jsonl")
+	writeFile(t, path, strings.Join([]string{
+		`{"type":"user","uuid":"u1","sessionId":"7f3c9a1b2d4e4f6089ab01cd23ef4567","cwd":"/home/dev/atelier","timestamp":"2026-11-24T09:00:01Z","provenance":"real_user","message":{"role":"user","parts":[{"text":"tidy the atelier"}]}}`,
+		`{"type":"assistant","uuid":"u2","sessionId":"7f3c9a1b2d4e4f6089ab01cd23ef4567","cwd":"/home/dev/atelier","timestamp":"2026-11-24T09:00:02Z","provenance":"assistant_output","model":"fixture-labs/qwen-1","contextWindowSize":200000,"usageMetadata":{"promptTokenCount":120,"candidatesTokenCount":30,"cachedContentTokenCount":20},"message":{"role":"model","parts":[{"text":"done"}]}}`,
+	}, "\n")+"\n")
+	setMtime(t, path, started.Add(time.Minute))
+
+	m := &fakeMachine{
+		procs: map[int]agents.Proc{8000: {PID: 8000, PPID: 1, Name: "qwen", Started: started}},
+		cwds:  map[int]string{8000: cwd},
+	}
+	s := core.NewSessions(core.SessionsOptions{
+		Machine: m, Files: fakeFiles{}, Runner: &recRun{}, Home: home, Getenv: noEnv,
+		QwenRoot: root,
+	})
+	rep, err := s.Sessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rep.Sessions[0]
+	if got.Title != "tidy the atelier" || got.Model != "fixture-labs/qwen-1" {
+		t.Errorf("title/model = %q/%q", got.Title, got.Model)
+	}
+	if got.Tokens != (agents.Tokens{Input: 100, Output: 30, CacheRead: 20}) {
+		t.Errorf("tokens = %+v", got.Tokens)
+	}
+	if got.Context != (agents.Context{Used: 120, Limit: 200_000}) {
+		t.Errorf("context = %+v, want the prompt tokens and recorded window", got.Context)
+	}
+	if got.State != agents.StateWaiting {
+		t.Errorf("state = %q, want waiting after the response", got.State)
 	}
 }
 

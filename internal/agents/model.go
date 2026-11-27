@@ -20,10 +20,20 @@ import (
 type Harness string
 
 const (
-	HarnessClaude   Harness = "claude"
-	HarnessCodex    Harness = "codex"
-	HarnessOpenCode Harness = "opencode"
-	HarnessPi       Harness = "pi"
+	HarnessAmp         Harness = "amp"
+	HarnessAntigravity Harness = "antigravity"
+	HarnessClaude      Harness = "claude"
+	HarnessCodex       Harness = "codex"
+	HarnessCopilot     Harness = "copilot"
+	HarnessCrush       Harness = "crush"
+	HarnessCursor      Harness = "cursor"
+	HarnessGemini      Harness = "gemini"
+	HarnessGrok        Harness = "grok"
+	HarnessHermes      Harness = "hermes"
+	HarnessKiro        Harness = "kiro"
+	HarnessOpenCode    Harness = "opencode"
+	HarnessPi          Harness = "pi"
+	HarnessQwen        Harness = "qwen"
 )
 
 // State is what a live session is doing. It is derived, never read from a single field:
@@ -56,6 +66,13 @@ type Tokens struct {
 
 // Total is the billable-ish sum used for a session row: cache reads excluded.
 func (t Tokens) Total() int64 { return t.Input + t.Output + t.CacheCreate }
+
+// sum is every counter, including cache reads, for a per-turn sparkline point.
+func (t Tokens) sum() int64 { return t.Total() + t.CacheRead }
+
+// prompt is what the model saw: input plus both cache counters, because input excludes cached
+// content.
+func (t Tokens) prompt() int64 { return t.Input + t.CacheRead + t.CacheCreate }
 
 func (t Tokens) add(o Tokens) Tokens {
 	return Tokens{Input: t.Input + o.Input, Output: t.Output + o.Output,

@@ -12,7 +12,7 @@ import (
 // Front-ends sit on core, never the reverse: core, the tool adapters and the CLI must not
 // import a UI library or a front-end package, so another GUI can reuse them unchanged.
 func TestLogicPackagesImportNoUI(t *testing.T) {
-	banned := []string{"charmbracelet", "internal/tui"}
+	banned := []string{"charmbracelet", "internal/tui", "internal/abtop"}
 	for _, dir := range []string{".", "../agents", "../lambe", "../beadslease", "../cli", "../demo", "../rex", "../taskview", "../query"} {
 		files, _ := filepath.Glob(filepath.Join(dir, "*.go"))
 		for _, f := range files {

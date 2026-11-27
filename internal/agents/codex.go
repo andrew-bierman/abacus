@@ -3,7 +3,6 @@ package agents
 import (
 	"encoding/json"
 	"errors"
-	"slices"
 	"strings"
 )
 
@@ -39,18 +38,7 @@ func (s *CodexStore) Rollout(path string) (StoredSession, error) {
 // codexFile is the accumulation for one rollout.
 type codexFile struct {
 	jsonlCursor
-
-	id    string
-	dir   string
-	model string
-	title string
-
-	tokens  Tokens
-	context Context
-	history []int64
-	// sawUsage keeps an unread window out of the report: a limit without a fill would draw a
-	// 0% bar rather than "this harness has not recorded one yet".
-	sawUsage bool
+	jsonlSession
 
 	openTurn     bool
 	pendingCalls map[string]struct{}
@@ -68,10 +56,8 @@ func (c *codexFile) add(line []byte) {
 	case "session_meta":
 		c.meta(e.Payload)
 	case "turn_context":
-		if e.Payload.Model != "" {
-			c.model = e.Payload.Model
-		}
-		c.setWindow(e.Payload.ContextWindow)
+		c.setModel(e.Payload.Model)
+		c.setContextLimit(e.Payload.ContextWindow)
 	case "event_msg":
 		c.event(e.Payload, e.Timestamp)
 	case "response_item":
@@ -86,12 +72,8 @@ func (c *codexFile) meta(p codexPayload) {
 	if id == "" {
 		id = p.SessionID
 	}
-	if c.id == "" {
-		c.id = id
-	}
-	if c.dir == "" {
-		c.dir = p.CWD
-	}
+	c.setIDIfEmpty(id)
+	c.setDirIfEmpty(p.CWD)
 }
 
 func (c *codexFile) event(p codexPayload, timestamp string) {
@@ -100,10 +82,8 @@ func (c *codexFile) event(p codexPayload, timestamp string) {
 		// The per-event vocabulary is what older rollouts write; the newer one lands as
 		// item_completed below. Both open a turn, and only the first prompt is a title.
 		c.startTurn()
-		c.setWindow(p.ContextWindow)
-		if c.title == "" {
-			c.setTitle(p.Message)
-		}
+		c.setContextLimit(p.ContextWindow)
+		c.setPrompt(p.Message)
 	case "token_count":
 		c.usage(p.Info)
 		c.setQuota(p.RateLimits, timestamp)
@@ -132,9 +112,7 @@ func (c *codexFile) item(item *codexItem) {
 	switch item.Type {
 	case "UserMessage":
 		c.startTurn()
-		if c.title == "" {
-			c.setTitle(codexItemText(item))
-		}
+		c.setPrompt(codexItemText(item))
 	case "AgentMessage":
 		// Commentary is progress inside the turn; only a final answer ends it.
 		if item.Phase == "final_answer" {
@@ -168,24 +146,11 @@ func (c *codexFile) endTurn() {
 	c.pendingCalls = nil
 }
 
-func (c *codexFile) setTitle(text string) {
-	if text == "" {
-		return
-	}
-	c.title = promptTitle(text)
-}
-
-func (c *codexFile) setWindow(limit int64) {
-	if limit > 0 {
-		c.context.Limit = limit
-	}
-}
-
 func (c *codexFile) usage(info *codexTokenInfo) {
 	if info == nil {
 		return
 	}
-	c.setWindow(info.ContextWindow)
+	c.setContextLimit(info.ContextWindow)
 	if t := info.Total; t != nil {
 		// Cumulative totals are a level, not a delta: each event replaces the previous one.
 		// Codex counts cached input inside input_tokens, so the cache read is split out rather
@@ -203,30 +168,17 @@ func (c *codexFile) usage(info *codexTokenInfo) {
 		// response, so it must not blank the fill or add an empty sparkline point.
 		return
 	}
-	c.sawUsage = true
-	c.context.Used = last.Input
-	c.history = appendHistoryPoint(c.history, last.Input+last.Output)
+	c.useContext(last.Input)
+	c.addHistory(last.Input + last.Output)
 }
 
 func (c *codexFile) session() StoredSession {
-	s := StoredSession{
-		ID:           c.id,
-		Dir:          c.dir,
-		Title:        c.title,
-		Model:        c.model,
-		Tokens:       c.tokens,
-		TokenHistory: slices.Clone(c.history),
-		Updated:      c.modTime(),
-		State:        StateWaiting,
-	}
+	s := c.jsonlSession.session(StateWaiting, c.modTime())
 	switch {
 	case len(c.pendingCalls) > 0:
 		s.State = StateExecuting
 	case c.openTurn:
 		s.State = StateThinking
-	}
-	if c.sawUsage {
-		s.Context = c.context
 	}
 	if c.quotaOK {
 		q := c.quota
