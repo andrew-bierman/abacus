@@ -24,11 +24,18 @@ var (
 )
 
 // reportMsg is one finished read. A read runs off the update loop so a slow store cannot stall
-// the keyboard.
+// the keyboard. The host sample rides with the report because both are drawn from one frame;
+// a host failure never fails the sessions read.
 type reportMsg struct {
-	rep core.SessionsReport
-	err error
+	rep       core.SessionsReport
+	err       error
+	vitals    agents.HostVitals
+	vitalsErr error
 }
+
+// hostHistoryPoints is the CPU history ring: at the default interval it covers about two
+// minutes, which is long enough to show a build spike without growing the frame with uptime.
+const hostHistoryPoints = 60
 
 // tickMsg asks for the next read. Ticks are scheduled when the previous read finishes, never in
 // parallel, so the stores' cross-tick cursors see one pass at a time.
@@ -38,6 +45,7 @@ type tickMsg struct{}
 // a good one must not replace a live machine with an empty error screen.
 type model struct {
 	read     Reader
+	host     HostReader
 	interval time.Duration
 	now      func() time.Time
 
@@ -45,6 +53,11 @@ type model struct {
 	err    error
 	loaded bool
 	busy   bool
+	// hostVitals is the last good host sample and cpuHistory its ring. A later failed host read
+	// keeps the last frame, like a failed sessions read does.
+	hostVitals agents.HostVitals
+	hostErr    error
+	cpuHistory []float64
 	// sel is the row the detail panel draws and selID is that session's stable harness:pid.
 	// An index alone would silently move the detail when a refresh reorders the list, so the
 	// identity is re-found on every read and the index is only the fallback when it is gone.
@@ -66,15 +79,22 @@ func newModel(read Reader, interval time.Duration, now func() time.Time) *model 
 
 func (m *model) Init() tea.Cmd { return m.fetch() }
 
-// fetch starts one read with its own deadline.
+// fetch starts one read with its own deadline. The host sample has its own short deadline, so
+// a slow process table cannot spend the monitor's whole frame on a supplementary read.
 func (m *model) fetch() tea.Cmd {
 	m.busy = true
-	read := m.read
+	read, host := m.read, m.host
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), readTimeout)
 		defer cancel()
 		rep, err := read(ctx)
-		return reportMsg{rep: rep, err: err}
+		msg := reportMsg{rep: rep, err: err}
+		if host != nil {
+			hctx, hcancel := context.WithTimeout(context.Background(), hostTimeout)
+			msg.vitals, msg.vitalsErr = host(hctx)
+			hcancel()
+		}
+		return msg
 	}
 }
 
@@ -87,6 +107,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case reportMsg:
 		m.busy = false
+		if m.host != nil {
+			switch {
+			case msg.vitalsErr != nil:
+				m.hostErr = msg.vitalsErr
+			case msg.vitals.Known():
+				m.hostVitals, m.hostErr = msg.vitals, nil
+				m.cpuHistory = appendCPUHistory(m.cpuHistory, msg.vitals.CPUPercent)
+			}
+		}
 		if msg.err != nil {
 			// A failure after a good read keeps the last frame; a failure before any read is
 			// the only thing View has to show. One field carries both, so a later success
@@ -153,7 +182,18 @@ func (m *model) View() string {
 	if m.err != nil {
 		notice = "read failed: " + m.err.Error()
 	}
-	return renderMonitor(m.rep, m.w, m.h, m.sel, m.now(), notice)
+	return renderMonitor(m.rep, m.w, m.h, m.sel, m.now(), notice,
+		hostFrame{vitals: m.hostVitals, history: m.cpuHistory, err: m.hostErr})
+}
+
+// appendCPUHistory keeps the host CPU series bounded. The oldest sample drops first, so the
+// panel always shows the most recent window of the same size.
+func appendCPUHistory(points []float64, point float64) []float64 {
+	points = append(points, point)
+	if len(points) > hostHistoryPoints {
+		points = points[len(points)-hostHistoryPoints:]
+	}
+	return points
 }
 
 func clampSel(sel, n int) int {

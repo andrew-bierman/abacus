@@ -91,6 +91,52 @@ func TestOncePrintsOneSnapshotOfTheCompleteRead(t *testing.T) {
 	}
 }
 
+func TestSnapshotShowsTheHostVitalsTheMonitorDraws(t *testing.T) {
+	host := func(context.Context) (agents.HostVitals, error) {
+		return agents.HostVitals{
+			CPUPercent: 42, MemUsed: 12 << 30, MemTotal: 32 << 30,
+			Load1: 1.20, Load5: 0.90, Load15: 0.70, LoadKnown: true,
+		}, nil
+	}
+	code, out, errOut := run(t, []string{"--once"}, Deps{
+		Read: reader(new(int)), Version: "test", Host: host,
+	})
+	if code != core.ExitOK || errOut != "" {
+		t.Fatalf("code=%d stderr=%q", code, errOut)
+	}
+	want := "  host CPU  42%  mem 12G/32G (38%)  load 1.20 0.90 0.70"
+	if !strings.Contains(out, want) {
+		t.Fatalf("missing %q:\n%s", want, out)
+	}
+	if i, j := strings.Index(out, "host CPU"), strings.Index(out, "invoice totals"); i < 0 || i > j {
+		t.Fatalf("the host line was not part of the header:\n%s", out)
+	}
+}
+
+func TestSnapshotStillPrintsWithoutAHostRead(t *testing.T) {
+	code, out, _ := run(t, []string{"--once"}, Deps{Read: reader(new(int)), Version: "test"})
+	if code != core.ExitOK || strings.Contains(out, "  host ") {
+		t.Fatalf("code=%d a nil host reader added a line:\n%s", code, out)
+	}
+}
+
+func TestModelTakesOneHostSampleWithEachFrame(t *testing.T) {
+	calls := 0
+	m := newModel(reader(new(int)), time.Second, func() time.Time { return taken })
+	m.host = func(context.Context) (agents.HostVitals, error) {
+		calls++
+		return agents.HostVitals{CPUPercent: 33, MemUsed: 1 << 30, MemTotal: 8 << 30}, nil
+	}
+	next, _ := m.Update(m.fetch()())
+	got := next.(*model)
+	if calls != 1 || len(got.cpuHistory) != 1 || got.cpuHistory[0] != 33 {
+		t.Fatalf("calls=%d history=%v, want one 33%% sample", calls, got.cpuHistory)
+	}
+	if !got.hostVitals.Known() {
+		t.Fatal("the frame kept no host sample")
+	}
+}
+
 func TestSnapshotOmitsFactsTheSourceDidNotRecord(t *testing.T) {
 	rep := core.SessionsReport{
 		Header: core.Header{Domain: core.DomainSessions, State: core.Connected, Source: core.SourceLive},

@@ -26,11 +26,16 @@ import (
 const (
 	defaultInterval = 2 * time.Second
 	readTimeout     = 30 * time.Second
+	hostTimeout     = 2 * time.Second
 )
 
 // Reader is one read of the Sessions domain. It is an injectable seam: the binary supplies the
 // read through core, and a test supplies an invented report so no test reads this machine.
 type Reader func(context.Context) (core.SessionsReport, error)
+
+// HostReader is one read of the machine's own vitals. Like Reader it is a seam: the binary
+// supplies agents.NativeHost, and a test supplies invented numbers.
+type HostReader func(context.Context) (agents.HostVitals, error)
 
 // Deps are the process edges, injectable for tests.
 type Deps struct {
@@ -42,6 +47,9 @@ type Deps struct {
 	// Tick is the bounded per-frame read. nil means Read, which a test may supply alone; the
 	// binary passes the tab's non-draining read so a refresh never waits on a backlog.
 	Tick Reader
+	// Host reads the machine's CPU, memory and load. nil means the monitor has no host sample
+	// and says so in its panel; --once omits the host line.
+	Host HostReader
 	// Now is the clock for quota staleness in the text snapshot and the first frame; nil means
 	// time.Now.
 	Now func() time.Time
@@ -108,7 +116,9 @@ func Run(args []string, d Deps) int {
 	if tick == nil {
 		tick = d.Read
 	}
-	if err := start(newModel(tick, interval, d.Now)); err != nil {
+	m := newModel(tick, interval, d.Now)
+	m.host = d.Host
+	if err := start(m); err != nil {
 		fmt.Fprintf(d.Err, "%s: %v\n", brand.Monitor, err)
 		return core.ExitFail
 	}
@@ -148,10 +158,25 @@ func oneShot(d Deps, asJSON bool) int {
 		_, _ = d.Out.Write(b)
 		return core.ExitOK
 	}
-	for _, line := range reportLines(rep, d.Now()) {
+	for _, line := range reportLines(rep, d.Now(), readHost(d)) {
 		fmt.Fprintln(d.Out, line)
 	}
 	return core.ExitOK
+}
+
+// readHost takes one host sample for the text snapshot. A host read is supplementary: a
+// failure or an unknown value omits the line rather than failing the sessions report.
+func readHost(d Deps) *agents.HostVitals {
+	if d.Host == nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), hostTimeout)
+	defer cancel()
+	v, err := d.Host(ctx)
+	if err != nil || !v.Known() {
+		return nil
+	}
+	return &v
 }
 
 // headline is the one-line state a report is called by: the summary when the read is usable,
@@ -165,8 +190,9 @@ func headline(r core.SessionsReport) (head, source string) {
 	return head, r.Source
 }
 
-// reportLines is the plain-text frame behind --once.
-func reportLines(r core.SessionsReport, now time.Time) []string {
+// reportLines is the plain-text frame behind --once. host is nil when the machine has no
+// sample, so a script that only wants sessions sees the same report it always did.
+func reportLines(r core.SessionsReport, now time.Time, host *agents.HostVitals) []string {
 	head, source := headline(r)
 	line := fmt.Sprintf("%s  %s", brand.Monitor, head)
 	if source != "" {
@@ -178,6 +204,9 @@ func reportLines(r core.SessionsReport, now time.Time) []string {
 	}
 	if r.HowToConnect != "" {
 		lines = append(lines, "  how to connect: "+core.Sanitize(r.HowToConnect))
+	}
+	if host != nil {
+		lines = append(lines, hostRow(*host))
 	}
 	lines = append(lines, "")
 	// An empty session list is evidence of idleness only after a usable read: a degraded or

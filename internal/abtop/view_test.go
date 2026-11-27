@@ -1,6 +1,8 @@
 package abtop
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -39,6 +41,56 @@ func TestLayoutDrawsTheHeaderSessionsDetailAndPorts(t *testing.T) {
 		if !strings.Contains(view, want) {
 			t.Errorf("missing %q:\n%s", want, view)
 		}
+	}
+}
+
+func TestHostPanelDrawsCPUHistoryMemoryAndLoad(t *testing.T) {
+	m := newModel(nil, time.Second, func() time.Time { return taken })
+	m.host = func(context.Context) (agents.HostVitals, error) { return agents.HostVitals{}, nil }
+	sample := func(cpu float64) agents.HostVitals {
+		return agents.HostVitals{
+			CPUPercent: cpu, MemUsed: 12 << 30, MemTotal: 32 << 30,
+			Load1: 1.20, Load5: 0.90, Load15: 0.70, LoadKnown: true,
+		}
+	}
+	next, _ := m.Update(reportMsg{rep: fixture(), vitals: sample(10)})
+	m = next.(*model)
+	next, _ = m.Update(reportMsg{rep: fixture(), vitals: sample(100)})
+	m = next.(*model)
+	next, _ = m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	view := next.View()
+	for _, want := range []string{
+		"Host", "CPU 100%", "▂█", "mem 12G/32G (38%)", "load 1.20 0.90 0.70",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("missing %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestHostPanelSaysWhyItIsEmpty(t *testing.T) {
+	view := loaded(t, fixture(), 120, 40).View()
+	if !strings.Contains(view, "Host") || !strings.Contains(view, "host stats unavailable") {
+		t.Fatalf("a monitor with no host read did not say so:\n%s", view)
+	}
+
+	m := newModel(nil, time.Second, func() time.Time { return taken })
+	m.host = func(context.Context) (agents.HostVitals, error) { return agents.HostVitals{}, nil }
+	next, _ := m.Update(reportMsg{rep: fixture(), vitalsErr: errors.New("no /proc/meminfo")})
+	next, _ = next.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	view = next.View()
+	if !strings.Contains(view, "unavailable: no /proc/meminfo") || !strings.Contains(view, "invoice totals") {
+		t.Fatalf("a host failure replaced the sessions frame:\n%s", view)
+	}
+}
+
+func TestHostHistoryRingKeepsTheLatestSamples(t *testing.T) {
+	var points []float64
+	for i := 0; i < 100; i++ {
+		points = appendCPUHistory(points, float64(i))
+	}
+	if len(points) != hostHistoryPoints || points[0] != 40 || points[len(points)-1] != 99 {
+		t.Fatalf("ring = %d points starting %.0f and ending %.0f", len(points), points[0], points[len(points)-1])
 	}
 }
 
@@ -238,7 +290,7 @@ func TestMinimumFrameWithAnIncompleteReadStillShowsARow(t *testing.T) {
 
 func TestMonitorHeaderKeepsTheSnapshotWords(t *testing.T) {
 	got := strings.TrimRight(ansi.Strip(monitorHeader(fixture(), "", 200)[0]), " ")
-	want := reportLines(fixture(), taken)[0]
+	want := reportLines(fixture(), taken, nil)[0]
 	if got != want {
 		t.Fatalf("header drifted from the text snapshot:\n got %q\nwant %q", got, want)
 	}

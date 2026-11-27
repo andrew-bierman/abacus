@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/andrew-bierman/abacus/internal/abtop"
+	"github.com/andrew-bierman/abacus/internal/agents"
 	"github.com/andrew-bierman/abacus/internal/core"
 )
 
@@ -23,6 +24,7 @@ func main() {
 		Version: version,
 		Read:    once,
 		Tick:    tick,
+		Host:    agents.NativeHost{}.Vitals,
 	})
 	core.CleanupSidecarEnv()
 	os.Exit(code)

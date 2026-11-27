@@ -48,10 +48,18 @@ var (
 	styleSelected = lipgloss.NewStyle().Bold(true).Reverse(true)
 )
 
-// renderMonitor draws the whole frame from one typed report. It derives no facts of its own:
-// rows, states, ports and quota all come from the report, so the standalone monitor and the
-// abacus Sessions tab show one read.
-func renderMonitor(r core.SessionsReport, w, h, sel int, now time.Time, notice string) string {
+// hostFrame is the host sample a frame draws, with its CPU history ring. A zero sample is a
+// monitor that has not read the host yet.
+type hostFrame struct {
+	vitals  agents.HostVitals
+	history []float64
+	err     error
+}
+
+// renderMonitor draws the whole frame from one typed report and one host sample. It derives no
+// session facts of its own: rows, states, ports and quota all come from the report, so the
+// standalone monitor and the abacus Sessions tab show one read.
+func renderMonitor(r core.SessionsReport, w, h, sel int, now time.Time, notice string, host hostFrame) string {
 	if w <= 0 {
 		w = defaultViewWidth
 	}
@@ -64,7 +72,13 @@ func renderMonitor(r core.SessionsReport, w, h, sel int, now time.Time, notice s
 
 	header := monitorHeader(r, notice, w)
 	foot := []string{footerLine}
-	bodyH := h - len(header) - len(foot)
+	hostH := minPanelHeight
+	// A frame too short for the host strip keeps the sessions row and footer instead. The panel
+	// is supplementary, so it is the first thing a short terminal loses.
+	if h-len(header)-len(foot)-hostH < minBodyHeight {
+		hostH = 0
+	}
+	bodyH := h - len(header) - len(foot) - hostH
 	if bodyH < minBodyHeight {
 		bodyH = minBodyHeight
 	}
@@ -75,6 +89,9 @@ func renderMonitor(r core.SessionsReport, w, h, sel int, now time.Time, notice s
 
 	lines := make([]string, 0, h)
 	lines = append(lines, header...)
+	if hostH > 0 {
+		lines = append(lines, boxLines("Host", hostBody(host, w-boxBorder), w, hostH, false)...)
+	}
 	lines = append(lines, boxLines("Sessions", tableBody, w, tableH, true)...)
 
 	if remaining >= minPanelHeight {
@@ -173,6 +190,81 @@ func monitorHeader(r core.SessionsReport, notice string, w int) []string {
 		lines = append(lines, fit("  "+styleWarn.Render(core.Sanitize(notice)), w))
 	}
 	return lines
+}
+
+// hostBody is the Host panel's one content row: CPU with its history sparkline, memory, and
+// the load average when the platform reports one. A failed or missing read says why it is
+// empty rather than drawing zeroes that look like an idle machine.
+func hostBody(h hostFrame, innerW int) []string {
+	if !h.vitals.Known() {
+		if h.err != nil {
+			return []string{styleWarn.Render("unavailable: " + core.Sanitize(h.err.Error()))}
+		}
+		return []string{styleMuted.Render("host stats unavailable")}
+	}
+	facts := hostFacts(h.vitals)
+	if points := h.history; len(points) > 0 {
+		width := min(max(innerW/3, 8), 24)
+		facts[0] += " " + percentSparkline(points, width)
+	}
+	return []string{strings.Join(facts, "  ")}
+}
+
+// hostRow is the same facts in the text snapshot's language.
+func hostRow(v agents.HostVitals) string {
+	return "  host " + strings.Join(hostFacts(v), "  ")
+}
+
+// hostFacts is the one CPU/memory/load wording both the panel and the text snapshot use.
+func hostFacts(v agents.HostVitals) []string {
+	out := []string{fmt.Sprintf("CPU %3.0f%%", v.CPUPercent)}
+	if v.MemTotal > 0 {
+		out = append(out, fmt.Sprintf("mem %s/%s (%.0f%%)",
+			bytesLabel(v.MemUsed), bytesLabel(v.MemTotal), memoryPercent(v)))
+	}
+	if v.LoadKnown {
+		out = append(out, fmt.Sprintf("load %.2f %.2f %.2f", v.Load1, v.Load5, v.Load15))
+	}
+	return out
+}
+
+func memoryPercent(v agents.HostVitals) float64 {
+	if v.MemTotal == 0 {
+		return 0
+	}
+	return clampPercent(float64(v.MemUsed) / float64(v.MemTotal) * 100)
+}
+
+// bytesLabel keeps a memory reading short enough for a panel; binary units because that is
+// what the kernel and gopsutil report.
+func bytesLabel(n uint64) string {
+	switch {
+	case n >= 1<<30:
+		return trimDecimal(float64(n)/(1<<30)) + "G"
+	case n >= 1<<20:
+		return trimDecimal(float64(n)/(1<<20)) + "M"
+	case n >= 1<<10:
+		return trimDecimal(float64(n)/(1<<10)) + "K"
+	}
+	return strconv.FormatUint(n, 10) + "B"
+}
+
+// percentSparkline draws a 0-100 series on an absolute scale, so a quiet host looks quiet
+// rather than filling every cell because it is the peak of its own window.
+func percentSparkline(points []float64, width int) string {
+	if len(points) == 0 || width <= 0 {
+		return ""
+	}
+	if len(points) > width {
+		points = points[len(points)-width:]
+	}
+	var b strings.Builder
+	for _, p := range points {
+		i := int(clampPercent(p)/100*float64(len(sparkBlocks)-1) + 0.5)
+		i = max(0, min(i, len(sparkBlocks)-1))
+		b.WriteRune(sparkBlocks[i])
+	}
+	return b.String()
 }
 
 // sessionTableBody is the table's header plus the rows that fit. The selected row is kept in
@@ -534,6 +626,16 @@ func stateGlyph(s agents.State) string {
 		return "○"
 	}
 	return "?"
+}
+
+func clampPercent(p float64) float64 {
+	if p < 0 {
+		return 0
+	}
+	if p > 100 {
+		return 100
+	}
+	return p
 }
 
 func percentBar(pct float64, width int) string {
